@@ -1,0 +1,2152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AudioBook Organizer</title>
+    <style>
+        :root {
+            --primary-color: #4CAF50;
+            --primary-hover: #45a049;
+            --border-color: #e0e0e0;
+            --background-light: #f5f5f5;
+            --text-primary: #333;
+            --text-secondary: #666;
+            --shadow-sm: 0 2px 4px rgba(0,0,0,0.1);
+            --shadow-md: 0 4px 6px rgba(0,0,0,0.1);
+            --radius-sm: 8px;
+            --radius-md: 12px;
+            --spacing-sm: 10px;
+            --spacing-md: 20px;
+            --primary-color-rgb: 63, 131, 248;
+
+            /* Section Colors */
+            --section-color-1: #fff3e0;  /* Soft Orange */
+            --section-color-2: #e8f5e9;  /* Soft Green */
+            --section-color-3: #e3f2fd;  /* Soft Blue */
+            --section-color-4: #fce4ec;  /* Soft Pink */
+            --section-color-5: #efebe9;  /* Soft Brown */
+            --section-color-6: #e0f7fa;  /* Soft Cyan */
+            --section-color-7: #f3e5f5;  /* Soft Purple */
+            --section-color-8: #e8eaf6;  /* Soft Indigo */
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            margin: 0;
+            padding: var(--spacing-md);
+            background-color: var(--background-light);
+            height: 100vh;
+            overflow: hidden;
+            color: var(--text-primary);
+            line-height: 1.6;
+        }
+
+        .main-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: var(--spacing-md);
+            height: calc(100vh - 40px);
+            max-width: 2000px;
+            margin: 0 auto;
+        }
+
+        .column {
+            background: white;
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-sm);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .column-header {
+            padding: var(--spacing-md);
+            border-bottom: 1px solid var(--border-color);
+            background: white;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .column-header h2 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: var(--spacing-sm);
+        }
+
+        .column-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: var(--spacing-md);
+        }
+
+        /* Book Content Specific Styles */
+        .book-content {
+            font-size: 1.1rem;
+            line-height: 1.8;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: var(--spacing-md);
+            background: white;
+            white-space: pre-wrap;
+        }
+
+        .book-content p {
+            margin-bottom: 1.5em;
+            text-align: justify;
+        }
+
+        /* Sections Panel Specific Styles */
+        .sections-list {
+            display: flex;
+            flex-direction: column;
+            gap: var(--spacing-md);
+            padding: var(--spacing-md);
+            min-height: 100px;
+        }
+
+        .section-item {
+            background: white;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            padding: var(--spacing-md);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .section-item:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+            margin-bottom: var(--spacing-sm);
+        }
+
+        .section-text {
+            background-color: var(--background-light);
+            padding: var(--spacing-md);
+            border-radius: var(--radius-sm);
+            margin: var(--spacing-sm) 0;
+            font-style: italic;
+            max-height: 100px;
+            overflow-y: auto;
+        }
+
+        .audio-controls {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+            margin-top: var(--spacing-sm);
+            padding-top: var(--spacing-sm);
+            border-top: 1px solid var(--border-color);
+        }
+
+        /* File Upload Styles */
+        .file-upload {
+            display: flex;
+            gap: var(--spacing-sm);
+            align-items: center;
+            margin-bottom: var(--spacing-sm);
+        }
+
+        .file-upload input[type="file"] {
+            flex: 1;
+            padding: 8px;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            background: white;
+        }
+
+        /* Button Styles */
+        button {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 500;
+            transition: background-color 0.2s, transform 0.1s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        button:hover {
+            background-color: var(--primary-hover);
+            transform: translateY(-1px);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        button[disabled] {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+
+        /* Selection Tools */
+        #selection-tools {
+            position: fixed;
+            background: white;
+            padding: var(--spacing-md);
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-md);
+            z-index: 1000;
+            min-width: 300px;
+            display: none;
+            animation: fadeIn 0.2s ease-out;
+        }
+
+        .selection-tools-content {
+            display: flex;
+            flex-direction: column;
+            gap: var(--spacing-sm);
+        }
+
+        .selection-info {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+
+        .selection-preview {
+            background: var(--background-light);
+            padding: var(--spacing-sm);
+            border-radius: var(--radius-sm);
+            max-height: 150px;
+            overflow-y: auto;
+            font-size: 0.95rem;
+            border: 1px solid var(--border-color);
+        }
+
+        /* Character Counter */
+        .char-counter {
+            position: fixed;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            pointer-events: none;
+            z-index: 1000;
+            display: none;
+            animation: fadeIn 0.2s ease-out;
+        }
+
+        /* Export Panel */
+        .export-panel {
+            margin-top: auto;
+            border-top: 1px solid var(--border-color);
+            padding: var(--spacing-md);
+            background: white;
+        }
+
+        .export-panel h2 {
+            margin-bottom: var(--spacing-md);
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+            margin-bottom: var(--spacing-sm);
+        }
+
+        .checkbox-group input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+        }
+
+        .dropdown {
+            margin: var(--spacing-sm) 0;
+        }
+
+        .dropdown select {
+            padding: 8px;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            font-size: 1rem;
+            width: 100px;
+        }
+
+        /* Status Messages */
+        .status {
+            margin-top: var(--spacing-sm);
+            padding: var(--spacing-sm);
+            border-radius: var(--radius-sm);
+            font-weight: 500;
+        }
+
+        .status.success {
+            background-color: #d4edda;
+            color: #155724;
+        }
+
+        .status.error {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+
+        /* Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        /* Scrollbar Styling */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--background-light);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #666;
+        }
+
+        /* Section Colors */
+        .section-color-1 {
+            background-color: var(--section-color-1) !important;
+            border-left: 4px solid #ffb74d !important;
+        }
+
+        .section-color-2 {
+            background-color: var(--section-color-2) !important;
+            border-left: 4px solid #81c784 !important;
+        }
+
+        .section-color-3 {
+            background-color: var(--section-color-3) !important;
+            border-left: 4px solid #64b5f6 !important;
+        }
+
+        .section-color-4 {
+            background-color: var(--section-color-4) !important;
+            border-left: 4px solid #f06292 !important;
+        }
+
+        .section-color-5 {
+            background-color: var(--section-color-5) !important;
+            border-left: 4px solid #a1887f !important;
+        }
+
+        .section-color-6 {
+            background-color: var(--section-color-6) !important;
+            border-left: 4px solid #4dd0e1 !important;
+        }
+
+        .section-color-7 {
+            background-color: var(--section-color-7) !important;
+            border-left: 4px solid #ba68c8 !important;
+        }
+
+        .section-color-8 {
+            background-color: var(--section-color-8) !important;
+            border-left: 4px solid #7986cb !important;
+        }
+
+        /* Selection colors matching section colors */
+        .color-1-selection ::selection {
+            background-color: var(--section-color-1) !important;
+        }
+
+        .color-2-selection ::selection {
+            background-color: var(--section-color-2) !important;
+        }
+
+        .color-3-selection ::selection {
+            background-color: var(--section-color-3) !important;
+        }
+
+        .color-4-selection ::selection {
+            background-color: var(--section-color-4) !important;
+        }
+
+        .color-5-selection ::selection {
+            background-color: var(--section-color-5) !important;
+        }
+
+        .color-6-selection ::selection {
+            background-color: var(--section-color-6) !important;
+        }
+
+        .color-7-selection ::selection {
+            background-color: var(--section-color-7) !important;
+        }
+
+        .color-8-selection ::selection {
+            background-color: var(--section-color-8) !important;
+        }
+
+        /* Color indicator in sections list */
+        .color-indicator {
+            width: 24px;
+            height: 24px;
+            border-radius: var(--radius-sm);
+            margin-right: var(--spacing-sm);
+            border: 1px solid rgba(0,0,0,0.1);
+            flex-shrink: 0;
+        }
+
+        /* Next color preview */
+        .next-color-preview {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 4px 8px;
+            border-radius: var(--radius-sm);
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            background: var(--background-light);
+        }
+
+        .color-preview-dot {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            border: 1px solid rgba(0,0,0,0.1);
+        }
+
+        /* Section highlight in book content */
+        .section-highlight {
+            cursor: pointer;
+            transition: all 0.2s ease;
+            padding: 2px 0;
+            border-radius: 2px;
+            position: relative;
+        }
+
+        .section-highlight:hover {
+            filter: brightness(0.95);
+        }
+
+        .section-highlight::after {
+            content: '';
+            position: absolute;
+            right: -20px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: inherit;
+            border: 1px solid rgba(0,0,0,0.1);
+        }
+
+        /* Section item enhancements */
+        .section-item {
+            position: relative;
+            transition: all 0.2s ease;
+        }
+
+        .section-item:hover {
+            transform: translateX(4px);
+        }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+            margin-bottom: var(--spacing-sm);
+            padding-right: var(--spacing-md);
+        }
+
+        .section-name {
+            font-weight: 500;
+            color: var(--text-primary);
+            flex-grow: 1;
+        }
+
+        .section-status {
+            font-size: 0.8rem;
+            padding: 2px 8px;
+            border-radius: var(--radius-sm);
+            background: var(--background-light);
+            color: var(--text-secondary);
+        }
+
+        /* Modal Styles */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            backdrop-filter: blur(2px);
+        }
+
+        .modal {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: var(--spacing-md);
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-md);
+            min-width: 400px;
+            max-width: 600px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: var(--spacing-md);
+            padding-bottom: var(--spacing-md);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .modal-header h2 {
+            margin: 0;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            padding: 0;
+            color: var(--text-secondary);
+        }
+
+        .modal-close:hover {
+            color: var(--text-primary);
+            transform: none;
+            background: none;
+        }
+
+        .modal-body {
+            margin-bottom: var(--spacing-md);
+        }
+
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: var(--spacing-sm);
+            padding-top: var(--spacing-md);
+            border-top: 1px solid var(--border-color);
+        }
+
+        /* Chapter Styles */
+        .chapter-item {
+            background: white;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            margin-bottom: var(--spacing-md);
+            overflow: hidden;
+        }
+
+        .chapter-header {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+            padding: var(--spacing-md);
+            background: var(--background-light);
+            cursor: pointer;
+            user-select: none;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .chapter-header:hover {
+            background: #f0f0f0;
+        }
+
+        .chapter-title {
+            flex: 1;
+            font-weight: 600;
+            font-size: 1.1rem;
+            color: var(--text-primary);
+        }
+
+        .chapter-controls {
+            display: flex;
+            gap: var(--spacing-sm);
+        }
+
+        .chapter-sections {
+            padding: var(--spacing-md);
+            transition: height 0.3s ease-in-out;
+        }
+
+        .chapter-sections.collapsed {
+            height: 0;
+            padding: 0;
+            overflow: hidden;
+        }
+
+        .section-item {
+            margin-left: var(--spacing-md);
+            border-left: 2px solid var(--border-color);
+            transition: all 0.2s ease;
+        }
+
+        .section-item:hover {
+            border-left-color: var(--primary-color);
+        }
+
+        .chapter-duration {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            padding: 2px 8px;
+            background: rgba(0,0,0,0.05);
+            border-radius: var(--radius-sm);
+        }
+
+        .chapter-collapse-icon {
+            transition: transform 0.3s ease;
+        }
+
+        .chapter-collapse-icon.collapsed {
+            transform: rotate(-90deg);
+        }
+
+        /* Drag and Drop Styles */
+        .dragging {
+            opacity: 0.6;
+            cursor: move;
+            box-shadow: var(--shadow-lg);
+            background: white;
+            position: relative;
+            z-index: 100;
+        }
+
+        .drag-over {
+            border: 2px dashed var(--primary-color);
+            padding: var(--spacing-sm);
+            margin: 8px 0;
+            border-radius: var(--radius-sm);
+            background: rgba(var(--primary-color-rgb), 0.05);
+        }
+
+        .drag-handle {
+            cursor: move;
+            padding: 4px;
+            margin-right: var(--spacing-sm);
+            color: var(--text-secondary);
+            opacity: 0.6;
+            transition: opacity 0.2s;
+        }
+
+        .section-item:hover .drag-handle {
+            opacity: 1;
+        }
+
+        .drag-placeholder {
+            border: 2px dashed var(--border-color);
+            margin: var(--spacing-sm) 0;
+            height: 80px;
+            border-radius: var(--radius-sm);
+            background: rgba(0, 0, 0, 0.02);
+        }
+
+        /* Update existing styles */
+        .sections-list {
+            display: flex;
+            flex-direction: column;
+            gap: var(--spacing-md);
+            padding: var(--spacing-md);
+            min-height: 100px;
+        }
+
+        .column-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: var(--spacing-md);
+            border-bottom: 1px solid var(--border-color);
+            background: white;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        /* Add these to your existing styles */
+        .header-controls {
+            display: flex;
+            gap: var(--spacing-sm);
+        }
+
+        .save-btn, .load-btn {
+            background-color: var(--primary-color);
+        }
+
+        .save-btn:hover, .load-btn:hover {
+            background-color: var(--primary-hover);
+        }
+
+        /* Add these styles */
+        .section-highlight.flash {
+            animation: flash-highlight 1s ease-in-out;
+        }
+
+        @keyframes flash-highlight {
+            0% { background-color: rgba(255, 255, 0, 0.5); }
+            100% { background-color: inherit; }
+        }
+
+        .section-item {
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .section-item:hover {
+            transform: translateX(4px);
+            background-color: rgba(0, 0, 0, 0.02);
+        }
+
+        /* Chapter Audio Player */
+        .chapter-audio-player {
+            display: none;
+            background: white;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            padding: var(--spacing-sm);
+            margin-top: var(--spacing-sm);
+        }
+
+        .chapter-audio-player.active {
+            display: block;
+        }
+
+        .chapter-audio-controls {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+            margin-bottom: var(--spacing-sm);
+        }
+
+        .chapter-audio-progress {
+            flex: 1;
+            height: 4px;
+            background: var(--background-light);
+            border-radius: 2px;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .chapter-audio-progress-bar {
+            height: 100%;
+            background: var(--primary-color);
+            border-radius: 2px;
+            width: 0;
+            transition: width 0.1s linear;
+        }
+
+        .chapter-audio-time {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            min-width: 60px;
+            text-align: center;
+        }
+
+        .chapter-audio-sections {
+            display: flex;
+            height: 20px;
+            background: var(--background-light);
+            border-radius: var(--radius-sm);
+            overflow: hidden;
+            margin-top: var(--spacing-sm);
+        }
+
+        .chapter-audio-section {
+            height: 100%;
+            border-right: 1px solid white;
+            transition: background-color 0.2s;
+        }
+
+        .chapter-audio-section:last-child {
+            border-right: none;
+        }
+
+        .chapter-audio-section.active {
+            background-color: rgba(var(--primary-color-rgb), 0.2);
+        }
+
+        /* Update existing styles */
+        .chapter-controls {
+            display: flex;
+            gap: var(--spacing-sm);
+            align-items: center;
+        }
+
+        .chapter-play-btn {
+            width: 36px;
+            height: 36px;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+        }
+
+        .chapter-play-btn i {
+            font-size: 1.2rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="main-container">
+        <!-- Left Column - Book Content -->
+        <div class="column">
+            <div class="column-header">
+                <h2>📚 Book Content</h2>
+                <div class="file-upload">
+                    <input type="file" id="bookFile" accept=".txt">
+                    <button onclick="uploadBook()">Upload Book</button>
+                </div>
+                <div id="loadingIndicator" class="loading">Loading book content...</div>
+                <div id="errorMessage" class="error-message"></div>
+            </div>
+            <div class="column-content">
+                <div id="bookContent" class="book-content"></div>
+            </div>
+        </div>
+
+        <!-- Right Column - Sections -->
+        <div class="column">
+            <div class="column-header">
+                <h2>📝 Book Sections</h2>
+                <div class="header-controls">
+                    <button onclick="createNewChapter()" class="create-chapter-btn">
+                        <i>📚</i> New Chapter
+                    </button>
+                    <button onclick="saveProgress()" class="save-btn">
+                        <i>💾</i> Save
+                    </button>
+                    <input type="file" id="loadFile" accept=".json" style="display: none;" onchange="loadProgress(this)">
+                    <button onclick="document.getElementById('loadFile').click()" class="load-btn">
+                        <i>📂</i> Load
+                    </button>
+                    <button onclick="showExportModal()" class="export-btn">
+                        <i>📤</i> Export
+                    </button>
+                </div>
+            </div>
+            <div class="column-content">
+                <div id="sectionsList" class="sections-list"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Export Modal -->
+    <div id="exportModal" class="modal-overlay">
+        <div class="modal">
+            <div class="modal-header">
+                <h2>Export Options</h2>
+                <button class="modal-close" onclick="hideExportModal()">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="export-options">
+                    <label>
+                        <input type="checkbox" id="exportMetadata" checked>
+                        Export metadata (sections, chapters, highlights)
+                    </label>
+                    <label>
+                        <input type="checkbox" id="exportAudio" checked>
+                        Export audio files
+                    </label>
+                    <label>
+                        <input type="checkbox" id="exportBookContent" checked>
+                        Export book content with highlights
+                    </label>
+                    <label>
+                        <input type="checkbox" id="createZip" checked>
+                        Create ZIP archive
+                    </label>
+                    <label>
+                        <input type="checkbox" id="mergeAudio">
+                        Merge audio files
+                    </label>
+                    <div class="silence-duration" style="margin-left: 20px;">
+                        <label>
+                            Silence between sections (seconds):
+                            <input type="number" id="silenceDuration" value="2" min="0" max="10">
+                        </label>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <div id="status" style="display: none;"></div>
+                <button onclick="startExport()">Export</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Selection Tools -->
+    <div id="selection-tools">
+        <div class="selection-tools-content">
+            <div class="selection-info">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span>Selected text (<span id="selectionLength">0</span> characters)</span>
+                    <div class="next-color-preview">
+                        Next color: <div id="nextColorDot" class="color-preview-dot"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="selection-preview" id="selectionPreview"></div>
+            <button class="create-section-btn" onclick="createSection()">
+                <i>➕</i> Create Section
+            </button>
+        </div>
+    </div>
+
+    <!-- Character Counter -->
+    <div class="char-counter">
+        <span id="charCount">0</span> characters
+    </div>
+
+    <!-- Selection Guide Overlay -->
+    <div id="selectionGuide" class="selection-guide">
+        <div class="guide-step">
+            <i>👆</i>
+            <span>Click and drag to select text</span>
+        </div>
+        <div class="guide-step">
+            <i>✨</i>
+            <span>Release to see options</span>
+        </div>
+        <div class="guide-step">
+            <i>➕</i>
+            <span>Click "Create Section" to save</span>
+        </div>
+    </div>
+
+    <script>
+        let bookText = '';
+        let chapters = [];
+        let currentColorIndex = 1;
+        const MAX_COLORS = 8;
+
+        // Chapter Management
+        function createNewChapter() {
+            const chapter = {
+                id: Date.now(),
+                name: `Chapter ${chapters.length + 1}`,
+                colorIndex: getNextColor(),
+                sections: [],
+                collapsed: false,
+                description: '',
+                totalDuration: 0
+            };
+            chapters.push(chapter);
+            updateChaptersList();
+        }
+
+        function updateChapterName(chapterId, newName) {
+            const chapter = chapters.find(c => c.id === chapterId);
+            if (chapter) {
+                chapter.name = newName;
+                updateChaptersList();
+            }
+        }
+
+        function toggleChapter(chapterId) {
+            const chapter = chapters.find(c => c.id === chapterId);
+            if (chapter) {
+                chapter.collapsed = !chapter.collapsed;
+                updateChaptersList();
+            }
+        }
+
+        function deleteChapter(chapterId) {
+            if (confirm('Are you sure you want to delete this chapter and all its sections?')) {
+                chapters = chapters.filter(c => c.id !== chapterId);
+                updateChaptersList();
+            }
+        }
+
+        function playChapter(chapterId) {
+            const chapter = chapters.find(c => c.id === chapterId);
+            if (!chapter || !chapter.sections.length) return;
+            
+            let currentIndex = 0;
+            const audioElements = chapter.sections
+                .filter(s => s.audioPath)
+                .map(s => {
+                    const audio = new Audio(s.audioPath);
+                    audio.addEventListener('ended', () => {
+                        currentIndex++;
+                        if (currentIndex < chapter.sections.length) {
+                            audio.src = chapter.sections[currentIndex].audioPath;
+                            audio.play();
+                        }
+                    });
+                    return audio;
+                });
+            
+            if (audioElements.length) {
+                audioElements[0].play();
+            }
+        }
+
+        // Section Management
+        function createSection() {
+            const selection = window.getSelection();
+            const text = selection.toString().trim();
+            if (!text) return;
+
+            // If no chapters exist, create one
+            if (chapters.length === 0) {
+                createNewChapter();
+            }
+
+            const range = selection.getRangeAt(0);
+            const colorIndex = currentColorIndex;
+            
+            // Create section object
+            const section = {
+                id: Date.now(),
+                text: text,
+                colorIndex: colorIndex,
+                status: 'pending',
+                name: `Section ${getNextSectionNumber(chapters[chapters.length - 1].id)}`,
+                chapterId: chapters[chapters.length - 1].id
+            };
+            
+            // Create highlight span
+            const span = document.createElement('span');
+            span.className = `section-highlight section-color-${colorIndex}`;
+            span.textContent = text;
+            span.dataset.sectionId = section.id;
+            
+            // Replace selected text with highlighted span
+            range.deleteContents();
+            range.insertNode(span);
+            
+            // Add section to the last chapter
+            const lastChapter = chapters[chapters.length - 1];
+            lastChapter.sections.push(section);
+            
+            // Update UI
+            updateChaptersList();
+            updateSelectionColor();
+            
+            // Clear selection
+            selection.removeAllRanges();
+        }
+
+        function getNextSectionNumber(chapterId) {
+            const chapter = chapters.find(c => c.id === chapterId);
+            return chapter ? chapter.sections.length + 1 : 1;
+        }
+
+        function updateSectionName(sectionId, newName) {
+            for (const chapter of chapters) {
+                const section = chapter.sections.find(s => s.id === sectionId);
+                if (section) {
+                    section.name = newName;
+                    updateChaptersList();
+                    break;
+                }
+            }
+        }
+
+        function deleteSection(chapterId, sectionId) {
+            const chapter = chapters.find(c => c.id === chapterId);
+            if (chapter) {
+                chapter.sections = chapter.sections.filter(s => s.id !== sectionId);
+                updateChaptersList();
+            }
+        }
+
+        // UI Updates
+        function updateChaptersList() {
+            const sectionsList = document.getElementById('sectionsList');
+            sectionsList.innerHTML = chapters.map(chapter => `
+                <div class="chapter-item" data-chapter-id="${chapter.id}">
+                    <div class="chapter-header" onclick="toggleChapter(${chapter.id})">
+                        <div class="chapter-collapse-icon ${chapter.collapsed ? 'collapsed' : ''}">▼</div>
+                        <div class="color-indicator" style="background-color: var(--section-color-${chapter.colorIndex}); border-color: ${getAccentColor(chapter.colorIndex)}"></div>
+                        <input type="text" value="${chapter.name}" 
+                               onchange="updateChapterName(${chapter.id}, this.value)"
+                               onclick="event.stopPropagation()"
+                               class="chapter-title" />
+                        <div class="chapter-duration">${formatDuration(calculateChapterDuration(chapter))}</div>
+                        <div class="chapter-controls">
+                            <button class="chapter-play-btn" onclick="event.stopPropagation(); toggleChapterPlayback(${chapter.id})">
+                                <i>▶️</i>
+                            </button>
+                            <button onclick="event.stopPropagation(); deleteChapter(${chapter.id})">
+                                <i>🗑️</i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="chapter-audio-player" id="chapter-player-${chapter.id}">
+                        <div class="chapter-audio-controls">
+                            <button class="chapter-play-btn" onclick="toggleChapterPlayback(${chapter.id})">
+                                <i id="chapter-play-icon-${chapter.id}">▶️</i>
+                            </button>
+                            <div class="chapter-audio-time" id="chapter-current-time-${chapter.id}">0:00</div>
+                            <div class="chapter-audio-progress" onclick="seekChapterAudio(event, ${chapter.id})">
+                                <div class="chapter-audio-progress-bar" id="chapter-progress-${chapter.id}"></div>
+                            </div>
+                            <div class="chapter-audio-time" id="chapter-duration-${chapter.id}">0:00</div>
+                        </div>
+                        <div class="chapter-audio-sections" id="chapter-sections-${chapter.id}">
+                            ${chapter.sections.filter(s => s.audioPath).map((section, index, array) => {
+                                const width = (100 / array.length) + '%';
+                                return `<div class="chapter-audio-section" style="width: ${width}" data-section-id="${section.id}"></div>`;
+                            }).join('')}
+                        </div>
+                    </div>
+                    <div class="chapter-sections ${chapter.collapsed ? 'collapsed' : ''}" data-chapter-id="${chapter.id}">
+                        ${chapter.sections.map((section, index) => `
+                            <div class="section-item section-color-${section.colorIndex}" 
+                                 data-section-id="${section.id}"
+                                 data-index="${index}"
+                                 draggable="true"
+                                 ondblclick="navigateToSection(${section.id})"
+                                 title="Double-click to locate in text">
+                    <div class="section-header">
+                                    <div class="drag-handle">⋮⋮</div>
+                        <div class="color-indicator" style="background-color: var(--section-color-${section.colorIndex}); border-color: ${getAccentColor(section.colorIndex)}"></div>
+                        <input type="text" value="${section.name}" 
+                               onchange="updateSectionName(${section.id}, this.value)" 
+                               class="section-name" />
+                        <span class="section-status">${section.status}</span>
+                    </div>
+                    <div class="section-text">${section.text}</div>
+                    <div class="audio-controls">
+                        ${section.audioPath ? `
+                            <audio controls src="${section.audioPath}"></audio>
+                                        <button onclick="removeAudio(${chapter.id}, ${section.id})">Remove Audio</button>
+                        ` : `
+                                        <input type="file" accept="audio/*" onchange="attachAudio(${chapter.id}, ${section.id}, this)">
+                        `}
+                                    <button onclick="deleteSection(${chapter.id}, ${section.id})">Delete Section</button>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `).join('');
+
+            initializeDragAndDrop();
+        }
+
+        function calculateChapterDuration(chapter) {
+            return chapter.sections.reduce((total, section) => {
+                const audio = document.querySelector(`audio[src="${section.audioPath}"]`);
+                return total + (audio ? audio.duration : 0);
+            }, 0);
+        }
+
+        function formatDuration(seconds) {
+            if (!seconds || isNaN(seconds)) return '00:00';
+            const minutes = Math.floor(seconds / 60);
+            const remainingSeconds = Math.floor(seconds % 60);
+            return `${String(minutes).padStart(2, '0')}:${String(remainingSeconds).padStart(2, '0')}`;
+        }
+
+        // Drag and Drop
+        function initializeDragAndDrop() {
+            const draggables = document.querySelectorAll('.section-item');
+            const containers = document.querySelectorAll('.chapter-sections');
+            let draggedElement = null;
+            let placeholder = null;
+
+            draggables.forEach(draggable => {
+                // Handle drag start
+                draggable.addEventListener('dragstart', (e) => {
+                    draggedElement = draggable;
+                    draggable.classList.add('dragging');
+                    
+                    // Create and insert placeholder
+                    placeholder = document.createElement('div');
+                    placeholder.className = 'drag-placeholder';
+                    draggable.parentNode.insertBefore(placeholder, draggable.nextSibling);
+                    
+                    // Set drag data
+                    e.dataTransfer.effectAllowed = 'move';
+                    e.dataTransfer.setData('text/plain', draggable.dataset.sectionId);
+                    
+                    // Set custom drag image (optional)
+                    const dragImage = draggable.cloneNode(true);
+                    dragImage.style.width = draggable.offsetWidth + 'px';
+                    dragImage.style.height = draggable.offsetHeight + 'px';
+                    dragImage.style.transform = 'translateX(-99999px)';
+                    document.body.appendChild(dragImage);
+                    e.dataTransfer.setDragImage(dragImage, 0, 0);
+                    setTimeout(() => document.body.removeChild(dragImage), 0);
+                });
+
+                // Handle drag end
+                draggable.addEventListener('dragend', () => {
+                    draggable.classList.remove('dragging');
+                    if (placeholder && placeholder.parentNode) {
+                        placeholder.parentNode.removeChild(placeholder);
+                    }
+                    draggedElement = null;
+                    placeholder = null;
+                    
+                    // Remove all drag-over classes
+                    document.querySelectorAll('.drag-over').forEach(el => {
+                        el.classList.remove('drag-over');
+                    });
+                });
+            });
+
+            containers.forEach(container => {
+                // Handle drag enter
+                container.addEventListener('dragenter', (e) => {
+                    e.preventDefault();
+                    if (draggedElement && !container.contains(draggedElement)) {
+                        container.classList.add('drag-over');
+                    }
+                });
+
+                // Handle drag leave
+                container.addEventListener('dragleave', (e) => {
+                    e.preventDefault();
+                    if (e.relatedTarget && !container.contains(e.relatedTarget)) {
+                        container.classList.remove('drag-over');
+                    }
+                });
+
+                // Handle drag over
+                container.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    if (!draggedElement) return;
+
+                    const afterElement = getDragAfterElement(container, e.clientY);
+                    
+                    if (placeholder) {
+                        if (afterElement) {
+                            container.insertBefore(placeholder, afterElement);
+                        } else {
+                            container.appendChild(placeholder);
+                        }
+                    }
+                });
+
+                // Handle drop
+                container.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    container.classList.remove('drag-over');
+                    
+                    if (!draggedElement) return;
+                    
+                    const newChapterId = parseInt(container.dataset.chapterId);
+                    const sectionId = parseInt(draggedElement.dataset.sectionId);
+                    const afterElement = getDragAfterElement(container, e.clientY);
+                    
+                    // Calculate new index
+                    let newIndex;
+                    if (afterElement) {
+                        newIndex = parseInt(afterElement.dataset.index);
+                    } else {
+                        const sections = container.querySelectorAll('.section-item');
+                        newIndex = sections.length;
+                    }
+                    
+                    // Move section in the data structure
+                    moveSection(sectionId, newChapterId, newIndex);
+                });
+            });
+        }
+
+        function getDragAfterElement(container, y) {
+            const draggableElements = [...container.querySelectorAll('.section-item:not(.dragging)')];
+            
+            return draggableElements.reduce((closest, child) => {
+                const box = child.getBoundingClientRect();
+                const offset = y - box.top - box.height / 2;
+                
+                if (offset < 0 && offset > closest.offset) {
+                    return { offset: offset, element: child };
+                } else {
+                    return closest;
+                }
+            }, { offset: Number.NEGATIVE_INFINITY }).element;
+        }
+
+        function moveSection(sectionId, newChapterId, newIndex) {
+            let section;
+            let oldChapter;
+            
+            // Find and remove section from old chapter
+            for (const chapter of chapters) {
+                const sectionIndex = chapter.sections.findIndex(s => s.id === sectionId);
+                if (sectionIndex !== -1) {
+                    section = chapter.sections[sectionIndex];
+                    oldChapter = chapter;
+                    chapter.sections.splice(sectionIndex, 1);
+                    break;
+                }
+            }
+            
+            // Add section to new chapter at the specified index
+            if (section) {
+                const newChapter = chapters.find(c => c.id === newChapterId);
+                if (newChapter) {
+                    section.chapterId = newChapterId;
+                    newChapter.sections.splice(newIndex, 0, section);
+                    
+                    // Reinitialize audio players for affected chapters
+                    if (oldChapter) {
+                        const oldPlayer = chapterPlayers.get(oldChapter.id);
+                        if (oldPlayer) {
+                            oldPlayer.stop();
+                            chapterPlayers.delete(oldChapter.id);
+                        }
+                    }
+                    
+                    const newPlayer = chapterPlayers.get(newChapterId);
+                    if (newPlayer) {
+                        newPlayer.stop();
+                        chapterPlayers.delete(newChapterId);
+                    }
+                    
+                    updateChaptersList();
+                }
+            }
+        }
+
+        // Update existing functions
+        async function attachAudio(chapterId, sectionId, input) {
+            const file = input.files[0];
+            if (!file) return;
+            
+            try {
+                const formData = new FormData();
+                formData.append('audio', file);
+                
+                const audioControls = input.parentElement;
+                const loadingSpan = document.createElement('span');
+                loadingSpan.textContent = file.name.toLowerCase().endsWith('.mp3') ? 'Converting and uploading...' : 'Uploading...';
+                audioControls.appendChild(loadingSpan);
+                input.disabled = true;
+                
+                const response = await fetch('/api/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const result = await response.json();
+                if (!result.success) {
+                    throw new Error(result.error);
+                }
+                
+                const chapter = chapters.find(c => c.id === chapterId);
+                const section = chapter?.sections.find(s => s.id === sectionId);
+                if (section) {
+                    section.audioPath = result.path;
+                    section.status = 'done';
+                    updateChaptersList();
+                }
+            } catch (error) {
+                console.error('Error uploading audio:', error);
+                alert('Failed to upload audio file: ' + error.message);
+            } finally {
+                const audioControls = input.parentElement;
+                const loadingSpan = audioControls.querySelector('span');
+                if (loadingSpan) {
+                    audioControls.removeChild(loadingSpan);
+                }
+                input.disabled = false;
+            }
+        }
+
+        function removeAudio(chapterId, sectionId) {
+            const chapter = chapters.find(c => c.id === chapterId);
+            const section = chapter?.sections.find(s => s.id === sectionId);
+            if (section) {
+                section.audioPath = null;
+                section.status = 'pending';
+                
+                // Stop and reset chapter player if it exists
+                const player = chapterPlayers.get(chapterId);
+                if (player) {
+                    player.stop();
+                    chapterPlayers.delete(chapterId);
+                }
+                
+                updateChaptersList();
+            }
+        }
+
+        // Update export function
+        async function startExport() {
+            const status = document.getElementById('status');
+            status.style.display = 'block';
+            status.className = 'status';
+            status.textContent = 'Exporting...';
+            
+            // Collect highlight information
+            const bookContent = document.getElementById('bookContent');
+            const highlights = Array.from(bookContent.querySelectorAll('.section-highlight')).map(highlight => ({
+                text: highlight.textContent,
+                sectionId: highlight.dataset.sectionId,
+                className: highlight.className
+            }));
+            
+            const exportOptions = {
+                exportMetadataFlag: document.getElementById('exportMetadata').checked,
+                exportAudioFlag: document.getElementById('exportAudio').checked,
+                exportBookContentFlag: document.getElementById('exportBookContent').checked,
+                createZipFlag: document.getElementById('createZip').checked,
+                mergeAudioFlag: document.getElementById('mergeAudio').checked,
+                silenceDuration: parseInt(document.getElementById('silenceDuration').value),
+                chapters: chapters.map(chapter => ({
+                    ...chapter,
+                    sections: chapter.sections.map(section => ({
+                        ...section,
+                        chapterName: chapter.name
+                    }))
+                })),
+                bookContent: document.getElementById('bookContent').innerHTML,
+                bookText: bookText,
+                highlights: highlights,
+                version: '1.0'
+            };
+            
+            try {
+                const response = await fetch('/api/export', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(exportOptions)
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    status.className = 'status success';
+                    status.textContent = 'Export completed successfully!';
+                    
+                    if (exportOptions.createZipFlag) {
+                        const downloadLink = document.createElement('a');
+                        downloadLink.href = `/exports/${result.exportId}/audiobook_export.zip`;
+                        downloadLink.download = 'audiobook_export.zip';
+                        downloadLink.click();
+                    } else if (exportOptions.mergeAudioFlag) {
+                        const downloadLink = document.createElement('a');
+                        downloadLink.href = `/exports/${result.exportId}/merged_audiobook.wav`;
+                        downloadLink.download = 'merged_audiobook.wav';
+                        downloadLink.click();
+                    }
+                    
+                    setTimeout(hideExportModal, 2000);
+                } else {
+                    throw new Error(result.error);
+                }
+            } catch (error) {
+                console.error('Export failed:', error);
+                status.className = 'status error';
+                status.textContent = `Export failed: ${error.message}`;
+            }
+        }
+
+        // Initialize when the page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            updateSelectionColor();
+            if (chapters.length === 0) {
+                createNewChapter();
+            }
+        });
+
+        // Update the color cycling
+        function getNextColor() {
+            const nextColor = currentColorIndex;
+            currentColorIndex = currentColorIndex % MAX_COLORS + 1;
+            return nextColor;
+        }
+
+        function updateSelectionColor() {
+            const nextColor = getNextColor();
+            const dot = document.getElementById('nextColorDot');
+            if (dot) {
+                dot.style.backgroundColor = `var(--section-color-${nextColor})`;
+                dot.style.borderColor = getAccentColor(nextColor);
+            }
+        }
+
+        function getAccentColor(colorIndex) {
+            const accentColors = {
+                1: '#ffb74d', // Orange
+                2: '#81c784', // Green
+                3: '#64b5f6', // Blue
+                4: '#f06292', // Pink
+                5: '#a1887f', // Brown
+                6: '#4dd0e1', // Cyan
+                7: '#ba68c8', // Purple
+                8: '#7986cb'  // Indigo
+            };
+            return accentColors[colorIndex] || accentColors[1];
+        }
+
+        async function uploadBook() {
+            const fileInput = document.getElementById('bookFile');
+            const loadingIndicator = document.getElementById('loadingIndicator');
+            const errorMessage = document.getElementById('errorMessage');
+            const bookContent = document.getElementById('bookContent');
+            
+            errorMessage.style.display = 'none';
+            
+            if (!fileInput.files || fileInput.files.length === 0) {
+                errorMessage.textContent = 'Please select a file first.';
+                errorMessage.style.display = 'block';
+                return;
+            }
+
+            const file = fileInput.files[0];
+            
+            if (file.size > 10 * 1024 * 1024) {
+                errorMessage.textContent = 'File is too large. Maximum size is 10MB.';
+                errorMessage.style.display = 'block';
+                return;
+            }
+
+            if (!file.name.toLowerCase().endsWith('.txt')) {
+                errorMessage.textContent = 'Please upload a .txt file.';
+                errorMessage.style.display = 'block';
+                return;
+            }
+
+            loadingIndicator.style.display = 'block';
+            bookContent.textContent = '';
+
+            try {
+                const reader = new FileReader();
+                
+                reader.onload = function(e) {
+                    bookText = e.target.result;
+                    bookContent.textContent = bookText;
+                    chapters = [];
+                    updateChaptersList();
+                    updateSelectionColor(); // Initialize selection color
+                    loadingIndicator.style.display = 'none';
+                    
+                    // Enable smart select button
+                    document.getElementById('smartSelectBtn').disabled = false;
+                };
+                
+                reader.onerror = function(e) {
+                    loadingIndicator.style.display = 'none';
+                    errorMessage.textContent = 'Error reading file. Please try again.';
+                    errorMessage.style.display = 'block';
+                };
+
+                reader.readAsText(file);
+            } catch (error) {
+                loadingIndicator.style.display = 'none';
+                errorMessage.textContent = 'Error uploading file: ' + error.message;
+                errorMessage.style.display = 'block';
+            }
+        }
+
+        // Show selection guide on first visit
+        if (!localStorage.getItem('selectionGuideShown')) {
+            document.getElementById('selectionGuide').style.display = 'block';
+            localStorage.setItem('selectionGuideShown', 'true');
+            
+            setTimeout(() => {
+                document.getElementById('selectionGuide').style.display = 'none';
+            }, 5000);
+        }
+
+        document.getElementById('bookContent').addEventListener('mouseup', function(e) {
+            const selection = window.getSelection();
+            const text = selection.toString().trim();
+            
+            const tools = document.getElementById('selection-tools');
+            const charCounter = document.querySelector('.char-counter');
+            
+            if (text) {
+                const range = selection.getRangeAt(0);
+                const rect = range.getBoundingClientRect();
+                
+                // Update and position the character counter
+                document.getElementById('charCount').textContent = text.length;
+                charCounter.style.display = 'block';
+                charCounter.style.top = (window.scrollY + rect.top - 30) + 'px';
+                charCounter.style.left = (rect.left + rect.width/2) + 'px';
+                charCounter.style.transform = 'translateX(-50%)';
+                
+                // Position the selection tools
+                const viewportHeight = window.innerHeight;
+                const viewportWidth = window.innerWidth;
+                
+                tools.style.display = 'block';
+                tools.style.visibility = 'hidden';  // Hide it while we measure
+                const toolsRect = tools.getBoundingClientRect();
+                
+                // Calculate initial position
+                let top = window.scrollY + rect.bottom + 10;
+                let left = rect.left;
+                
+                // Ensure the tools stay within viewport horizontally
+                if (left + toolsRect.width > viewportWidth - 20) {
+                    left = viewportWidth - toolsRect.width - 20;
+                }
+                if (left < 20) {
+                    left = 20;
+                }
+                
+                // Always show the tools above the selection if we're in the bottom 25% of the viewport
+                const bottomThreshold = viewportHeight * 0.75;
+                if (rect.bottom > bottomThreshold) {
+                    top = window.scrollY + rect.top - toolsRect.height - 10;
+                
+                    // If showing below selection would go off screen, show above
+                    if (top + toolsRect.height > window.scrollY + viewportHeight - 20) {
+                        top = window.scrollY + rect.top - toolsRect.height - 10;
+                    }
+                }
+                
+                // If showing above would go off screen, ensure minimum padding from top
+                if (top < window.scrollY + 20) {
+                    top = window.scrollY + 20;
+                }
+                
+                // Position and show the tools
+                tools.style.top = top + 'px';
+                tools.style.left = left + 'px';
+                tools.style.visibility = 'visible';
+                
+                document.getElementById('selectionLength').textContent = text.length;
+                document.getElementById('selectionPreview').textContent = text;
+            } else {
+                tools.style.display = 'none';
+                charCounter.style.display = 'none';
+            }
+        });
+
+        document.addEventListener('mousedown', function(e) {
+            const tools = document.getElementById('selection-tools');
+            const charCounter = document.querySelector('.char-counter');
+            if (!tools.contains(e.target) && !window.getSelection().toString().trim()) {
+                tools.style.display = 'none';
+                charCounter.style.display = 'none';
+            }
+        });
+
+        document.addEventListener('scroll', function() {
+            const tools = document.getElementById('selection-tools');
+            const charCounter = document.querySelector('.char-counter');
+            if (tools.style.display === 'block') {
+                const selection = window.getSelection();
+                if (selection.toString().trim()) {
+                    const rect = selection.getRangeAt(0).getBoundingClientRect();
+                    
+                    // Update character counter position
+                    charCounter.style.top = (window.scrollY + rect.top - 30) + 'px';
+                    charCounter.style.left = (rect.left + rect.width/2) + 'px';
+                    
+                    // Update tools position
+                    const toolsRect = tools.getBoundingClientRect();
+                    const viewportHeight = window.innerHeight;
+                    const viewportWidth = window.innerWidth;
+                    
+                    let top = window.scrollY + rect.bottom + 10;
+                    let left = rect.left;
+                    
+                    if (left + toolsRect.width > viewportWidth - 20) {
+                        left = viewportWidth - toolsRect.width - 20;
+                    }
+                    if (left < 20) {
+                        left = 20;
+                    }
+                    
+                    const bottomThreshold = viewportHeight * 0.75;
+                    if (rect.bottom > bottomThreshold) {
+                        top = window.scrollY + rect.top - toolsRect.height - 10;
+                        
+                        if (top + toolsRect.height > window.scrollY + viewportHeight - 20) {
+                            top = window.scrollY + rect.top - toolsRect.height - 10;
+                        }
+                    }
+                    
+                    if (top < window.scrollY + 20) {
+                        top = window.scrollY + 20;
+                    }
+                    
+                    tools.style.top = top + 'px';
+                    tools.style.left = left + 'px';
+                }
+            }
+        });
+
+        // Initialize selection color when the page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            updateSelectionColor();
+        });
+
+        function showExportModal() {
+            document.getElementById('exportModal').style.display = 'block';
+            document.body.style.overflow = 'hidden'; // Prevent scrolling behind modal
+        }
+
+        function hideExportModal() {
+            document.getElementById('exportModal').style.display = 'none';
+            document.body.style.overflow = ''; // Restore scrolling
+            document.getElementById('status').style.display = 'none';
+            document.getElementById('status').textContent = '';
+        }
+
+        // Close modal when clicking outside
+        document.getElementById('exportModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                hideExportModal();
+            }
+        });
+
+        // Add these functions to your JavaScript
+        function saveProgress() {
+            // Get all highlights from the book content
+            const bookContent = document.getElementById('bookContent');
+            const highlights = Array.from(bookContent.querySelectorAll('.section-highlight')).map(highlight => ({
+                text: highlight.textContent,
+                sectionId: highlight.dataset.sectionId,
+                className: highlight.className,
+                startOffset: getNodeOffset(highlight),
+                length: highlight.textContent.length
+            }));
+
+            const projectData = {
+                bookText: bookText,
+                chapters: chapters,
+                currentColorIndex: currentColorIndex,
+                highlights: highlights,
+                timestamp: new Date().toISOString(),
+                version: '1.0'
+            };
+
+            // Create and download the JSON file
+            const blob = new Blob([JSON.stringify(projectData, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `audiobook_progress_${new Date().toISOString().split('T')[0]}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        // Helper function to get text node offset
+        function getNodeOffset(node) {
+            const range = document.createRange();
+            range.selectNode(node);
+            return range.startOffset;
+        }
+
+        async function loadProgress(input) {
+            const file = input.files[0];
+            if (!file) return;
+
+            try {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    try {
+                        const projectData = JSON.parse(e.target.result);
+                        
+                        // Validate project data
+                        if (!projectData.version || !projectData.chapters || !projectData.bookText) {
+                            throw new Error('Invalid project file format');
+                        }
+
+                        // Load the book text
+                        bookText = projectData.bookText;
+            const bookContent = document.getElementById('bookContent');
+                        bookContent.textContent = bookText;
+
+                        // Load chapters
+                        chapters = projectData.chapters;
+                        
+                        // Restore color index
+                        if (projectData.currentColorIndex !== undefined) {
+                            currentColorIndex = projectData.currentColorIndex;
+                        }
+
+                        // Restore highlights
+                        if (projectData.highlights && Array.isArray(projectData.highlights)) {
+                            projectData.highlights.forEach(highlight => {
+                                try {
+                                    // Create the highlight element
+                                    const span = document.createElement('span');
+                                    span.className = highlight.className;
+                                    span.textContent = highlight.text;
+                                    span.dataset.sectionId = highlight.sectionId;
+
+                                    // Find the text in the content
+                                    const textNode = findTextNodeWithContent(bookContent, highlight.text);
+                                    if (textNode) {
+            const range = document.createRange();
+                                        range.setStart(textNode, textNode.textContent.indexOf(highlight.text));
+                                        range.setEnd(textNode, textNode.textContent.indexOf(highlight.text) + highlight.text.length);
+                                        range.deleteContents();
+                                        range.insertNode(span);
+                                    }
+                                } catch (highlightError) {
+                                    console.warn('Failed to restore highlight:', highlightError);
+                                }
+                            });
+                        }
+
+                        // Update UI
+                        updateChaptersList();
+                        
+                    } catch (error) {
+                        console.error('Error loading project:', error);
+                        alert('Failed to load project: ' + error.message);
+                    }
+                };
+                reader.readAsText(file);
+            } catch (error) {
+                console.error('Error reading file:', error);
+                alert('Failed to read file: ' + error.message);
+            }
+        }
+
+        // Helper function to find text nodes containing specific content
+        function findTextNodeWithContent(element, searchText) {
+            const walker = document.createTreeWalker(
+                element,
+                NodeFilter.SHOW_TEXT,
+                {
+                    acceptNode: function(node) {
+                        return node.textContent.includes(searchText)
+                            ? NodeFilter.FILTER_ACCEPT
+                            : NodeFilter.FILTER_REJECT;
+                    }
+                }
+            );
+
+            return walker.nextNode();
+        }
+
+        function navigateToSection(sectionId) {
+            // Find the section highlight in the book content
+            const highlight = document.querySelector(`.section-highlight[data-section-id="${sectionId}"]`);
+            if (!highlight) return;
+
+            // Scroll the highlight into view with some padding
+            highlight.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+            // Add flash animation
+            highlight.classList.remove('flash');
+            void highlight.offsetWidth; // Force reflow to restart animation
+            highlight.classList.add('flash');
+
+            // Remove flash class after animation
+            setTimeout(() => {
+                highlight.classList.remove('flash');
+            }, 1000);
+
+            // Update URL hash for direct linking
+            window.location.hash = `section-${sectionId}`;
+        }
+
+        // Handle direct links to sections
+        window.addEventListener('load', function() {
+            if (window.location.hash) {
+                const sectionId = window.location.hash.replace('#section-', '');
+                if (sectionId) {
+                    setTimeout(() => navigateToSection(sectionId), 500);
+                }
+            }
+        });
+
+        // Add this function to handle importing exported content
+        async function importExportedContent(exportId) {
+            try {
+                const response = await fetch(`/exports/${exportId}/metadata.json`);
+                if (!response.ok) throw new Error('Failed to load exported content');
+                
+                const exportData = await response.json();
+                
+                // Validate the export data
+                if (!exportData.version || !exportData.chapters) {
+                    throw new Error('Invalid export format');
+                }
+
+                // Load the book content if available
+                if (exportData.bookContent) {
+                    document.getElementById('bookContent').innerHTML = exportData.bookContent;
+                } else if (exportData.bookText) {
+                    document.getElementById('bookContent').textContent = exportData.bookText;
+                    
+                    // Restore highlights
+                    if (exportData.highlights) {
+                        exportData.highlights.forEach(highlight => {
+                            const span = document.createElement('span');
+                            span.className = highlight.className;
+                            span.textContent = highlight.text;
+                            span.dataset.sectionId = highlight.sectionId;
+                            
+                            // Find the text in the content and replace it with the highlight
+                            const textNode = findTextNodeWithContent(bookContent, highlight.text);
+                            if (textNode) {
+                                const range = document.createRange();
+                                range.setStart(textNode, textNode.textContent.indexOf(highlight.text));
+                                range.setEnd(textNode, textNode.textContent.indexOf(highlight.text) + highlight.text.length);
+                                range.deleteContents();
+                                range.insertNode(span);
+                            }
+                        });
+                    }
+                }
+
+                // Load chapters and sections
+                chapters = exportData.chapters;
+                
+                // Update UI
+                updateChaptersList();
+                
+                return true;
+            } catch (error) {
+                console.error('Import failed:', error);
+                alert('Failed to import content: ' + error.message);
+                return false;
+            }
+        }
+
+        // Chapter Audio Player
+        const chapterPlayers = new Map();
+
+        class ChapterAudioPlayer {
+            constructor(chapterId) {
+                this.chapterId = chapterId;
+                this.currentSectionIndex = 0;
+                this.isPlaying = false;
+                this.audioElements = [];
+                this.currentAudio = null;
+                this.totalDuration = 0;
+                this.currentTime = 0;
+                
+                this.initializeAudio();
+            }
+            
+            initializeAudio() {
+                const chapter = chapters.find(c => c.id === this.chapterId);
+                if (!chapter) return;
+                
+                // Create audio elements for each section
+                this.audioElements = chapter.sections
+                    .filter(s => s.audioPath)
+                    .map(s => {
+                        const audio = new Audio(s.audioPath);
+                        audio.addEventListener('ended', () => this.playNextSection());
+                        audio.addEventListener('timeupdate', () => this.updateProgress());
+                        audio.addEventListener('loadedmetadata', () => {
+                            this.totalDuration += audio.duration;
+                            this.updateDurationDisplay();
+                        });
+                        return audio;
+                    });
+                    
+                // Initialize UI elements
+                this.playerElement = document.getElementById(`chapter-player-${this.chapterId}`);
+                this.progressBar = document.getElementById(`chapter-progress-${this.chapterId}`);
+                this.playIcon = document.getElementById(`chapter-play-icon-${this.chapterId}`);
+                this.currentTimeDisplay = document.getElementById(`chapter-current-time-${this.chapterId}`);
+                this.durationDisplay = document.getElementById(`chapter-duration-${this.chapterId}`);
+                this.sectionsContainer = document.getElementById(`chapter-sections-${this.chapterId}`);
+            }
+            
+            togglePlayback() {
+                if (!this.audioElements.length) return;
+                
+                if (this.isPlaying) {
+                    this.pause();
+                } else {
+                    this.play();
+                }
+            }
+            
+            play() {
+                if (!this.audioElements.length) return;
+                
+                // Stop all other chapter players
+                chapterPlayers.forEach((player, id) => {
+                    if (id !== this.chapterId) player.pause();
+                });
+                
+                this.isPlaying = true;
+                this.playerElement.classList.add('active');
+                this.playIcon.textContent = '⏸️';
+                
+                if (!this.currentAudio) {
+                    this.currentAudio = this.audioElements[this.currentSectionIndex];
+                }
+                
+                this.currentAudio.play();
+                this.updateSectionHighlight();
+            }
+            
+            pause() {
+                if (this.currentAudio) {
+                    this.currentAudio.pause();
+                }
+                this.isPlaying = false;
+                this.playIcon.textContent = '▶️';
+            }
+            
+            playNextSection() {
+                if (this.currentAudio) {
+                    this.currentAudio.pause();
+                    this.currentAudio.currentTime = 0;
+                }
+                
+                this.currentSectionIndex++;
+                if (this.currentSectionIndex < this.audioElements.length) {
+                    this.currentAudio = this.audioElements[this.currentSectionIndex];
+                    if (this.isPlaying) {
+                        this.currentAudio.play();
+                    }
+                    this.updateSectionHighlight();
+                } else {
+                    this.stop();
+                }
+            }
+            
+            stop() {
+                if (this.currentAudio) {
+                    this.currentAudio.pause();
+                    this.currentAudio.currentTime = 0;
+                }
+                this.isPlaying = false;
+                this.currentSectionIndex = 0;
+                this.currentAudio = this.audioElements[0];
+                this.playIcon.textContent = '▶️';
+                this.updateProgress();
+                this.playerElement.classList.remove('active');
+                this.clearSectionHighlight();
+            }
+            
+            seek(percentage) {
+                if (!this.audioElements.length) return;
+                
+                const totalTime = percentage * this.totalDuration;
+                let accumulatedTime = 0;
+                let foundSection = false;
+                
+                // Stop current audio if playing
+                if (this.currentAudio) {
+                    this.currentAudio.pause();
+                    this.currentAudio.currentTime = 0;
+                }
+                
+                // Find the correct section and time
+                for (let i = 0; i < this.audioElements.length; i++) {
+                    const audio = this.audioElements[i];
+                    if (accumulatedTime + audio.duration > totalTime) {
+                        // Clean up previous audio if different section
+                        if (this.currentSectionIndex !== i && this.currentAudio) {
+                            this.currentAudio.pause();
+                            this.currentAudio.currentTime = 0;
+                        }
+                        
+                        this.currentSectionIndex = i;
+                        this.currentAudio = audio;
+                        audio.currentTime = totalTime - accumulatedTime;
+                        
+                        if (this.isPlaying) {
+                            audio.play();
+                        }
+                        
+                        foundSection = true;
+                        break;
+                    }
+                    accumulatedTime += audio.duration;
+                }
+                
+                // If we didn't find a section (clicked at the very end)
+                if (!foundSection && this.audioElements.length > 0) {
+                    this.currentSectionIndex = this.audioElements.length - 1;
+                    this.currentAudio = this.audioElements[this.currentSectionIndex];
+                    this.currentAudio.currentTime = this.currentAudio.duration;
+                }
+                
+                this.updateSectionHighlight();
+                this.updateProgress();
+            }
+            
+            updateProgress() {
+                if (!this.audioElements.length) return;
+                
+                // Calculate total progress
+                let accumulatedTime = 0;
+                for (let i = 0; i < this.currentSectionIndex; i++) {
+                    accumulatedTime += this.audioElements[i].duration;
+                }
+                if (this.currentAudio) {
+                    accumulatedTime += this.currentAudio.currentTime;
+                }
+                
+                // Update progress bar and time display
+                const progress = (accumulatedTime / this.totalDuration) * 100;
+                this.progressBar.style.width = `${progress}%`;
+                this.currentTimeDisplay.textContent = formatDuration(accumulatedTime);
+            }
+            
+            updateDurationDisplay() {
+                this.durationDisplay.textContent = formatDuration(this.totalDuration);
+            }
+            
+            updateSectionHighlight() {
+                const sections = this.sectionsContainer.children;
+                Array.from(sections).forEach((section, index) => {
+                    section.classList.toggle('active', index === this.currentSectionIndex);
+                });
+            }
+            
+            clearSectionHighlight() {
+                const sections = this.sectionsContainer.children;
+                Array.from(sections).forEach(section => section.classList.remove('active'));
+            }
+        }
+
+        function toggleChapterPlayback(chapterId) {
+            let player = chapterPlayers.get(chapterId);
+            if (!player) {
+                player = new ChapterAudioPlayer(chapterId);
+                chapterPlayers.set(chapterId, player);
+            }
+            player.togglePlayback();
+        }
+
+        function seekChapterAudio(event, chapterId) {
+            const player = chapterPlayers.get(chapterId);
+            if (!player) return;
+            
+            const progressBar = event.currentTarget;
+            const rect = progressBar.getBoundingClientRect();
+            const percentage = (event.clientX - rect.left) / rect.width;
+            player.seek(percentage);
+        }
+    </script>
+</body>
+</html> 
