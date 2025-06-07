@@ -28,3 +28,7 @@ Thumbs.db
 # Application specific
 uploads/
 exports/ 
+
+Squirel.txt
+**/__pycache__/
+

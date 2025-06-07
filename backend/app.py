@@ -1,0 +1,79 @@
+from flask import Flask, jsonify
+from flask_cors import CORS
+import os
+
+from .config import config
+from .utils.file_utils import ensure_directories_exist
+from .routes.static_routes import create_static_routes
+from .routes.upload_routes import create_upload_routes
+from .routes.export_routes import create_export_routes
+
+def create_app(config_name='default'):
+    """
+    Create and configure Flask application.
+    Preserves all functionality from original server.py
+    """
+    # Initialize Flask app - exact settings preserved
+    app = Flask(__name__, static_url_path='', static_folder='../frontend')
+    app.config.from_object(config[config_name])
+    
+    # Enable CORS for all routes - exact setting preserved
+    CORS(app)
+    
+    # Debug logging - exact setting preserved
+    app.logger.setLevel('DEBUG')
+    
+    # Ensure directories exist - exact logic preserved
+    ensure_directories_exist(app.config['UPLOAD_FOLDER'], app.config['EXPORT_FOLDER'])
+    
+    # Register routes - preserving exact functionality
+    create_static_routes(app)
+    create_upload_routes(app, app.config['UPLOAD_FOLDER'])
+    create_export_routes(app, app.config['UPLOAD_FOLDER'], app.config['EXPORT_FOLDER'])
+    
+    # Debug route to check all registered routes - exact functionality preserved
+    @app.route('/debug/routes', methods=['GET'])
+    def list_routes():
+        routes = []
+        for rule in app.url_map.iter_rules():
+            routes.append({
+                'endpoint': rule.endpoint,
+                'methods': list(rule.methods),
+                'path': str(rule)
+            })
+        return jsonify(routes)
+    
+    # Test API route - exact functionality preserved
+    @app.route('/api/test', methods=['GET'])
+    def test_api():
+        return jsonify({
+            'success': True,
+            'message': 'API is working'
+        })
+    
+    return app
+
+def run_app():
+    """
+    Run the application.
+    Preserves the exact server startup logic from original server.py
+    """
+    app = create_app()
+    
+    print("\nServer starting...")
+    print(f"Static folder: {app.static_folder}")
+    print(f"Upload folder: {app.config['UPLOAD_FOLDER']}")
+    print(f"Export folder: {app.config['EXPORT_FOLDER']}")
+    print("\nRegistered routes:")
+    for rule in app.url_map.iter_rules():
+        print(f"{rule.endpoint}: {rule.methods} {rule}")
+    print(f"\nStarting server on http://{app.config['HOST']}:{app.config['PORT']}")
+    
+    app.run(
+        host=app.config['HOST'], 
+        port=app.config['PORT'], 
+        debug=app.config['DEBUG']
+    )
+
+if __name__ == '__main__':
+    run_app()

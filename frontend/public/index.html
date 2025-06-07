@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AudioBook Organizer</title>
+    
+    <!-- CSS Files -->
+    <link rel="stylesheet" href="/css/main.css">
+    <link rel="stylesheet" href="/css/components.css">
+    <link rel="stylesheet" href="/css/themes.css">
+</head>
+<body>
+    <div class="main-container">
+        <!-- Left Column - Book Content -->
+        <div class="column">
+            <div class="column-header">
+                <h2>📚 Book Content</h2>
+                <div class="file-upload">
+                    <input type="file" id="bookFile" accept=".txt">
+                    <button onclick="uploadBook()">Upload Book</button>
+                </div>
+                <div id="loadingIndicator" class="loading">Loading book content...</div>
+                <div id="errorMessage" class="error-message"></div>
+            </div>
+            <div class="column-content">
+                <div id="bookContent" class="book-content"></div>
+            </div>
+        </div>
+
+        <!-- Right Column - Sections -->
+        <div class="column">
+            <div class="column-header">
+                <h2>📝 Book Sections</h2>
+                <div class="header-controls">
+                    <button onclick="createNewChapter()" class="create-chapter-btn">
+                        <i>📚</i> New Chapter
+                    </button>
+                    <button onclick="saveProgress()" class="save-btn">
+                        <i>💾</i> Save
+                    </button>
+                    <input type="file" id="loadFile" accept=".json" style="display: none;" onchange="loadProgress(this)">
+                    <button onclick="document.getElementById('loadFile').click()" class="load-btn">
+                        <i>📂</i> Load
+                    </button>
+                    <button onclick="showExportModal()" class="export-btn">
+                        <i>📤</i> Export
+                    </button>
+                </div>
+            </div>
+            <div class="column-content">
+                <div id="sectionsList" class="sections-list"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Export Modal -->
+    <div id="exportModal" class="modal-overlay">
+        <div class="modal">
+            <div class="modal-header">
+                <h2>Export Options</h2>
+                <button class="modal-close" onclick="hideExportModal()">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="export-options">
+                    <label>
+                        <input type="checkbox" id="exportMetadata" checked>
+                        Export metadata (sections, chapters, highlights)
+                    </label>
+                    <label>
+                        <input type="checkbox" id="exportAudio" checked>
+                        Export audio files
+                    </label>
+                    <label>
+                        <input type="checkbox" id="exportBookContent" checked>
+                        Export book content with highlights
+                    </label>
+                    <label>
+                        <input type="checkbox" id="createZip" checked>
+                        Create ZIP archive
+                    </label>
+                    <label>
+                        <input type="checkbox" id="mergeAudio">
+                        Merge audio files
+                    </label>
+                    <div class="silence-duration" style="margin-left: 20px;">
+                        <label>
+                            Silence between sections (seconds):
+                            <input type="number" id="silenceDuration" value="2" min="0" max="10">
+                        </label>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <div id="status" style="display: none;"></div>
+                <button onclick="startExport()">Export</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Selection Tools -->
+    <div id="selection-tools">
+        <div class="selection-tools-content">
+            <div class="selection-info">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span>Selected text (<span id="selectionLength">0</span> characters)</span>
+                    <div class="next-color-preview">
+                        Next color: <div id="nextColorDot" class="color-preview-dot"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="selection-preview" id="selectionPreview"></div>
+            <button class="create-section-btn" onclick="createSection()">
+                <i>➕</i> Create Section
+            </button>
+        </div>
+    </div>
+
+    <!-- Character Counter -->
+    <div class="char-counter">
+        <span id="charCount">0</span> characters
+    </div>
+
+    <!-- Selection Guide Overlay -->
+    <div id="selectionGuide" class="selection-guide">
+        <div class="guide-step">
+            <i>👆</i>
+            <span>Click and drag to select text</span>
+        </div>
+        <div class="guide-step">
+            <i>✨</i>
+            <span>Release to see options</span>
+        </div>
+        <div class="guide-step">
+            <i>➕</i>
+            <span>Click "Create Section" to save</span>
+        </div>
+    </div>
+
+    <!-- JavaScript Files -->
+    <script type="module" src="/js/main.js"></script>
+</body>
+</html> 

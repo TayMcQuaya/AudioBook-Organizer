@@ -1,0 +1,173 @@
+/* AudioBook Organizer - Theme and Color Styles */
+
+/* Section Colors */
+.section-color-1 {
+    background-color: var(--section-color-1) !important;
+    border-left: 4px solid #ffb74d !important;
+}
+
+.section-color-2 {
+    background-color: var(--section-color-2) !important;
+    border-left: 4px solid #81c784 !important;
+}
+
+.section-color-3 {
+    background-color: var(--section-color-3) !important;
+    border-left: 4px solid #64b5f6 !important;
+}
+
+.section-color-4 {
+    background-color: var(--section-color-4) !important;
+    border-left: 4px solid #f06292 !important;
+}
+
+.section-color-5 {
+    background-color: var(--section-color-5) !important;
+    border-left: 4px solid #a1887f !important;
+}
+
+.section-color-6 {
+    background-color: var(--section-color-6) !important;
+    border-left: 4px solid #4dd0e1 !important;
+}
+
+.section-color-7 {
+    background-color: var(--section-color-7) !important;
+    border-left: 4px solid #ba68c8 !important;
+}
+
+.section-color-8 {
+    background-color: var(--section-color-8) !important;
+    border-left: 4px solid #7986cb !important;
+}
+
+/* Selection colors matching section colors */
+.color-1-selection ::selection {
+    background-color: var(--section-color-1) !important;
+}
+
+.color-2-selection ::selection {
+    background-color: var(--section-color-2) !important;
+}
+
+.color-3-selection ::selection {
+    background-color: var(--section-color-3) !important;
+}
+
+.color-4-selection ::selection {
+    background-color: var(--section-color-4) !important;
+}
+
+.color-5-selection ::selection {
+    background-color: var(--section-color-5) !important;
+}
+
+.color-6-selection ::selection {
+    background-color: var(--section-color-6) !important;
+}
+
+.color-7-selection ::selection {
+    background-color: var(--section-color-7) !important;
+}
+
+.color-8-selection ::selection {
+    background-color: var(--section-color-8) !important;
+}
+
+/* Color indicator in sections list */
+.color-indicator {
+    width: 24px;
+    height: 24px;
+    border-radius: var(--radius-sm);
+    margin-right: var(--spacing-sm);
+    border: 1px solid rgba(0,0,0,0.1);
+    flex-shrink: 0;
+}
+
+/* Next color preview */
+.next-color-preview {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 8px;
+    border-radius: var(--radius-sm);
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    background: var(--background-light);
+}
+
+.color-preview-dot {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    border: 1px solid rgba(0,0,0,0.1);
+}
+
+/* Section highlight in book content */
+.section-highlight {
+    cursor: pointer;
+    transition: all 0.2s ease;
+    padding: 2px 0;
+    border-radius: 2px;
+    position: relative;
+}
+
+.section-highlight:hover {
+    filter: brightness(0.95);
+}
+
+.section-highlight::after {
+    content: '';
+    position: absolute;
+    right: -20px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background-color: inherit;
+    border: 1px solid rgba(0,0,0,0.1);
+}
+
+.section-highlight.flash {
+    animation: flash-highlight 1s ease-in-out;
+}
+
+/* Drag and Drop Styles */
+.dragging {
+    opacity: 0.6;
+    cursor: move;
+    box-shadow: var(--shadow-lg);
+    background: white;
+    position: relative;
+    z-index: 100;
+}
+
+.drag-over {
+    border: 2px dashed var(--primary-color);
+    padding: var(--spacing-sm);
+    margin: 8px 0;
+    border-radius: var(--radius-sm);
+    background: rgba(var(--primary-color-rgb), 0.05);
+}
+
+.drag-handle {
+    cursor: move;
+    padding: 4px;
+    margin-right: var(--spacing-sm);
+    color: var(--text-secondary);
+    opacity: 0.6;
+    transition: opacity 0.2s;
+}
+
+.section-item:hover .drag-handle {
+    opacity: 1;
+}
+
+.drag-placeholder {
+    border: 2px dashed var(--border-color);
+    margin: var(--spacing-sm) 0;
+    height: 80px;
+    border-radius: var(--radius-sm);
+    background: rgba(0, 0, 0, 0.02);
+} 

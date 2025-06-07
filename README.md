@@ -216,3 +216,5 @@ python -m venv venv
 .\venv\Scripts\Activate.ps1
 npm start
 
+OR BEST OPTION TO START:
+python app.py

@@ -1,0 +1,116 @@
+/* AudioBook Organizer - Main Styles */
+
+:root {
+    --primary-color: #4CAF50;
+    --primary-hover: #45a049;
+    --border-color: #e0e0e0;
+    --background-light: #f5f5f5;
+    --text-primary: #333;
+    --text-secondary: #666;
+    --shadow-sm: 0 2px 4px rgba(0,0,0,0.1);
+    --shadow-md: 0 4px 6px rgba(0,0,0,0.1);
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --spacing-sm: 10px;
+    --spacing-md: 20px;
+    --primary-color-rgb: 63, 131, 248;
+
+    /* Section Colors */
+    --section-color-1: #fff3e0;  /* Soft Orange */
+    --section-color-2: #e8f5e9;  /* Soft Green */
+    --section-color-3: #e3f2fd;  /* Soft Blue */
+    --section-color-4: #fce4ec;  /* Soft Pink */
+    --section-color-5: #efebe9;  /* Soft Brown */
+    --section-color-6: #e0f7fa;  /* Soft Cyan */
+    --section-color-7: #f3e5f5;  /* Soft Purple */
+    --section-color-8: #e8eaf6;  /* Soft Indigo */
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    margin: 0;
+    padding: var(--spacing-md);
+    background-color: var(--background-light);
+    height: 100vh;
+    overflow: hidden;
+    color: var(--text-primary);
+    line-height: 1.6;
+}
+
+.main-container {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--spacing-md);
+    height: calc(100vh - 40px);
+    max-width: 2000px;
+    margin: 0 auto;
+}
+
+.column {
+    background: white;
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-sm);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.column-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--spacing-md);
+    border-bottom: 1px solid var(--border-color);
+    background: white;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.column-header h2 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: var(--spacing-sm);
+}
+
+.column-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: var(--spacing-md);
+}
+
+/* Animations */
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes flash-highlight {
+    0% { background-color: rgba(255, 255, 0, 0.5); }
+    100% { background-color: inherit; }
+}
+
+/* Scrollbar Styling */
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--background-light);
+}
+
+::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #666;
+} 
