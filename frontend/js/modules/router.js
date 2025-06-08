@@ -187,16 +187,39 @@ class Router {
 
             // Check if we need to load the app HTML shell first
             if (!document.body.classList.contains('app-body')) {
-                // This logic is simplified as the main index.html already sets up the shell.
-                // We just need to ensure the body class is correct.
-                 document.body.className = 'app-body';
+                // Remove landing CSS to prevent conflicts
+                const landingCSS = document.querySelector('link[href="/css/landing.css"]');
+                if (landingCSS) {
+                    landingCSS.remove();
+                }
+                
+                // Clean up any landing page scripts/event listeners
+                const landingScript = document.getElementById('landing-page-script');
+                if (landingScript) {
+                    landingScript.remove();
+                }
+                
+                // Set the correct body class
+                document.body.className = 'app-body';
             }
 
+                    // Only load app HTML if not already loaded (to preserve existing content)
+        if (!appContainer.querySelector('#leftPanel') || !appContainer.querySelector('#rightPanel')) {
             // Fetch and inject the actual app UI
             const response = await fetch('/pages/app/app.html');
             if (!response.ok) throw new Error(`Failed to fetch app page: ${response.status}`);
             const appHtml = await response.text();
-            appContainer.innerHTML = appHtml;
+            
+            // Parse the HTML and extract only the body content
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(appHtml, 'text/html');
+            const bodyContent = doc.body.innerHTML;
+            
+            // Inject only the body content, not the full HTML
+            appContainer.innerHTML = bodyContent;
+        } else {
+            console.log('📱 App already loaded, preserving existing content');
+        }
 
             // Load app scripts if they aren't already loaded
             if (!window.isAppInitialized) {
@@ -205,11 +228,8 @@ class Router {
                 mainScript.src = '/js/main.js';
                 document.head.appendChild(mainScript);
                 window.isAppInitialized = true; 
-            } else {
-                // If already initialized, we might need to re-run some setup
-                const { initializeApp } = await import('/js/modules/appInitialization.js');
-                initializeApp();
             }
+            // Don't re-initialize if already loaded - this clears the content!
             
             console.log('📱 App loaded successfully');
             
@@ -255,6 +275,14 @@ class Router {
     // Handle browser back/forward
     handlePopState(event) {
         const path = event.state?.path || window.location.pathname;
+        
+        // Ignore hash-only changes (like section navigation)
+        // Only handle actual path changes
+        if (path === this.currentRoute) {
+            console.log('📍 Ignoring hash-only navigation change');
+            return;
+        }
+        
         this.handleRoute(path);
     }
     
