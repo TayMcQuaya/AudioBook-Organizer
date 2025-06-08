@@ -3,6 +3,8 @@
 import { chapters, addChapter, removeChapter, findChapter, getNextColor, chapterPlayers } from './state.js';
 import { formatDuration, getAccentColor } from '../utils/helpers.js';
 import { updateChaptersList } from './ui.js';
+import { showConfirm } from './notifications.js';
+import { removeHighlightFromText } from './sections.js';
 
 // Chapter Management - preserving exact logic from original
 export function createNewChapter() {
@@ -36,10 +38,34 @@ export function toggleChapter(chapterId) {
 }
 
 export function deleteChapter(chapterId) {
-    if (confirm('Are you sure you want to delete this chapter and all its sections?')) {
-        removeChapter(chapterId);
-        updateChaptersList();
-    }
+    showConfirm(
+        'Are you sure you want to delete this chapter and all its sections?',
+        () => {
+            // Remove all highlights for this chapter's sections first
+            removeChapterHighlights(chapterId);
+            
+            // Remove the chapter from the data
+            removeChapter(chapterId);
+            updateChaptersList();
+        },
+        null, // No action needed on cancel
+        'Delete Chapter', // Custom confirm text
+        'Cancel' // Custom cancel text
+    );
+}
+
+/**
+ * Removes all visual highlights for sections belonging to a chapter
+ * @param {number} chapterId - The ID of the chapter whose section highlights should be removed
+ */
+function removeChapterHighlights(chapterId) {
+    const chapter = findChapter(chapterId);
+    if (!chapter) return;
+    
+    // Remove highlights for all sections in this chapter
+    chapter.sections.forEach(section => {
+        removeHighlightFromText(section.id);
+    });
 }
 
 export function playChapter(chapterId) {

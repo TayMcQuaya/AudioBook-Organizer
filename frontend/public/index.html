@@ -22,19 +22,28 @@
                 </div>
                 <!-- Smart Select Button -->
                 <div class="smart-select-controls">
-                    <button id="smartSelectBtn" onclick="smartSelect()" disabled>
-                        <i>🎯</i> Smart Select (3000 chars)
-                    </button>
-                    <button id="resetSmartSelectBtn" onclick="resetSmartSelectPosition()" class="reset-btn">
-                        <i>🔄</i> Reset
-                    </button>
-                    <span id="positionIndicator">Position: 0</span>
+                    <div class="smart-select-row">
+                        <input type="number" id="smartSelectChars" value="3000" min="100" max="10000" placeholder="3000" title="Number of characters to select">
+                        <label for="smartSelectChars">chars</label>
+                        <button id="smartSelectBtn" onclick="smartSelect()" disabled>
+                            <i>🎯</i> Smart Select
+                        </button>
+                    </div>
+                    <div class="smart-select-row">
+                        <button id="toggleEditBtn" onclick="toggleEditMode()" class="edit-toggle-btn">
+                            <i>👁</i> <span id="editModeText">View Mode</span>
+                        </button>
+                        <button id="resetSmartSelectBtn" onclick="resetSmartSelectPosition()" class="reset-btn">
+                            <i>🔄</i> Reset
+                        </button>
+                        <!-- <span id="positionIndicator">Position: 0</span> -->
+                    </div>
                 </div>
                 <div id="loadingIndicator" class="loading">Loading book content...</div>
                 <div id="errorMessage" class="error-message"></div>
             </div>
             <div class="column-content">
-                <div id="bookContent" class="book-content"></div>
+                <div id="bookContent" class="book-content" contenteditable="true" spellcheck="false" tabindex="0"></div>
             </div>
         </div>
 

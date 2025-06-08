@@ -6,7 +6,33 @@ import { showError, showWarning } from './notifications.js';
 // Track our position in the text
 let currentPosition = 0;
 
-// Smart selection function - selects up to 3000 characters ending on a period
+// Get cursor position in the text
+function getCursorPosition() {
+    const selection = window.getSelection();
+    if (!selection.rangeCount) {
+        return -1; // No selection/cursor
+    }
+    
+    const range = selection.getRangeAt(0);
+    const bookContent = document.getElementById('bookContent');
+    
+    if (!bookContent || !bookContent.contains(range.startContainer)) {
+        return -1; // Cursor not in book content
+    }
+    
+    // Create a range from the start of bookContent to the cursor position
+    const fullRange = document.createRange();
+    fullRange.setStart(bookContent, 0);
+    fullRange.setEnd(range.startContainer, range.startOffset);
+    
+    // Get the text content up to the cursor position
+    const textToCursor = fullRange.toString();
+    
+    console.log(`Cursor detected at position: ${textToCursor.length}`);
+    return textToCursor.length;
+}
+
+// Smart selection function - selects specified number of characters ending on a period
 export function performSmartSelect() {
     // Get the actual DOM text content to ensure consistency
     const bookContent = document.getElementById('bookContent');
@@ -21,15 +47,31 @@ export function performSmartSelect() {
         return null;
     }
 
+    // Get the desired character count from the input field
+    const charInput = document.getElementById('smartSelectChars');
+    const maxChars = charInput ? parseInt(charInput.value) || 3000 : 3000;
+    
+    console.log(`Smart Select: Using ${maxChars} characters`);
+
+    // Check if user has placed cursor somewhere - use that as starting position
+    let startPos = getCursorPosition();
+    if (startPos === -1) {
+        // No cursor position detected, use current sequential position
+        startPos = currentPosition;
+        console.log('No cursor detected, using sequential position:', startPos);
+    } else {
+        // Update our tracking position to match cursor position
+        currentPosition = startPos;
+        console.log('Using cursor position:', startPos);
+    }
+
     // Check if we've reached the end of the text
-    if (currentPosition >= actualText.length) {
+    if (startPos >= actualText.length) {
         showWarning('Reached the end of the book! Resetting to beginning.');
         resetSmartSelect();
         return null;
     }
-
-    const maxChars = 3000;
-    let startPos = currentPosition;
+    
     let endPos = Math.min(startPos + maxChars, actualText.length);
     
     console.log(`Smart Select: Starting at position ${startPos}, target end ${endPos}`);
@@ -230,7 +272,19 @@ export function highlightSmartSelection(selection) {
                 try {
                     const span = document.createElement('span');
                     span.className = 'smart-selected-text';
-                    range.surroundContents(span);
+                    
+                    // Use a safer approach than surroundContents()
+                    const contents = range.extractContents();
+                    span.appendChild(contents);
+                    range.insertNode(span);
+                    
+                    // Update the range to select the new span content
+                    range.selectNodeContents(span);
+                    
+                    // Update window selection to the new range
+                    const windowSelection = window.getSelection();
+                    windowSelection.removeAllRanges();
+                    windowSelection.addRange(range);
                     
                     // Scroll to the selection
                     span.scrollIntoView({ behavior: 'smooth', block: 'center' });

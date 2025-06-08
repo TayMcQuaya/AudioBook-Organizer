@@ -118,12 +118,40 @@ body {
 /* Smart Select Controls */
 .smart-select-controls {
     display: flex;
-    align-items: center;
-    gap: 15px;
+    flex-direction: column;
+    gap: 10px;
     margin-top: 10px;
     padding: 10px;
     background: rgba(76, 175, 80, 0.1);
     border-radius: 8px;
+}
+
+.smart-select-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+#smartSelectChars {
+    width: 80px;
+    padding: 6px 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+    text-align: center;
+    background: white;
+}
+
+#smartSelectChars:focus {
+    outline: none;
+    border-color: #4CAF50;
+    box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.2);
+}
+
+.smart-select-row label {
+    font-size: 13px;
+    color: #666;
+    font-weight: 500;
 }
 
 #smartSelectBtn {
@@ -185,6 +213,40 @@ body {
     background: linear-gradient(135deg, #ff7043, #ff9800) !important;
     transform: translateY(-1px);
     box-shadow: 0 4px 8px rgba(255, 152, 0, 0.4);
+}
+
+/* Edit Toggle Button */
+.edit-toggle-btn {
+    background: linear-gradient(135deg, #2196F3, #1976D2) !important;
+    color: white;
+    border: none;
+    padding: 8px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 4px rgba(33, 150, 243, 0.3);
+}
+
+.edit-toggle-btn:hover {
+    background: linear-gradient(135deg, #1976D2, #2196F3) !important;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(33, 150, 243, 0.4);
+}
+
+/* Edit Mode Active State */
+.edit-toggle-btn.edit-active {
+    background: linear-gradient(135deg, #FF5722, #E64A19) !important;
+    box-shadow: 0 2px 4px rgba(255, 87, 34, 0.3);
+}
+
+.edit-toggle-btn.edit-active:hover {
+    background: linear-gradient(135deg, #E64A19, #FF5722) !important;
+    box-shadow: 0 4px 8px rgba(255, 87, 34, 0.4);
 }
 
 /* Smart Selection Highlight */

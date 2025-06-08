@@ -268,4 +268,136 @@ export function showWarning(message, duration = 5000) {
 
 export function showError(message, duration = 6000) {
     showNotification(message, 'error', duration);
+}
+
+/**
+ * Shows a confirmation dialog matching the app's design
+ * @param {string} message - The confirmation message
+ * @param {function} onConfirm - Callback function when user confirms
+ * @param {function} onCancel - Callback function when user cancels (optional)
+ * @param {string} confirmText - Text for confirm button (default: "Confirm")
+ * @param {string} cancelText - Text for cancel button (default: "Cancel")
+ */
+export function showConfirm(message, onConfirm, onCancel = null, confirmText = 'Confirm', cancelText = 'Cancel') {
+    // Remove any existing notification
+    removeExistingNotification();
+
+    // Create backdrop overlay
+    const backdrop = document.createElement('div');
+    backdrop.id = 'notification-backdrop';
+    backdrop.className = 'notification-backdrop';
+    
+    // Create confirmation dialog
+    const notification = document.createElement('div');
+    notification.id = 'custom-notification';
+    notification.className = 'notification notification-confirm';
+    
+    notification.innerHTML = `
+        <div class="notification-content">
+            <div class="notification-header">
+                <div class="notification-icon">❓</div>
+                <div class="notification-title">Confirmation Required</div>
+                <button class="notification-close" onclick="cancelConfirm()">×</button>
+            </div>
+            <div class="notification-message">${message}</div>
+            <div class="notification-actions">
+                <button class="notification-btn notification-btn-cancel" onclick="cancelConfirm()">${cancelText}</button>
+                <button class="notification-btn notification-btn-confirm" onclick="confirmAction()">${confirmText}</button>
+            </div>
+        </div>
+    `;
+    
+    // Add to page
+    document.body.appendChild(backdrop);
+    document.body.appendChild(notification);
+    
+    // Add CSS if not already added
+    addNotificationStyles();
+    addConfirmStyles();
+    
+    // Show with animation
+    setTimeout(() => {
+        backdrop.classList.add('notification-backdrop-show');
+        notification.classList.add('notification-show');
+    }, 10);
+    
+    // Make functions global for this dialog
+    window.confirmAction = function() {
+        closeNotification();
+        if (onConfirm) onConfirm();
+        cleanup();
+    };
+    
+    window.cancelConfirm = function() {
+        closeNotification();
+        if (onCancel) onCancel();
+        cleanup();
+    };
+    
+    function cleanup() {
+        delete window.confirmAction;
+        delete window.cancelConfirm;
+    }
+}
+
+/**
+ * Adds CSS styles for confirmation dialogs
+ */
+function addConfirmStyles() {
+    if (document.getElementById('confirm-styles')) {
+        return; // Styles already added
+    }
+    
+    const style = document.createElement('style');
+    style.id = 'confirm-styles';
+    style.textContent = `
+        .notification-confirm {
+            border-left: 4px solid #FF9800;
+        }
+        
+        .notification-actions {
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+            margin-top: 20px;
+            padding-top: 15px;
+            border-top: 1px solid var(--border-color, #e0e0e0);
+        }
+        
+        .notification-btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            min-width: 80px;
+        }
+        
+        .notification-btn-cancel {
+            background: var(--background-light, #f5f5f5);
+            color: var(--text-secondary, #666);
+            border: 1px solid var(--border-color, #e0e0e0);
+        }
+        
+        .notification-btn-cancel:hover {
+            background: #e0e0e0;
+            color: var(--text-primary, #333);
+        }
+        
+        .notification-btn-confirm {
+            background: linear-gradient(135deg, #FF9800, #FF7043);
+            color: white;
+            box-shadow: 0 2px 4px rgba(255, 152, 0, 0.3);
+        }
+        
+        .notification-btn-confirm:hover {
+            background: linear-gradient(135deg, #FF7043, #FF9800);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(255, 152, 0, 0.4);
+        }
+    `;
+    
+    document.head.appendChild(style);
 } 

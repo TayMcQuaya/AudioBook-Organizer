@@ -100,4 +100,19 @@ export function hideExportModal() {
     document.body.style.overflow = ''; // Restore scrolling
     document.getElementById('status').style.display = 'none';
     document.getElementById('status').textContent = '';
+}
+
+// Initialize modal click-outside-to-close functionality
+export function initializeModalHandlers() {
+    // Close modal when clicking outside
+    const exportModal = document.getElementById('exportModal');
+    if (exportModal) {
+        exportModal.addEventListener('click', function(e) {
+            if (e.target === this) {
+                hideExportModal();
+            }
+        });
+    }
+    
+    console.log('Modal handlers initialized');
 } 

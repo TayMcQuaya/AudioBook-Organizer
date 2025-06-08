@@ -16,11 +16,34 @@ export function createSection() {
         text = window.smartSelectionData.text;
         console.log('Using smart selection data for section creation');
         
-        // Try to get the range from the smart selected element
+        // Find and remove the smart selected element, replacing it with plain text
         const smartSelectedElement = document.querySelector('.smart-selected-text');
         if (smartSelectedElement) {
+            // Get the text content before manipulating the DOM
+            const selectedText = smartSelectedElement.textContent;
+            const parent = smartSelectedElement.parentNode;
+            
+            // Create a range that selects only the text content, not the element itself
             selectionRange = document.createRange();
             selectionRange.selectNodeContents(smartSelectedElement);
+            
+            // Store the start and end containers/offsets before DOM manipulation
+            const startContainer = selectionRange.startContainer;
+            const startOffset = selectionRange.startOffset;
+            const endContainer = selectionRange.endContainer;
+            const endOffset = selectionRange.endOffset;
+            
+            // Replace the smart selected element with plain text
+            const textNode = document.createTextNode(selectedText);
+            parent.replaceChild(textNode, smartSelectedElement);
+            
+            // DON'T normalize yet - create the range first
+            // Create a precise range that selects exactly the text we want
+            selectionRange = document.createRange();
+            selectionRange.setStart(textNode, 0);
+            selectionRange.setEnd(textNode, selectedText.length);
+            
+            console.log('Smart selection element removed and replaced with plain text');
         }
     } else {
         // Fall back to regular selection
@@ -61,6 +84,12 @@ export function createSection() {
     // Replace selected text with highlighted span
     selectionRange.deleteContents();
     selectionRange.insertNode(span);
+    
+    // Now normalize the parent to clean up any fragmented text nodes
+    const bookContent = document.getElementById('bookContent');
+    if (bookContent) {
+        bookContent.normalize();
+    }
     
     // Add section to the last chapter
     const lastChapter = chapters[chapters.length - 1];
@@ -135,9 +164,61 @@ export function updateSectionName(sectionId, newName) {
 export function deleteSection(chapterId, sectionId) {
     const chapter = findChapter(chapterId);
     if (chapter) {
+        // Remove the highlighted text from the DOM first
+        removeHighlightFromText(sectionId);
+        
+        // Remove the section from the chapter data
         chapter.sections = chapter.sections.filter(s => s.id !== sectionId);
         updateChaptersList();
     }
+}
+
+/**
+ * Removes the visual highlight for a section from the book content
+ * @param {number} sectionId - The ID of the section to remove highlighting for
+ */
+export function removeHighlightFromText(sectionId) {
+    const bookContent = document.getElementById('bookContent');
+    if (!bookContent) return;
+    
+    // Find the highlighted element for this section
+    const highlight = bookContent.querySelector(`.section-highlight[data-section-id="${sectionId}"]`);
+    if (!highlight) {
+        console.warn(`No highlight found for section ID: ${sectionId}`);
+        return;
+    }
+    
+    console.log(`Removing highlight for section ID: ${sectionId}`);
+    
+    // Store the parent element for cleanup
+    const parent = highlight.parentNode;
+    
+    // Replace the highlighted span with its text content
+    const textNode = document.createTextNode(highlight.textContent);
+    parent.replaceChild(textNode, highlight);
+    
+    // Normalize the parent to merge any adjacent text nodes
+    // This cleans up the DOM structure after removing highlights
+    parent.normalize();
+    
+    console.log(`Highlight successfully removed for section ID: ${sectionId}`);
+}
+
+/**
+ * Removes all section highlights from the book content
+ * Useful for clearing all visual highlights at once
+ */
+export function removeAllHighlights() {
+    const bookContent = document.getElementById('bookContent');
+    if (!bookContent) return;
+    
+    const highlights = bookContent.querySelectorAll('.section-highlight');
+    highlights.forEach(highlight => {
+        const parent = highlight.parentNode;
+        const textNode = document.createTextNode(highlight.textContent);
+        parent.replaceChild(textNode, highlight);
+        parent.normalize();
+    });
 }
 
 export function navigateToSection(sectionId) {
