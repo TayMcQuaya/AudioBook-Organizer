@@ -3,7 +3,7 @@
 import { chapters, findChapter, currentColorIndex, chapterPlayers } from './state.js';
 import { createNewChapter } from './chapters.js';
 import { updateChaptersList, updateSelectionColor } from './ui.js';
-import { showWarning, showError } from './notifications.js';
+import { showWarning, showError, showSuccess } from './notifications.js';
 
 // Section Management - preserving exact logic from original
 export function createSection() {
@@ -148,6 +148,181 @@ export function createSection() {
 export function getNextSectionNumber(chapterId) {
     const chapter = findChapter(chapterId);
     return chapter ? chapter.sections.length + 1 : 1;
+}
+
+// Copy section text to clipboard
+export function copySectionText(sectionId) {
+    // Find the section in all chapters
+    let sectionText = '';
+    for (const chapter of chapters) {
+        const section = chapter.sections.find(s => s.id === sectionId);
+        if (section) {
+            sectionText = section.text;
+            break;
+        }
+    }
+    
+    if (!sectionText) {
+        showError('Section not found!');
+        return;
+    }
+    
+    console.log('Attempting to copy text:', sectionText.substring(0, 50) + '...');
+    
+    // Try multiple copy methods in order of preference
+    if (navigator.clipboard && window.isSecureContext) {
+        // Modern clipboard API (HTTPS required)
+        console.log('Using modern clipboard API');
+        navigator.clipboard.writeText(sectionText).then(() => {
+            showSuccess('📋 Section text copied to clipboard!');
+        }).catch(err => {
+            console.error('Modern clipboard failed:', err);
+            fallbackCopyMethod(sectionText);
+        });
+    } else if (navigator.clipboard) {
+        // Clipboard API exists but not secure context
+        console.log('Clipboard API exists but not secure context, trying anyway');
+        navigator.clipboard.writeText(sectionText).then(() => {
+            showSuccess('📋 Section text copied to clipboard!');
+        }).catch(err => {
+            console.error('Clipboard API failed:', err);
+            fallbackCopyMethod(sectionText);
+        });
+    } else {
+        // Use fallback method
+        console.log('Using fallback copy method');
+        fallbackCopyMethod(sectionText);
+    }
+}
+
+// Improved fallback copy method
+function fallbackCopyMethod(text) {
+    // Try multiple fallback approaches
+    let success = false;
+    
+    // Method 1: Create textarea and select
+    try {
+        const textarea = document.createElement('textarea');
+        textarea.value = text;
+        textarea.style.position = 'absolute';
+        textarea.style.left = '-9999px';
+        textarea.style.top = '0';
+        textarea.style.opacity = '0';
+        textarea.style.pointerEvents = 'none';
+        textarea.setAttribute('readonly', '');
+        
+        document.body.appendChild(textarea);
+        
+        // Select the text
+        textarea.select();
+        textarea.setSelectionRange(0, text.length);
+        
+        // Try to copy
+        const successful = document.execCommand('copy');
+        document.body.removeChild(textarea);
+        
+        if (successful) {
+            console.log('Fallback method 1 succeeded');
+            showSuccess('📋 Section text copied to clipboard!');
+            return;
+        }
+    } catch (err) {
+        console.error('Fallback method 1 failed:', err);
+    }
+    
+    // Method 2: Try with different approach
+    try {
+        const range = document.createRange();
+        const span = document.createElement('span');
+        span.textContent = text;
+        span.style.position = 'absolute';
+        span.style.left = '-9999px';
+        
+        document.body.appendChild(span);
+        range.selectNode(span);
+        
+        const selection = window.getSelection();
+        selection.removeAllRanges();
+        selection.addRange(range);
+        
+        const successful = document.execCommand('copy');
+        selection.removeAllRanges();
+        document.body.removeChild(span);
+        
+        if (successful) {
+            console.log('Fallback method 2 succeeded');
+            showSuccess('📋 Section text copied to clipboard!');
+            return;
+        }
+    } catch (err) {
+        console.error('Fallback method 2 failed:', err);
+    }
+    
+    // If all methods fail, show manual copy option
+    showManualCopyDialog(text);
+}
+
+// Show manual copy dialog as last resort
+function showManualCopyDialog(text) {
+    // Create a modal with the text selected for manual copying
+    const modal = document.createElement('div');
+    modal.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.7);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 10000;
+    `;
+    
+    const dialog = document.createElement('div');
+    dialog.style.cssText = `
+        background: white;
+        padding: 20px;
+        border-radius: 8px;
+        max-width: 500px;
+        width: 90%;
+        max-height: 80%;
+        overflow: hidden;
+    `;
+    
+    dialog.innerHTML = `
+        <h3 style="margin-top: 0;">📋 Copy Text Manually</h3>
+        <p>Your browser doesn't support automatic copying. Please select all the text below and copy it manually (Ctrl+C or Cmd+C):</p>
+        <textarea readonly style="width: 100%; height: 200px; margin: 10px 0; padding: 10px; border: 1px solid #ccc; border-radius: 4px; font-family: monospace; font-size: 14px;">${text}</textarea>
+        <div style="text-align: right;">
+            <button onclick="this.closest('.copy-modal').remove()" style="background: #4CAF50; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer;">Close</button>
+        </div>
+    `;
+    
+    modal.className = 'copy-modal';
+    modal.appendChild(dialog);
+    document.body.appendChild(modal);
+    
+    // Auto-select the text
+    const textarea = dialog.querySelector('textarea');
+    setTimeout(() => {
+        textarea.focus();
+        textarea.select();
+    }, 100);
+    
+    // Close on escape or outside click
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+            modal.remove();
+        }
+    });
+    
+    document.addEventListener('keydown', function closeOnEscape(e) {
+        if (e.key === 'Escape') {
+            modal.remove();
+            document.removeEventListener('keydown', closeOnEscape);
+        }
+    });
 }
 
 export function updateSectionName(sectionId, newName) {

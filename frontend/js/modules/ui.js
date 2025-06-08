@@ -60,6 +60,9 @@ export function updateChaptersList() {
                                    onchange="updateSectionName(${section.id}, this.value)" 
                                    class="section-name" />
                             <span class="section-status">${section.status}</span>
+                            <button class="copy-section-btn" onclick="copySectionText(${section.id})" title="Copy section text">
+                                📋
+                            </button>
                         </div>
                         <div class="section-text">${section.text}</div>
                         <div class="audio-controls">

@@ -142,6 +142,33 @@
     color: var(--text-secondary);
 }
 
+.copy-section-btn {
+    background: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: var(--radius-sm);
+    padding: 4px 8px;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    margin-left: 8px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 30px;
+    height: 24px;
+}
+
+.copy-section-btn:hover {
+    background: #45a049;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.copy-section-btn:active {
+    transform: translateY(0);
+}
+
 .section-text {
     background-color: var(--background-light);
     padding: var(--spacing-md);
