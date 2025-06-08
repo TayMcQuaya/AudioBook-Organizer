@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="AudioBook Creator - Transform your text into professional audiobooks with chapter organization, text-to-speech conversion, and powerful audio management tools.">
+    <title>AudioBook Creator - Transform Text into Audiobooks</title>
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    
+    <!-- Preload critical CSS files -->
+    <link rel="preload" href="/css/main.css" as="style">
+    <link rel="preload" href="/css/components.css" as="style">
+    <link rel="preload" href="/css/themes.css" as="style">
+    <link rel="preload" href="/css/landing.css" as="style">
+    
+    <!-- CSS Files -->
+    <link rel="stylesheet" href="/css/main.css">
+    <link rel="stylesheet" href="/css/components.css">
+    <link rel="stylesheet" href="/css/themes.css">
+    <link rel="stylesheet" href="/css/landing.css">
+    
+    <!-- Preload critical fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    
+    <!-- Add a small inline style to prevent FOUC -->
+    <style>
+        /* Hide content briefly to prevent FOUC */
+        .landing-body:not(.loaded) {
+            visibility: hidden;
+        }
+        .landing-body.loaded {
+            visibility: visible;
+            animation: fadeIn 0.3s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+    </style>
+</head>
+<body class="landing-body">
+    <!-- Navigation -->
+    <nav class="landing-nav">
+        <div class="nav-container">
+            <div class="nav-brand">
+                <span class="brand-icon">📚</span>
+                <span class="brand-text">AudioBook Creator</span>
+            </div>
+            <div class="nav-links">
+                <a href="#home" class="nav-link">Home</a>
+                <a href="#features" class="nav-link">Features</a>
+                <a href="#how-it-works" class="nav-link">How It Works</a>
+                <a href="#demo" class="nav-link">Demo</a>
+                <a href="#pricing" class="nav-link">Pricing</a>
+                <button class="btn btn-primary" onclick="showAuthModal('login')">Sign In</button>
+            </div>
+            <div class="nav-mobile">
+                <button class="mobile-menu-btn" onclick="toggleMobileMenu()">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </button>
+            </div>
+        </div>
+        <div class="mobile-menu" id="mobileMenu">
+            <a href="#home" class="mobile-link">Home</a>
+            <a href="#features" class="mobile-link">Features</a>
+            <a href="#how-it-works" class="mobile-link">How It Works</a>
+            <a href="#demo" class="mobile-link">Demo</a>
+            <a href="#pricing" class="mobile-link">Pricing</a>
+            <button class="btn btn-primary mobile-auth-btn" onclick="showAuthModal('login')">Sign In</button>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section id="home" class="hero">
+        <div class="hero-background">
+            <div class="hero-gradient"></div>
+            <div class="hero-pattern"></div>
+        </div>
+        <div class="hero-container">
+            <div class="hero-content">
+                <h1 class="hero-title">
+                    Transform Your <span class="highlight">Text</span> into <span class="highlight">AudioBooks</span>
+                </h1>
+                <p class="hero-subtitle">
+                    Convert any text into professional audiobooks with intelligent chapter organization, 
+                    text-to-speech conversion, and powerful audio management tools. 
+                    Perfect for authors, content creators, and educators.
+                </p>
+                <div class="hero-actions">
+                    <button class="btn btn-primary btn-large" onclick="showAuthModal('signup')">
+                        <span class="btn-icon">🚀</span>
+                        Get Started Free
+                    </button>
+                    <button class="btn btn-secondary btn-large" onclick="tryAppDemo()">
+                        <span class="btn-icon">📚</span>
+                        Try Demo Now
+                    </button>
+                    <button class="btn btn-outline btn-large" onclick="scrollToDemo()">
+                        <span class="btn-icon">🎥</span>
+                        Learn More
+                    </button>
+                </div>
+                <div class="hero-social-proof">
+                    <div class="social-proof-item">
+                        <span class="proof-number">10K+</span>
+                        <span class="proof-text">Texts Converted</span>
+                    </div>
+                    <div class="social-proof-item">
+                        <span class="proof-number">5K+</span>
+                        <span class="proof-text">Happy Creators</span>
+                    </div>
+                    <div class="social-proof-item">
+                        <span class="proof-number">50+</span>
+                        <span class="proof-text">Hours of Audio</span>
+                    </div>
+                </div>
+            </div>
+            <div class="hero-visual">
+                <div class="hero-app-preview">
+                    <div class="app-window">
+                        <div class="app-header">
+                            <div class="app-controls">
+                                <span class="control close"></span>
+                                <span class="control minimize"></span>
+                                <span class="control maximize"></span>
+                            </div>
+                            <div class="app-title">AudioBook Creator</div>
+                        </div>
+                        <div class="app-content">
+                            <div class="app-sidebar">
+                                <div class="chapter-item active">
+                                    <span class="chapter-icon">📖</span>
+                                    <span class="chapter-title">Chapter 1: Introduction</span>
+                                </div>
+                                <div class="chapter-item">
+                                    <span class="chapter-icon">📄</span>
+                                    <span class="chapter-title">Chapter 2: Getting Started</span>
+                                </div>
+                                <div class="chapter-item">
+                                    <span class="chapter-icon">⚡</span>
+                                    <span class="chapter-title">Chapter 3: Advanced Features</span>
+                                </div>
+                            </div>
+                            <div class="app-main">
+                                <div class="text-content">
+                                    <div class="text-line highlighted-orange">Welcome to AudioBook Creator - Transform Your Text Into Audio</div>
+                                    <div class="text-line">Upload your documents, articles, or manuscripts and watch them come to life.</div>
+                                    <div class="text-line highlighted-green">Key features: Smart text chunking, chapter organization, and natural voice synthesis</div>
+                                    <div class="text-line">Advanced controls for speed, pitch, and voice selection across multiple languages.</div>
+                                    <div class="text-line highlighted-blue">Professional audio export with chapter markers and metadata support</div>
+                                    <div class="text-line">Perfect for authors, content creators, educators, and accessibility needs.</div>
+                                    <div class="text-line highlighted-purple">Drag-and-drop interface makes organization simple and intuitive</div>
+                                    <div class="text-line">Export to MP3, M4A, or professional audiobook formats ready for publishing.</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section id="features" class="features">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title">Powerful Features for Text-to-Audio Conversion</h2>
+                <p class="section-subtitle">
+                    Everything you need to transform text into professional audiobooks with ease
+                </p>
+            </div>
+            <div class="features-grid">
+                <div class="features-carousel" id="featuresCarousel">
+                    <div class="feature-card active" data-feature="chapters">
+                        <div class="feature-icon">📚</div>
+                        <h3 class="feature-title">Chapter Organization</h3>
+                        <p class="feature-description">
+                            Create and manage chapters with intuitive drag-and-drop organization. 
+                            Easily reorder and structure your content.
+                        </p>
+                        <div class="feature-highlights">
+                            <span class="highlight-item">✓ Drag & Drop</span>
+                            <span class="highlight-item">✓ Nested Chapters</span>
+                            <span class="highlight-item">✓ Auto-save</span>
+                        </div>
+                    </div>
+
+                    <div class="feature-card" data-feature="audio">
+                        <div class="feature-icon">🎧</div>
+                        <h3 class="feature-title">Text-to-Speech</h3>
+                        <p class="feature-description">
+                            Convert your text into high-quality audio with natural voices. 
+                            Advanced generation with customizable settings.
+                        </p>
+                        <div class="feature-highlights">
+                            <span class="highlight-item">✓ Natural Voices</span>
+                            <span class="highlight-item">✓ Multiple Languages</span>
+                            <span class="highlight-item">✓ Quality Settings</span>
+                        </div>
+                    </div>
+
+                    <div class="feature-card" data-feature="highlighting">
+                        <div class="feature-icon">🎯</div>
+                        <h3 class="feature-title">Smart Text Highlighting</h3>
+                        <p class="feature-description">
+                            Intelligent text selection with 8-color coding system. 
+                            Perfect for categorizing important content.
+                        </p>
+                        <div class="feature-highlights">
+                            <span class="highlight-item">✓ 8 Color System</span>
+                            <span class="highlight-item">✓ Smart Selection</span>
+                            <span class="highlight-item">✓ Quick Navigation</span>
+                        </div>
+                    </div>
+
+                    <div class="feature-card" data-feature="export">
+                        <div class="feature-icon">📦</div>
+                        <h3 class="feature-title">Export & Publish</h3>
+                        <p class="feature-description">
+                            Export your finished audiobooks in multiple formats 
+                            with chapters, metadata, and cover art.
+                        </p>
+                        <div class="feature-highlights">
+                            <span class="highlight-item">✓ Multiple Formats</span>
+                            <span class="highlight-item">✓ Chapter Markers</span>
+                            <span class="highlight-item">✓ Cover Art</span>
+                        </div>
+                    </div>
+
+                    <div class="feature-card" data-feature="responsive">
+                        <div class="feature-icon">📱</div>
+                        <h3 class="feature-title">Responsive Design</h3>
+                        <p class="feature-description">
+                            Works seamlessly across all devices. Optimized for desktop, 
+                            tablet, and mobile platforms.
+                        </p>
+                        <div class="feature-highlights">
+                            <span class="highlight-item">✓ Mobile Friendly</span>
+                            <span class="highlight-item">✓ Touch Support</span>
+                            <span class="highlight-item">✓ Offline Ready</span>
+                        </div>
+                    </div>
+
+                    <div class="feature-card" data-feature="collaboration">
+                        <div class="feature-icon">👥</div>
+                        <h3 class="feature-title">User Management</h3>
+                        <p class="feature-description">
+                            Secure user accounts with personal libraries. 
+                            Keep your audiobooks organized and private.
+                        </p>
+                        <div class="feature-highlights">
+                            <span class="highlight-item">✓ Secure Login</span>
+                            <span class="highlight-item">✓ Personal Library</span>
+                            <span class="highlight-item">✓ Data Privacy</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- How It Works Section -->
+    <section id="how-it-works" class="how-it-works">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title">How It Works</h2>
+                <p class="section-subtitle">
+                    Convert your text to audiobooks in just four simple steps
+                </p>
+            </div>
+            <div class="steps-container">
+                <div class="step" data-step="1">
+                    <div class="step-number">1</div>
+                    <div class="step-content">
+                        <h3 class="step-title">Upload Your Text</h3>
+                        <p class="step-description">
+                            Simply upload your text file, document, or paste your content directly. 
+                            We support TXT, DOC, PDF, and many other formats.
+                        </p>
+                        <div class="step-visual">
+                            <div class="upload-demo">
+                                <div class="upload-icon">📄</div>
+                                <div class="upload-text">Drag & drop or click to upload</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="step" data-step="2">
+                    <div class="step-number">2</div>
+                    <div class="step-content">
+                        <h3 class="step-title">Organize Chapters</h3>
+                        <p class="step-description">
+                            Create chapters and sections using our smart selection tools. 
+                            Organize your content with drag-and-drop simplicity.
+                        </p>
+                        <div class="step-visual">
+                            <div class="chapters-demo">
+                                <div class="chapter-demo-item">📖 Introduction</div>
+                                <div class="chapter-demo-item">⚡ Getting Started</div>
+                                <div class="chapter-demo-item">🎯 Advanced Topics</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="step" data-step="3">
+                    <div class="step-number">3</div>
+                    <div class="step-content">
+                        <h3 class="step-title">Generate Audio & Highlights</h3>
+                        <p class="step-description">
+                            Convert your text to high-quality audio using our advanced text-to-speech engine.
+                            Use our color-coding system to highlight important content and add emphasis.
+                        </p>
+                        <div class="step-visual">
+                            <div class="audio-demo">
+                                <div class="audio-player">
+                                    <div class="play-button">▶️</div>
+                                    <div class="audio-progress"></div>
+                                    <div class="audio-time">2:34 / 15:42</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="step" data-step="4">
+                    <div class="step-number">4</div>
+                    <div class="step-content">
+                        <h3 class="step-title">Export & Publish</h3>
+                        <p class="step-description">
+                            Export your finished audiobook with professional audio quality, 
+                            chapter markers, and metadata ready for publishing platforms.
+                        </p>
+                        <div class="step-visual">
+                            <div class="export-demo">
+                                <div class="export-option">📦 ZIP Archive</div>
+                                <div class="export-option">🎵 Audio Files</div>
+                                <div class="export-option">📝 Metadata</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Demo Section -->
+    <section id="demo" class="demo">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title">See It In Action</h2>
+                <p class="section-subtitle">
+                    Watch how AudioBook Creator transforms your text into professional audiobooks
+                </p>
+            </div>
+            <div class="demo-container">
+                <div class="demo-video">
+                    <div class="video-placeholder">
+                        <div class="play-button-large" onclick="playDemo()">
+                            <span class="play-icon">▶️</span>
+                        </div>
+                        <div class="video-overlay">
+                            <h3>Interactive Demo</h3>
+                            <p>See all features in action</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="demo-features">
+                    <div class="demo-feature">
+                        <span class="demo-icon">⚡</span>
+                        <span class="demo-text">Smart text selection and highlighting</span>
+                    </div>
+                    <div class="demo-feature">
+                        <span class="demo-icon">🎧</span>
+                        <span class="demo-text">Text-to-speech conversion with natural voices</span>
+                    </div>
+                    <div class="demo-feature">
+                        <span class="demo-icon">📚</span>
+                        <span class="demo-text">Drag & drop chapter organization</span>
+                    </div>
+                    <div class="demo-feature">
+                        <span class="demo-icon">📤</span>
+                        <span class="demo-text">Professional audiobook export and publishing</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Pricing Section -->
+    <section id="pricing" class="pricing">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title">Choose Your Plan</h2>
+                <p class="section-subtitle">
+                    Flexible pricing for authors, content creators, and publishers
+                </p>
+            </div>
+            <div class="pricing-grid">
+                <div class="pricing-card">
+                    <div class="pricing-header">
+                        <h3 class="pricing-title">Free</h3>
+                        <div class="pricing-price">
+                            <span class="price-amount">$0</span>
+                            <span class="price-period">/month</span>
+                        </div>
+                    </div>
+                    <div class="pricing-features">
+                        <div class="pricing-feature">✓ 3 AudioBooks</div>
+                        <div class="pricing-feature">✓ Basic Organization</div>
+                        <div class="pricing-feature">✓ Text Highlighting</div>
+                        <div class="pricing-feature">✓ Export to ZIP</div>
+                        <div class="pricing-feature disabled">✗ Audio Upload</div>
+                        <div class="pricing-feature disabled">✗ Advanced Features</div>
+                    </div>
+                    <button class="btn btn-outline pricing-btn" onclick="showAuthModal('signup', 'free')">
+                        Get Started Free
+                    </button>
+                </div>
+
+                <div class="pricing-card featured">
+                    <div class="pricing-badge">Most Popular</div>
+                    <div class="pricing-header">
+                        <h3 class="pricing-title">Pro</h3>
+                        <div class="pricing-price">
+                            <span class="price-amount">$9</span>
+                            <span class="price-period">/month</span>
+                        </div>
+                    </div>
+                    <div class="pricing-features">
+                        <div class="pricing-feature">✓ Unlimited AudioBooks</div>
+                        <div class="pricing-feature">✓ Audio Upload & Sync</div>
+                        <div class="pricing-feature">✓ Advanced Organization</div>
+                        <div class="pricing-feature">✓ All Export Options</div>
+                        <div class="pricing-feature">✓ Priority Support</div>
+                        <div class="pricing-feature">✓ Early Access Features</div>
+                    </div>
+                    <button class="btn btn-primary pricing-btn" onclick="showAuthModal('signup', 'pro')">
+                        Start Pro Trial
+                    </button>
+                </div>
+
+                <div class="pricing-card">
+                    <div class="pricing-header">
+                        <h3 class="pricing-title">Enterprise</h3>
+                        <div class="pricing-price">
+                            <span class="price-amount">Custom</span>
+                            <span class="price-period">pricing</span>
+                        </div>
+                    </div>
+                    <div class="pricing-features">
+                        <div class="pricing-feature">✓ Everything in Pro</div>
+                        <div class="pricing-feature">✓ Team Collaboration</div>
+                        <div class="pricing-feature">✓ API Access</div>
+                        <div class="pricing-feature">✓ Custom Integration</div>
+                        <div class="pricing-feature">✓ Dedicated Support</div>
+                        <div class="pricing-feature">✓ SLA Guarantee</div>
+                    </div>
+                    <button class="btn btn-outline pricing-btn" onclick="contactSales()">
+                        Contact Sales
+                    </button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <div class="footer-brand">
+                        <span class="brand-icon">📚</span>
+                        <span class="brand-text">AudioBook Creator</span>
+                    </div>
+                    <p class="footer-description">
+                        Transform your text into professional audiobooks. Split content into 
+                        organized chunks, convert to high-quality audio, and publish with ease.
+                    </p>
+                </div>
+                <div class="footer-section">
+                    <h4 class="footer-title">Product</h4>
+                    <a href="#features" class="footer-link">Features</a>
+                    <a href="#pricing" class="footer-link">Pricing</a>
+                    <a href="#demo" class="footer-link">Demo</a>
+                    <a href="/docs" class="footer-link">Documentation</a>
+                </div>
+                <div class="footer-section">
+                    <h4 class="footer-title">Support</h4>
+                    <a href="/help" class="footer-link">Help Center</a>
+                    <a href="/contact" class="footer-link">Contact Us</a>
+                    <a href="/status" class="footer-link">Status</a>
+                    <a href="/api" class="footer-link">API</a>
+                </div>
+                <div class="footer-section">
+                    <h4 class="footer-title">Legal</h4>
+                    <a href="/privacy" class="footer-link">Privacy Policy</a>
+                    <a href="/terms" class="footer-link">Terms of Service</a>
+                    <a href="/security" class="footer-link">Security</a>
+                    <a href="/cookies" class="footer-link">Cookie Policy</a>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p class="footer-copyright">
+                    © 2025 AudioBook Creator. All rights reserved.
+                </p>
+                <div class="footer-social">
+                    <a href="#" class="social-link">Twitter</a>
+                    <a href="#" class="social-link">GitHub</a>
+                    <a href="#" class="social-link">Discord</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Authentication Modal -->
+    <div id="authModal" class="auth-modal">
+        <div class="auth-modal-overlay" onclick="hideAuthModal()"></div>
+        <div class="auth-modal-content">
+            <div class="auth-modal-header">
+                <h3 id="authModalTitle">Welcome Back</h3>
+                <button class="auth-modal-close" onclick="hideAuthModal()">×</button>
+            </div>
+            <div class="auth-modal-body">
+                <div id="authForm">
+                    <!-- Auth form will be inserted here by JavaScript -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="loading-overlay">
+        <div class="loading-spinner">
+            <div class="spinner"></div>
+            <p class="loading-text">Loading...</p>
+        </div>
+    </div>
+
+    <!-- JavaScript Files -->
+    <script type="module" src="/js/modules/landingUI.js"></script>
+    <script type="module" src="/pages/landing/landing.js"></script>
+    
+    <!-- Add script to prevent FOUC -->
+    <script>
+        // Add loaded class once all content is ready
+        document.addEventListener('DOMContentLoaded', function() {
+            document.body.classList.add('loaded');
+        });
+        
+        // Fallback in case DOMContentLoaded already fired
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', function() {
+                document.body.classList.add('loaded');
+            });
+        } else {
+            document.body.classList.add('loaded');
+        }
+    </script>
+</body>
+</html> 

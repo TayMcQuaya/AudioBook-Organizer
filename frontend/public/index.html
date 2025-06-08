@@ -3,162 +3,199 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AudioBook Organizer</title>
+    <meta name="description" content="AudioBook Creator - Transform your text into professional audiobooks with chapter organization, text-to-speech conversion, and powerful audio management tools.">
+    <title>AudioBook Creator - Transform Text into Audiobooks</title>
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    
+    <!-- Preload critical CSS -->
+    <link rel="preload" href="/css/main.css" as="style">
+    <link rel="preload" href="/css/components.css" as="style">
+    <link rel="preload" href="/css/themes.css" as="style">
     
     <!-- CSS Files -->
     <link rel="stylesheet" href="/css/main.css">
     <link rel="stylesheet" href="/css/components.css">
     <link rel="stylesheet" href="/css/themes.css">
+    <link rel="stylesheet" href="/css/landing.css">
+    
+    <!-- Preconnect to external resources -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    
+    <!-- Critical inline styles for initial load -->
+    <style>
+        /* Critical loading styles */
+        .app-loading {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            color: white;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+        }
+        
+        .loading-content {
+            text-align: center;
+            animation: fadeIn 0.5s ease-in-out;
+        }
+        
+        .loading-icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            animation: bounce 2s infinite;
+        }
+        
+        .loading-title {
+            font-size: 2rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+        
+        .loading-subtitle {
+            font-size: 1rem;
+            opacity: 0.8;
+            margin-bottom: 2rem;
+        }
+        
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-top: 3px solid white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+            40% { transform: translateY(-10px); }
+            60% { transform: translateY(-5px); }
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* Hide loading when app is ready */
+        .app-ready .app-loading {
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.5s ease-in-out;
+        }
+        
+        /* Hide app container initially to prevent FOUC */
+        #appContainer {
+            opacity: 0;
+            transition: opacity 0.5s ease-in-out;
+        }
+    </style>
 </head>
 <body>
-    <div class="main-container">
-        <!-- Left Column - Book Content -->
-        <div class="column">
-            <div class="column-header">
-                <h2>📚 Book Content</h2>
-                <div class="file-upload">
-                    <input type="file" id="bookFile" accept=".txt">
-                    <button onclick="uploadBook()">Upload Book</button>
-                </div>
-                <!-- Smart Select Button -->
-                <div class="smart-select-controls">
-                    <div class="smart-select-row">
-                        <input type="number" id="smartSelectChars" value="3000" min="100" max="10000" placeholder="3000" title="Number of characters to select">
-                        <label for="smartSelectChars">chars</label>
-                        <button id="smartSelectBtn" onclick="smartSelect()" disabled>
-                            <i>🎯</i> Smart Select
-                        </button>
-                    </div>
-                    <div class="smart-select-row">
-                        <button id="toggleEditBtn" onclick="toggleEditMode()" class="edit-toggle-btn">
-                            <i>👁</i> <span id="editModeText">View Mode</span>
-                        </button>
-                        <button id="resetSmartSelectBtn" onclick="resetSmartSelectPosition()" class="reset-btn">
-                            <i>🔄</i> Reset
-                        </button>
-                        <!-- <span id="positionIndicator">Position: 0</span> -->
-                    </div>
-                </div>
-                <div id="loadingIndicator" class="loading">Loading book content...</div>
-                <div id="errorMessage" class="error-message"></div>
-            </div>
-            <div class="column-content">
-                <div id="bookContent" class="book-content" contenteditable="true" spellcheck="false" tabindex="0"></div>
-            </div>
-        </div>
-
-        <!-- Right Column - Sections -->
-        <div class="column">
-            <div class="column-header">
-                <h2>📝 Book Sections</h2>
-                <div class="header-controls">
-                    <button onclick="createNewChapter()" class="create-chapter-btn">
-                        <i>📚</i> New Chapter
-                    </button>
-                    <button onclick="saveProgress()" class="save-btn">
-                        <i>💾</i> Save
-                    </button>
-                    <input type="file" id="loadFile" accept=".json" style="display: none;" onchange="loadProgress(this)">
-                    <button onclick="document.getElementById('loadFile').click()" class="load-btn">
-                        <i>📂</i> Load
-                    </button>
-                    <button onclick="showExportModal()" class="export-btn">
-                        <i>📤</i> Export
-                    </button>
-                </div>
-            </div>
-            <div class="column-content">
-                <div id="sectionsList" class="sections-list"></div>
-            </div>
+    <!-- Loading Screen -->
+    <div class="app-loading" id="appLoading">
+        <div class="loading-content">
+            <div class="loading-icon">📚</div>
+                            <h1 class="loading-title">AudioBook Creator</h1>
+            <p class="loading-subtitle">Loading your digital library...</p>
+            <div class="loading-spinner"></div>
         </div>
     </div>
-
-    <!-- Export Modal -->
-    <div id="exportModal" class="modal-overlay">
-        <div class="modal">
-            <div class="modal-header">
-                <h2>Export Options</h2>
-                <button class="modal-close" onclick="hideExportModal()">×</button>
-            </div>
-            <div class="modal-body">
-                <div class="export-options">
-                    <label>
-                        <input type="checkbox" id="exportMetadata" checked>
-                        Export metadata (sections, chapters, highlights)
-                    </label>
-                    <label>
-                        <input type="checkbox" id="exportAudio" checked>
-                        Export audio files
-                    </label>
-                    <label>
-                        <input type="checkbox" id="exportBookContent" checked>
-                        Export book content with highlights
-                    </label>
-                    <label>
-                        <input type="checkbox" id="createZip" checked>
-                        Create ZIP archive
-                    </label>
-                    <label>
-                        <input type="checkbox" id="mergeAudio">
-                        Merge audio files
-                    </label>
-                    <div class="silence-duration" style="margin-left: 20px;">
-                        <label>
-                            Silence between sections (seconds):
-                            <input type="number" id="silenceDuration" value="2" min="0" max="10">
-                        </label>
-                    </div>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <div id="status" style="display: none;"></div>
-                <button onclick="startExport()">Export</button>
-            </div>
-        </div>
+    
+    <!-- Main App Container -->
+    <div id="appContainer">
+        <!-- Content will be loaded here by the router -->
     </div>
+    
+    <!-- Router and Initial Scripts -->
+    <script type="module">
+        import { router } from './js/modules/router.js';
+        
+        // App initialization
+        class AudioBookApp {
+            constructor() {
+                this.isInitialized = false;
+            }
 
-    <!-- Selection Tools -->
-    <div id="selection-tools">
-        <div class="selection-tools-content">
-            <div class="selection-info">
-                <div style="display: flex; justify-content: space-between; align-items: center;">
-                    <span>Selected text (<span id="selectionLength">0</span> characters)</span>
-                    <div class="next-color-preview">
-                        Next color: <div id="nextColorDot" class="color-preview-dot"></div>
-                    </div>
-                </div>
+            async init() {
+                if (this.isInitialized) return;
+
+                console.log('🚀 Initializing AudioBook Creator...');
+                document.body.classList.add('app-loading-state');
+
+                // Wait for a brief moment to ensure loading screen renders.
+                await this.showLoadingScreen();
+                
+                // The router will now handle all page loading.
+                router.init();
+
+                this.isInitialized = true;
+                this.hideLoadingScreen();
+
+                console.log('✅ AudioBook Creator initialized successfully');
+            }
+
+            async showLoadingScreen() {
+                // Ensures the loading screen is visible for at least a moment.
+                return new Promise(resolve => setTimeout(resolve, 500));
+            }
+
+            hideLoadingScreen() {
+                const appLoading = document.getElementById('appLoading');
+                const appContainer = document.getElementById('appContainer');
+
+                document.body.classList.remove('app-loading-state');
+                document.body.classList.add('app-ready');
+                
+                if (appContainer) {
+                    appContainer.style.opacity = '1';
+                }
+
+                if (appLoading) {
+                    appLoading.style.opacity = '0';
+                    setTimeout(() => appLoading.remove(), 500); // Remove after fade out
+                }
+            }
+        }
+
+        // Create and initialize app
+        const app = new AudioBookApp();
+        window.audioBookApp = app;
+
+        // Initialize when the DOM is interactive
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', () => app.init());
+        } else {
+            app.init();
+        }
+    </script>
+    
+    <!-- Fallback for browsers without module support -->
+    <script nomodule>
+        document.getElementById('appLoading').innerHTML = `
+            <div class="loading-content">
+                <div class="loading-icon">⚠️</div>
+                <h1 class="loading-title">Browser Not Supported</h1>
+                <p class="loading-subtitle">
+                    AudioBook Creator requires a modern browser with ES6 module support.<br>
+                    Please update your browser or use Chrome, Firefox, Safari, or Edge.
+                </p>
             </div>
-            <div class="selection-preview" id="selectionPreview"></div>
-            <button class="create-section-btn" onclick="createSection()">
-                <i>➕</i> Create Section
-            </button>
-        </div>
-    </div>
-
-    <!-- Character Counter -->
-    <div class="char-counter">
-        <span id="charCount">0</span> characters
-    </div>
-
-    <!-- Selection Guide Overlay -->
-    <div id="selectionGuide" class="selection-guide">
-        <div class="guide-step">
-            <i>👆</i>
-            <span>Click and drag to select text</span>
-        </div>
-        <div class="horizontal-steps">
-            <div class="guide-step">
-                <i>✨</i>
-                <span>Release to see options</span>
-            </div>
-            <div class="guide-step">
-                <i>➕</i>
-                <span>Click "Create Section" to save</span>
-            </div>
-        </div>
-    </div>
-
-    <!-- JavaScript Files -->
-    <script type="module" src="/js/main.js"></script>
+        `;
+    </script>
 </body>
 </html> 

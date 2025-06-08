@@ -37,8 +37,9 @@ body {
     margin: 0;
     padding: var(--spacing-md);
     background-color: var(--background-light);
-    height: 100vh;
-    overflow: hidden;
+    min-height: 100vh;
+    overflow-y: auto;
+    overflow-x: hidden;
     color: var(--text-primary);
     line-height: 1.6;
 }
@@ -47,7 +48,7 @@ body {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: var(--spacing-md);
-    height: calc(100vh - 40px);
+    min-height: calc(100vh - 40px);
     max-width: 2000px;
     margin: 0 auto;
 }

@@ -22,6 +22,16 @@ def create_static_routes(app):
         """Serve JavaScript files from frontend/js"""
         return send_from_directory('../frontend/js', filename)
 
+    @app.route('/public/<path:filename>')
+    def serve_public(filename):
+        """Serve files from frontend/public"""
+        return send_from_directory('../frontend/public', filename)
+
+    @app.route('/pages/app/<path:filename>')
+    def serve_app_pages(filename):
+        """Serve files from frontend/pages/app"""
+        return send_from_directory('../frontend/pages/app', filename)
+
     @app.route('/<path:filename>')
     def serve_static_files(filename):
         """Serve other static files from frontend root"""

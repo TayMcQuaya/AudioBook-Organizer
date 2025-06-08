@@ -133,7 +133,13 @@ function resetSmartSelectPosition() {
 
 
 // Initialize application when DOM is ready
-document.addEventListener('DOMContentLoaded', initializeApp);
+// Check if DOM is already loaded, otherwise wait for it
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initializeApp);
+} else {
+    // DOM is already loaded, initialize immediately
+    initializeApp();
+}
 
 
 
