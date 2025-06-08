@@ -20,6 +20,16 @@
                     <input type="file" id="bookFile" accept=".txt">
                     <button onclick="uploadBook()">Upload Book</button>
                 </div>
+                <!-- Smart Select Button -->
+                <div class="smart-select-controls">
+                    <button id="smartSelectBtn" onclick="smartSelect()" disabled>
+                        <i>🎯</i> Smart Select (3000 chars)
+                    </button>
+                    <button id="resetSmartSelectBtn" onclick="resetSmartSelectPosition()" class="reset-btn">
+                        <i>🔄</i> Reset
+                    </button>
+                    <span id="positionIndicator">Position: 0</span>
+                </div>
                 <div id="loadingIndicator" class="loading">Loading book content...</div>
                 <div id="errorMessage" class="error-message"></div>
             </div>
@@ -127,13 +137,15 @@
             <i>👆</i>
             <span>Click and drag to select text</span>
         </div>
-        <div class="guide-step">
-            <i>✨</i>
-            <span>Release to see options</span>
-        </div>
-        <div class="guide-step">
-            <i>➕</i>
-            <span>Click "Create Section" to save</span>
+        <div class="horizontal-steps">
+            <div class="guide-step">
+                <i>✨</i>
+                <span>Release to see options</span>
+            </div>
+            <div class="guide-step">
+                <i>➕</i>
+                <span>Click "Create Section" to save</span>
+            </div>
         </div>
     </div>
 

@@ -6,16 +6,39 @@ import { updateChaptersList, updateSelectionColor } from './ui.js';
 
 // Section Management - preserving exact logic from original
 export function createSection() {
-    const selection = window.getSelection();
-    const text = selection.toString().trim();
-    if (!text) return;
+    // Check if we have smart selection data first
+    let text = '';
+    let selectionRange = null;
+    
+    if (window.smartSelectionData) {
+        // Use smart selection data
+        text = window.smartSelectionData.text;
+        console.log('Using smart selection data for section creation');
+        
+        // Try to get the range from the smart selected element
+        const smartSelectedElement = document.querySelector('.smart-selected-text');
+        if (smartSelectedElement) {
+            selectionRange = document.createRange();
+            selectionRange.selectNodeContents(smartSelectedElement);
+        }
+    } else {
+        // Fall back to regular selection
+        const selection = window.getSelection();
+        text = selection.toString().trim();
+        if (selection.rangeCount > 0) {
+            selectionRange = selection.getRangeAt(0);
+        }
+    }
+    
+    if (!text || !selectionRange) {
+        alert('No text selected. Please select some text first.');
+        return;
+    }
 
     // If no chapters exist, create one
     if (chapters.length === 0) {
         createNewChapter();
     }
-
-    const range = selection.getRangeAt(0);
     const colorIndex = currentColorIndex;
     
     // Create section object
@@ -35,8 +58,8 @@ export function createSection() {
     span.dataset.sectionId = section.id;
     
     // Replace selected text with highlighted span
-    range.deleteContents();
-    range.insertNode(span);
+    selectionRange.deleteContents();
+    selectionRange.insertNode(span);
     
     // Add section to the last chapter
     const lastChapter = chapters[chapters.length - 1];
@@ -46,8 +69,25 @@ export function createSection() {
     updateChaptersList();
     updateSelectionColor();
     
-    // Clear selection
-    selection.removeAllRanges();
+    // Clear selection and smart selection data
+    if (window.smartSelectionData) {
+        // Clear smart selection data and hide tools
+        window.smartSelectionData = null;
+        
+        // Hide selection tools
+        const tools = document.getElementById('selection-tools');
+        const charCounter = document.querySelector('.char-counter');
+        if (tools) tools.style.display = 'none';
+        if (charCounter) charCounter.style.display = 'none';
+        
+        // Clear any text selection
+        const windowSelection = window.getSelection();
+        if (windowSelection) windowSelection.removeAllRanges();
+    } else {
+        // Clear regular selection
+        const windowSelection = window.getSelection();
+        if (windowSelection) windowSelection.removeAllRanges();
+    }
 }
 
 export function getNextSectionNumber(chapterId) {

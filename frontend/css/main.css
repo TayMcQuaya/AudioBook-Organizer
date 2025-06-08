@@ -113,4 +113,92 @@ body {
 
 ::-webkit-scrollbar-thumb:hover {
     background: #666;
+}
+
+/* Smart Select Controls */
+.smart-select-controls {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-top: 10px;
+    padding: 10px;
+    background: rgba(76, 175, 80, 0.1);
+    border-radius: 8px;
+}
+
+#smartSelectBtn {
+    background: linear-gradient(135deg, #4CAF50, #45a049);
+    color: white;
+    border: none;
+    padding: 10px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 4px rgba(76, 175, 80, 0.3);
+}
+
+#smartSelectBtn:hover:not(:disabled) {
+    background: linear-gradient(135deg, #45a049, #4CAF50);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(76, 175, 80, 0.4);
+}
+
+#smartSelectBtn:disabled {
+    background: #ccc;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+#positionIndicator {
+    font-size: 13px;
+    color: #666;
+    font-weight: 500;
+    background: white;
+    padding: 6px 12px;
+    border-radius: 4px;
+    border: 1px solid #ddd;
+}
+
+.reset-btn {
+    background: linear-gradient(135deg, #ff9800, #ff7043) !important;
+    color: white;
+    border: none;
+    padding: 8px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 4px rgba(255, 152, 0, 0.3);
+}
+
+.reset-btn:hover {
+    background: linear-gradient(135deg, #ff7043, #ff9800) !important;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(255, 152, 0, 0.4);
+}
+
+/* Smart Selection Highlight */
+.smart-selected-text {
+    background-color: rgba(76, 175, 80, 0.2) !important;
+    border-left: 3px solid #4CAF50;
+    padding-left: 8px;
+    animation: smart-select-pulse 0.8s ease-in-out;
+    display: inline;
+    border-radius: 2px;
+}
+
+@keyframes smart-select-pulse {
+    0% { background-color: rgba(76, 175, 80, 0.4); }
+    50% { background-color: rgba(76, 175, 80, 0.6); }
+    100% { background-color: rgba(76, 175, 80, 0.2); }
 } 

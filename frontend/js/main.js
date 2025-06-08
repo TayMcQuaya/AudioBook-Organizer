@@ -46,6 +46,13 @@ import {
     loadProgress 
 } from './modules/storage.js';
 
+import { 
+    performSmartSelect, 
+    highlightSmartSelection, 
+    resetSmartSelect,
+    initializeSmartSelect 
+} from './modules/smartSelect.js';
+
 import { findTextNodeWithContent } from './utils/helpers.js';
 
 // Make functions globally available for HTML onclick handlers
@@ -67,6 +74,8 @@ window.startExport = startExport;
 window.saveProgress = saveProgress;
 window.loadProgress = loadProgress;
 window.uploadBook = uploadBook;
+window.smartSelect = smartSelect;
+window.resetSmartSelectPosition = resetSmartSelectPosition;
 
 // Book upload function - preserving exact logic from original
 async function uploadBook() {
@@ -111,11 +120,8 @@ async function uploadBook() {
             updateSelectionColor(); // Initialize selection color
             loadingIndicator.style.display = 'none';
             
-            // Enable smart select button if it exists
-            const smartSelectBtn = document.getElementById('smartSelectBtn');
-            if (smartSelectBtn) {
-                smartSelectBtn.disabled = false;
-            }
+            // Initialize smart select functionality
+            initializeSmartSelect();
         };
         
         reader.onerror = function(e) {
@@ -130,6 +136,93 @@ async function uploadBook() {
         errorMessage.textContent = 'Error uploading file: ' + error.message;
         errorMessage.style.display = 'block';
     }
+}
+
+// Smart Select function - automatically selects 3000-character chunks ending on periods
+function smartSelect() {
+    // Perform the smart selection
+    const selection = performSmartSelect();
+    
+    if (selection) {
+        // Highlight the selected text
+        const highlighted = highlightSmartSelection(selection);
+        
+                // Always show selection tools, regardless of highlighting success
+        console.log(`Highlighting result: ${highlighted}`);
+        
+        // Show the selection tools with the smart-selected text
+        const tools = document.getElementById('selection-tools');
+        const charCounter = document.querySelector('.char-counter');
+        
+        if (tools) {
+                // Store smart selection data globally for createSection to access
+                window.smartSelectionData = {
+                    text: selection.text,
+                    startPosition: selection.startPosition,
+                    endPosition: selection.endPosition,
+                    length: selection.length
+                };
+                
+                // Update selection info with full text (not truncated)
+                document.getElementById('selectionLength').textContent = selection.length;
+                document.getElementById('selectionPreview').textContent = selection.text;
+                
+                console.log('Showing centered selection tools...');
+                
+                // Simply show the tools - CSS handles the centering
+                tools.style.display = 'block';
+                
+                console.log('Tools should now be centered via CSS');
+            }
+            
+            if (charCounter) {
+                // Position character counter at top center of viewport for consistency
+                document.getElementById('charCount').textContent = selection.length;
+                charCounter.style.display = 'block';
+                charCounter.style.position = 'fixed';
+                charCounter.style.top = '20px';
+                charCounter.style.left = '50%';
+                charCounter.style.transform = 'translateX(-50%)';
+                charCounter.style.zIndex = '1000';
+                charCounter.style.fontSize = '14px';
+                charCounter.style.padding = '8px 16px';
+                charCounter.style.borderRadius = '20px';
+                charCounter.style.background = 'rgba(76, 175, 80, 0.9)';
+                charCounter.style.color = 'white';
+                charCounter.style.fontWeight = '600';
+                charCounter.style.boxShadow = '0 2px 8px rgba(0,0,0,0.2)';
+                charCounter.style.backdropFilter = 'blur(10px)';
+            }
+            
+        // Show success message if highlighting failed but tools are still shown
+        if (!highlighted) {
+            console.warn('Text highlighting failed, but selection tools are still available');
+        }
+    }
+}
+
+// Reset smart select position function
+function resetSmartSelectPosition() {
+    resetSmartSelect();
+    
+    // Hide selection tools if they're showing
+    const tools = document.getElementById('selection-tools');
+    const charCounter = document.querySelector('.char-counter');
+    
+    if (tools) {
+        tools.style.display = 'none';
+    }
+    
+    if (charCounter) {
+        charCounter.style.display = 'none';
+    }
+    
+    // Clear text selection
+    if (window.getSelection) {
+        window.getSelection().removeAllRanges();
+    }
+    
+    alert('Smart selection position reset to the beginning!');
 }
 
 // Initialize when the page loads - preserving exact logic from original
