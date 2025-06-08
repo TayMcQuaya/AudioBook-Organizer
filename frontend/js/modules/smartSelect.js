@@ -1,6 +1,7 @@
 // AudioBook Organizer - Smart Selection Module
 
 import { bookText } from './state.js';
+import { showError, showWarning } from './notifications.js';
 
 // Track our position in the text
 let currentPosition = 0;
@@ -10,19 +11,19 @@ export function performSmartSelect() {
     // Get the actual DOM text content to ensure consistency
     const bookContent = document.getElementById('bookContent');
     if (!bookContent) {
-        alert('Book content not found!');
+        showError('Book content not found!');
         return null;
     }
     
     const actualText = bookContent.textContent;
     if (!actualText || actualText.length === 0) {
-        alert('Please upload a book first!');
+        showWarning('Please upload a book first!');
         return null;
     }
 
     // Check if we've reached the end of the text
     if (currentPosition >= actualText.length) {
-        alert('Reached the end of the book! Resetting to beginning.');
+        showWarning('Reached the end of the book! Resetting to beginning.');
         resetSmartSelect();
         return null;
     }

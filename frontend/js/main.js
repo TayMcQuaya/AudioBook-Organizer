@@ -54,6 +54,7 @@ import {
 } from './modules/smartSelect.js';
 
 import { findTextNodeWithContent } from './utils/helpers.js';
+import { showSuccess } from './modules/notifications.js';
 
 // Make functions globally available for HTML onclick handlers
 window.createNewChapter = createNewChapter;
@@ -222,7 +223,7 @@ function resetSmartSelectPosition() {
         window.getSelection().removeAllRanges();
     }
     
-    alert('Smart selection position reset to the beginning!');
+    showSuccess('Smart selection position reset to the beginning!');
 }
 
 // Initialize when the page loads - preserving exact logic from original

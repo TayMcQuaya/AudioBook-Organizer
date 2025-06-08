@@ -3,6 +3,7 @@
 import { chapters, findChapter, currentColorIndex, chapterPlayers } from './state.js';
 import { createNewChapter } from './chapters.js';
 import { updateChaptersList, updateSelectionColor } from './ui.js';
+import { showWarning, showError } from './notifications.js';
 
 // Section Management - preserving exact logic from original
 export function createSection() {
@@ -31,7 +32,7 @@ export function createSection() {
     }
     
     if (!text || !selectionRange) {
-        alert('No text selected. Please select some text first.');
+        showWarning('No text selected. Please select some text first.');
         return;
     }
 
@@ -199,7 +200,7 @@ export async function attachAudio(chapterId, sectionId, input) {
         }
     } catch (error) {
         console.error('Error uploading audio:', error);
-        alert('Failed to upload audio file: ' + error.message);
+        showError('Failed to upload audio file: ' + error.message);
     } finally {
         const audioControls = input.parentElement;
         const loadingSpan = audioControls.querySelector('span');

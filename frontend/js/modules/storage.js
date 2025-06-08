@@ -4,6 +4,7 @@ import { bookText, chapters, currentColorIndex, setBookText, setChapters, setCur
 import { updateChaptersList } from './ui.js';
 import { getNodeOffset, findTextNodeWithContent } from '../utils/helpers.js';
 import { createBlob, createObjectURL, revokeObjectURL, createDownloadLink } from '../utils/dom.js';
+import { showError } from './notifications.js';
 
 // Save/Load functions - preserving exact logic from original
 export function saveProgress() {
@@ -91,12 +92,12 @@ export async function loadProgress(input) {
                 
             } catch (error) {
                 console.error('Error loading project:', error);
-                alert('Failed to load project: ' + error.message);
+                showError('Failed to load project: ' + error.message);
             }
         };
         reader.readAsText(file);
     } catch (error) {
         console.error('Error reading file:', error);
-        alert('Failed to read file: ' + error.message);
+        showError('Failed to read file: ' + error.message);
     }
 } 

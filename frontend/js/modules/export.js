@@ -3,6 +3,7 @@
 import { chapters, bookText } from './state.js';
 import { hideExportModal } from './ui.js';
 import { createDownloadLink } from '../utils/dom.js';
+import { showError } from './notifications.js';
 
 // Export function - preserving exact logic from original
 export async function startExport() {
@@ -120,7 +121,7 @@ export async function importExportedContent(exportId) {
         return true;
     } catch (error) {
         console.error('Import failed:', error);
-        alert('Failed to import content: ' + error.message);
+        showError('Failed to import content: ' + error.message);
         return false;
     }
 }
