@@ -44,11 +44,8 @@ function initializeDefaultState() {
     // Update selection color indicator
     updateSelectionColor();
     
-    // Create default chapter if none exist
-    if (chapters.length === 0) {
-        createNewChapter();
-        console.log('Created default chapter');
-    }
+    // Don't create any default chapters - start with clean state
+    console.log('Application initialized with clean state');
 }
 
 // Initialize all modules in correct order
