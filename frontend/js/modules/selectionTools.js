@@ -1,5 +1,7 @@
 // AudioBook Organizer - Selection Tools Module
 
+import { clearSmartSelection } from './smartSelect.js';
+
 // Selection tools positioning and display logic
 
 // Show selection tools with positioning
@@ -76,10 +78,20 @@ export function hideSelectionTools() {
         charCounter.style.display = 'none';
     }
     
+    // Clear smart selection highlights if they exist
+    clearSmartSelection();
+    
     // Clear selection data
     if (window.smartSelectionData) {
         delete window.smartSelectionData;
     }
+    
+    // Clear any text selection
+    if (window.getSelection) {
+        window.getSelection().removeAllRanges();
+    }
+    
+    console.log('Selection tools hidden and highlights cleared');
 }
 
 // Position manual selection tools based on viewport constraints

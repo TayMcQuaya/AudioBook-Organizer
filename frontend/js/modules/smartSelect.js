@@ -165,14 +165,20 @@ export function setCurrentPosition(position) {
 }
 
 // Clear any smart selection highlights from the text
-function clearSmartSelection() {
+export function clearSmartSelection() {
     const bookContent = document.getElementById('bookContent');
     if (bookContent) {
         // Remove smart selection highlighting
         const highlightedElements = bookContent.querySelectorAll('.smart-selected-text');
         highlightedElements.forEach(element => {
-            element.classList.remove('smart-selected-text');
+            // Remove the class and unwrap the content
+            const parent = element.parentNode;
+            const textNode = document.createTextNode(element.textContent);
+            parent.replaceChild(textNode, element);
+            parent.normalize();
         });
+        
+        console.log('Smart selection highlights cleared');
     }
 }
 
