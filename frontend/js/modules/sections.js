@@ -69,8 +69,14 @@ export function createSection() {
     updateChaptersList();
     updateSelectionColor();
     
-    // Clear selection and smart selection data
+    // Update smart selection position and clear selection data
     if (window.smartSelectionData) {
+        // Update smart selection to continue from where this selection ended
+        import('./smartSelect.js').then(({ setCurrentPosition }) => {
+            setCurrentPosition(window.smartSelectionData.endPosition);
+            console.log(`Smart selection updated to continue from position ${window.smartSelectionData.endPosition}`);
+        });
+        
         // Clear smart selection data and hide tools
         window.smartSelectionData = null;
         
@@ -84,8 +90,27 @@ export function createSection() {
         const windowSelection = window.getSelection();
         if (windowSelection) windowSelection.removeAllRanges();
     } else {
-        // Clear regular selection
+        // For manual selections, update smart selection position based on selection end
         const windowSelection = window.getSelection();
+        if (windowSelection && windowSelection.rangeCount > 0) {
+            // Get the book content to calculate position
+            const bookContent = document.getElementById('bookContent');
+            if (bookContent) {
+                const range = windowSelection.getRangeAt(0);
+                const beforeRange = document.createRange();
+                beforeRange.setStart(bookContent, 0);
+                beforeRange.setEnd(range.endContainer, range.endOffset);
+                const textBeforeEnd = beforeRange.toString().length;
+                
+                // Update smart selection position
+                import('./smartSelect.js').then(({ setCurrentPosition }) => {
+                    setCurrentPosition(textBeforeEnd);
+                    console.log(`Smart selection updated to continue from manual selection end at position ${textBeforeEnd}`);
+                });
+            }
+        }
+        
+        // Clear regular selection
         if (windowSelection) windowSelection.removeAllRanges();
     }
 }

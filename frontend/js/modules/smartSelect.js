@@ -252,9 +252,38 @@ export function highlightSmartSelection(selection) {
     return false;
 }
 
+// Find the position after the last created section
+function findLastSectionEndPosition() {
+    const bookContent = document.getElementById('bookContent');
+    if (!bookContent) return 0;
+    
+    // Find all section highlights in the book content
+    const sectionHighlights = bookContent.querySelectorAll('.section-highlight');
+    if (sectionHighlights.length === 0) return 0;
+    
+    // Get the last section highlight
+    const lastSection = sectionHighlights[sectionHighlights.length - 1];
+    
+    // Calculate position after this section
+    const range = document.createRange();
+    range.setStart(bookContent, 0);
+    range.setEndAfter(lastSection);
+    const positionAfterLastSection = range.toString().length;
+    
+    console.log(`Found last section ending at position ${positionAfterLastSection}`);
+    return positionAfterLastSection;
+}
+
 // Initialize smart select when book is loaded
 export function initializeSmartSelect() {
-    resetSmartSelect();
+    // Check if there are existing sections and start from the last one
+    const lastSectionEndPosition = findLastSectionEndPosition();
+    if (lastSectionEndPosition > 0) {
+        setCurrentPosition(lastSectionEndPosition);
+        console.log(`Smart selection initialized to continue from last section at position ${lastSectionEndPosition}`);
+    } else {
+        resetSmartSelect();
+    }
     
     // Enable the smart select button
     const smartSelectBtn = document.getElementById('smartSelectBtn');
