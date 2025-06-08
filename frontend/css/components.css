@@ -631,4 +631,19 @@ button[disabled] {
 
 .chapter-audio-section.active {
     background-color: rgba(var(--primary-color-rgb), 0.2);
-} 
+}
+
+.edit-toggle-btn i,
+.reset-btn i {
+    margin-right: 6px;
+}
+
+.reset-btn {
+    background-color: #ff9800; /* Orange */
+    color: white;
+    margin-left: 8px; /* This will move the button to the right */
+}
+
+.reset-btn:hover {
+    background-color: #e68a00; /* Darker orange on hover */
+}
