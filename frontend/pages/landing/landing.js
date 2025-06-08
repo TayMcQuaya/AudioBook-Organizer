@@ -25,30 +25,17 @@ if (document.readyState === 'loading') {
 }
 
 function initializeLandingPage() {
-    console.log('🚀 Landing page initializing...');
+    console.log('🚀 Landing page initialized');
     
-    // Setup intersection observer for animations
+    // Setup all interactive components
     setupScrollAnimations();
-    
-    // Setup smooth scrolling for navigation links
     setupSmoothScrolling();
-    
-    // Setup mobile menu functionality
     setupMobileMenu();
-    
-    // Setup form validation
     setupFormValidation();
-    
-    // Setup 3D carousel functionality
-    setupFeatureCarousel();
-    
-    // Setup scroll effects
     setupScrollEffects();
-    
-    // Setup app window tilt effect
     setupAppWindowTilt();
     
-    console.log('✅ Landing page initialized successfully');
+    // Add any other setup functions here
 }
 
 // Authentication Modal Functions
@@ -599,9 +586,15 @@ function setupSmoothScrolling() {
                 e.preventDefault();
                 const target = document.querySelector(href);
                 if (target) {
-                    target.scrollIntoView({ behavior: 'smooth' });
+                    target.scrollIntoView({ 
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
                     // Close mobile menu if open
-                    mobileMenu.classList.remove('show');
+                    const mobileMenu = document.getElementById('mobileMenu');
+                    if (mobileMenu) {
+                        mobileMenu.classList.remove('show');
+                    }
                 }
             }
         });
@@ -609,6 +602,9 @@ function setupSmoothScrolling() {
 }
 
 function setupMobileMenu() {
+    const mobileMenu = document.getElementById('mobileMenu');
+    if (!mobileMenu) return;
+    
     // Close mobile menu when clicking outside
     document.addEventListener('click', (e) => {
         if (!e.target.closest('.nav-mobile') && !e.target.closest('.mobile-menu')) {
@@ -620,7 +616,7 @@ function setupMobileMenu() {
     document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') {
             mobileMenu.classList.remove('show');
-            if (isAuthModalOpen) {
+            if (typeof isAuthModalOpen !== 'undefined' && isAuthModalOpen) {
                 hideAuthModal();
             }
         }
@@ -669,107 +665,17 @@ function validateInput(input) {
     }
 }
 
-// 3D Carousel Variables
-let currentSlide = 0;
-let isRotating = false;
-
-function setupFeatureCarousel() {
-    const carousel = document.getElementById('featuresCarousel');
-    if (!carousel) return;
-    
-    // Keyboard navigation
-    document.addEventListener('keydown', (e) => {
-        if (e.key === 'ArrowLeft') {
-            rotateCarousel(-1);
-        } else if (e.key === 'ArrowRight') {
-            rotateCarousel(1);
-        }
-    });
-    
-    console.log('🎠 3D Carousel initialized');
-}
-
-function rotateCarousel(direction) {
-    if (isRotating) return;
-    
-    isRotating = true;
-    const carousel = document.getElementById('featuresCarousel');
-    const cards = carousel.querySelectorAll('.feature-card');
-    const dots = document.querySelectorAll('.carousel-dot');
-    
-    // Update current slide
-    currentSlide = (currentSlide + direction + 6) % 6;
-    
-    // Add rotating class for smoother animation
-    carousel.classList.add('rotating');
-    
-    // Calculate rotation
-    const rotation = currentSlide * -60; // -60 degrees per step
-    carousel.style.transform = `rotateY(${rotation}deg)`;
-    
-    // Update active states
-    cards.forEach((card, index) => {
-        card.classList.toggle('active', index === currentSlide);
-    });
-    
-    dots.forEach((dot, index) => {
-        dot.classList.toggle('active', index === currentSlide);
-    });
-    
-    // Reset rotating state
-    setTimeout(() => {
-        carousel.classList.remove('rotating');
-        isRotating = false;
-    }, 600);
-    
-    // Manual rotation briefly pauses CSS animation
-    carousel.style.animation = 'none';
-    setTimeout(() => {
-        carousel.style.animation = 'autoRotate 40s linear infinite';
-    }, 1000);
-}
-
-function goToSlide(slideIndex) {
-    if (isRotating || slideIndex === currentSlide) return;
-    
-    const direction = slideIndex > currentSlide ? 1 : -1;
-    const steps = Math.abs(slideIndex - currentSlide);
-    
-    // For efficiency, choose shortest path around the circle
-    if (steps > 3) {
-        const shortDirection = direction * -1;
-        const shortSteps = 6 - steps;
-        for (let i = 0; i < shortSteps; i++) {
-            setTimeout(() => rotateCarousel(shortDirection), i * 200);
-        }
-    } else {
-        for (let i = 0; i < steps; i++) {
-            setTimeout(() => rotateCarousel(direction), i * 200);
-        }
-    }
-}
-
-
-
 // Make functions globally available
-window.rotateCarousel = rotateCarousel;
-window.goToSlide = goToSlide;
+window.rotateCarousel = undefined;
+window.goToSlide = undefined;
 
 function setupScrollEffects() {
-    let lastScrollY = window.scrollY;
     const nav = document.querySelector('.landing-nav');
     
     window.addEventListener('scroll', () => {
         const currentScrollY = window.scrollY;
         
-        // Hide/show navigation on scroll
-        if (currentScrollY > lastScrollY && currentScrollY > 100) {
-            nav.style.transform = 'translateY(-100%)';
-        } else {
-            nav.style.transform = 'translateY(0)';
-        }
-        
-        // Update navigation background opacity
+        // Keep navigation always visible - just update background opacity
         if (currentScrollY > 50) {
             nav.style.background = 'rgba(255, 255, 255, 0.95)';
             nav.style.boxShadow = '0 2px 10px rgba(0, 0, 0, 0.1)';
@@ -777,8 +683,6 @@ function setupScrollEffects() {
             nav.style.background = 'rgba(255, 255, 255, 0.9)';
             nav.style.boxShadow = 'none';
         }
-        
-        lastScrollY = currentScrollY;
     });
 }
 

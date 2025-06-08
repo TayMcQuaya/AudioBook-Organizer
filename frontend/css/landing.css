@@ -556,102 +556,74 @@ html {
     display: none;
 }
 
-
-
 .features-grid {
     position: relative;
-    height: 420px;
-    perspective: 1500px;
+    margin-top: 3rem;
+    padding: 2rem 0;
+    width: 100%;
+    height: 800px;
     display: flex;
     justify-content: center;
     align-items: flex-start;
-    margin-top: 5rem;
-    padding-top: 3rem;
+    padding-top: 120px;
+    perspective: 1200px;
+    perspective-origin: center center;
+    overflow: visible;
 }
 
 .features-carousel {
     position: relative;
-    width: 400px;
+    width: 800px;
     height: 400px;
     transform-style: preserve-3d;
-    transition: transform 0.8s cubic-bezier(0.4, 0.0, 0.2, 1);
-    animation: autoRotate 40s linear infinite;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-    will-change: transform;
-}
-
-.features-carousel.rotating {
-    transition-duration: 0.6s;
+    left: 0;
+    transform: translateX(250px);
 }
 
 .features-carousel:hover {
     animation-play-state: paused;
 }
 
-/* Auto-rotate animation */
-@keyframes autoRotate {
-    0% { transform: rotateY(0deg); }
-    100% { transform: rotateY(-360deg); }
+.features-carousel:hover .feature-card {
+    animation-play-state: paused;
 }
 
+/* Each card rotates individually with its own delay */
 .feature-card {
+    position: absolute;
+    width: 280px;
+    height: 420px;
     background: white;
+    border-radius: 15px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
     padding: 1.5rem;
-    border-radius: 12px;
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
-    transition: all 0.6s cubic-bezier(0.4, 0.0, 0.2, 1);
-    border: 1px solid rgba(0, 0, 0, 0.1);
-    position: absolute;
-    overflow: hidden;
-    width: 320px;
-    height: 280px;
-    backface-visibility: hidden;
-    transform-origin: center center;
-    filter: none;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-    transform: translateZ(0);
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: center;
+    text-align: center;
+    border: 2px solid #e0e0e0;
+    transition: all 0.3s ease;
+    
+    /* Each card moves in a circle but stays facing forward */
+    animation: cardRotate 45s linear infinite;
+    animation-delay: calc(var(--rotation) * -45s / 360);
+    transform-origin: 140px 210px -220px;
 }
 
-/* 3D Carousel Positioning - 6 cards in a wider circle with crisp rendering */
-.feature-card:nth-child(1) { transform: rotateY(0deg) translateZ(300px) translateZ(0); }
-.feature-card:nth-child(2) { transform: rotateY(60deg) translateZ(300px) translateZ(0); }
-.feature-card:nth-child(3) { transform: rotateY(120deg) translateZ(300px) translateZ(0); }
-.feature-card:nth-child(4) { transform: rotateY(180deg) translateZ(300px) translateZ(0); }
-.feature-card:nth-child(5) { transform: rotateY(240deg) translateZ(300px) translateZ(0); }
-.feature-card:nth-child(6) { transform: rotateY(300deg) translateZ(300px) translateZ(0); }
+@keyframes cardRotate {
+    from {
+        transform: rotateY(0deg) translateZ(220px);
+    }
+    to {
+        transform: rotateY(360deg) translateZ(220px);
+    }
+}
 
-/* Active card styling */
-.feature-card.active {
-    box-shadow: 0 15px 40px rgba(76, 175, 80, 0.3);
+.feature-card:hover {
+    animation-play-state: paused;
+    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.3);
     z-index: 10;
-}
-
-/* All cards have crystal clear visibility */
-.feature-card {
-    opacity: 1 !important;
-}
-
-/* Active card styling */
-.feature-card.active {
-    z-index: 10;
-}
-
-.feature-card::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 4px;
-    background: linear-gradient(90deg, var(--primary-color), #45a049);
-    transform: scaleX(0);
-    transition: transform var(--animation-duration) var(--animation-ease);
-}
-
-.feature-card:hover::before {
-    transform: scaleX(1);
 }
 
 .feature-icon {
@@ -1328,39 +1300,38 @@ html {
     }
     
     .features-grid {
-        height: auto;
-        perspective: none;
-        display: block;
+        height: 650px;
+        padding-top: 80px;
+        perspective: 800px;
+        perspective-origin: center center;
+        overflow: visible;
     }
     
     .features-carousel {
-        position: static;
-        width: 100%;
-        height: auto;
-        transform-style: flat;
-        transform: none !important;
-        animation: none !important;
+        width: 500px;
+        height: 300px;
+        transform: translateX(150px);
     }
     
     .feature-card {
-        position: static;
-        width: 100%;
-        height: auto;
-        transform: none !important;
-        opacity: 1 !important;
-        margin-bottom: 1.5rem;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        width: 220px;
+        height: 320px;
+        padding: 1rem;
+        transform-origin: 110px 160px -220px;
     }
     
-    .feature-card .feature-description {
-        font-size: 1rem;
-        line-height: 1.6;
-        margin-bottom: 1.5rem;
+    .feature-card:hover {
+        animation-play-state: paused;
+        box-shadow: 0 15px 40px rgba(0, 0, 0, 0.3);
+        z-index: 10;
     }
     
-    .feature-card .highlight-item {
-        font-size: 0.875rem;
-        padding: 0.25rem 0.75rem;
+    .feature-title {
+        font-size: 1.2rem;
+    }
+    
+    .feature-description {
+        font-size: 0.9rem;
     }
     
     .carousel-nav {
@@ -1430,8 +1401,28 @@ html {
         font-size: 1rem;
     }
     
+    .features-grid {
+        height: 550px;
+        padding-top: 60px;
+        perspective: 600px;
+        perspective-origin: center center;
+        overflow: visible;
+    }
+    
+    .features-carousel {
+        transform: translateX(80px);
+    }
+    
     .feature-card {
-        padding: 1.5rem;
+        width: 200px;
+        height: 300px;
+        transform-origin: 100px 150px -200px;
+    }
+    
+    .feature-card:hover {
+        animation-play-state: paused;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        z-index: 10;
     }
 }
 
@@ -1483,9 +1474,7 @@ html {
         margin-bottom: 2.5rem; /* Tighter spacing */
     }
     
-    .features-grid {
-        gap: 1.5rem; /* Reduce grid gap */
-    }
+    /* Features grid is now 3D carousel, no grid gap needed */
     
     .steps-container {
         gap: 2rem; /* Reduce step gap */
@@ -1511,9 +1500,9 @@ html {
 }
 
 @media (prefers-reduced-motion: reduce) {
-    *,
-    *::before,
-    *::after {
+    *:not(.features-carousel),
+    *:not(.features-carousel)::before,
+    *:not(.features-carousel)::after {
         animation-duration: 0.01ms !important;
         animation-iteration-count: 1 !important;
         transition-duration: 0.01ms !important;
@@ -1521,5 +1510,10 @@ html {
     
     .hero-pattern {
         animation: none;
+    }
+    
+    /* Keep 3D carousel animation even with reduced motion preference */
+    .feature-card {
+        animation: cardRotate 45s linear infinite !important;
     }
 } 
