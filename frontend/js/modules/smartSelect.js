@@ -5,6 +5,8 @@ import { showError, showWarning } from './notifications.js';
 
 // Track our position in the text
 let currentPosition = 0;
+let userHasManuallyClickedCursor = false;
+let manualCursorPosition = -1;
 
 // Get cursor position in the text
 function getCursorPosition() {
@@ -20,16 +22,58 @@ function getCursorPosition() {
         return -1; // Cursor not in book content
     }
     
-    // Create a range from the start of bookContent to the cursor position
-    const fullRange = document.createRange();
-    fullRange.setStart(bookContent, 0);
-    fullRange.setEnd(range.startContainer, range.startOffset);
+    try {
+        // Create a range from the start of bookContent to the cursor position
+        const fullRange = document.createRange();
+        fullRange.setStart(bookContent, 0);
+        fullRange.setEnd(range.startContainer, range.startOffset);
+        
+        // Get the text content up to the cursor position
+        const textToCursor = fullRange.toString();
+        
+        console.log(`Cursor detected at position: ${textToCursor.length}`);
+        return textToCursor.length;
+    } catch (error) {
+        console.warn('Error getting cursor position:', error);
+        return -1;
+    }
+}
+
+// Alternative method to get cursor position using mouse coordinates
+function getCursorPositionFromEvent(event) {
+    const bookContent = document.getElementById('bookContent');
+    if (!bookContent) return -1;
     
-    // Get the text content up to the cursor position
-    const textToCursor = fullRange.toString();
-    
-    console.log(`Cursor detected at position: ${textToCursor.length}`);
-    return textToCursor.length;
+    try {
+        // Use caretRangeFromPoint to get cursor position from mouse coordinates
+        let range;
+        if (document.caretRangeFromPoint) {
+            range = document.caretRangeFromPoint(event.clientX, event.clientY);
+        } else if (document.caretPositionFromPoint) {
+            const caretPos = document.caretPositionFromPoint(event.clientX, event.clientY);
+            if (caretPos) {
+                range = document.createRange();
+                range.setStart(caretPos.offsetNode, caretPos.offset);
+                range.collapse(true);
+            }
+        }
+        
+        if (!range || !bookContent.contains(range.startContainer)) {
+            return -1;
+        }
+        
+        // Create a range from the start of bookContent to the cursor position
+        const fullRange = document.createRange();
+        fullRange.setStart(bookContent, 0);
+        fullRange.setEnd(range.startContainer, range.startOffset);
+        
+        const position = fullRange.toString().length;
+        console.log(`Cursor position from event: ${position}`);
+        return position;
+    } catch (error) {
+        console.warn('Error getting cursor position from event:', error);
+        return -1;
+    }
 }
 
 // Smart selection function - selects specified number of characters ending on a period
@@ -53,16 +97,23 @@ export function performSmartSelect() {
     
     console.log(`Smart Select: Using ${maxChars} characters`);
 
-    // Check if user has placed cursor somewhere - use that as starting position
-    let startPos = getCursorPosition();
-    if (startPos === -1) {
-        // No cursor position detected, use current sequential position
-        startPos = currentPosition;
-        console.log('No cursor detected, using sequential position:', startPos);
-    } else {
-        // Update our tracking position to match cursor position
+    // Check if user has manually placed cursor - use that as starting position
+    let startPos;
+    console.log(`Smart Select Debug - userHasManuallyClickedCursor: ${userHasManuallyClickedCursor}, manualCursorPosition: ${manualCursorPosition}`);
+    
+    if (userHasManuallyClickedCursor && manualCursorPosition !== -1) {
+        // Use the stored manual cursor position
+        startPos = manualCursorPosition;
         currentPosition = startPos;
-        console.log('Using cursor position:', startPos);
+        console.log('✓ Using stored manual cursor position:', startPos);
+        
+        // Reset manual cursor tracking after using it
+        userHasManuallyClickedCursor = false;
+        manualCursorPosition = -1;
+    } else {
+        // No manual cursor, use current sequential position
+        startPos = currentPosition;
+        console.log('✗ No manual cursor detected, using sequential position:', startPos);
     }
 
     // Check if we've reached the end of the text
@@ -82,21 +133,21 @@ export function performSmartSelect() {
         // Get the chunk we're considering from the actual DOM text
         let chunk = actualText.substring(startPos, endPos);
         
-        // Find the last period in this chunk
-        let lastPeriodIndex = -1;
+        // Find the last line break in this chunk (looking for \n or \r\n)
+        let lastLineBreakIndex = -1;
         for (let i = chunk.length - 1; i >= 0; i--) {
-            if (chunk[i] === '.') {
-                lastPeriodIndex = i;
+            if (chunk[i] === '\n') {
+                lastLineBreakIndex = i;
                 break;
             }
         }
         
-        if (lastPeriodIndex !== -1) {
-            // Adjust end position to include the period
-            endPos = startPos + lastPeriodIndex + 1;
-            console.log(`Found period at chunk index ${lastPeriodIndex}, adjusting end to ${endPos}`);
+        if (lastLineBreakIndex !== -1) {
+            // Adjust end position to include the line break
+            endPos = startPos + lastLineBreakIndex + 1;
+            console.log(`Found line break at chunk index ${lastLineBreakIndex}, adjusting end to ${endPos}`);
         } else {
-            console.log('No period found in chunk, keeping full chunk');
+            console.log('No line break found in chunk, keeping full chunk');
         }
     }
     
@@ -118,11 +169,8 @@ export function performSmartSelect() {
         length: finalText.length
     };
 
-    // Update position for next selection
-    currentPosition = endPos;
-    
-    // Update the position indicator (use actual text length)
-    updatePositionIndicator(actualText.length);
+    // Don't update position yet - only advance after section is created
+    // The position will be updated when advanceSmartSelectPosition() is called
     
     return selection;
 }
@@ -162,6 +210,23 @@ export function setCurrentPosition(position) {
     const actualTextLength = bookContent ? bookContent.textContent.length : bookText.length;
     currentPosition = Math.max(0, Math.min(position, actualTextLength));
     updatePositionIndicator(actualTextLength);
+}
+
+// Advance smart selection position (call this when a section is actually created)
+export function advanceSmartSelectPosition(endPosition) {
+    // Update position to continue from the end of the created section
+    currentPosition = endPosition;
+    
+    // Clear any manual cursor tracking - once a section is created, we continue sequentially
+    userHasManuallyClickedCursor = false;
+    manualCursorPosition = -1;
+    
+    // Get actual DOM text length for position indicator
+    const bookContent = document.getElementById('bookContent');
+    const actualTextLength = bookContent ? bookContent.textContent.length : bookText.length;
+    updatePositionIndicator(actualTextLength);
+    
+    console.log(`Smart selection position advanced to: ${currentPosition} (manual cursor tracking cleared)`);
 }
 
 // Clear any smart selection highlights from the text
@@ -337,6 +402,35 @@ function findLastSectionEndPosition() {
 
 // Initialize smart select when book is loaded
 export function initializeSmartSelect() {
+    // Reset manual cursor tracking on initialization
+    userHasManuallyClickedCursor = false;
+    manualCursorPosition = -1;
+    
+    // Add multiple listeners to detect manual cursor placement
+    const bookContent = document.getElementById('bookContent');
+    if (bookContent) {
+        // Remove existing listeners if any
+        bookContent.removeEventListener('click', handleManualCursorClick);
+        bookContent.removeEventListener('mouseup', handleManualCursorClick);
+        bookContent.removeEventListener('keyup', handleManualCursorClick);
+        bookContent.removeEventListener('focusin', handleManualCursorClick);
+        
+        // Add multiple listeners to catch cursor placement
+        bookContent.addEventListener('click', handleManualCursorClick, true); // Use capture
+        bookContent.addEventListener('mouseup', handleManualCursorClick);
+        bookContent.addEventListener('keyup', handleManualCursorClick);
+        bookContent.addEventListener('focusin', handleManualCursorClick);
+        
+        // Make book content focusable so it can receive cursor events
+        if (!bookContent.hasAttribute('tabindex')) {
+            bookContent.setAttribute('tabindex', '-1');
+        }
+        
+        console.log('Multiple listeners attached to book content for manual cursor detection');
+    } else {
+        console.warn('BookContent element not found, cannot attach click listener');
+    }
+    
     // Check if there are existing sections and start from the last one
     const lastSectionEndPosition = findLastSectionEndPosition();
     if (lastSectionEndPosition > 0) {
@@ -351,4 +445,52 @@ export function initializeSmartSelect() {
     if (smartSelectBtn && bookText && bookText.length > 0) {
         smartSelectBtn.disabled = false;
     }
+}
+
+// Handle manual cursor clicks in book content
+function handleManualCursorClick(event) {
+    console.log('Click detected on book content');
+    
+    // Try to get cursor position immediately from the event
+    let cursorPosition = getCursorPositionFromEvent(event);
+    
+    if (cursorPosition !== -1) {
+        userHasManuallyClickedCursor = true;
+        manualCursorPosition = cursorPosition;
+        console.log(`✓ User manually clicked cursor at position ${cursorPosition} - stored for next smart select`);
+        return;
+    }
+    
+    // If event method failed, try with delay for selection-based method
+    setTimeout(() => {
+        cursorPosition = getCursorPosition();
+        console.log(`Cursor position after click (delayed): ${cursorPosition}`);
+        
+        if (cursorPosition !== -1) {
+            userHasManuallyClickedCursor = true;
+            manualCursorPosition = cursorPosition;
+            console.log(`✓ User manually clicked cursor at position ${cursorPosition} - stored for next smart select`);
+        } else {
+            console.log('✗ Could not get cursor position after click - trying fallback method');
+            
+            // Final fallback: try to create a selection at the click point
+            if (event.target && event.target.nodeType === Node.TEXT_NODE) {
+                const bookContent = document.getElementById('bookContent');
+                if (bookContent && bookContent.contains(event.target)) {
+                    try {
+                        const range = document.createRange();
+                        range.setStart(bookContent, 0);
+                        range.setEnd(event.target, 0);
+                        const position = range.toString().length;
+                        
+                        userHasManuallyClickedCursor = true;
+                        manualCursorPosition = position;
+                        console.log(`✓ Fallback cursor position: ${position}`);
+                    } catch (error) {
+                        console.warn('Fallback cursor detection failed:', error);
+                    }
+                }
+            }
+        }
+    }, 100); // Slightly longer delay for selection method
 } 

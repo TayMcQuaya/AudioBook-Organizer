@@ -101,10 +101,13 @@ export function createSection() {
     
     // Update smart selection position and clear selection data
     if (window.smartSelectionData) {
-        // Update smart selection to continue from where this selection ended
-        import('./smartSelect.js').then(({ setCurrentPosition }) => {
-            setCurrentPosition(window.smartSelectionData.endPosition);
-            console.log(`Smart selection updated to continue from position ${window.smartSelectionData.endPosition}`);
+        // Store the end position before clearing the data
+        const endPosition = window.smartSelectionData.endPosition;
+        
+        // Advance smart selection to continue from where this selection ended
+        import('./smartSelect.js').then(({ advanceSmartSelectPosition }) => {
+            advanceSmartSelectPosition(endPosition);
+            console.log(`Smart selection advanced to position ${endPosition}`);
         });
         
         // Clear smart selection data and hide tools
@@ -132,10 +135,10 @@ export function createSection() {
                 beforeRange.setEnd(range.endContainer, range.endOffset);
                 const textBeforeEnd = beforeRange.toString().length;
                 
-                // Update smart selection position
-                import('./smartSelect.js').then(({ setCurrentPosition }) => {
-                    setCurrentPosition(textBeforeEnd);
-                    console.log(`Smart selection updated to continue from manual selection end at position ${textBeforeEnd}`);
+                // Advance smart selection position
+                import('./smartSelect.js').then(({ advanceSmartSelectPosition }) => {
+                    advanceSmartSelectPosition(textBeforeEnd);
+                    console.log(`Smart selection advanced to continue from manual selection end at position ${textBeforeEnd}`);
                 });
             }
         }
