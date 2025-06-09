@@ -26,11 +26,22 @@ def extract_token_from_header() -> Optional[str]:
     # Expected format: "Bearer <token>"
     parts = auth_header.split()
     
-    if len(parts) != 2 or parts[0].lower() != 'bearer':
-        logger.warning(f"Invalid Authorization header format: {auth_header}")
+    if len(parts) != 2:
+        logger.warning(f"Invalid Authorization header format - expected 2 parts, got {len(parts)}: {auth_header}")
+        return None
+        
+    if parts[0].lower() != 'bearer':
+        logger.warning(f"Invalid Authorization header - expected 'Bearer', got '{parts[0]}': {auth_header}")
         return None
     
-    return parts[1]
+    token = parts[1]
+    
+    # Basic token validation
+    if not token or len(token) < 10:  # JWT tokens are much longer
+        logger.warning(f"Token too short or empty: {len(token) if token else 0} characters")
+        return None
+    
+    return token
 
 def get_current_user() -> Optional[Dict[str, Any]]:
     """Get current user from request context"""

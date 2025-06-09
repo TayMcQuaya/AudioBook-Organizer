@@ -78,6 +78,10 @@ import {
     initializeApp 
 } from './modules/appInitialization.js';
 
+import { 
+    cleanupTextSelection 
+} from './modules/textSelection.js';
+
 // Make functions globally available for HTML onclick handlers
 window.createNewChapter = createNewChapter;
 window.updateChapterName = updateChapterName;
@@ -103,6 +107,7 @@ window.resetSmartSelectPosition = resetSmartSelectPosition;
 window.toggleEditMode = toggleEditMode;
 window.refreshEditModeState = refreshEditModeState;
 window.getEditMode = getEditMode;
+window.cleanupTextSelection = cleanupTextSelection;
 
 
 

@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="AudioBook Creator - Transform your text into professional audiobooks with chapter organization, text-to-speech conversion, and powerful audio management tools.">
-    <title>AudioBook Creator - Transform Text into Audiobooks</title>
+    <meta name="description" content="Transform any text into professional audiobooks with intelligent chapter organization, text-to-speech conversion, and powerful audio management tools.">
+    <title>AudioBook Creator - Transform Text Into Professional AudioBooks</title>
     
     <!-- Favicon -->
     <link rel="icon" type="image/svg+xml" href="/favicon.svg">
@@ -110,7 +110,7 @@
     <div class="app-loading" id="appLoading">
         <div class="loading-content">
             <div class="loading-icon">📚</div>
-                            <h1 class="loading-title">AudioBook Creator</h1>
+            <h1 class="loading-title">AudioBook Creator</h1>
             <p class="loading-subtitle">Loading your digital library...</p>
             <div class="loading-spinner"></div>
         </div>
@@ -121,66 +121,73 @@
         <!-- Content will be loaded here by the router -->
     </div>
     
-    <!-- Router and Initial Scripts -->
+    <!-- Application Initialization Script -->
     <script type="module">
         import { router } from './js/modules/router.js';
         
-        // App initialization
-        class AudioBookApp {
-            constructor() {
-                this.isInitialized = false;
-            }
-
-            async init() {
-                if (this.isInitialized) return;
-
-                console.log('🚀 Initializing AudioBook Creator...');
-                document.body.classList.add('app-loading-state');
-
-                // Wait for a brief moment to ensure loading screen renders.
-                await this.showLoadingScreen();
+        // Global app state
+        window.isAppInitialized = false;
+        
+        // Initialize the application
+        async function initializeApplication() {
+            try {
+                console.log('🚀 Initializing AudioBook Organizer...');
                 
-                // The router will now handle all page loading.
-                router.init();
-
-                this.isInitialized = true;
-                this.hideLoadingScreen();
-
-                console.log('✅ AudioBook Creator initialized successfully');
-            }
-
-            async showLoadingScreen() {
-                // Ensures the loading screen is visible for at least a moment.
-                return new Promise(resolve => setTimeout(resolve, 500));
-            }
-
-            hideLoadingScreen() {
-                const appLoading = document.getElementById('appLoading');
+                // Initialize router (it will handle auth and session management)
+                await router.init();
+                
+                // Make router globally available
+                window.router = router;
+                
+                // Hide loading screen and show app
+                const loadingScreen = document.getElementById('appLoading');
                 const appContainer = document.getElementById('appContainer');
-
+                
+                if (loadingScreen && appContainer) {
+                    loadingScreen.style.display = 'none';
+                    appContainer.style.display = 'block';
+                    appContainer.style.opacity = '1';
+                }
+                
+                // Remove loading class from body
                 document.body.classList.remove('app-loading-state');
                 document.body.classList.add('app-ready');
                 
-                if (appContainer) {
-                    appContainer.style.opacity = '1';
-                }
-
-                if (appLoading) {
-                    appLoading.style.opacity = '0';
-                    setTimeout(() => appLoading.remove(), 500); // Remove after fade out
+                console.log('✅ AudioBook Organizer initialized successfully');
+                
+            } catch (error) {
+                console.error('❌ Failed to initialize application:', error);
+                
+                // Show error message
+                const loadingScreen = document.getElementById('appLoading');
+                if (loadingScreen) {
+                    loadingScreen.innerHTML = `
+                        <div class="loading-content">
+                            <div class="loading-icon">⚠️</div>
+                            <h1 class="loading-title">Loading Error</h1>
+                            <p class="loading-subtitle">Failed to initialize the application.</p>
+                            <button onclick="location.reload()" style="
+                                padding: 10px 20px;
+                                background: white;
+                                color: #333;
+                                border: none;
+                                border-radius: 5px;
+                                cursor: pointer;
+                                margin-top: 20px;
+                            ">
+                                Reload Page
+                            </button>
+                        </div>
+                    `;
                 }
             }
         }
-
-        // Create and initialize app
-        const app = new AudioBookApp();
-        window.audioBookApp = app;
-
-        // Initialize when the DOM is interactive
+        
+        // Start initialization when DOM is ready
         if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', () => app.init());
+            document.addEventListener('DOMContentLoaded', initializeApplication);
         } else {
-            app.init();
+            initializeApplication();
         }
     </script>
     

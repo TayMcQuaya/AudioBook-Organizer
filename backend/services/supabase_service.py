@@ -139,6 +139,21 @@ class SupabaseService:
             logger.error("JWT secret not configured")
             return None
             
+        if not token:
+            logger.warning("No token provided for verification")
+            return None
+            
+        # Validate token format before attempting to decode
+        if not isinstance(token, str):
+            logger.warning(f"Token is not a string: {type(token)}")
+            return None
+            
+        # Check if token has the expected JWT format (3 parts separated by dots)
+        token_parts = token.split('.')
+        if len(token_parts) != 3:
+            logger.warning(f"JWT verification failed: Invalid token format - expected 3 parts, got {len(token_parts)} parts")
+            return None
+            
         try:
             # Decode the token using Supabase JWT secret
             payload = jwt.decode(
@@ -154,10 +169,19 @@ class SupabaseService:
                 logger.warning("Token has expired")
                 return None
                 
+            logger.debug(f"JWT token verified successfully for user: {payload.get('email', 'unknown')}")
             return payload
             
         except JWTError as e:
-            logger.error(f"JWT verification failed: {e}")
+            error_msg = str(e).lower()
+            if 'not enough segments' in error_msg:
+                logger.warning(f"JWT verification failed: Invalid token format - {e}")
+            elif 'expired' in error_msg:
+                logger.warning(f"JWT verification failed: Token expired - {e}")
+            elif 'signature' in error_msg:
+                logger.warning(f"JWT verification failed: Invalid signature - {e}")
+            else:
+                logger.error(f"JWT verification failed: {e}")
             return None
         except Exception as e:
             logger.error(f"Unexpected error during token verification: {e}")

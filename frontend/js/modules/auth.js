@@ -27,6 +27,8 @@ export class AuthModule {
         this.isLoading = false;
         this.retryCount = 0;
         this.maxRetries = 3;
+        this.lastWelcomeShown = 0;  // Prevent repeated welcome messages
+        this.wasInitialized = false; // Track if we've seen the first auth state change
     }
 
     /**
@@ -173,11 +175,15 @@ export class AuthModule {
         if (!supabaseClient) return;
 
         supabaseClient.auth.onAuthStateChange(async (event, session) => {
-            console.log('🔄 Auth state changed:', event);
+            console.log('🔄 Auth state changed:', event, 'Current user:', this.user?.email);
             
             switch (event) {
                 case 'SIGNED_IN':
-                    await this.handleAuthSuccess(session);
+                    // Only show welcome message for actual logins, not session restoration
+                    // Session restoration happens when page loads and user was already signed in
+                    const isActualLogin = !this.wasInitialized || !this.user;
+                    console.log('🔍 Is actual login?', isActualLogin, 'Was initialized:', this.wasInitialized);
+                    await this.handleAuthSuccess(session, isActualLogin);
                     break;
                 case 'SIGNED_OUT':
                     await this.handleSignOut();
@@ -190,6 +196,9 @@ export class AuthModule {
                     break;
             }
             
+            // Mark as initialized after first auth state change
+            this.wasInitialized = true;
+            
             // Notify all listeners
             this.notifyAuthListeners(event, session);
         });
@@ -198,7 +207,7 @@ export class AuthModule {
     /**
      * Handle successful authentication
      */
-    async handleAuthSuccess(session) {
+    async handleAuthSuccess(session, isLogin = false) {
         if (!session || !session.user) {
             console.error('Invalid session provided');
             return;
@@ -207,22 +216,84 @@ export class AuthModule {
         this.session = session;
         this.user = session.user;
         currentUser = session.user;
+        
+        // Ensure we get the access_token from the session
         authToken = session.access_token;
+        
+        if (!authToken) {
+            console.error('❌ No access token in session:', session);
+            showError('Authentication failed - no access token received');
+            return;
+        }
+
+        // Validate token format before storing
+        if (!this.isValidJWT(authToken)) {
+            console.error('❌ Received invalid JWT token format');
+            showError('Authentication failed - invalid token format');
+            return;
+        }
 
         // Store token in localStorage for API calls
         localStorage.setItem('auth_token', authToken);
+        console.log('✅ Valid JWT token stored for user:', this.user.email);
+        
+        // Dispatch auth state change event for session manager
+        window.dispatchEvent(new CustomEvent('auth-state-changed', {
+            detail: {
+                isAuthenticated: true,
+                user: session.user,
+                session: { token: authToken }
+            }
+        }));
         
         try {
             // Initialize user profile and credits if this is a new user
             await this.initializeUser();
             
             console.log('✅ User authenticated:', this.user.email);
-            showSuccess(`Welcome back, ${this.user.email}!`);
+            
+            // Only show welcome message on actual login, not session restoration
+            if (isLogin) {
+                // Use actual name if available, otherwise use email
+                const displayName = this.user.user_metadata?.full_name || 
+                                  this.user.user_metadata?.name || 
+                                  this.user.full_name || 
+                                  this.user.name || 
+                                  this.user.email.split('@')[0];
+                showSuccess(`Welcome back, ${displayName}!`);
+            }
             
         } catch (error) {
             console.error('Error during user initialization:', error);
             showError('Authentication successful, but failed to load user data');
         }
+    }
+
+    /**
+     * Validate JWT token format
+     */
+    isValidJWT(token) {
+        if (!token || typeof token !== 'string') {
+            return false;
+        }
+        
+        // JWT should have exactly 3 parts separated by dots
+        const parts = token.split('.');
+        if (parts.length !== 3) {
+            console.warn('🚫 Invalid JWT format - not enough segments');
+            return false;
+        }
+        
+        // Each part should be base64-like (allow for padding)
+        const base64Pattern = /^[A-Za-z0-9_-]+$/;
+        for (const part of parts) {
+            if (!base64Pattern.test(part)) {
+                console.warn('🚫 Invalid JWT format - invalid characters');
+                return false;
+            }
+        }
+        
+        return true;
     }
 
     /**
@@ -236,6 +307,15 @@ export class AuthModule {
 
         // Clear stored token
         localStorage.removeItem('auth_token');
+        
+        // Dispatch auth state change event for session manager
+        window.dispatchEvent(new CustomEvent('auth-state-changed', {
+            detail: {
+                isAuthenticated: false,
+                user: null,
+                session: null
+            }
+        }));
         
         console.log('👋 User signed out');
         showInfo('You have been signed out');
@@ -270,12 +350,13 @@ export class AuthModule {
         if (!authToken) return;
 
         try {
-            const response = await fetch('/api/auth/initialize', {
+            const response = await fetch('/api/auth/init-user', {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${authToken}`,
                     'Content-Type': 'application/json'
-                }
+                },
+                body: JSON.stringify({})
             });
 
             const data = await response.json();

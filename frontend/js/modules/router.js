@@ -1,10 +1,12 @@
 // AudioBook Organizer - Simple Client-Side Router
 
 import { showError, showInfo } from './notifications.js';
+import { AuthModule } from './auth.js';
+import sessionManager from './sessionManager.js';
 
 // Router state
 let currentRoute = '/';
-let isAuthenticated = true; // Set to true by default for now since we're not implementing auth yet
+let authModule = null;
 let routes = new Map();
 let guards = new Map();
 
@@ -19,7 +21,7 @@ const routeConfig = {
     '/app': {
         title: 'AudioBook Organizer - App',
         component: 'app',
-        requiresAuth: false, // Changed to false since we're not implementing auth yet
+        requiresAuth: true, // App requires authentication
         layout: 'app'
     },
     '/auth': {
@@ -31,7 +33,7 @@ const routeConfig = {
     '/profile': {
         title: 'Profile - AudioBook Organizer',
         component: 'profile',
-        requiresAuth: false, // Changed to false since we're not implementing auth yet
+        requiresAuth: true, // Profile requires authentication
         layout: 'app'
     }
 };
@@ -49,8 +51,18 @@ class Router {
         this.handleLinkClick = this.handleLinkClick.bind(this);
     }
     
-    init() {
+    async init() {
         if (this.isInitialized) return;
+        
+        // Initialize auth module
+        authModule = new AuthModule();
+        await authModule.init();
+        
+        // Initialize session manager
+        await sessionManager.init();
+        
+        // Make auth module globally available
+        window.authModule = authModule;
         
         // Listen for browser back/forward
         window.addEventListener('popstate', this.handlePopState);
@@ -59,14 +71,14 @@ class Router {
         document.addEventListener('click', this.handleLinkClick);
         
         // Initialize current route
-        this.handleRoute(window.location.pathname);
+        await this.handleRoute(window.location.pathname);
         
         this.isInitialized = true;
-        console.log('📍 Router initialized');
+        console.log('📍 Router initialized with authentication');
     }
     
     // Navigate to a route
-    navigate(path, replace = false) {
+    async navigate(path, replace = false) {
         if (path === this.currentRoute) return;
         
         this.previousRoute = this.currentRoute;
@@ -77,7 +89,7 @@ class Router {
             window.history.pushState({ path }, '', path);
         }
         
-        this.handleRoute(path);
+        await this.handleRoute(path);
     }
     
     // Handle route changes
@@ -86,7 +98,22 @@ class Router {
         
         if (!route) {
             console.warn(`Route not found: ${path}`);
-            this.navigate('/', true);
+            await this.navigate('/', true);
+            return;
+        }
+        
+        // Check authentication requirements
+        if (route.requiresAuth && !sessionManager.isAuthenticated) {
+            console.log('🔒 Route requires authentication, redirecting to auth page');
+            showInfo('Please sign in to access this page');
+            await this.navigate('/auth');
+            return;
+        }
+        
+        // Redirect authenticated users away from auth page
+        if (path === '/auth' && sessionManager.isAuthenticated) {
+            console.log('👤 User already authenticated, redirecting to app');
+            await this.navigate('/app');
             return;
         }
         
@@ -138,6 +165,11 @@ class Router {
 
             // Clean up app-specific resources
             if (window.isAppInitialized) {
+                // Clean up app-specific event listeners
+                if (window.cleanupTextSelection) {
+                    window.cleanupTextSelection();
+                }
+                
                 const mainScript = document.querySelector('script[src="/js/main.js"]');
                 if (mainScript) mainScript.remove();
                 window.isAppInitialized = false;
@@ -248,6 +280,11 @@ class Router {
 
             // Clean up app-specific resources
             if (window.isAppInitialized) {
+                // Clean up app-specific event listeners
+                if (window.cleanupTextSelection) {
+                    window.cleanupTextSelection();
+                }
+                
                 const mainScript = document.querySelector('script[src="/js/main.js"]');
                 if (mainScript) mainScript.remove();
                 window.isAppInitialized = false;
@@ -340,6 +377,16 @@ class Router {
     // Track navigation (for analytics)
     trackNavigation(path) {
         console.log(`📊 Navigation tracked: ${path}`);
+    }
+
+    // Check if user is authenticated
+    isAuthenticated() {
+        return sessionManager.isAuthenticated;
+    }
+    
+    // Get current user
+    getCurrentUser() {
+        return sessionManager.user;
     }
 }
 

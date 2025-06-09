@@ -24,7 +24,7 @@ if (document.readyState === 'loading') {
     initializeLandingPage();
 }
 
-function initializeLandingPage() {
+async function initializeLandingPage() {
     console.log('🚀 Landing page initialized');
     
     // Setup all interactive components
@@ -35,7 +35,156 @@ function initializeLandingPage() {
     setupScrollEffects();
     setupAppWindowTilt();
     
-    // Add any other setup functions here
+    // Ensure session manager is properly initialized and restored
+    if (window.sessionManager) {
+        if (!window.sessionManager.isInitialized) {
+            await window.sessionManager.init();
+        }
+        
+        // Wait a bit to ensure session is fully restored
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
+        // Check auth status again to make sure it's current
+        await window.sessionManager.checkAuthStatus();
+    }
+    
+    // Check authentication state and update UI
+    await checkAuthenticationState();
+    
+    // Listen for auth state changes
+    window.addEventListener('auth-state-changed', handleAuthStateChange);
+    
+    // Add click outside handler for user dropdown
+    document.addEventListener('click', handleOutsideClick);
+}
+
+/**
+ * Check authentication state and update navigation accordingly
+ */
+async function checkAuthenticationState() {
+    // Wait for session manager to be ready
+    if (!window.sessionManager) {
+        console.log('Session manager not available');
+        return;
+    }
+    
+    // Wait for session manager to be initialized
+    let attempts = 0;
+    while (!window.sessionManager.isInitialized && attempts < 50) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+        attempts++;
+    }
+    
+    if (window.sessionManager.isAuthenticated) {
+        console.log('User is authenticated on landing page');
+        // Trigger UI update for authenticated user
+        updateLandingPageForAuthenticatedUser(window.sessionManager.user);
+    } else {
+        console.log('User is not authenticated on landing page');
+        // Trigger UI update for unauthenticated user
+        updateLandingPageForUnauthenticatedUser();
+    }
+}
+
+/**
+ * Handle authentication state changes
+ */
+function handleAuthStateChange(event) {
+    const { isAuthenticated, user } = event.detail;
+    console.log('Landing page received auth state change:', isAuthenticated);
+    
+    if (isAuthenticated) {
+        // Close auth modal if open
+        if (isAuthModalOpen) {
+            hideAuthModal();
+        }
+        
+        // Update any landing page specific elements
+        updateLandingPageForAuthenticatedUser(user);
+    } else {
+        updateLandingPageForUnauthenticatedUser();
+    }
+}
+
+/**
+ * Update landing page elements for authenticated users
+ */
+function updateLandingPageForAuthenticatedUser(user) {
+    console.log('🔄 Updating landing page for authenticated user');
+    
+    // Only show one "Open App" button - convert the primary "Get Started" button
+    const getStartedButtons = document.querySelectorAll('a[href="/auth?mode=signup"]');
+    console.log('📝 Found Get Started buttons:', getStartedButtons.length);
+    getStartedButtons.forEach((btn, index) => {
+        console.log(`📝 Converting button ${index} to Open App`);
+        btn.href = '/app';
+        btn.innerHTML = '<span class="btn-icon">🚀</span>Open App';
+        btn.classList.add('btn-primary'); // Ensure consistent styling
+    });
+    
+    // Hide ALL demo/try buttons when authenticated
+    const tryDemoButtons = document.querySelectorAll('[onclick*="tryAppDemo"], [onclick*="tryDemo"], .demo-btn');
+    console.log('📝 Found Try Demo buttons:', tryDemoButtons.length);
+    tryDemoButtons.forEach((btn, index) => {
+        console.log(`📝 Hiding demo button ${index}`);
+        btn.style.display = 'none';
+    });
+    
+    // Also hide any remaining auth signup links
+    const signupLinks = document.querySelectorAll('a[href*="/auth"], .auth-btn:not(.user-btn)');
+    signupLinks.forEach(link => {
+        if (!link.closest('.user-nav') && !link.closest('.mobile-user-nav')) {
+            link.style.display = 'none';
+        }
+    });
+}
+
+/**
+ * Update landing page elements for unauthenticated users
+ */
+function updateLandingPageForUnauthenticatedUser() {
+    console.log('🔄 Updating landing page for unauthenticated user');
+    
+    // Show try demo buttons again
+    const tryDemoButtons = document.querySelectorAll('[onclick*="tryAppDemo"], [onclick*="navigateToApp"], .demo-btn');
+    console.log('📝 Found Try Demo buttons to restore:', tryDemoButtons.length);
+    tryDemoButtons.forEach((btn, index) => {
+        console.log(`📝 Restoring demo button ${index}`);
+        btn.style.display = '';
+        btn.innerHTML = '<span class="btn-icon">📚</span>Try Demo Now';
+        btn.setAttribute('onclick', 'tryAppDemo()');
+    });
+    
+    // Reset "Get Started" buttons
+    const appButtons = document.querySelectorAll('a[href="/app"]');
+    console.log('📝 Found App buttons to reset:', appButtons.length);
+    appButtons.forEach((btn, index) => {
+        console.log(`📝 Resetting app button ${index} to Get Started`);
+        btn.href = '/auth?mode=signup';
+        btn.innerHTML = '<span class="btn-icon">🚀</span>Get Started Free';
+    });
+    
+    // Show auth signup links again
+    const signupLinks = document.querySelectorAll('a[href*="/auth"], .auth-btn:not(.user-btn)');
+    signupLinks.forEach(link => {
+        if (!link.closest('.user-nav') && !link.closest('.mobile-user-nav')) {
+            link.style.display = '';
+        }
+    });
+}
+
+/**
+ * Handle clicks outside user dropdown to close it
+ */
+function handleOutsideClick(event) {
+    const userDropdown = document.getElementById('userDropdown');
+    const userBtn = document.querySelector('.user-btn');
+    
+    if (userDropdown && userDropdown.classList.contains('show')) {
+        if (!userBtn?.contains(event.target) && !userDropdown.contains(event.target)) {
+            userDropdown.classList.remove('show');
+        }
+    }
 }
 
 // Authentication Modal Functions
@@ -379,34 +528,49 @@ async function handleAuthSubmit(event) {
             throw new Error('Please check your input and try again');
         }
         
-        // Simulate API call (replace with actual Supabase integration later)
+        // Check if we have the real auth module available
+        if (!window.authModule || !window.authModule.isAuthenticated) {
+            console.warn('⚠️ Real auth module not available, using demo mode');
         await simulateAuthRequest(data);
         
-        showSuccess(`${currentAuthMode === 'login' ? 'Welcome back!' : 'Account created successfully!'}`);
+            showSuccess(`${currentAuthMode === 'login' ? 'Welcome back!' : 'Account created successfully!'} (Demo Mode)`);
         hideAuthModal();
         
-        // Trigger auth state change event and navigate to app
-        const authData = {
-            isAuthenticated: true,
-            user: { 
+            // For demo mode, create a basic user object but no real authentication
+            const demoUser = {
                 email: data.email, 
                 name: data.fullName || data.email.split('@')[0] 
-            },
-            session: { token: 'demo-token-123' }
         };
         
-        // Dispatch custom event for the main app to handle
-        window.dispatchEvent(new CustomEvent('auth-state-changed', {
-            detail: authData
-        }));
-        
-        // Small delay for better UX
+            // Show info about demo mode
         setTimeout(() => {
-            showInfo('Loading your AudioBook Organizer...');
+                showInfo('Demo mode active - full features available after setup');
         }, 1000);
+            
+            return;
+        }
+        
+        // Use real authentication system
+        console.log('🔐 Using real authentication system');
+        
+        if (currentAuthMode === 'login') {
+            // Real login
+            await window.authModule.signIn(data.email, data.password);
+        } else {
+            // Real signup
+            await window.authModule.signUp(data.email, data.password, {
+                metadata: {
+                    full_name: data.fullName
+                }
+            });
+        }
+        
+        // Success message and modal closure will be handled by auth state change events
+        hideAuthModal();
         
     } catch (error) {
-        showError(error.message);
+        console.error('❌ Authentication failed:', error);
+        showError(error.message || 'Authentication failed. Please try again.');
     } finally {
         // Reset button state
         btnText.style.display = 'block';
@@ -520,30 +684,21 @@ function navigateToApp() {
 }
 
 function tryAppDemo() {
-    // Allow demo access without authentication
-    const demoAuthData = {
-        isAuthenticated: true,
-        user: { 
-            email: 'demo@audiobook.com', 
-            name: 'Demo User' 
-        },
-        session: { token: 'demo-session', isDemo: true }
-    };
-    
-    // Dispatch auth event for app state
-    window.dispatchEvent(new CustomEvent('auth-state-changed', {
-        detail: demoAuthData
-    }));
-    
-    // Navigate to the app page
-    if (window.router) {
-        window.router.navigate('/app');
+    // Check if user is authenticated
+    if (window.sessionManager && window.sessionManager.isAuthenticated) {
+        // User is authenticated, navigate to app
+        if (window.router) {
+            window.router.navigate('/app');
+        } else {
+            // Fallback: direct navigation
+            window.location.href = '/app';
+        }
+        console.log('🚀 Navigating to authenticated app...');
     } else {
-        // Fallback: direct navigation
-        window.location.href = '/app';
+        // User not authenticated, show auth modal
+        showAuthModal('login');
+        console.log('🔒 User must authenticate to access the app');
     }
-    
-    console.log('🚀 Navigating to demo app...');
 }
 
 // Setup Functions

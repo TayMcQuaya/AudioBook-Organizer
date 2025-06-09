@@ -48,6 +48,42 @@ def create_auth_routes() -> Blueprint:
                 'message': 'Failed to retrieve authentication configuration'
             }), 500
     
+    @auth_bp.route('/status', methods=['GET'])
+    @optional_auth
+    def get_auth_status():
+        """Get current authentication status"""
+        try:
+            # Get current user from middleware (if authenticated)
+            user = get_current_user()
+            
+            if user:
+                # Get Supabase service
+                supabase_service = get_supabase_service()
+                
+                # Get user profile and credits
+                profile = supabase_service.get_user_profile(user['id'])
+                credits = supabase_service.get_user_credits(user['id'])
+                
+                return jsonify({
+                    'authenticated': True,
+                    'user': user,
+                    'profile': profile,
+                    'credits': credits
+                })
+            else:
+                return jsonify({
+                    'authenticated': False,
+                    'user': None
+                })
+                
+        except Exception as e:
+            logger.error(f"Auth status check error: {e}")
+            return jsonify({
+                'authenticated': False,
+                'user': None,
+                'error': 'Status check failed'
+            })
+
     @auth_bp.route('/verify', methods=['POST'])
     def verify_token():
         """Verify JWT token and return user information"""
@@ -427,18 +463,8 @@ def create_auth_routes() -> Blueprint:
                         'message': 'Failed to create user profile'
                     }), 500
             
-            # Check if credits already exist
-            existing_credits = supabase_service.get_user_credits(user_id)
-            
-            if existing_credits == 0:  # No credits found
-                # Initialize credits
-                credits_success = supabase_service.initialize_user_credits(user_id)
-                
-                if not credits_success:
-                    return jsonify({
-                        'error': 'Credits initialization failed',
-                        'message': 'Failed to initialize user credits'
-                    }), 500
+            # Note: Credits are automatically created by database trigger on signup
+            # We don't need to manually initialize them here
             
             # Get final profile and credits
             profile = supabase_service.get_user_profile(user_id)
@@ -446,9 +472,10 @@ def create_auth_routes() -> Blueprint:
             
             return jsonify({
                 'success': True,
-                'message': 'User initialized successfully',
+                'message': 'User data retrieved successfully',
                 'profile': profile,
-                'credits': credits
+                'credits': credits,
+                'is_new_user': not existing_profile  # Indicate if profile was just created
             })
             
         except Exception as e:
