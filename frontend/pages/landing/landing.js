@@ -2,6 +2,7 @@
 
 // Import utility functions and modules
 import { showSuccess, showError, showInfo } from '../../js/modules/notifications.js';
+import appUI from '../../js/modules/appUI.js';
 
 // Landing page state
 let isAuthModalOpen = false;
@@ -34,6 +35,11 @@ async function initializeLandingPage() {
     setupFormValidation();
     setupScrollEffects();
     setupAppWindowTilt();
+    
+    // Initialize appUI manager
+    if (window.appUI) {
+        await window.appUI.init();
+    }
     
     // Ensure session manager is properly initialized and restored
     if (window.sessionManager) {
@@ -110,7 +116,15 @@ function handleAuthStateChange(event) {
  * Update landing page elements for authenticated users
  */
 function updateLandingPageForAuthenticatedUser(user) {
-    console.log('🔄 Updating landing page for authenticated user');
+    console.log('🔄 Updating landing page for authenticated user:', user?.email || 'Unknown user');
+    
+    // Create user navigation dropdown (this was the missing piece!)
+    if (window.appUI && user) {
+        console.log('📝 Creating user navigation with appUI');
+        window.appUI.createUserNavigation(user);
+    } else if (!window.appUI) {
+        console.warn('⚠️ appUI not available, cannot create user navigation');
+    }
     
     // Only show one "Open App" button - convert the primary "Get Started" button
     const getStartedButtons = document.querySelectorAll('a[href="/auth?mode=signup"]');
@@ -130,11 +144,13 @@ function updateLandingPageForAuthenticatedUser(user) {
         btn.style.display = 'none';
     });
     
-    // Also hide any remaining auth signup links
-    const signupLinks = document.querySelectorAll('a[href*="/auth"], .auth-btn:not(.user-btn)');
-    signupLinks.forEach(link => {
-        if (!link.closest('.user-nav') && !link.closest('.mobile-user-nav')) {
-            link.style.display = 'none';
+    // Hide the static "Sign In" button (but don't hide user navigation)
+    const signInButtons = document.querySelectorAll('a[href="/auth"]:not(.user-btn)');
+    console.log('📝 Found Sign In buttons to hide:', signInButtons.length);
+    signInButtons.forEach(btn => {
+        if (!btn.closest('.user-nav') && !btn.closest('.mobile-user-nav')) {
+            console.log('📝 Hiding Sign In button:', btn.textContent);
+            btn.style.display = 'none';
         }
     });
 }
@@ -144,6 +160,11 @@ function updateLandingPageForAuthenticatedUser(user) {
  */
 function updateLandingPageForUnauthenticatedUser() {
     console.log('🔄 Updating landing page for unauthenticated user');
+    
+    // Remove user navigation dropdown
+    if (window.appUI) {
+        window.appUI.removeUserNavigation();
+    }
     
     // Show try demo buttons again
     const tryDemoButtons = document.querySelectorAll('[onclick*="tryAppDemo"], [onclick*="navigateToApp"], .demo-btn');
@@ -165,11 +186,9 @@ function updateLandingPageForUnauthenticatedUser() {
     });
     
     // Show auth signup links again
-    const signupLinks = document.querySelectorAll('a[href*="/auth"], .auth-btn:not(.user-btn)');
-    signupLinks.forEach(link => {
-        if (!link.closest('.user-nav') && !link.closest('.mobile-user-nav')) {
-            link.style.display = '';
-        }
+    const signInButtons = document.querySelectorAll('a[href="/auth"]');
+    signInButtons.forEach(btn => {
+        btn.style.display = '';
     });
 }
 
