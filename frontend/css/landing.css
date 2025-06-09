@@ -637,6 +637,12 @@ html {
     position: relative;
 }
 
+.features .section-header,
+.features .features-grid {
+    transform: translateY(-100px); /* Move elements upward */
+    transition: transform 0.3s ease; /* Optional smooth animation */
+}
+
 /* Feature card content optimization for carousel with crisp text */
 .feature-card .feature-description {
     font-size: 0.9rem;
@@ -678,7 +684,6 @@ html {
     perspective: 1200px;
     perspective-origin: center center;
     overflow: visible;
-    transform: translateY(-80px);
 }
 
 .features-carousel {
