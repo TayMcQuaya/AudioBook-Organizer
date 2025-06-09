@@ -15,6 +15,9 @@ let protectionHandlers = {
     keydown: null
 };
 
+// Track if protection is currently active
+let isProtectionActive = false;
+
 // Get edit mode state
 export function getEditMode() {
     return isEditMode;
@@ -189,10 +192,15 @@ function showConfirmationDialog() {
 export async function toggleEditMode() {
     const bookContent = document.getElementById('bookContent');
     const toggleBtn = document.getElementById('toggleEditBtn');
-    const btnIcon = toggleBtn.querySelector('i');
+    const btnIcon = toggleBtn?.querySelector('i');
     const btnText = document.getElementById('editModeText');
     
-    if (!bookContent || !toggleBtn) return;
+    if (!bookContent || !toggleBtn) {
+        console.error('Required elements for edit mode toggle not found');
+        return;
+    }
+    
+    console.log('Toggling edit mode. Current state:', isEditMode ? 'EDIT' : 'VIEW');
     
     if (isEditMode) {
         // Exiting Edit Mode - check for changes
@@ -301,30 +309,37 @@ function showEditModeWarning() {
 export function initializeEditProtection() {
     // Create the protection handlers
     protectionHandlers.input = function(e) {
+        console.log('Input event triggered, edit mode:', isEditMode);
         if (!isEditMode) {
             e.preventDefault();
+            e.stopPropagation();
             showEditModeWarning();
             return false;
         }
     };
     
     protectionHandlers.paste = function(e) {
+        console.log('Paste event triggered, edit mode:', isEditMode);
         if (!isEditMode) {
             e.preventDefault();
+            e.stopPropagation();
             showEditModeWarning();
             return false;
         }
     };
     
     protectionHandlers.drop = function(e) {
+        console.log('Drop event triggered, edit mode:', isEditMode);
         if (!isEditMode) {
             e.preventDefault();
+            e.stopPropagation();
             showEditModeWarning();
             return false;
         }
     };
     
     protectionHandlers.keydown = function(e) {
+        console.log('Keydown event triggered, edit mode:', isEditMode, 'key:', e.key);
         if (!isEditMode) {
             // Allow cursor movement keys but prevent text input
             const allowedKeys = [
@@ -335,28 +350,65 @@ export function initializeEditProtection() {
             
             if (!allowedKeys.includes(e.key) && !e.ctrlKey && !e.metaKey) {
                 e.preventDefault();
+                e.stopPropagation();
                 showEditModeWarning();
                 return false;
             }
         }
     };
     
-    // Apply initial protection
-    applyEditProtection();
+    // Ensure the UI reflects the initial state
+    updateEditModeUI();
     
-    console.log('Edit protection system initialized');
+    // Apply initial protection only if not in edit mode
+    if (!isEditMode) {
+        applyEditProtection();
+    }
+    
+    console.log('Edit protection system initialized with edit mode:', isEditMode);
+}
+
+// Update edit mode UI to reflect current state
+function updateEditModeUI() {
+    const bookContent = document.getElementById('bookContent');
+    const toggleBtn = document.getElementById('toggleEditBtn');
+    const btnIcon = toggleBtn?.querySelector('i');
+    const btnText = document.getElementById('editModeText');
+    
+    if (!bookContent || !toggleBtn || !btnIcon || !btnText) {
+        console.warn('Edit mode UI elements not found');
+        return;
+    }
+    
+    if (isEditMode) {
+        bookContent.classList.add('edit-mode');
+        toggleBtn.classList.add('edit-active');
+        btnIcon.textContent = '📝';
+        btnText.textContent = 'Edit Mode';
+    } else {
+        bookContent.classList.remove('edit-mode');
+        toggleBtn.classList.remove('edit-active');
+        btnIcon.textContent = '👁';
+        btnText.textContent = 'View Mode';
+    }
+    
+    console.log('Edit mode UI updated, current mode:', isEditMode ? 'EDIT' : 'VIEW');
 }
 
 // Apply edit protection
 function applyEditProtection() {
     const bookContent = document.getElementById('bookContent');
-    if (!bookContent) return;
+    if (!bookContent || isProtectionActive) return; // Don't double-apply
+    
+    // Remove any existing listeners first
+    removeEditProtection();
     
     bookContent.addEventListener('input', protectionHandlers.input);
     bookContent.addEventListener('paste', protectionHandlers.paste);
     bookContent.addEventListener('drop', protectionHandlers.drop);
     bookContent.addEventListener('keydown', protectionHandlers.keydown);
     
+    isProtectionActive = true;
     console.log('Edit protection applied');
 }
 
@@ -370,5 +422,20 @@ function removeEditProtection() {
     bookContent.removeEventListener('drop', protectionHandlers.drop);
     bookContent.removeEventListener('keydown', protectionHandlers.keydown);
     
+    isProtectionActive = false;
     console.log('Edit protection removed');
+}
+
+// Force refresh edit mode state (useful after dynamic content changes)
+export function refreshEditModeState() {
+    console.log('Refreshing edit mode state...');
+    updateEditModeUI();
+    
+    if (!isEditMode && !isProtectionActive) {
+        applyEditProtection();
+    } else if (isEditMode && isProtectionActive) {
+        removeEditProtection();
+    }
+    
+    console.log('Edit mode state refreshed. Mode:', isEditMode ? 'EDIT' : 'VIEW', 'Protection active:', isProtectionActive);
 } 

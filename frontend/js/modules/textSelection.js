@@ -9,6 +9,12 @@ import {
 
 // Handle mouseup events for text selection
 function handleMouseUp(e) {
+    // Don't interfere with text selection tools if in edit mode
+    if (window.getEditMode && window.getEditMode()) {
+        console.log('Edit mode active - skipping text selection tools');
+        return;
+    }
+    
     const selection = window.getSelection();
     const text = selection.toString().trim();
     

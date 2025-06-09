@@ -57,7 +57,9 @@ import { showSuccess } from './modules/notifications.js';
 
 import { 
     toggleEditMode, 
-    initializeEditProtection 
+    initializeEditProtection,
+    refreshEditModeState,
+    getEditMode 
 } from './modules/editMode.js';
 
 import { 
@@ -99,6 +101,8 @@ window.uploadBook = uploadBook;
 window.smartSelect = smartSelect;
 window.resetSmartSelectPosition = resetSmartSelectPosition;
 window.toggleEditMode = toggleEditMode;
+window.refreshEditModeState = refreshEditModeState;
+window.getEditMode = getEditMode;
 
 
 

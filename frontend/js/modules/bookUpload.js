@@ -75,6 +75,13 @@ function handleUploadSuccess(text) {
     hideError();
     
     console.log(`Book uploaded successfully: ${text.length} characters`);
+    
+    // Refresh edit mode state after content change
+    if (window.refreshEditModeState) {
+        setTimeout(() => {
+            window.refreshEditModeState();
+        }, 100);
+    }
 }
 
 // Handle file reading error

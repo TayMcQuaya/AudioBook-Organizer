@@ -449,6 +449,12 @@ export function initializeSmartSelect() {
 
 // Handle manual cursor clicks in book content
 function handleManualCursorClick(event) {
+    // Check if we're in edit mode - if so, don't interfere
+    if (window.getEditMode && window.getEditMode()) {
+        console.log('Edit mode active - skipping smart select cursor tracking');
+        return;
+    }
+    
     console.log('Click detected on book content');
     
     // Try to get cursor position immediately from the event
