@@ -136,6 +136,22 @@ class Router {
                 throw new Error('App container not found for router.');
             }
 
+            // Clean up app-specific resources
+            if (window.isAppInitialized) {
+                const mainScript = document.querySelector('script[src="/js/main.js"]');
+                if (mainScript) mainScript.remove();
+                window.isAppInitialized = false;
+            }
+
+            // Ensure landing page CSS is loaded and app CSS is removed
+            let landingCSS = document.querySelector('link[href="/css/landing.css"]');
+            if (!landingCSS) {
+                landingCSS = document.createElement('link');
+                landingCSS.rel = 'stylesheet';
+                landingCSS.href = '/css/landing.css';
+                document.head.appendChild(landingCSS);
+            }
+
             // Load landing page HTML
             const response = await fetch('/pages/landing/landing.html');
             if (!response.ok) throw new Error(`Failed to fetch landing page: ${response.status}`);
@@ -271,6 +287,9 @@ class Router {
 
 // Create router instance
 const router = new Router();
+
+// Make router globally available for navigation functions
+window.router = router;
 
 // Export for module use
 export { router }; 

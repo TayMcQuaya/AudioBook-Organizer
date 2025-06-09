@@ -1,5 +1,39 @@
 /* AudioBook Organizer - Component Styles */
 
+/* Column Content */
+.column-content {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: var(--spacing-md);
+    position: relative;
+}
+
+.column-title-container {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+}
+
+.back-arrow {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: var(--text-secondary);
+    text-decoration: none;
+    border-radius: 50%;
+    transition: background-color 0.2s;
+}
+
+.back-arrow:hover {
+    background-color: var(--background-light);
+    color: var(--text-primary);
+}
+
 /* Book Content Specific Styles */
 .book-content {
     font-size: 1.1rem;

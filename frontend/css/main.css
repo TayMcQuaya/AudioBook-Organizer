@@ -38,7 +38,6 @@ body {
     padding: 0;
     background-color: var(--background-light);
     min-height: 100vh;
-    overflow: hidden;
     color: var(--text-primary);
     line-height: 1.6;
 }

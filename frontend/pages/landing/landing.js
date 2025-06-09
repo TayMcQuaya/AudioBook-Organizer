@@ -530,20 +530,13 @@ function tryAppDemo() {
         session: { token: 'demo-session', isDemo: true }
     };
     
-    // Set authentication status in router to bypass auth guards
-    if (window.router) {
-        window.router.setAuthenticated(true);
-    }
-    
     // Dispatch auth event for app state
     window.dispatchEvent(new CustomEvent('auth-state-changed', {
         detail: demoAuthData
     }));
     
     // Navigate to the app page
-    if (window.navigation) {
-        window.navigation.toApp();
-    } else if (window.router) {
+    if (window.router) {
         window.router.navigate('/app');
     } else {
         // Fallback: direct navigation
