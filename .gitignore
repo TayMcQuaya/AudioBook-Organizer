@@ -4,10 +4,14 @@ npm-debug.log
 yarn-debug.log
 yarn-error.log
 
-# Environment variables
+# Environment variables - CRITICAL SECURITY
 .env
 .env.local
-.env.*.local
+.env.development
+.env.production
+.env.*
+.env.backup.*
+*.env
 
 # OS generated files
 .DS_Store
@@ -31,4 +35,54 @@ exports/
 
 Squirel.txt
 **/__pycache__/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+dist/
+build/
+venv/
+env/
+
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+*.tmp
+
+# App specific
+uploads/
+exports/
+*.log
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Supabase local
+supabase/.env
+.supabase/
+
+# Additional Security
+*.key
+*.pem
+*.crt
+secrets/
+config/production/
+prod-config/
 

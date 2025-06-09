@@ -7,6 +7,9 @@ from .utils.file_utils import ensure_directories_exist
 from .routes.static_routes import create_static_routes
 from .routes.upload_routes import create_upload_routes
 from .routes.export_routes import create_export_routes
+from .routes.auth_routes import create_auth_routes
+from .services.supabase_service import init_supabase_service
+from .services.security_service import init_security_service
 
 def create_app(config_name='default'):
     """
@@ -26,10 +29,28 @@ def create_app(config_name='default'):
     # Ensure directories exist - exact logic preserved
     ensure_directories_exist(app.config['UPLOAD_FOLDER'], app.config['EXPORT_FOLDER'])
     
-    # Register routes - preserving exact functionality
+    # Initialize Supabase service
+    if app.config.get('SUPABASE_URL') and app.config.get('SUPABASE_KEY'):
+        init_supabase_service(
+            app.config['SUPABASE_URL'],
+            app.config['SUPABASE_KEY'],
+            app.config['SUPABASE_JWT_SECRET']
+        )
+        app.logger.info("✅ Supabase service initialized")
+    else:
+        app.logger.warning("⚠️ Supabase configuration not found - authentication features will be disabled")
+    
+    # Initialize security service
+    security_service = init_security_service()
+    
+    # Register routes - preserving exact functionality and adding auth
     create_static_routes(app)
     create_upload_routes(app, app.config['UPLOAD_FOLDER'])
     create_export_routes(app, app.config['UPLOAD_FOLDER'], app.config['EXPORT_FOLDER'])
+    
+    # Register authentication routes
+    auth_routes = create_auth_routes()
+    app.register_blueprint(auth_routes)
     
     # Debug route to check all registered routes - exact functionality preserved
     @app.route('/debug/routes', methods=['GET'])

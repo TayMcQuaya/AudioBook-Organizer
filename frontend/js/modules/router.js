@@ -241,8 +241,66 @@ class Router {
     // Load auth page
     async loadAuthPage() {
         try {
-            // For now, redirect to app since we're not implementing auth
-            this.navigate('/app');
+            const appContainer = document.getElementById('appContainer');
+            if (!appContainer) {
+                throw new Error('App container not found for router.');
+            }
+
+            // Clean up app-specific resources
+            if (window.isAppInitialized) {
+                const mainScript = document.querySelector('script[src="/js/main.js"]');
+                if (mainScript) mainScript.remove();
+                window.isAppInitialized = false;
+            }
+
+            // Clean up any existing auth scripts
+            const existingAuthScript = document.getElementById('auth-page-script');
+            if (existingAuthScript) {
+                existingAuthScript.remove();
+            }
+
+            // Clean up any landing page scripts
+            const landingScript = document.getElementById('landing-page-script');
+            if (landingScript) {
+                landingScript.remove();
+            }
+
+            // Ensure auth page CSS is loaded
+            let authCSS = document.querySelector('link[href="/css/auth.css"]');
+            if (!authCSS) {
+                authCSS = document.createElement('link');
+                authCSS.rel = 'stylesheet';
+                authCSS.href = '/css/auth.css';
+                document.head.appendChild(authCSS);
+            }
+
+            // Load auth page HTML
+            const response = await fetch('/pages/auth/auth.html');
+            if (!response.ok) throw new Error(`Failed to fetch auth page: ${response.status}`);
+            const html = await response.text();
+
+            // Extract body content and inject it, but exclude script tags from the HTML
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            
+            // Remove any script tags from the parsed document to avoid conflicts
+            const scripts = doc.querySelectorAll('script');
+            scripts.forEach(script => script.remove());
+            
+            appContainer.innerHTML = doc.body.innerHTML;
+
+            document.body.className = 'auth-body app-ready';
+
+            // Load auth page JavaScript with proper module loading
+            const scriptId = 'auth-page-script';
+            const authScript = document.createElement('script');
+            authScript.id = scriptId;
+            authScript.type = 'module';
+            authScript.src = '/pages/auth/main.js';
+            document.head.appendChild(authScript);
+            
+            console.log('🔐 Auth page loaded successfully');
+            
         } catch (error) {
             console.error('Error loading auth page:', error);
             showError('Failed to load authentication page');

@@ -55,7 +55,7 @@
                 <a href="#how-it-works" class="nav-link">How It Works</a>
                 <a href="#demo" class="nav-link">Demo</a>
                 <a href="#pricing" class="nav-link">Pricing</a>
-                <button class="btn btn-primary" onclick="showAuthModal('login')">Sign In</button>
+                <a href="/auth" class="btn btn-primary">Sign In</a>
             </div>
             <div class="nav-mobile">
                 <button class="mobile-menu-btn" onclick="toggleMobileMenu()">
@@ -71,7 +71,7 @@
             <a href="#how-it-works" class="mobile-link">How It Works</a>
             <a href="#demo" class="mobile-link">Demo</a>
             <a href="#pricing" class="mobile-link">Pricing</a>
-            <button class="btn btn-primary mobile-auth-btn" onclick="showAuthModal('login')">Sign In</button>
+            <a href="/auth" class="btn btn-primary mobile-auth-btn">Sign In</a>
         </div>
     </nav>
 
@@ -92,10 +92,10 @@
                     Perfect for authors, content creators, and educators.
                 </p>
                 <div class="hero-actions">
-                    <button class="btn btn-primary btn-large" onclick="showAuthModal('signup')">
+                    <a href="/auth?mode=signup" class="btn btn-primary btn-large">
                         <span class="btn-icon">🚀</span>
                         Get Started Free
-                    </button>
+                    </a>
                     <button class="btn btn-secondary btn-large" onclick="tryAppDemo()">
                         <span class="btn-icon">📚</span>
                         Try Demo Now

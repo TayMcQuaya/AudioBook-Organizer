@@ -15,6 +15,11 @@ def create_static_routes(app):
         """Serve main HTML file for all SPA routes"""
         return send_from_directory('../frontend/public', 'index.html')
 
+    @app.route('/test-auth-fix')
+    def serve_test_auth_fix():
+        """Serve auth fix test page"""
+        return send_from_directory('../', 'test_auth_fix.html')
+
     @app.route('/favicon.ico')
     def serve_favicon():
         """Serve favicon"""

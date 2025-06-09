@@ -1,4 +1,25 @@
-Flask==2.0.1
-flask-cors==3.0.10
-pydub==0.25.1
-Werkzeug==2.0.1 
+# Flask and web framework dependencies
+Flask==3.0.0
+Werkzeug==3.0.1
+Jinja2==3.1.2
+MarkupSafe==2.1.3
+itsdangerous==2.1.2
+click==8.1.7
+blinker==1.7.0
+
+# CORS support
+Flask-CORS==4.0.0
+
+# Environment variables and configuration
+python-dotenv==1.0.0
+
+# Supabase dependencies
+supabase==2.0.2
+python-jose[cryptography]==3.3.0
+
+# HTTP requests for reCAPTCHA verification
+requests==2.31.0
+
+# Development and testing
+pytest==7.4.3
+pytest-flask==1.3.0 

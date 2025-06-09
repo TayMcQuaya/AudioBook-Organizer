@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign In - AudioBook Creator</title>
+    
+    <!-- CSS Files -->
+    <link rel="stylesheet" href="/css/main.css">
+    <link rel="stylesheet" href="/css/components.css">
+    <link rel="stylesheet" href="/css/themes.css">
+    <link rel="stylesheet" href="/css/auth.css">
+    <!-- Google reCAPTCHA v3 -->
+    <script src="https://www.google.com/recaptcha/api.js?render=YOUR_SITE_KEY" async defer></script>
+</head>
+<body class="auth-body">
+    <!-- Background -->
+    <div class="auth-background">
+        <div class="auth-gradient"></div>
+        <div class="auth-pattern"></div>
+    </div>
+
+    <!-- Navigation -->
+    <nav class="auth-nav">
+        <div class="nav-container">
+            <a href="/" class="nav-brand">
+                <span class="brand-icon">📚</span>
+                <span class="brand-text">AudioBook Creator</span>
+            </a>
+            <div class="nav-links">
+                <a href="/" class="nav-link">← Back to Home</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="auth-main">
+        <div class="auth-container">
+            <!-- Loading Overlay -->
+            <div id="authLoadingOverlay" class="loading-overlay">
+                <div class="loading-spinner"></div>
+                <p>Processing...</p>
+            </div>
+
+            <!-- Login Form -->
+            <div class="auth-card" id="loginCard">
+                <div class="auth-header">
+                    <h1 class="auth-title">Welcome Back</h1>
+                    <p class="auth-subtitle">Sign in to your AudioBook Creator account</p>
+                </div>
+
+                <form class="auth-form" id="loginForm">
+                    <div class="form-group">
+                        <label for="loginEmail" class="form-label">Email Address</label>
+                        <input 
+                            type="email" 
+                            id="loginEmail" 
+                            name="email" 
+                            class="form-input" 
+                            placeholder="Enter your email"
+                            required
+                            autocomplete="email"
+                        >
+                        <div class="form-error" id="loginEmailError"></div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="loginPassword" class="form-label">Password</label>
+                        <div class="password-input-group">
+                            <input 
+                                type="password" 
+                                id="loginPassword" 
+                                name="password" 
+                                class="form-input" 
+                                placeholder="Enter your password"
+                                required
+                                autocomplete="current-password"
+                            >
+                            <button type="button" class="password-toggle" id="loginPasswordToggle">
+                                <span class="toggle-icon">👁️</span>
+                            </button>
+                        </div>
+                        <div class="form-error" id="loginPasswordError"></div>
+                    </div>
+
+                    <!-- Hidden reCAPTCHA token field -->
+                    <input type="hidden" id="loginRecaptchaToken" name="recaptcha_token">
+
+                    <div class="form-actions">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="rememberMe" class="checkbox-input">
+                            <span class="checkbox-custom"></span>
+                            <span class="checkbox-text">Remember me</span>
+                        </label>
+                        <button type="button" class="link-button" id="forgotPasswordBtn">
+                            Forgot password?
+                        </button>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary btn-large btn-full" id="loginSubmitBtn">
+                        <span class="btn-text">Sign In</span>
+                        <span class="btn-loading" style="display: none;">
+                            <span class="loading-spinner"></span>
+                            Signing in...
+                        </span>
+                    </button>
+
+                    <div class="auth-divider">
+                        <span>or</span>
+                    </div>
+
+                    <button type="button" class="btn btn-outline btn-large btn-full" id="googleSignInBtn">
+                        <span class="btn-icon">🔍</span>
+                        Continue with Google
+                    </button>
+                </form>
+
+                <div class="auth-footer">
+                    <p>Don't have an account? 
+                        <button type="button" class="link-button" id="showSignupBtn">Sign up</button>
+                    </p>
+                </div>
+            </div>
+
+            <!-- Signup Form -->
+            <div class="auth-card" id="signupCard" style="display: none;">
+                <div class="auth-header">
+                    <h1 class="auth-title">Create Account</h1>
+                    <p class="auth-subtitle">Join AudioBook Creator and start converting text to audio</p>
+                </div>
+
+                <form class="auth-form" id="signupForm">
+                    <div class="form-group">
+                        <label for="signupFullName" class="form-label">Full Name</label>
+                        <input 
+                            type="text" 
+                            id="signupFullName" 
+                            name="fullName" 
+                            class="form-input" 
+                            placeholder="Enter your full name"
+                            required
+                            autocomplete="name"
+                        >
+                        <div class="form-error" id="signupFullNameError"></div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="signupEmail" class="form-label">Email Address</label>
+                        <input 
+                            type="email" 
+                            id="signupEmail" 
+                            name="email" 
+                            class="form-input" 
+                            placeholder="Enter your email"
+                            required
+                            autocomplete="email"
+                        >
+                        <div class="form-error" id="signupEmailError"></div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="signupPassword" class="form-label">Password</label>
+                        <div class="password-input-group">
+                            <input 
+                                type="password" 
+                                id="signupPassword" 
+                                name="password" 
+                                class="form-input" 
+                                placeholder="Create a password"
+                                required
+                                autocomplete="new-password"
+                            >
+                            <button type="button" class="password-toggle" id="signupPasswordToggle">
+                                <span class="toggle-icon">👁️</span>
+                            </button>
+                        </div>
+                        <div class="password-strength" id="passwordStrength">
+                            <div class="strength-bar">
+                                <div class="strength-fill"></div>
+                            </div>
+                            <span class="strength-text">Password strength</span>
+                        </div>
+                        <div class="form-error" id="signupPasswordError"></div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="confirmPassword" class="form-label">Confirm Password</label>
+                        <div class="password-input-group">
+                            <input 
+                                type="password" 
+                                id="confirmPassword" 
+                                class="form-input" 
+                                placeholder="Confirm your password"
+                                required
+                                autocomplete="new-password"
+                            >
+                            <button type="button" class="password-toggle" id="confirmPasswordToggle">
+                                <span class="toggle-icon">👁️</span>
+                            </button>
+                        </div>
+                        <div class="form-error" id="confirmPasswordError"></div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="agreeTerms" class="checkbox-input" required>
+                            <span class="checkbox-custom"></span>
+                            <span class="checkbox-text">
+                                I agree to the <a href="/terms" target="_blank">Terms of Service</a> 
+                                and <a href="/privacy" target="_blank">Privacy Policy</a>
+                            </span>
+                        </label>
+                        <div class="form-error" id="agreeTermsError"></div>
+                    </div>
+
+                    <!-- Hidden reCAPTCHA token field -->
+                    <input type="hidden" id="signupRecaptchaToken" name="recaptcha_token">
+
+                    <button type="submit" class="btn btn-primary btn-large btn-full" id="signupSubmitBtn">
+                        <span class="btn-text">Create Account</span>
+                        <span class="btn-loading" style="display: none;">
+                            <span class="loading-spinner"></span>
+                            Creating account...
+                        </span>
+                    </button>
+
+                    <div class="auth-divider">
+                        <span>or</span>
+                    </div>
+
+                    <button type="button" class="btn btn-outline btn-large btn-full" id="googleSignUpBtn">
+                        <span class="btn-icon">🔍</span>
+                        Continue with Google
+                    </button>
+                </form>
+
+                <div class="auth-footer">
+                    <p>Already have an account? 
+                        <button type="button" class="link-button" id="showLoginBtn">Sign in</button>
+                    </p>
+                </div>
+            </div>
+
+            <!-- Forgot Password Form -->
+            <div class="auth-card" id="forgotPasswordCard" style="display: none;">
+                <div class="auth-header">
+                    <h1 class="auth-title">Reset Password</h1>
+                    <p class="auth-subtitle">Enter your email to receive a password reset link</p>
+                </div>
+
+                <form class="auth-form" id="forgotPasswordForm">
+                    <div class="form-group">
+                        <label for="resetEmail" class="form-label">Email Address</label>
+                        <input 
+                            type="email" 
+                            id="resetEmail" 
+                            class="form-input" 
+                            placeholder="Enter your email"
+                            required
+                            autocomplete="email"
+                        >
+                        <div class="form-error" id="resetEmailError"></div>
+                    </div>
+
+                    <!-- Hidden reCAPTCHA token field -->
+                    <input type="hidden" id="forgotRecaptchaToken" name="recaptcha_token">
+
+                    <button type="submit" class="btn btn-primary btn-large btn-full" id="resetSubmitBtn">
+                        <span class="btn-text">Send Reset Link</span>
+                        <span class="btn-loading" style="display: none;">
+                            <span class="loading-spinner"></span>
+                            Sending...
+                        </span>
+                    </button>
+                </form>
+
+                <div class="auth-footer">
+                    <p>Remember your password? 
+                        <button type="button" class="link-button" id="backToLoginBtn">Sign in</button>
+                    </p>
+                </div>
+            </div>
+
+            <!-- Success Message -->
+            <div class="auth-card auth-success" id="successCard" style="display: none;">
+                <div class="success-icon">✅</div>
+                <h2 class="success-title">Check Your Email</h2>
+                <p class="success-message">
+                    We've sent you a confirmation link. Please check your email and click the link to complete your registration.
+                </p>
+                <button type="button" class="btn btn-outline btn-large" id="resendEmailBtn">
+                    Resend Email
+                </button>
+            </div>
+
+            <!-- Security Status Display -->
+            <div class="security-status">
+                <div class="security-indicator" id="securityIndicator">
+                    <span class="security-icon">🔒</span>
+                    <span class="security-text">Protected by reCAPTCHA</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Features Showcase -->
+        <div class="auth-features">
+            <h3 class="features-title">Why Choose AudioBook Creator?</h3>
+            <div class="features-grid">
+                <div class="feature-item">
+                    <div class="feature-icon">🎧</div>
+                    <h4 class="feature-title">High-Quality Audio</h4>
+                    <p class="feature-description">Convert text to natural-sounding speech with advanced AI voices</p>
+                </div>
+                <div class="feature-item">
+                    <div class="feature-icon">📚</div>
+                    <h4 class="feature-title">Chapter Organization</h4>
+                    <p class="feature-description">Automatically organize your content into chapters with smart detection</p>
+                </div>
+                <div class="feature-item">
+                    <div class="feature-icon">💰</div>
+                    <h4 class="feature-title">Credit System</h4>
+                    <p class="feature-description">Start with 100 free credits, pay only for what you use</p>
+                </div>
+                <div class="feature-item">
+                    <div class="feature-icon">🚀</div>
+                    <h4 class="feature-title">Fast Processing</h4>
+                    <p class="feature-description">Lightning-fast text-to-speech conversion powered by ElevenLabs</p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- App Initialization -->
+    <script type="module" src="/pages/auth/main.js"></script>
+
+</body>
+</html> 
