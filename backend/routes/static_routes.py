@@ -11,6 +11,7 @@ def create_static_routes(app):
     @app.route('/app')
     @app.route('/auth')
     @app.route('/profile')
+    @app.route('/auth/reset-password')
     def serve_spa():
         """Serve main HTML file for all SPA routes"""
         return send_from_directory('../frontend/public', 'index.html')

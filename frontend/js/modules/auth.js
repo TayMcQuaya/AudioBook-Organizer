@@ -4,6 +4,9 @@
  */
 
 import { showError, showSuccess, showInfo } from './notifications.js';
+import { validatePassword, checkPasswordStrength } from './validators.js';
+import sessionManager from './sessionManager.js';
+import { router } from './router.js';
 
 // Supabase client (will be initialized dynamically)
 let supabaseClient = null;
@@ -20,8 +23,12 @@ const authListeners = new Set();
 /**
  * Authentication Module Class
  */
-export class AuthModule {
+class AuthModule {
     constructor() {
+        if (AuthModule.instance) {
+            return AuthModule.instance;
+        }
+
         this.user = null;
         this.session = null;
         this.isLoading = false;
@@ -29,6 +36,11 @@ export class AuthModule {
         this.maxRetries = 3;
         this.lastWelcomeShown = 0;  // Prevent repeated welcome messages
         this.wasInitialized = false; // Track if we've seen the first auth state change
+        this.welcomeShownThisSession = false; // Prevent multiple welcome messages
+        this.userInitialized = false; // Prevent multiple user initialization calls
+        this.initPasswordStrengthMeter();
+        this.initPasswordVisibilityToggle();
+        AuthModule.instance = this;
     }
 
     /**
@@ -49,10 +61,7 @@ export class AuthModule {
                 
                 // Only proceed with session/listener setup if Supabase initialized successfully
                 if (supabaseClient) {
-                    // Check for existing session
-                    await this.checkExistingSession();
-                    
-                    // Set up auth state listener
+                    // Set up auth state listener, which handles all auth states including initial session
                     this.setupAuthListener();
                 } else {
                     console.warn('⚠️ Supabase failed to initialize - forms will work for validation only');
@@ -147,25 +156,8 @@ export class AuthModule {
      * Check for existing authentication session
      */
     async checkExistingSession() {
-        if (!supabaseClient) return;
-
-        try {
-            const { data: { session }, error } = await supabaseClient.auth.getSession();
-            
-            if (error) {
-                console.error('Error getting session:', error);
-                return;
-            }
-
-            if (session) {
-                await this.handleAuthSuccess(session);
-                console.log('✅ Existing session found and restored');
-            } else {
-                console.log('ℹ️ No existing session found');
-            }
-        } catch (error) {
-            console.error('Error checking existing session:', error);
-        }
+       // This method is deprecated and will be removed. 
+       // onAuthStateChange with the INITIAL_SESSION event handles this now.
     }
 
     /**
@@ -174,25 +166,59 @@ export class AuthModule {
     setupAuthListener() {
         if (!supabaseClient) return;
 
+        let lastEvent = null;
+        let lastEventTime = 0;
+        const MIN_EVENT_INTERVAL = 500; // Minimum time between same events in ms
+
         supabaseClient.auth.onAuthStateChange(async (event, session) => {
-            console.log('🔄 Auth state changed:', event, 'Current user:', this.user?.email);
+            // Prevent duplicate events in quick succession
+            const now = Date.now();
+            if (event === lastEvent && (now - lastEventTime) < MIN_EVENT_INTERVAL) {
+                console.log('🔄 Ignoring duplicate auth event:', event);
+                return;
+            }
+            
+            lastEvent = event;
+            lastEventTime = now;
+            
+            console.log('🔄 Auth state changed:', event);
+
+            if (event === 'PASSWORD_RECOVERY') {
+                console.log('🔑 Password recovery mode detected from event.');
+                sessionManager.setPasswordRecovery(true);
+                this.notifyAuthListeners(event, session);
+                return;
+            }
+
+            if (event === 'USER_UPDATED') {
+                console.log('👤 User data was updated.');
+                this.user = { ...this.user, ...session.user };
+                sessionManager.handleAuthStateChange(true, this.user);
+                this.notifyAuthListeners(event, session);
+                return;
+            }
+
+            if (event === 'INITIAL_SESSION' && sessionManager.isPasswordRecovery) {
+                console.log('🔑 Continuing password recovery, ignoring initial session for navigation.');
+                this.notifyAuthListeners('PASSWORD_RECOVERY', session);
+                this.wasInitialized = true;
+                return;
+            }
             
             switch (event) {
                 case 'SIGNED_IN':
-                    // Only show welcome message for actual logins, not session restoration
-                    // Session restoration happens when page loads and user was already signed in
-                    const isActualLogin = !this.wasInitialized || !this.user;
-                    console.log('🔍 Is actual login?', isActualLogin, 'Was initialized:', this.wasInitialized);
-                    await this.handleAuthSuccess(session, isActualLogin);
+                case 'INITIAL_SESSION':
+                    if (session) {
+                        await this.handleAuthSuccess(session, event === 'SIGNED_IN', event);
+                    } else {
+                        await this.handleSignOut();
+                    }
                     break;
                 case 'SIGNED_OUT':
                     await this.handleSignOut();
                     break;
                 case 'TOKEN_REFRESHED':
                     await this.handleTokenRefresh(session);
-                    break;
-                case 'USER_UPDATED':
-                    await this.handleUserUpdate(session);
                     break;
             }
             
@@ -207,9 +233,17 @@ export class AuthModule {
     /**
      * Handle successful authentication
      */
-    async handleAuthSuccess(session, isLogin = false) {
+    async handleAuthSuccess(session, isLogin = false, authEvent = null) {
         if (!session || !session.user) {
             console.error('Invalid session provided');
+            return;
+        }
+
+        // More comprehensive duplicate check - if we already have the same user and session
+        if (this.user?.id === session.user.id && 
+            this.session?.access_token === session.access_token &&
+            this.userInitialized) {
+            console.log('🔄 Ignoring duplicate auth success for same user session');
             return;
         }
 
@@ -242,7 +276,7 @@ export class AuthModule {
             detail: {
                 isAuthenticated: true,
                 user: session.user,
-                session: { token: authToken }
+                session: { token: authToken, event: authEvent }
             }
         }));
         
@@ -252,8 +286,8 @@ export class AuthModule {
             
             console.log('✅ User authenticated:', this.user.email);
             
-            // Only show welcome message on actual login, not session restoration
-            if (isLogin) {
+            // Only show welcome message on actual login, not session restoration, and only once per session
+            if (isLogin && !this.welcomeShownThisSession) {
                 // Use actual name if available, otherwise use email
                 const displayName = this.user.user_metadata?.full_name || 
                                   this.user.user_metadata?.name || 
@@ -261,6 +295,7 @@ export class AuthModule {
                                   this.user.name || 
                                   this.user.email.split('@')[0];
                 showSuccess(`Welcome back, ${displayName}!`);
+                this.welcomeShownThisSession = true;
             }
             
         } catch (error) {
@@ -304,6 +339,8 @@ export class AuthModule {
         this.user = null;
         currentUser = null;
         authToken = null;
+        this.welcomeShownThisSession = false; // Reset welcome flag for next login
+        this.userInitialized = false; // Reset user initialization flag for next login
 
         // Clear stored token
         localStorage.removeItem('auth_token');
@@ -313,12 +350,11 @@ export class AuthModule {
             detail: {
                 isAuthenticated: false,
                 user: null,
-                session: null
+                session: { event: 'SIGNED_OUT' }
             }
         }));
         
-        console.log('👋 User signed out');
-        showInfo('You have been signed out');
+        console.log('ℹ️ User signed out and session cleared.');
     }
 
     /**
@@ -333,21 +369,16 @@ export class AuthModule {
     }
 
     /**
-     * Handle user update
-     */
-    async handleUserUpdate(session) {
-        if (session && session.user) {
-            this.user = session.user;
-            currentUser = session.user;
-            console.log('👤 User data updated');
-        }
-    }
-
-    /**
      * Initialize user profile and credits
      */
     async initializeUser() {
         if (!authToken) return;
+        
+        // Prevent multiple initialization calls for the same user session
+        if (this.userInitialized) {
+            console.log('🔄 User already initialized, skipping duplicate call');
+            return;
+        }
 
         try {
             const response = await fetch('/api/auth/init-user', {
@@ -362,6 +393,7 @@ export class AuthModule {
             const data = await response.json();
             
             if (data.success) {
+                this.userInitialized = true; // Mark as initialized
                 if (data.is_new_user) {
                     showSuccess(`Welcome! You've been granted ${data.credits} credits to get started.`);
                 }
@@ -602,6 +634,7 @@ export class AuthModule {
      * Notify all authentication listeners
      */
     notifyAuthListeners(event, session) {
+        // Notify registered listeners
         authListeners.forEach(callback => {
             try {
                 callback(event, session, currentUser);
@@ -609,6 +642,21 @@ export class AuthModule {
                 console.error('Error in auth listener:', error);
             }
         });
+        
+        // Dispatch browser event for cross-component communication
+        const authStateEvent = new CustomEvent('auth-state-changed', {
+            detail: {
+                event,
+                isAuthenticated: !!currentUser,
+                user: currentUser,
+                session: session ? {
+                    token: session.access_token,
+                    user: session.user,
+                    ...session
+                } : null
+            }
+        });
+        window.dispatchEvent(authStateEvent);
     }
 
     /**
@@ -649,25 +697,146 @@ export class AuthModule {
             throw error;
         }
     }
+
+    handlePasswordRecoveryPage() {
+        console.log("Setting up password recovery page...");
+
+        const resetCard = document.getElementById('resetCard');
+        const loadingOverlay = document.getElementById('loadingOverlay');
+        const form = document.getElementById('reset-password-form');
+        
+        if (!resetCard || !form) {
+            console.error("Could not find required elements on the password reset page.");
+            showError("An error occurred loading the page. Please try again.");
+            return;
+        }
+
+        // Show loading overlay until we confirm recovery state
+        loadingOverlay.classList.add('show');
+        
+        // Wait for session manager to confirm recovery state
+        setTimeout(() => {
+            if (sessionManager.isPasswordRecovery) {
+                loadingOverlay.classList.remove('show');
+                resetCard.style.display = 'block';
+                this.setupPasswordResetForm();
+            } else {
+                showError("Invalid or expired password reset link.");
+                // Redirect to login after a delay
+                setTimeout(() => window.router.navigate('/auth'), 3000);
+            }
+        }, 500); // Shortened delay
+    }
+    
+    setupPasswordResetForm() {
+        const form = document.getElementById('reset-password-form');
+        const newPasswordInput = document.getElementById('newPassword');
+        const confirmPasswordInput = document.getElementById('confirmPassword');
+        const updateBtn = document.getElementById('updatePasswordBtn');
+        const formError = document.getElementById('formErrorMessage');
+
+        if (!form || !newPasswordInput || !confirmPasswordInput || !updateBtn) return;
+
+        // Initialize password strength meter for the new form
+        this.initPasswordStrengthMeter(newPasswordInput.id);
+        this.initPasswordVisibilityToggle();
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const newPassword = newPasswordInput.value;
+            const confirmPassword = confirmPasswordInput.value;
+
+            // Clear previous errors
+            formError.textContent = '';
+            formError.classList.remove('show');
+
+            if (newPassword !== confirmPassword) {
+                formError.textContent = "Passwords do not match.";
+                formError.classList.add('show');
+                return;
+            }
+
+            if (!validatePassword(newPassword)) {
+                formError.textContent = "Password must be at least 8 characters long and include a number, an uppercase, and a lowercase letter.";
+                formError.classList.add('show');
+                return;
+            }
+
+            this.setLoading(updateBtn, true);
+
+            try {
+                const { error } = await supabaseClient.auth.updateUser({ password: newPassword });
+
+                if (error) {
+                    throw error;
+                }
+                
+                showSuccess('Password updated successfully!', 'You can now log in with your new password.');
+                
+                // Clear any pending redirects from before the password reset
+                router.clearLoginRedirect();
+
+                // After successful password update, sign the user out completely
+                await this.signOut();
+
+                // Clear the recovery flag and navigate to login
+                sessionManager.clearPasswordRecoveryFlag();
+                router.navigateTo('/auth');
+
+            } catch (error) {
+                console.error('❌ Failed to update password:', error);
+                showError('Password Update Failed', error.message);
+            } finally {
+                this.setLoading(updateBtn, false);
+            }
+        });
+    }
+
+    initPasswordStrengthMeter(inputId = 'password') {
+        const passwordInput = document.getElementById(inputId);
+        const strengthFill = document.getElementById('strengthFill');
+        const strengthText = document.getElementById('strengthText');
+
+        if (!passwordInput || !strengthFill || !strengthText) return;
+
+        passwordInput.addEventListener('input', () => {
+            const password = passwordInput.value;
+            const strength = checkPasswordStrength(password);
+
+            // Update bar
+            strengthFill.style.width = `${strength * 100}%`;
+            strengthText.textContent = strength.toFixed(2);
+        });
+    }
+
+    initPasswordVisibilityToggle() {
+        const toggles = document.querySelectorAll('.password-toggle');
+        toggles.forEach(toggle => {
+            // Prevent duplicate listeners
+            if (toggle.dataset.listenerAttached) return;
+
+            toggle.addEventListener('click', () => {
+                const targetId = toggle.dataset.target;
+                const passwordInput = document.getElementById(targetId);
+                if (passwordInput) {
+                    const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+                    passwordInput.setAttribute('type', type);
+                    toggle.querySelector('.toggle-icon').textContent = type === 'password' ? '👁️' : '🙈';
+                }
+            });
+            toggle.dataset.listenerAttached = 'true';
+        });
+    }
+    
+    setLoading(button, isLoading) {
+        const btnText = button.querySelector('.btn-text');
+        btnText.textContent = isLoading ? 'Processing...' : 'Update Password';
+        button.disabled = isLoading;
+    }
 }
 
-// Create global auth instance
 const auth = new AuthModule();
 
-// Export auth instance and helper functions
-export { auth };
-export const {
-    init: initAuth,
-    signIn,
-    signUp,
-    signOut,
-    resetPassword,
-    getCurrentUser,
-    getAuthToken,
-    isAuthenticated,
-    checkAuthStatus,
-    getUserCredits,
-    addAuthListener,
-    removeAuthListener,
-    apiRequest
-} = auth; 
+export default auth;
+export { supabaseClient }; 

@@ -1,12 +1,11 @@
 // AudioBook Organizer - Simple Client-Side Router
 
 import { showError, showInfo } from './notifications.js';
-import { AuthModule } from './auth.js';
+import auth from './auth.js';
 import sessionManager from './sessionManager.js';
 
 // Router state
 let currentRoute = '/';
-let authModule = null;
 let routes = new Map();
 let guards = new Map();
 
@@ -30,6 +29,12 @@ const routeConfig = {
         requiresAuth: false,
         layout: 'auth'
     },
+    '/auth/reset-password': {
+        title: 'Reset Password - AudioBook Organizer',
+        component: 'reset-password',
+        requiresAuth: false, // Page is public, but requires a token in the URL
+        layout: 'auth'
+    },
     '/profile': {
         title: 'Profile - AudioBook Organizer',
         component: 'profile',
@@ -44,6 +49,7 @@ class Router {
         this.currentRoute = '/';
         this.previousRoute = null;
         this.isInitialized = false;
+        this.isLoading = false;
         
         // Bind methods
         this.navigate = this.navigate.bind(this);
@@ -55,14 +61,13 @@ class Router {
         if (this.isInitialized) return;
         
         // Initialize auth module
-        authModule = new AuthModule();
-        await authModule.init();
+        await auth.init();
         
         // Initialize session manager
         await sessionManager.init();
         
         // Make auth module globally available
-        window.authModule = authModule;
+        window.authModule = auth;
         
         // Listen for browser back/forward
         window.addEventListener('popstate', this.handlePopState);
@@ -70,11 +75,43 @@ class Router {
         // Handle internal link clicks
         document.addEventListener('click', this.handleLinkClick);
         
+        // Wait for auth state to be ready before handling initial route
+        await this.waitForAuthReady();
+        
         // Initialize current route
         await this.handleRoute(window.location.pathname);
         
         this.isInitialized = true;
         console.log('📍 Router initialized with authentication');
+    }
+    
+    /**
+     * Wait for authentication state to be properly initialized
+     */
+    async waitForAuthReady() {
+        return new Promise((resolve) => {
+            // If auth is already ready or there's no token, resolve immediately
+            if (sessionManager.isAuthenticated || !localStorage.getItem('auth_token')) {
+                resolve();
+                return;
+            }
+            
+            // Listen for auth state changes
+            const checkAuthReady = () => {
+                if (sessionManager.isAuthenticated || !localStorage.getItem('auth_token')) {
+                    window.removeEventListener('auth-state-changed', checkAuthReady);
+                    resolve();
+                }
+            };
+            
+            window.addEventListener('auth-state-changed', checkAuthReady);
+            
+            // Timeout after 3 seconds to prevent hanging
+            setTimeout(() => {
+                window.removeEventListener('auth-state-changed', checkAuthReady);
+                resolve();
+            }, 3000);
+        });
     }
     
     // Navigate to a route
@@ -97,45 +134,66 @@ class Router {
     }
     
     // Handle route changes
-    async handleRoute(path) {
-        // Extract pathname from URL (remove query parameters and hash)
-        const url = new URL(path, window.location.origin);
-        const pathname = url.pathname;
-        
-        const route = routeConfig[pathname];
-        
-        if (!route) {
-            console.warn(`Route not found: ${pathname}`);
-            await this.navigate('/', true);
+    async handleRoute(path = null, state = {}) {
+        // If already loading, ignore new requests unless it's a popstate
+        if (this.isLoading && !state.isPopState) {
+            console.warn('Router is already loading a page, ignoring request.');
             return;
         }
         
-        // Check authentication requirements
-        if (route.requiresAuth && !sessionManager.isAuthenticated) {
-            console.log('🔒 Route requires authentication, redirecting to auth page');
-            showInfo('Please sign in to access this page');
-            await this.navigate('/auth');
-            return;
+        this.isLoading = true;
+        const targetPath = path || window.location.pathname;
+        const route = routeConfig[targetPath];
+        
+        try {
+            if (!route) {
+                console.warn(`Route not found: ${targetPath}`);
+                await this.navigate('/', true);
+                return;
+            }
+            
+            // Resolve authentication status
+            const isAuthenticated = state.isAuthenticated ?? sessionManager.isAuthenticated;
+            const isPasswordRecovery = sessionManager.isPasswordRecovery;
+            
+            if (isPasswordRecovery && targetPath !== '/auth/reset-password') {
+                console.log('In password recovery mode, forcing navigation to reset password page.');
+                await this.navigate('/auth/reset-password', { pushState: false });
+                return;
+            }
+
+            // Check authentication requirements
+            if (route.requiresAuth && !isAuthenticated) {
+                console.warn(`🔒 Route ${targetPath} requires authentication. Redirecting to login.`);
+                showInfo('Please sign in to access this page');
+                await this.navigate('/auth');
+                return;
+            }
+            
+            // Redirect authenticated users away from auth page, UNLESS it's a password recovery flow
+            if (targetPath === '/auth' && isAuthenticated && !isPasswordRecovery) {
+                console.log('👤 User already authenticated, redirecting to app');
+                await this.navigate('/app');
+                return;
+            }
+
+            // Update current route
+            this.currentRoute = targetPath;
+            
+            // Update document title
+            document.title = route.title;
+            
+            // Load the appropriate content
+            await this.loadRoute(route);
+            
+            // Track navigation
+            this.trackNavigation(targetPath);
+        } catch (error) {
+            console.error('Error handling route:', error);
+            showError('Failed to load page. Please try again.');
+        } finally {
+            this.isLoading = false;
         }
-        
-        // Redirect authenticated users away from auth page
-        if (pathname === '/auth' && sessionManager.isAuthenticated) {
-            console.log('👤 User already authenticated, redirecting to app');
-            await this.navigate('/app');
-            return;
-        }
-        
-        // Update current route
-        this.currentRoute = pathname;
-        
-        // Update document title
-        document.title = route.title;
-        
-        // Load the appropriate content
-        await this.loadRoute(route);
-        
-        // Track navigation
-        this.trackNavigation(pathname);
     }
     
     // Load route content
@@ -150,6 +208,9 @@ class Router {
                     break;
                 case 'auth':
                     await this.loadAuthPage();
+                    break;
+                case 'reset-password':
+                    await this.loadResetPasswordPage();
                     break;
                 case 'profile':
                     await this.loadProfilePage();
@@ -352,6 +413,40 @@ class Router {
         }
     }
     
+    // Load password reset page
+    async loadResetPasswordPage() {
+        try {
+            const appContainer = document.getElementById('appContainer');
+            if (!appContainer) {
+                throw new Error('App container not found for router.');
+            }
+
+            // Ensure correct body class and remove conflicting assets
+            document.body.className = 'auth-body app-ready';
+            const landingCSS = document.querySelector('link[href="/css/landing.css"]');
+            if (landingCSS) landingCSS.remove();
+            const landingScript = document.getElementById('landing-page-script');
+            if (landingScript) landingScript.remove();
+
+            // Load reset password page HTML
+            const response = await fetch('/pages/auth/reset-password.html');
+            if (!response.ok) throw new Error(`Failed to fetch reset password page: ${response.status}`);
+            
+            appContainer.innerHTML = await response.text();
+
+            // The auth module will handle the logic after this
+            if (window.authModule) {
+                window.authModule.handlePasswordRecoveryPage();
+            } else {
+                console.error("Auth module not initialized for password recovery page.");
+                showError("An error occurred. Please try again.");
+            }
+        } catch (error) {
+            console.error('Error loading reset password page:', error);
+            showError('Failed to load the password reset page.');
+        }
+    }
+    
     // Load profile page
     async loadProfilePage() {
         try {
@@ -366,8 +461,8 @@ class Router {
     
     // Handle popstate events
     handlePopState(event) {
-        const path = event.state?.path || '/';
-        this.handleRoute(path);
+        const path = event.state ? event.state.path : '/';
+        this.handleRoute(path, { ...(event.state || {}), isPopState: true });
     }
     
     // Handle link clicks

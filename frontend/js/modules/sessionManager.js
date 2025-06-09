@@ -4,6 +4,7 @@
  */
 
 import { showSuccess, showError, showInfo } from './notifications.js';
+import { supabaseClient } from './auth.js';
 
 class SessionManager {
     constructor() {
@@ -11,11 +12,15 @@ class SessionManager {
         this.user = null;
         this.isAuthenticated = false;
         this.isInitialized = false;
+        this.isPasswordRecovery = false; // Flag for password recovery state
+        this.hasBeenAuthenticated = false; // Track if user was ever authenticated in this session
         
         // Operational flags
         this.isCheckingAuth = false;
         this.lastAuthCheck = 0;
         this.MIN_AUTH_CHECK_INTERVAL = 5000; // 5 seconds between auth checks
+        this.lastEventProcessed = null; // Track last auth event to prevent duplicates
+        this.lastEventTime = 0; // Track timing of last event
         
         // Event handling
         this.listeners = new Set();
@@ -31,16 +36,15 @@ class SessionManager {
         
         console.log('🔒 Initializing session manager...');
         
-        // Clean up any invalid tokens
-        this.cleanupInvalidTokens();
-        
-        // Initial auth check
-        await this.checkAuthStatus();
-        
-        // Setup event listeners
         this.setupEventListeners();
         
         this.isInitialized = true;
+        
+        // Check for password recovery state ONCE on initialization
+        if (window.location.hash.includes('type=recovery')) {
+            this.isPasswordRecovery = true;
+        }
+
         console.log('✅ Session manager initialized');
     }
 
@@ -77,7 +81,8 @@ class SessionManager {
      * Handle storage changes
      */
     handleStorageChange(event) {
-        if (event.key === 'auth_token' && !event.newValue) {
+        // Only handle logout if there was a previous value (actual logout from another tab)
+        if (event.key === 'auth_token' && !event.newValue && event.oldValue) {
             this.handleSignOut();
         }
     }
@@ -185,14 +190,42 @@ class SessionManager {
      * Handle authentication state changes
      */
     handleAuthStateChange(isAuthenticated, user, session) {
-        console.log('🔄 Auth state changed:', isAuthenticated ? `Signed in as ${user?.email}` : 'Signed out');
+        const now = Date.now();
+        const userId = user?.id;
+        const eventKey = `${isAuthenticated}_${userId}`;
         
-        this.isAuthenticated = isAuthenticated;
+        // Prevent duplicate events in quick succession (within 1 second)
+        if (this.lastEventProcessed === eventKey && (now - this.lastEventTime) < 1000) {
+            console.log('🔄 Session manager ignoring duplicate auth state change');
+            return;
+        }
+        
+        this.lastEventProcessed = eventKey;
+        this.lastEventTime = now;
+        
+        console.log('🔄 Session manager received auth state changed:', isAuthenticated ? `Signed in as ${user?.email}` : 'Signed out');
+        
+        // Track if user becomes authenticated
+        if (isAuthenticated && !this.isAuthenticated) {
+            this.hasBeenAuthenticated = true;
+        }
+        
+        // If we are in password recovery, route as unauthenticated.
+        if (this.isPasswordRecovery) {
+            this.isAuthenticated = false;
+        } else {
+            this.isAuthenticated = isAuthenticated;
+        }
+        
         this.user = user;
         
         if (isAuthenticated && session?.token && this.isValidJWT(session.token)) {
                 localStorage.setItem('auth_token', session.token);
+        } else if (!isAuthenticated) {
+            localStorage.removeItem('auth_token');
         }
+        
+        console.log(`Session state updated. Auth: ${this.isAuthenticated}, Recovery: ${this.isPasswordRecovery}`);
         
         this.notifyStateChange();
     }
@@ -201,13 +234,17 @@ class SessionManager {
      * Handle sign out
      */
     async handleSignOut() {
+        const wasAuthenticated = this.isAuthenticated;
         this.setUnauthenticated();
         
         if (window.authModule?.signOut) {
             await window.authModule.signOut();
         }
         
-        showInfo('You have been signed out');
+        // Only show logout message if user was previously authenticated in this session
+        if (wasAuthenticated && this.hasBeenAuthenticated) {
+            showInfo('You have been signed out');
+        }
         
         if (window.router && ['/app', '/profile'].includes(window.location.pathname)) {
             window.router.navigate('/');
@@ -285,6 +322,27 @@ class SessionManager {
      */
     async signOut() {
         await this.handleSignOut();
+    }
+
+    /**
+     * Explicitly sets the password recovery state.
+     * @param {boolean} isRecovery - True if in password recovery mode.
+     */
+    setPasswordRecovery(isRecovery) {
+        this.isPasswordRecovery = isRecovery;
+        if (isRecovery) {
+            // If we're in recovery mode, we are never considered "authenticated" for routing purposes.
+            this.isAuthenticated = false;
+        }
+        console.log(`Password recovery state set to: ${this.isPasswordRecovery}`);
+    }
+
+    /**
+     * Clears the password recovery flag after the process is complete.
+     */
+    clearPasswordRecoveryFlag() {
+        this.isPasswordRecovery = false;
+        console.log('Password recovery state cleared.');
     }
 }
 
