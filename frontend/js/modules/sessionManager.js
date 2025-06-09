@@ -7,14 +7,20 @@ import { showSuccess, showError, showInfo } from './notifications.js';
 
 class SessionManager {
     constructor() {
+        // Core state
         this.user = null;
         this.isAuthenticated = false;
         this.isInitialized = false;
+        
+        // Operational flags
+        this.isCheckingAuth = false;
+        this.lastAuthCheck = 0;
+        this.MIN_AUTH_CHECK_INTERVAL = 5000; // 5 seconds between auth checks
+        
+        // Event handling
         this.listeners = new Set();
-        this.isCheckingAuth = false;  // Prevent simultaneous auth checks
-        this.listenersSetup = false;  // Prevent duplicate listeners
-        this.lastAuthCheck = 0;       // Track last auth check timestamp
-        this.creatingNavigation = false;  // Prevent multiple simultaneous navigation creations
+        this.boundHandleVisibilityChange = this.handleVisibilityChange.bind(this);
+        this.boundHandleStorageChange = this.handleStorageChange.bind(this);
     }
 
     /**
@@ -25,17 +31,55 @@ class SessionManager {
         
         console.log('🔒 Initializing session manager...');
         
-        // Clean up any invalid tokens first
+        // Clean up any invalid tokens
         this.cleanupInvalidTokens();
         
-        // Check for existing authentication
+        // Initial auth check
         await this.checkAuthStatus();
         
-        // Listen for auth state changes
-        this.setupAuthListeners();
+        // Setup event listeners
+        this.setupEventListeners();
         
         this.isInitialized = true;
         console.log('✅ Session manager initialized');
+    }
+
+    /**
+     * Setup all event listeners
+     */
+    setupEventListeners() {
+        // Auth state changes
+        window.addEventListener('auth-state-changed', event => {
+            const { isAuthenticated, user, session } = event.detail;
+            this.handleAuthStateChange(isAuthenticated, user, session);
+        });
+
+        // Storage changes (logout from other tabs)
+        window.addEventListener('storage', this.boundHandleStorageChange);
+
+        // Page visibility changes
+        document.addEventListener('visibilitychange', this.boundHandleVisibilityChange);
+    }
+
+    /**
+     * Handle page visibility changes
+     */
+    handleVisibilityChange() {
+        if (!document.hidden && this.isInitialized && this.isAuthenticated) {
+            const now = Date.now();
+            if (now - this.lastAuthCheck > this.MIN_AUTH_CHECK_INTERVAL) {
+                this.checkAuthStatus();
+            }
+        }
+    }
+
+    /**
+     * Handle storage changes
+     */
+    handleStorageChange(event) {
+        if (event.key === 'auth_token' && !event.newValue) {
+            this.handleSignOut();
+        }
     }
 
     /**
@@ -44,7 +88,7 @@ class SessionManager {
     cleanupInvalidTokens() {
         const authToken = localStorage.getItem('auth_token');
         if (authToken && !this.isValidJWT(authToken)) {
-            console.log('🧹 Cleaning up invalid token from localStorage');
+            console.log('🧹 Cleaning up invalid token');
             localStorage.removeItem('auth_token');
         }
     }
@@ -53,43 +97,30 @@ class SessionManager {
      * Validate JWT token format
      */
     isValidJWT(token) {
-        if (!token || typeof token !== 'string') {
-            return false;
-        }
+        if (!token || typeof token !== 'string') return false;
         
-        // JWT should have exactly 3 parts separated by dots
         const parts = token.split('.');
         if (parts.length !== 3) {
-            console.warn('🚫 Invalid JWT format - not enough segments');
+            console.warn('🚫 Invalid JWT format - wrong number of segments');
             return false;
         }
         
-        // Each part should be base64-like (allow for padding)
         const base64Pattern = /^[A-Za-z0-9_-]+$/;
-        for (const part of parts) {
-            if (!base64Pattern.test(part)) {
-                console.warn('🚫 Invalid JWT format - invalid characters');
-                return false;
-            }
-        }
-        
-        return true;
+        return parts.every(part => base64Pattern.test(part));
     }
 
     /**
      * Check current authentication status
      */
     async checkAuthStatus() {
-        // Prevent multiple simultaneous auth checks
         if (this.isCheckingAuth) {
-            console.log('⏳ Auth check already in progress, skipping...');
+            console.log('⏳ Auth check in progress, skipping');
             return;
         }
         
-        // Add frequency limiting - minimum 5 seconds between checks
         const now = Date.now();
-        if (this.lastAuthCheck && now - this.lastAuthCheck < 5000) {
-            console.log('⏳ Auth check too frequent, skipping...');
+        if (now - this.lastAuthCheck < this.MIN_AUTH_CHECK_INTERVAL) {
+            console.log('⏳ Auth check too frequent, skipping');
             return;
         }
         
@@ -97,30 +128,21 @@ class SessionManager {
         this.lastAuthCheck = now;
         
         try {
-            console.log('🔍 Checking auth status...');
-            
-            // First check if auth module is available and has a user
-            if (window.authModule && window.authModule.isAuthenticated()) {
+            // First check auth module
+            if (window.authModule?.isAuthenticated()) {
                 this.user = window.authModule.getCurrentUser();
                 this.isAuthenticated = true;
-                console.log('👤 User authenticated via authModule:', this.user?.email);
-            } else {
-                // Check localStorage for auth token
+                return;
+            }
+
+            // Then check token
                 const authToken = localStorage.getItem('auth_token');
-                if (authToken) {
-                    console.log('🔑 Found auth token, validating format...');
-                    
-                    // Validate token format before making API call
-                    if (!this.isValidJWT(authToken)) {
-                        console.log('❌ Invalid token format, clearing...');
-                        localStorage.removeItem('auth_token');
-                        this.isAuthenticated = false;
-                        this.user = null;
-                    } else {
-                        console.log('✅ Token format valid, verifying with backend...');
-                        
-                        try {
-                            // Verify token with backend
+            if (!authToken || !this.isValidJWT(authToken)) {
+                this.setUnauthenticated();
+                return;
+            }
+
+            // Verify with backend
                             const response = await fetch('/api/auth/status', {
                                 headers: { 
                                     'Authorization': `Bearer ${authToken}`,
@@ -133,398 +155,65 @@ class SessionManager {
                                 if (data.authenticated && data.user) {
                                     this.user = data.user;
                                     this.isAuthenticated = true;
-                                    console.log('👤 Session restored from token:', this.user.email);
-                                } else {
-                                    console.log('❌ Backend says user not authenticated');
-                                    localStorage.removeItem('auth_token');
-                                    this.isAuthenticated = false;
-                                    this.user = null;
-                                }
-                            } else {
-                                console.log('❌ Token validation failed with backend, clearing...');
-                                localStorage.removeItem('auth_token');
-                                this.isAuthenticated = false;
-                                this.user = null;
-                            }
-                        } catch (fetchError) {
-                            console.error('❌ Network error during token verification:', fetchError);
-                            // Don't clear token on network errors, just set auth state to false
-                            this.isAuthenticated = false;
-                            this.user = null;
-                        }
-                    }
                 } else {
-                    console.log('🔍 No auth token found');
-                    this.isAuthenticated = false;
-                    this.user = null;
+                    this.setUnauthenticated();
                 }
+            } else {
+                this.setUnauthenticated();
             }
-            
-            // Update UI based on auth status (but only if DOM is ready)
-            if (document.readyState === 'complete' || document.readyState === 'interactive') {
-                this.updateAuthUI();
-            }
-            
         } catch (error) {
-            console.error('❌ Error checking auth status:', error);
+            console.error('❌ Auth check error:', error);
+            // Don't clear token on network errors
             this.isAuthenticated = false;
             this.user = null;
         } finally {
             this.isCheckingAuth = false;
+            this.notifyStateChange();
         }
     }
 
     /**
-     * Setup listeners for authentication state changes
+     * Set unauthenticated state and clean up
      */
-    setupAuthListeners() {
-        // Prevent duplicate listeners
-        if (this.listenersSetup) {
-            console.log('🔄 Auth listeners already setup, skipping...');
-            return;
-        }
-
-        // Listen for custom auth events
-        window.addEventListener('auth-state-changed', (event) => {
-            const { isAuthenticated, user, session } = event.detail;
-            this.handleAuthStateChange(isAuthenticated, user, session);
-        });
-
-        // Listen for storage changes (logout from another tab)
-        window.addEventListener('storage', (event) => {
-            if (event.key === 'auth_token' && !event.newValue) {
-                this.handleSignOut();
-            }
-        });
-
-        // Listen for page visibility changes to refresh session (but limit frequency)
-        let lastVisibilityCheck = 0;
-        document.addEventListener('visibilitychange', () => {
-            if (!document.hidden && this.isInitialized) {
-                const now = Date.now();
-                // Only check auth if more than 60 seconds have passed and user was previously authenticated
-                if (now - lastVisibilityCheck > 60000 && this.isAuthenticated) {
-                    lastVisibilityCheck = now;
-                    setTimeout(() => {
-                        this.checkAuthStatus();
-                    }, 1000); // Longer delay to avoid race conditions
-                }
-            }
-        });
-
-        this.listenersSetup = true;
-        console.log('🔄 Auth listeners setup completed');
+    setUnauthenticated() {
+        localStorage.removeItem('auth_token');
+        this.isAuthenticated = false;
+        this.user = null;
     }
 
     /**
      * Handle authentication state changes
      */
     handleAuthStateChange(isAuthenticated, user, session) {
-        console.log('🔄 SessionManager: Auth state changed to:', isAuthenticated, 'for user:', user?.email);
+        console.log('🔄 Auth state changed:', isAuthenticated ? `Signed in as ${user?.email}` : 'Signed out');
         
         this.isAuthenticated = isAuthenticated;
         this.user = user;
         
-        if (isAuthenticated && session?.token) {
-            // Validate token before storing
-            if (this.isValidJWT(session.token)) {
+        if (isAuthenticated && session?.token && this.isValidJWT(session.token)) {
                 localStorage.setItem('auth_token', session.token);
-                console.log('✅ Valid token stored in localStorage');
-            } else {
-                console.warn('⚠️ Received invalid token format, not storing');
-            }
         }
         
-        console.log('🔄 Auth state changed:', isAuthenticated ? `Signed in as ${user?.email}` : 'Signed out');
-        
-        // Force UI update with a small delay to ensure DOM is ready
-        setTimeout(() => {
-            console.log('🔄 Forcing UI update...');
-            this.updateAuthUI();
-            
-            // Double-check that user nav was created for authenticated users
-            if (isAuthenticated && user) {
-                const userNav = document.querySelector('.user-nav');
-                if (!userNav) {
-                    console.warn('⚠️ User nav not found after update, forcing creation...');
-                    this.createUserNavigation();
-                }
-            }
-        }, 100);
-        
-        // Notify listeners
-        this.notifyListeners({
-            isAuthenticated,
-            user: this.user
-        });
+        this.notifyStateChange();
     }
 
     /**
      * Handle sign out
      */
     async handleSignOut() {
-        this.isAuthenticated = false;
-        this.user = null;
+        this.setUnauthenticated();
         
-        // Clear local storage
-        localStorage.removeItem('auth_token');
-        
-        // Update UI
-        this.updateAuthUI();
-        
-        // Sign out from auth module if available
-        if (window.authModule && typeof window.authModule.signOut === 'function') {
+        if (window.authModule?.signOut) {
             await window.authModule.signOut();
         }
         
-        console.log('👋 User signed out');
         showInfo('You have been signed out');
         
-        // Redirect to landing page if on protected route
-        if (window.router && (window.location.pathname === '/app' || window.location.pathname === '/profile')) {
+        if (window.router && ['/app', '/profile'].includes(window.location.pathname)) {
             window.router.navigate('/');
         }
-    }
-
-    /**
-     * Update authentication UI elements across the page
-     */
-    updateAuthUI() {
-        console.log('🔄 Updating auth UI - isAuthenticated:', this.isAuthenticated, 'user:', this.user?.email);
         
-        // Update navigation authentication elements
-        this.updateNavAuth();
-        
-        // Update any other auth-dependent UI elements
-        this.updateAuthDependentElements();
-    }
-
-    /**
-     * Update navigation authentication elements
-     */
-    updateNavAuth() {
-        console.log('🔄 Updating nav auth - isAuthenticated:', this.isAuthenticated);
-        
-        // Look for auth navigation elements
-        const authButtons = document.querySelectorAll('[data-auth-element]');
-        const signInButtons = document.querySelectorAll('a[href="/auth"], .auth-btn, .btn-signin');
-        const userMenus = document.querySelectorAll('.user-menu, .user-dropdown');
-        
-        if (this.isAuthenticated && this.user) {
-            console.log('👤 Creating user navigation for:', this.user.email);
-            
-            // Check if user navigation already exists and is for the current user
-            const existingUserNav = document.querySelector('.user-nav .user-name');
-            const currentDisplayName = this.getUserDisplayName();
-            
-            if (existingUserNav && existingUserNav.textContent === currentDisplayName) {
-                console.log('✅ User navigation already exists for current user, skipping creation');
-                
-                // Just ensure sign-in buttons are hidden
-                signInButtons.forEach(btn => {
-                    if (btn.style) btn.style.display = 'none';
-                });
-                
-                return;
-            }
-            
-            // Hide sign-in buttons
-            signInButtons.forEach(btn => {
-                if (btn.style) btn.style.display = 'none';
-            });
-            
-            // Show/update user menus
-            userMenus.forEach(menu => {
-                if (menu.style) menu.style.display = 'block';
-            });
-            
-            // Update or create user navigation
-            this.createUserNavigation();
-            
-        } else {
-            console.log('🔒 User not authenticated, showing sign-in buttons');
-            
-            // Show sign-in buttons
-            signInButtons.forEach(btn => {
-                if (btn.style) btn.style.display = '';
-            });
-            
-            // Hide user menus
-            userMenus.forEach(menu => {
-                if (menu.style) menu.style.display = 'none';
-            });
-            
-            // Remove user navigation
-            this.removeUserNavigation();
-        }
-    }
-
-    /**
-     * Create user navigation elements
-     */
-    createUserNavigation() {
-        console.log('🔨 Creating user navigation for:', this.getUserDisplayName());
-        
-        // Prevent multiple simultaneous creation attempts
-        if (this.creatingNavigation) {
-            console.log('⏳ Already creating navigation, skipping...');
-            return;
-        }
-        this.creatingNavigation = true;
-        
-        // Wait for DOM to be ready if needed
-        const createNav = () => {
-            // Update main navigation
-            const navLinks = document.querySelector('.nav-links');
-            if (navLinks) {
-                console.log('✅ Found nav-links container');
-                
-                // Remove existing user nav if present
-                const existingUserNav = navLinks.querySelector('.user-nav');
-                if (existingUserNav) {
-                    console.log('🗑️ Removing existing user nav');
-                    existingUserNav.remove();
-                }
-                
-                // Create user navigation
-                const userNav = document.createElement('div');
-                userNav.className = 'user-nav';
-                userNav.innerHTML = `
-                    <div class="user-menu">
-                        <button class="user-btn" onclick="window.sessionManager.toggleUserDropdown()">
-                            <span class="user-name">${this.getUserDisplayName()}</span>
-                            <span class="user-icon">👤</span>
-                            <span class="dropdown-arrow">▼</span>
-                        </button>
-                        <div class="user-dropdown" id="userDropdown">
-                            <a href="/profile" class="dropdown-item">
-                                <span class="item-icon">⚙️</span>
-                                Profile
-                            </a>
-                            <button class="dropdown-item logout-btn" onclick="window.sessionManager.signOut()">
-                                <span class="item-icon">🚪</span>
-                                Sign Out
-                            </button>
-                        </div>
-                    </div>
-                `;
-                
-                // Hide sign-in button and add user nav
-                const signInBtn = navLinks.querySelector('a[href="/auth"]');
-                if (signInBtn) {
-                    console.log('🫥 Hiding sign-in button');
-                    signInBtn.style.display = 'none';
-                }
-                
-                console.log('✅ Adding user navigation to DOM');
-                navLinks.appendChild(userNav);
-                
-                // Force display to make sure it's visible
-                userNav.style.display = 'block';
-                
-                console.log('✅ User navigation created successfully');
-            } else {
-                console.warn('⚠️ Could not find nav-links container, will retry...');
-                // Try again after a short delay
-                setTimeout(() => {
-                    this.creatingNavigation = false;
-                    this.createUserNavigation();
-                }, 200);
-                return;
-            }
-            
-            // Update mobile navigation
-            const mobileMenu = document.getElementById('mobileMenu');
-            if (mobileMenu) {
-                console.log('✅ Found mobile menu container');
-                
-                // Remove existing mobile user nav
-                const existingMobileUserNav = mobileMenu.querySelector('.mobile-user-nav');
-                if (existingMobileUserNav) {
-                    existingMobileUserNav.remove();
-                }
-                
-                // Create mobile user navigation
-                const mobileUserNav = document.createElement('div');
-                mobileUserNav.className = 'mobile-user-nav';
-                mobileUserNav.innerHTML = `
-                    <div class="mobile-user-info">
-                        <span class="mobile-user-name">${this.getUserDisplayName()}</span>
-                    </div>
-                    <a href="/profile" class="mobile-link">Profile</a>
-                    <button class="mobile-link logout-btn" onclick="window.sessionManager.signOut()">
-                        Sign Out
-                    </button>
-                `;
-                
-                // Hide mobile sign-in button
-                const mobileSignInBtn = mobileMenu.querySelector('a[href="/auth"]');
-                if (mobileSignInBtn) {
-                    mobileSignInBtn.style.display = 'none';
-                }
-                
-                mobileMenu.appendChild(mobileUserNav);
-                console.log('✅ Mobile user navigation created successfully');
-            }
-            
-            this.creatingNavigation = false;
-        };
-        
-        // Execute immediately if DOM is ready, otherwise wait
-        if (document.readyState === 'complete' || document.readyState === 'interactive') {
-            createNav();
-        } else {
-            document.addEventListener('DOMContentLoaded', () => {
-                createNav();
-            });
-        }
-    }
-
-    /**
-     * Remove user navigation elements
-     */
-    removeUserNavigation() {
-        // Remove user nav from main navigation
-        const userNav = document.querySelector('.user-nav');
-        if (userNav) {
-            userNav.remove();
-        }
-        
-        // Remove mobile user nav
-        const mobileUserNav = document.querySelector('.mobile-user-nav');
-        if (mobileUserNav) {
-            mobileUserNav.remove();
-        }
-        
-        // Show sign-in buttons
-        const signInBtn = document.querySelector('.nav-links a[href="/auth"]');
-        if (signInBtn) {
-            signInBtn.style.display = '';
-        }
-        
-        const mobileSignInBtn = document.querySelector('#mobileMenu a[href="/auth"]');
-        if (mobileSignInBtn) {
-            mobileSignInBtn.style.display = '';
-        }
-    }
-
-    /**
-     * Update other authentication-dependent elements
-     */
-    updateAuthDependentElements() {
-        // Update any elements with data-auth-show attribute
-        const authShowElements = document.querySelectorAll('[data-auth-show]');
-        authShowElements.forEach(element => {
-            const show = element.getAttribute('data-auth-show');
-            if ((show === 'true' && this.isAuthenticated) || (show === 'false' && !this.isAuthenticated)) {
-                element.style.display = '';
-            } else {
-                element.style.display = 'none';
-            }
-        });
-        
-        // Let landing page handle its own button updates to avoid conflicts
-        // Removed duplicate try demo button logic that was causing issues
+        this.notifyStateChange();
     }
 
     /**
@@ -533,87 +222,12 @@ class SessionManager {
     getUserDisplayName() {
         if (!this.user) return 'User';
         
-        // Debug log to see user structure
-        console.log('🔍 User object for display name:', this.user);
-        
-        // Try different name fields in order of preference
-        if (this.user.user_metadata?.full_name) {
-            console.log('📝 Using full_name from user_metadata:', this.user.user_metadata.full_name);
-            return this.user.user_metadata.full_name;
-        }
-        if (this.user.user_metadata?.name) {
-            console.log('📝 Using name from user_metadata:', this.user.user_metadata.name);
-            return this.user.user_metadata.name;
-        }
-        if (this.user.full_name) {
-            console.log('📝 Using full_name from user:', this.user.full_name);
-            return this.user.full_name;
-        }
-        if (this.user.name) {
-            console.log('📝 Using name from user:', this.user.name);
-            return this.user.name;
-        }
-        if (this.user.email) {
-            console.log('📝 Using email prefix:', this.user.email.split('@')[0]);
-            return this.user.email.split('@')[0];
-        }
-        
-        console.log('📝 Falling back to "User"');
-        return 'User';
-    }
-
-    /**
-     * Toggle user dropdown menu
-     */
-    toggleUserDropdown() {
-        const dropdown = document.getElementById('userDropdown');
-        if (dropdown) {
-            const isShowing = dropdown.classList.contains('show');
-            
-            if (isShowing) {
-                dropdown.classList.remove('show');
-            } else {
-                dropdown.classList.add('show');
-                
-                // Close dropdown when clicking outside
-                setTimeout(() => {
-                    document.addEventListener('click', function closeDropdown(event) {
-                        const userBtn = document.querySelector('.user-btn');
-                        if (!userBtn?.contains(event.target) && !dropdown.contains(event.target)) {
-                            dropdown.classList.remove('show');
-                            document.removeEventListener('click', closeDropdown);
-                        }
-                    });
-                }, 0);
-            }
-        }
-    }
-
-    /**
-     * Navigate to app (authenticated users)
-     */
-    navigateToApp() {
-        if (this.isAuthenticated) {
-            if (window.router) {
-                window.router.navigate('/app');
-            } else {
-                window.location.href = '/app';
-            }
-        } else {
-            showInfo('Please sign in to access the app');
-            if (window.router) {
-                window.router.navigate('/auth');
-            } else {
-                window.location.href = '/auth';
-            }
-        }
-    }
-
-    /**
-     * Sign out the user
-     */
-    async signOut() {
-        await this.handleSignOut();
+        return this.user.user_metadata?.full_name ||
+               this.user.user_metadata?.name ||
+               this.user.full_name ||
+               this.user.name ||
+               this.user.email?.split('@')[0] ||
+               'User';
     }
 
     /**
@@ -631,12 +245,13 @@ class SessionManager {
     }
 
     /**
-     * Notify all listeners of auth state changes
+     * Notify all listeners of state changes
      */
-    notifyListeners(authData) {
+    notifyStateChange() {
+        const state = this.getAuthState();
         this.listeners.forEach(callback => {
             try {
-                callback(authData);
+                callback(state);
             } catch (error) {
                 console.error('Error in auth listener:', error);
             }
@@ -651,6 +266,25 @@ class SessionManager {
             isAuthenticated: this.isAuthenticated,
             user: this.user
         };
+    }
+
+    /**
+     * Navigate to app (authenticated users)
+     */
+    navigateToApp() {
+        if (this.isAuthenticated) {
+            window.router?.navigate('/app') || (window.location.href = '/app');
+        } else {
+            showInfo('Please sign in to access the app');
+            window.router?.navigate('/auth') || (window.location.href = '/auth');
+        }
+    }
+
+    /**
+     * Sign out the user
+     */
+    async signOut() {
+        await this.handleSignOut();
     }
 }
 

@@ -6,6 +6,8 @@ import { navigateToSection } from './sections.js';
 import { updateSelectionColor, initializeModalHandlers } from './ui.js';
 import { initializeTextSelection } from './textSelection.js';
 import { initializeEditProtection } from './editMode.js';
+import sessionManager from './sessionManager.js';
+import appUI from './appUI.js';
 
 // Show selection guide overlay for first-time users
 function showSelectionGuide() {
@@ -49,7 +51,13 @@ function initializeDefaultState() {
 }
 
 // Initialize all modules in correct order
-function initializeModules() {
+async function initializeModules() {
+    // Initialize session management first
+    await sessionManager.init();
+    
+    // Initialize UI manager after session manager
+    await appUI.init();
+    
     // Initialize UI handlers
     initializeModalHandlers();
     
@@ -63,7 +71,7 @@ function initializeModules() {
 }
 
 // Main application initialization
-export function initializeApp() {
+export async function initializeApp() {
     console.log('AudioBook Organizer - Initializing application...');
     
     // Initialize default state
@@ -73,7 +81,7 @@ export function initializeApp() {
     showSelectionGuide();
     
     // Initialize all modules
-    initializeModules();
+    await initializeModules();
     
     // Handle URL hash navigation
     handleHashNavigation();
@@ -86,6 +94,7 @@ export function getInitializationStatus() {
     return {
         selectionGuideShown: localStorage.getItem('selectionGuideShown') === 'true',
         chaptersCount: chapters.length,
+        isAuthenticated: sessionManager.isAuthenticated,
         timestamp: new Date().toISOString()
     };
 } 
