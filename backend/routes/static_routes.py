@@ -1,4 +1,4 @@
-from flask import Blueprint, send_from_directory
+from flask import Blueprint, send_from_directory, send_file
 import os
 
 def create_static_routes(app):
@@ -8,9 +8,17 @@ def create_static_routes(app):
     """
     
     @app.route('/')
-    def serve_index():
-        """Serve main HTML file - from frontend/public"""
+    @app.route('/app')
+    @app.route('/auth')
+    @app.route('/profile')
+    def serve_spa():
+        """Serve main HTML file for all SPA routes"""
         return send_from_directory('../frontend/public', 'index.html')
+
+    @app.route('/favicon.ico')
+    def serve_favicon():
+        """Serve favicon"""
+        return send_from_directory('../frontend/public', 'favicon.ico')
 
     @app.route('/css/<path:filename>')
     def serve_css(filename):
@@ -22,28 +30,23 @@ def create_static_routes(app):
         """Serve JavaScript files from frontend/js"""
         return send_from_directory('../frontend/js', filename)
 
+    @app.route('/pages/<path:filename>')
+    def serve_pages(filename):
+        """Serve files from frontend/pages"""
+        return send_from_directory('../frontend/pages', filename)
+
     @app.route('/public/<path:filename>')
     def serve_public(filename):
         """Serve files from frontend/public"""
         return send_from_directory('../frontend/public', filename)
 
-    @app.route('/pages/app/<path:filename>')
-    def serve_app_pages(filename):
-        """Serve files from frontend/pages/app"""
-        return send_from_directory('../frontend/pages/app', filename)
-
-    @app.route('/<path:filename>')
-    def serve_static_files(filename):
-        """Serve other static files from frontend root"""
-        return send_from_directory('../frontend', filename)
-
     @app.route('/uploads/<filename>')
     def serve_upload(filename):
-        """Serve uploaded files - exact logic preserved"""
+        """Serve uploaded files"""
         return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
 
     @app.route('/exports/<export_id>/<filename>')
     def serve_export(export_id, filename):
-        """Serve exported files - exact logic preserved"""
+        """Serve exported files"""
         export_path = os.path.join(app.config['EXPORT_FOLDER'], export_id)
         return send_from_directory(export_path, filename) 

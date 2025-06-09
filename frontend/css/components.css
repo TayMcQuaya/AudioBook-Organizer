@@ -191,9 +191,8 @@
 /* File Upload Styles */
 .file-upload {
     display: flex;
-    gap: var(--spacing-sm);
     align-items: center;
-    margin-bottom: var(--spacing-sm);
+    gap: var(--spacing-sm);
 }
 
 .file-upload input[type="file"] {
@@ -245,7 +244,47 @@ button[disabled] {
 /* Header Controls */
 .header-controls {
     display: flex;
+    align-items: center;
     gap: var(--spacing-sm);
+    margin-top: var(--spacing-sm);
+    flex-wrap: wrap;
+}
+
+/* Smart Select Controls */
+.smart-select-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-left: auto;
+}
+
+.smart-select-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+#smartSelectChars {
+    width: 80px;
+    padding: 4px 8px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    font-size: 0.9rem;
+}
+
+/* Loading and Error Messages */
+.loading,
+.error-message {
+    margin-top: var(--spacing-sm);
+    font-size: 0.9rem;
+}
+
+.error-message {
+    color: #d32f2f;
+}
+
+.loading {
+    color: var(--text-secondary);
 }
 
 /* Selection Tools */

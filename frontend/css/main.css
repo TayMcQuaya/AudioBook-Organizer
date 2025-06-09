@@ -35,22 +35,31 @@
 body {
     font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
     margin: 0;
-    padding: var(--spacing-md);
+    padding: 0;
     background-color: var(--background-light);
     min-height: 100vh;
-    overflow-y: auto;
-    overflow-x: hidden;
+    overflow: hidden;
     color: var(--text-primary);
     line-height: 1.6;
+}
+
+/* App-specific body class */
+body.app-body {
+    padding: 0;
+    overflow: hidden;
+    height: 100vh;
 }
 
 .main-container {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: var(--spacing-md);
-    min-height: calc(100vh - 40px);
+    height: 100vh;
     max-width: 2000px;
     margin: 0 auto;
+    padding: var(--spacing-md);
+    box-sizing: border-box;
+    overflow: hidden;
 }
 
 .column {
@@ -60,18 +69,17 @@ body {
     display: flex;
     flex-direction: column;
     overflow: hidden;
+    height: 100%;
 }
 
 .column-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
     padding: var(--spacing-md);
     border-bottom: 1px solid var(--border-color);
     background: white;
     position: sticky;
     top: 0;
     z-index: 10;
+    flex-shrink: 0;
 }
 
 .column-header h2 {
@@ -84,7 +92,30 @@ body {
 .column-content {
     flex: 1;
     overflow-y: auto;
+    overflow-x: hidden;
     padding: var(--spacing-md);
+    position: relative;
+}
+
+/* Book Content Specific Styles */
+.book-content {
+    font-size: 1.1rem;
+    line-height: 1.8;
+    max-width: 800px;
+    margin: 0 auto;
+    padding: var(--spacing-md);
+    background: white;
+    white-space: pre-wrap;
+    min-height: 100%;
+}
+
+/* Sections Panel Specific Styles */
+.sections-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
+    padding: var(--spacing-md);
+    min-height: 100%;
 }
 
 /* Animations */

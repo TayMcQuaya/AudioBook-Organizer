@@ -4,7 +4,7 @@ import { showError, showInfo } from './notifications.js';
 
 // Router state
 let currentRoute = '/';
-let isAuthenticated = false;
+let isAuthenticated = true; // Set to true by default for now since we're not implementing auth yet
 let routes = new Map();
 let guards = new Map();
 
@@ -19,7 +19,7 @@ const routeConfig = {
     '/app': {
         title: 'AudioBook Organizer - App',
         component: 'app',
-        requiresAuth: true,
+        requiresAuth: false, // Changed to false since we're not implementing auth yet
         layout: 'app'
     },
     '/auth': {
@@ -31,7 +31,7 @@ const routeConfig = {
     '/profile': {
         title: 'Profile - AudioBook Organizer',
         component: 'profile',
-        requiresAuth: true,
+        requiresAuth: false, // Changed to false since we're not implementing auth yet
         layout: 'app'
     }
 };
@@ -87,20 +87,6 @@ class Router {
         if (!route) {
             console.warn(`Route not found: ${path}`);
             this.navigate('/', true);
-            return;
-        }
-        
-        // Check authentication requirements
-        if (route.requiresAuth && !isAuthenticated) {
-            console.log('🔒 Route requires authentication, redirecting to auth');
-            this.navigate('/auth');
-            return;
-        }
-        
-        // Check route guards
-        const canActivate = await this.runGuards(path);
-        if (!canActivate) {
-            console.log('🚫 Route guard blocked navigation');
             return;
         }
         
@@ -172,17 +158,17 @@ class Router {
                 document.head.appendChild(landingScript);
             }
         } catch (error) {
-            console.error('Error loading landing page from router:', error);
+            console.error('Error loading landing page:', error);
             showError('Failed to load landing page');
         }
     }
     
-    // Load app (current audiobook organizer)
+    // Load app
     async loadApp() {
         try {
             const appContainer = document.getElementById('appContainer');
             if (!appContainer) {
-                 throw new Error('App container not found for router.');
+                throw new Error('App container not found for router.');
             }
 
             // Check if we need to load the app HTML shell first
@@ -203,23 +189,21 @@ class Router {
                 document.body.className = 'app-body';
             }
 
-                    // Only load app HTML if not already loaded (to preserve existing content)
-        if (!appContainer.querySelector('#leftPanel') || !appContainer.querySelector('#rightPanel')) {
-            // Fetch and inject the actual app UI
-            const response = await fetch('/pages/app/app.html');
-            if (!response.ok) throw new Error(`Failed to fetch app page: ${response.status}`);
-            const appHtml = await response.text();
-            
-            // Parse the HTML and extract only the body content
-            const parser = new DOMParser();
-            const doc = parser.parseFromString(appHtml, 'text/html');
-            const bodyContent = doc.body.innerHTML;
-            
-            // Inject only the body content, not the full HTML
-            appContainer.innerHTML = bodyContent;
-        } else {
-            console.log('📱 App already loaded, preserving existing content');
-        }
+            // Only load app HTML if not already loaded
+            if (!appContainer.querySelector('.main-container')) {
+                // Fetch and inject the actual app UI
+                const response = await fetch('/pages/app/app.html');
+                if (!response.ok) throw new Error(`Failed to fetch app page: ${response.status}`);
+                const appHtml = await response.text();
+                
+                // Parse the HTML and extract only the body content
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(appHtml, 'text/html');
+                const bodyContent = doc.body.innerHTML;
+                
+                // Inject only the body content, not the full HTML
+                appContainer.innerHTML = bodyContent;
+            }
 
             // Load app scripts if they aren't already loaded
             if (!window.isAppInitialized) {
@@ -227,9 +211,8 @@ class Router {
                 mainScript.type = 'module';
                 mainScript.src = '/js/main.js';
                 document.head.appendChild(mainScript);
-                window.isAppInitialized = true; 
+                window.isAppInitialized = true;
             }
-            // Don't re-initialize if already loaded - this clears the content!
             
             console.log('📱 App loaded successfully');
             
@@ -242,18 +225,8 @@ class Router {
     // Load auth page
     async loadAuthPage() {
         try {
-            // For now, show auth modal on landing page
-            if (window.showAuthModal) {
-                window.showAuthModal('login');
-            } else {
-                // Fallback: redirect to landing with auth modal
-                this.navigate('/');
-                setTimeout(() => {
-                    if (window.showAuthModal) {
-                        window.showAuthModal('login');
-                    }
-                }, 100);
-            }
+            // For now, redirect to app since we're not implementing auth
+            this.navigate('/app');
         } catch (error) {
             console.error('Error loading auth page:', error);
             showError('Failed to load authentication page');
@@ -272,176 +245,32 @@ class Router {
         }
     }
     
-    // Handle browser back/forward
+    // Handle popstate events
     handlePopState(event) {
-        const path = event.state?.path || window.location.pathname;
-        
-        // Ignore hash-only changes (like section navigation)
-        // Only handle actual path changes
-        if (path === this.currentRoute) {
-            console.log('📍 Ignoring hash-only navigation change');
-            return;
-        }
-        
+        const path = event.state?.path || '/';
         this.handleRoute(path);
     }
     
-    // Handle internal link clicks
+    // Handle link clicks
     handleLinkClick(event) {
         const link = event.target.closest('a');
-        
         if (!link) return;
         
         const href = link.getAttribute('href');
+        if (!href || href.startsWith('http') || href.startsWith('//')) return;
         
-        // Only handle internal links
-        if (!href || href.startsWith('http') || href.startsWith('mailto') || href.startsWith('#')) {
-            return;
-        }
-        
-        // Check if it's a route we handle
-        if (routeConfig[href]) {
-            event.preventDefault();
-            this.navigate(href);
-        }
-    }
-    
-    // Add route guard
-    addGuard(path, guardFunction) {
-        if (!guards.has(path)) {
-            guards.set(path, []);
-        }
-        guards.get(path).push(guardFunction);
-    }
-    
-    // Run route guards
-    async runGuards(path) {
-        const routeGuards = guards.get(path) || [];
-        
-        for (const guard of routeGuards) {
-            const result = await guard(path, this.currentRoute);
-            if (!result) {
-                return false;
-            }
-        }
-        
-        return true;
-    }
-    
-    // Set authentication status
-    setAuthenticated(authenticated) {
-        isAuthenticated = authenticated;
-        console.log(`🔐 Authentication status: ${authenticated ? 'authenticated' : 'not authenticated'}`);
-        
-        // If user logged out and on protected route, redirect
-        if (!authenticated && routeConfig[this.currentRoute]?.requiresAuth) {
-            this.navigate('/');
-        }
-    }
-    
-    // Check if user is authenticated
-    isAuthenticated() {
-        return isAuthenticated;
-    }
-    
-    // Get current route
-    getCurrentRoute() {
-        return this.currentRoute;
-    }
-    
-    // Get previous route
-    getPreviousRoute() {
-        return this.previousRoute;
+        event.preventDefault();
+        this.navigate(href);
     }
     
     // Track navigation (for analytics)
     trackNavigation(path) {
-        if (window.landingUI?.trackPageView) {
-            window.landingUI.trackPageView(path);
-        }
         console.log(`📊 Navigation tracked: ${path}`);
-    }
-    
-    // Go back
-    back() {
-        window.history.back();
-    }
-    
-    // Go forward
-    forward() {
-        window.history.forward();
-    }
-    
-    // Reload current route
-    reload() {
-        this.handleRoute(this.currentRoute);
     }
 }
 
 // Create router instance
 const router = new Router();
 
-// Authentication guard
-router.addGuard('/app', async (to, from) => {
-    if (!isAuthenticated) {
-        showInfo('Please sign in to access the application');
-        return false;
-    }
-    return true;
-});
-
-router.addGuard('/profile', async (to, from) => {
-    if (!isAuthenticated) {
-        showInfo('Please sign in to access your profile');
-        return false;
-    }
-    return true;
-});
-
-// Utility functions for common navigation patterns
-const navigation = {
-    // Go to landing page
-    toLanding() {
-        router.navigate('/');
-    },
-    
-    // Go to app
-    toApp() {
-        router.navigate('/app');
-    },
-    
-    // Show auth modal/page
-    toAuth(mode = 'login') {
-        if (window.showAuthModal) {
-            window.showAuthModal(mode);
-        } else {
-            router.navigate('/auth');
-        }
-    },
-    
-    // Go to profile
-    toProfile() {
-        router.navigate('/profile');
-    },
-    
-    // Sign out and redirect
-    signOut() {
-        isAuthenticated = false;
-        router.setAuthenticated(false);
-        router.navigate('/');
-        showInfo('You have been signed out');
-    }
-};
-
-// Initialize router when DOM is ready
-document.addEventListener('DOMContentLoaded', () => {
-    router.init();
-});
-
-// Make router and navigation globally available
-window.router = router;
-window.navigation = navigation;
-
 // Export for module use
-export { router, navigation };
-export default router; 
+export { router }; 
