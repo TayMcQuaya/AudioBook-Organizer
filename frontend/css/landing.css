@@ -305,7 +305,13 @@ html {
 }
 
 .hero-visual {
-    animation: slideInRight 1s var(--animation-ease);
+    perspective: 1500px;
+    transform-style: preserve-3d;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    animation: slideInRightAndStay 1s var(--animation-ease);
+    animation-fill-mode: forwards; /* Keep the final state */
 }
 
 .hero-app-preview {
@@ -599,6 +605,10 @@ html {
     flex-shrink: 0;
 }
 
+.features .section-header {
+    transform: translateY(-80px);
+}
+
 .section-title {
     font-size: var(--section-title-size);
     font-weight: 700;
@@ -634,6 +644,7 @@ html {
     margin-bottom: 1rem;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    overflow: visible;
 }
 
 .feature-card .feature-highlights {
@@ -663,18 +674,22 @@ html {
     width: 100%;
     display: flex;
     align-items: flex-start;
+    justify-content: center;
     perspective: 1200px;
     perspective-origin: center center;
     overflow: visible;
+    transform: translateY(-80px);
 }
 
 .features-carousel {
     position: relative;
-    width: 800px;
-    height: 400px;
+    width: 250px;
+    height: 250px;
     transform-style: preserve-3d;
-    left: 0;
-    transform: translateX(250px);
+    transform: rotateY(0deg) translateX(-10px);
+    transition: transform 1s cubic-bezier(0.77, 0, 0.175, 1);
+    cursor: grab;
+    user-select: none;
 }
 
 .features-carousel:hover {
@@ -1856,5 +1871,16 @@ html {
     
     .dropdown-item.logout-btn:hover {
         background-color: #744210;
+    }
+}
+
+@keyframes slideInRightAndStay {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(5%);
+        opacity: 1;
     }
 } 
