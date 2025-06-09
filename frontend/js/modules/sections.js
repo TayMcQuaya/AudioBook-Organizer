@@ -416,9 +416,6 @@ export function navigateToSection(sectionId) {
     setTimeout(() => {
         highlight.classList.remove('flash');
     }, 1000);
-
-    // Update URL hash for direct linking
-    window.location.hash = `section-${sectionId}`;
 }
 
 // Audio attachment functions - preserving exact logic from original

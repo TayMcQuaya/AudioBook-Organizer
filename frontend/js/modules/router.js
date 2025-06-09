@@ -269,14 +269,14 @@ class Router {
     
     // Handle link clicks
     handleLinkClick(event) {
-        const link = event.target.closest('a');
+        const link = event.target.closest('a[data-link]');
         if (!link) return;
         
-        const href = link.getAttribute('href');
-        if (!href || href.startsWith('http') || href.startsWith('//')) return;
-        
         event.preventDefault();
-        this.navigate(href);
+        const href = link.getAttribute('href');
+        if (href) {
+            this.navigate(href);
+        }
     }
     
     // Track navigation (for analytics)
