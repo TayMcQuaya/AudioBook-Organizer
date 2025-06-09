@@ -79,7 +79,11 @@ class Router {
     
     // Navigate to a route
     async navigate(path, replace = false) {
-        if (path === this.currentRoute) return;
+        // Extract pathname from URL for comparison
+        const url = new URL(path, window.location.origin);
+        const pathname = url.pathname;
+        
+        if (pathname === this.currentRoute) return;
         
         this.previousRoute = this.currentRoute;
         
@@ -94,10 +98,14 @@ class Router {
     
     // Handle route changes
     async handleRoute(path) {
-        const route = routeConfig[path];
+        // Extract pathname from URL (remove query parameters and hash)
+        const url = new URL(path, window.location.origin);
+        const pathname = url.pathname;
+        
+        const route = routeConfig[pathname];
         
         if (!route) {
-            console.warn(`Route not found: ${path}`);
+            console.warn(`Route not found: ${pathname}`);
             await this.navigate('/', true);
             return;
         }
@@ -111,14 +119,14 @@ class Router {
         }
         
         // Redirect authenticated users away from auth page
-        if (path === '/auth' && sessionManager.isAuthenticated) {
+        if (pathname === '/auth' && sessionManager.isAuthenticated) {
             console.log('👤 User already authenticated, redirecting to app');
             await this.navigate('/app');
             return;
         }
         
         // Update current route
-        this.currentRoute = path;
+        this.currentRoute = pathname;
         
         // Update document title
         document.title = route.title;
@@ -127,7 +135,7 @@ class Router {
         await this.loadRoute(route);
         
         // Track navigation
-        this.trackNavigation(path);
+        this.trackNavigation(pathname);
     }
     
     // Load route content

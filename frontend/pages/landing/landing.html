@@ -420,7 +420,7 @@
                         <div class="pricing-feature disabled">✗ Audio Upload</div>
                         <div class="pricing-feature disabled">✗ Advanced Features</div>
                     </div>
-                    <button class="btn btn-outline pricing-btn" onclick="showAuthModal('signup', 'free')">
+                    <button class="btn btn-outline pricing-btn" onclick="window.location.href='/auth?mode=signup&plan=free'">
                         Get Started Free
                     </button>
                 </div>
@@ -442,7 +442,7 @@
                         <div class="pricing-feature">✓ Priority Support</div>
                         <div class="pricing-feature">✓ Early Access Features</div>
                     </div>
-                    <button class="btn btn-primary pricing-btn" onclick="showAuthModal('signup', 'pro')">
+                    <button class="btn btn-primary pricing-btn" onclick="window.location.href='/auth?mode=signup&plan=pro'">
                         Start Pro Trial
                     </button>
                 </div>
@@ -520,21 +520,7 @@
         </div>
     </footer>
 
-    <!-- Authentication Modal -->
-    <div id="authModal" class="auth-modal">
-        <div class="auth-modal-overlay" onclick="hideAuthModal()"></div>
-        <div class="auth-modal-content">
-            <div class="auth-modal-header">
-                <h3 id="authModalTitle">Welcome Back</h3>
-                <button class="auth-modal-close" onclick="hideAuthModal()">×</button>
-            </div>
-            <div class="auth-modal-body">
-                <div id="authForm">
-                    <!-- Auth form will be inserted here by JavaScript -->
-                </div>
-            </div>
-        </div>
-    </div>
+    <!-- Authentication Modal removed - redirecting to /auth page for better UX -->
 
     <!-- Loading Overlay -->
     <div id="loadingOverlay" class="loading-overlay">

@@ -614,8 +614,17 @@ function switchForm(formType, updateHistory = true) {
 function handleAuthStateChange(event, session) {
     console.log('Auth page received auth state change:', event);
     if (event === 'SIGNED_IN' && session) {
-        // Redirect to the main application
-        window.location.href = '/app';
+        // Check for return URL in query parameters
+        const params = new URLSearchParams(window.location.search);
+        const returnUrl = params.get('return');
+        
+        if (returnUrl) {
+            // Redirect back to the original page
+            window.location.href = decodeURIComponent(returnUrl);
+        } else {
+            // Default redirect to app
+            window.location.href = '/app';
+        }
     }
 }
 
