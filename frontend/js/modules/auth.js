@@ -714,6 +714,14 @@ class AuthModule {
             );
 
             if (error) {
+                // Handle specific error cases for OAuth users
+                if (error.message && (
+                    error.message.includes('OAuth') || 
+                    error.message.includes('external') ||
+                    error.message.includes('cannot reset password')
+                )) {
+                    throw new Error('This account was created with Google. Please sign in using the "Continue with Google" button instead of resetting your password.');
+                }
                 throw error;
             }
 
@@ -923,8 +931,9 @@ class AuthModule {
 
         if (!form || !newPasswordInput || !confirmPasswordInput || !updateBtn) return;
 
-        // Initialize password strength meter for the new form
+        // Initialize password strength meter and requirements validation
         this.initPasswordStrengthMeter(newPasswordInput.id);
+        this.initPasswordRequirementsChecker(newPasswordInput.id);
         this.initPasswordVisibilityToggle();
 
         form.addEventListener('submit', async (e) => {
@@ -944,7 +953,7 @@ class AuthModule {
             }
 
             if (!validatePassword(newPassword)) {
-                formError.textContent = "Password must be at least 8 characters long and include a number, an uppercase, and a lowercase letter.";
+                formError.textContent = "Password must be at least 8 characters long and include uppercase, lowercase, number, and special character.";
                 formError.classList.add('show');
                 return;
             }
@@ -1008,12 +1017,69 @@ class AuthModule {
 
         passwordInput.addEventListener('input', () => {
             const password = passwordInput.value;
-            const strength = checkPasswordStrength(password);
+            const strength = this.calculatePasswordStrength(password);
 
-            // Update bar
-            strengthFill.style.width = `${strength * 100}%`;
-            strengthText.textContent = strength.toFixed(2);
+            // Update bar with proper level classes
+            strengthFill.className = `strength-fill ${strength.level}`;
+            strengthText.textContent = strength.text;
+            strengthText.className = `strength-text ${strength.level}`;
         });
+    }
+
+    calculatePasswordStrength(password) {
+        let score = 0;
+        
+        if (password.length >= 8) score++;
+        if (/[a-z]/.test(password)) score++;
+        if (/[A-Z]/.test(password)) score++;
+        if (/[0-9]/.test(password)) score++;
+        if (/[!@#$%^&*()_+\-=\[\]{}|;:,.<>?]/.test(password)) score++;
+        
+        if (score <= 1) {
+            return { level: 'weak', text: 'Weak' };
+        } else if (score <= 2) {
+            return { level: 'fair', text: 'Fair' };
+        } else if (score <= 3) {
+            return { level: 'good', text: 'Good' };
+        } else {
+            return { level: 'strong', text: 'Strong' };
+        }
+    }
+
+    initPasswordRequirementsChecker(inputId) {
+        const passwordInput = document.getElementById(inputId);
+        const requirements = {
+            length: document.getElementById('req-length'),
+            lower: document.getElementById('req-lower'),
+            upper: document.getElementById('req-upper'),
+            number: document.getElementById('req-number'),
+            special: document.getElementById('req-special')
+        };
+
+        if (!passwordInput) return;
+
+        passwordInput.addEventListener('input', () => {
+            const password = passwordInput.value;
+            
+            // Check each requirement
+            this.updateRequirement(requirements.length, password.length >= 8);
+            this.updateRequirement(requirements.lower, /[a-z]/.test(password));
+            this.updateRequirement(requirements.upper, /[A-Z]/.test(password));
+            this.updateRequirement(requirements.number, /[0-9]/.test(password));
+            
+            // Check for special characters - comprehensive list
+            this.updateRequirement(requirements.special, /[!@#$%^&*()_+\-=\[\]{}|;:,.<>?]/.test(password));
+        });
+    }
+
+    updateRequirement(element, isMet) {
+        if (!element) return;
+        
+        if (isMet) {
+            element.classList.add('met');
+        } else {
+            element.classList.remove('met');
+        }
     }
 
     initPasswordVisibilityToggle() {

@@ -12,7 +12,8 @@ export function validatePassword(password) {
     const hasNumber = /\d/.test(password);
     const hasUpper = /[A-Z]/.test(password);
     const hasLower = /[a-z]/.test(password);
-    return hasNumber && hasUpper && hasLower;
+    const hasSpecial = /[!@#$%^&*()_+\-=\[\]{}|;:,.<>?]/.test(password);
+    return hasNumber && hasUpper && hasLower && hasSpecial;
 }
 
 /**

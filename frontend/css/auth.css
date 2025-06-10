@@ -1159,4 +1159,33 @@
     font-size: 0.875rem;
     margin-bottom: 0.25rem;
     line-height: 1.4;
+}
+
+/* Interactive Password Requirements */
+.auth-body .password-requirements .requirement {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: all 0.3s ease;
+}
+
+.auth-body .password-requirements .req-icon {
+    font-size: 0.875rem;
+    min-width: 1rem;
+}
+
+.auth-body .password-requirements .requirement.met {
+    color: var(--text-success, #22c55e);
+}
+
+.auth-body .password-requirements .requirement.met .req-icon {
+    color: var(--text-success, #22c55e);
+}
+
+.auth-body .password-requirements .requirement.met .req-icon:after {
+    content: "✅";
+}
+
+.auth-body .password-requirements .requirement:not(.met) .req-icon:after {
+    content: "⭕";
 } 
