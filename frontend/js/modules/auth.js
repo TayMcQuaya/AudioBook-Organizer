@@ -960,19 +960,39 @@ class AuthModule {
                 
                 showSuccess('Password updated successfully!', 'You can now log in with your new password.');
                 
-                // Clear any pending redirects from before the password reset
-                router.clearLoginRedirect();
-
                 // After successful password update, sign the user out completely
                 await this.signOut();
 
                 // Clear the recovery flag and navigate to login
                 sessionManager.clearPasswordRecoveryFlag();
-                router.navigateTo('/auth');
+                router.navigate('/auth');
 
             } catch (error) {
                 console.error('❌ Failed to update password:', error);
-                showError('Password Update Failed', error.message);
+                
+                // Handle specific error cases with user-friendly messages
+                let errorMessage = 'Password update failed. Please try again.';
+                
+                if (error.message && error.message.includes('New password should be different')) {
+                    errorMessage = 'Your new password must be different from your current password. Please choose a different password.';
+                } else if (error.message && error.message.includes('Password should be at least')) {
+                    errorMessage = 'Password must be at least 6 characters long. Please choose a longer password.';
+                } else if (error.message && error.message.includes('expired')) {
+                    errorMessage = 'Your password reset link has expired. Please request a new password reset.';
+                    // If expired, sign out and redirect to auth after a delay
+                    setTimeout(async () => {
+                        await this.signOut();
+                        sessionManager.clearPasswordRecoveryFlag();
+                        router.navigate('/auth');
+                    }, 3000);
+                } else if (error.message) {
+                    errorMessage = error.message;
+                }
+                
+                // Show error in form
+                formError.textContent = errorMessage;
+                formError.classList.add('show');
+                
             } finally {
                 this.setLoading(updateBtn, false);
             }

@@ -393,12 +393,22 @@ class Router {
                 landingScript.remove();
             }
 
-            // Ensure auth page CSS is loaded
+            // Remove conflicting CSS files that can interfere with auth styling
+            const conflictingCSS = document.querySelector('link[href="/css/landing.css"]');
+            if (conflictingCSS) {
+                conflictingCSS.remove();
+            }
+
+            // Ensure auth page CSS is loaded and takes precedence
             let authCSS = document.querySelector('link[href="/css/auth.css"]');
             if (!authCSS) {
                 authCSS = document.createElement('link');
                 authCSS.rel = 'stylesheet';
                 authCSS.href = '/css/auth.css';
+                // Add at the end to ensure it has higher priority
+                document.head.appendChild(authCSS);
+            } else {
+                // Move existing auth CSS to the end to ensure priority
                 document.head.appendChild(authCSS);
             }
 
@@ -446,6 +456,18 @@ class Router {
             if (landingCSS) landingCSS.remove();
             const landingScript = document.getElementById('landing-page-script');
             if (landingScript) landingScript.remove();
+
+            // Ensure auth page CSS is loaded for reset password page
+            let authCSS = document.querySelector('link[href="/css/auth.css"]');
+            if (!authCSS) {
+                authCSS = document.createElement('link');
+                authCSS.rel = 'stylesheet';
+                authCSS.href = '/css/auth.css';
+                document.head.appendChild(authCSS);
+            } else {
+                // Move existing auth CSS to the end to ensure priority
+                document.head.appendChild(authCSS);
+            }
 
             // Load reset password page HTML
             const response = await fetch('/pages/auth/reset-password.html');

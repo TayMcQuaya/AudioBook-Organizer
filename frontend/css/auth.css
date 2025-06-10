@@ -27,13 +27,13 @@
 
 /* Auth Body */
 .auth-body {
-    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-    margin: 0;
-    padding: 0;
-    min-height: 100vh;
-    background: var(--auth-bg-gradient);
-    overflow-x: hidden;
-    position: relative;
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    min-height: 100vh !important;
+    background: var(--auth-bg-gradient) !important;
+    overflow-x: hidden !important;
+    position: relative !important;
 }
 
 /* Auth Background */
@@ -1131,4 +1131,32 @@
 
 .auth-body .btn .google-icon {
     flex-shrink: 0;
+}
+
+/* Password Requirements Styling */
+.auth-body .password-requirements {
+    background: rgba(102, 126, 234, 0.1);
+    border: 1px solid rgba(102, 126, 234, 0.2);
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+}
+
+.auth-body .password-requirements p {
+    margin: 0 0 0.5rem 0;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.auth-body .password-requirements ul {
+    margin: 0;
+    padding-left: 1.2rem;
+    list-style-type: disc;
+}
+
+.auth-body .password-requirements li {
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+    margin-bottom: 0.25rem;
+    line-height: 1.4;
 } 
