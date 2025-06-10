@@ -78,8 +78,8 @@ class Router {
         // Wait for auth state to be ready before handling initial route
         await this.waitForAuthReady();
         
-        // Initialize current route
-        await this.handleRoute(window.location.pathname);
+        // Initialize current route with full path including query parameters
+        await this.handleRoute(window.location.pathname + window.location.search);
         
         this.isInitialized = true;
         console.log('📍 Router initialized with authentication');
@@ -142,12 +142,15 @@ class Router {
         }
         
         this.isLoading = true;
-        const targetPath = path || window.location.pathname;
+        
+        // Extract pathname for route matching, but preserve full path for navigation
+        const fullPath = path || window.location.pathname + window.location.search;
+        const targetPath = path ? new URL(path, window.location.origin).pathname : window.location.pathname;
         const route = routeConfig[targetPath];
         
         try {
             if (!route) {
-                console.warn(`Route not found: ${targetPath}`);
+                console.warn(`Route not found: ${fullPath} (pathname: ${targetPath})`);
                 await this.navigate('/', true);
                 return;
             }
@@ -177,7 +180,7 @@ class Router {
                 return;
             }
 
-            // Update current route
+            // Update current route (use pathname for consistency)
             this.currentRoute = targetPath;
             
             // Update document title

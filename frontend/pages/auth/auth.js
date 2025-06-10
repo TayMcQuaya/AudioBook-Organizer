@@ -3,6 +3,9 @@
  * Handles login, signup, and password reset functionality
  */
 
+// Import the reCAPTCHA service
+import { recaptcha } from '../../js/modules/recaptcha.js';
+
 // This script now works with the main AuthModule
 let authModule = null;
 
@@ -49,6 +52,10 @@ export async function initAuthPage(auth) {
             console.error('Auth module not provided or init function is missing');
             return;
         }
+
+        // Initialize reCAPTCHA service
+        console.log('🔐 Initializing reCAPTCHA service...');
+        await recaptcha.init();
 
         // Check if user is already authenticated
         if (authModule.isAuthenticated && authModule.isAuthenticated()) {
@@ -330,6 +337,7 @@ async function handleLoginSubmit(e) {
 
     const emailInput = document.getElementById('loginEmail');
     const passwordInput = document.getElementById('loginPassword');
+    const recaptchaTokenField = document.getElementById('loginRecaptchaToken');
     
     if (!emailInput || !passwordInput) {
         console.error('❌ Login form inputs not found');
@@ -357,16 +365,74 @@ async function handleLoginSubmit(e) {
     setLoading(true);
 
     try {
-        await authModule.signIn(email, password);
-        console.log('✅ Sign in successful');
-        // Auth listener will handle successful sign-in (redirect)
+        // Generate reCAPTCHA token
+        console.log('🔐 Generating reCAPTCHA token...');
+        const recaptchaToken = await recaptcha.getLoginToken();
+        
+        if (recaptchaTokenField) {
+            recaptchaTokenField.value = recaptchaToken;
+        }
+        
+        console.log('✅ reCAPTCHA token generated');
+
+        // Create login data with reCAPTCHA token
+        const loginData = {
+            email: email,
+            password: password,
+            recaptcha_token: recaptchaToken
+        };
+
+        // Make the login request to backend API instead of using Supabase directly
+        const response = await fetch('/api/auth/login', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(loginData)
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            console.log('✅ Sign in successful');
+            // Update auth module state with the session
+            if (result.session && result.user) {
+                // Trigger auth state change manually since we bypassed Supabase client
+                window.dispatchEvent(new CustomEvent('auth-state-changed', {
+                    detail: {
+                        isAuthenticated: true,
+                        user: result.user,
+                        session: result.session
+                    }
+                }));
+                
+                // Navigate to app
+                if (window.router) {
+                    window.router.navigate('/app');
+                } else {
+                    window.location.href = '/app';
+                }
+            }
+        } else {
+            throw new Error(result.message || 'Login failed');
+        }
+        
     } catch (error) {
         console.error('❌ Sign in failed:', error);
-        // Error is displayed by the auth module's notification system
-        // But also show fallback message
+        
+        // Show user-friendly error messages
         const errorMessage = error.message || 'Sign in failed';
-        if (errorMessage.includes('not configured') || errorMessage.includes('not available')) {
+        
+        if (errorMessage.includes('reCAPTCHA')) {
+            showFieldError(emailInput, 'Security verification failed. Please try again.');
+        } else if (errorMessage.includes('Rate limit')) {
+            showFieldError(emailInput, 'Too many login attempts. Please wait before trying again.');
+        } else if (errorMessage.includes('Invalid email or password')) {
+            showFieldError(emailInput, 'Invalid email or password. Please check your credentials.');
+        } else if (errorMessage.includes('not configured') || errorMessage.includes('not available')) {
             showFieldError(emailInput, 'Demo mode: Authentication service not configured. Please check console for setup instructions.');
+        } else {
+            showFieldError(emailInput, errorMessage);
         }
     } finally {
         setLoading(false);
@@ -385,6 +451,7 @@ async function handleSignupSubmit(e) {
     const passwordInput = document.getElementById('signupPassword');
     const confirmPasswordInput = document.getElementById('confirmPassword');
     const agreeTermsInput = document.getElementById('agreeTerms');
+    const recaptchaTokenField = document.getElementById('signupRecaptchaToken');
 
     const fullName = fullNameInput.value.trim();
     const email = emailInput.value.trim();
@@ -405,18 +472,78 @@ async function handleSignupSubmit(e) {
     setLoading(true);
 
     try {
-        await authModule.signUp(email, password, {
-            metadata: { full_name: fullName },
+        // Generate reCAPTCHA token
+        console.log('🔐 Generating reCAPTCHA token for signup...');
+        const recaptchaToken = await recaptcha.getSignupToken();
+        
+        if (recaptchaTokenField) {
+            recaptchaTokenField.value = recaptchaToken;
+        }
+        
+        console.log('✅ reCAPTCHA token generated for signup');
+
+        // Create signup data with reCAPTCHA token
+        const signupData = {
+            email: email,
+            password: password,
+            full_name: fullName,
+            recaptcha_token: recaptchaToken
+        };
+
+        // Make the signup request to backend API
+        const response = await fetch('/api/auth/signup', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(signupData)
         });
-        // On success, show a confirmation message/card
-        switchForm('success');
+
+        const result = await response.json();
+
+        if (result.success) {
+            console.log('✅ Sign up successful');
+            
+            if (result.session && result.user) {
+                // User is immediately signed in
+                window.dispatchEvent(new CustomEvent('auth-state-changed', {
+                    detail: {
+                        isAuthenticated: true,
+                        user: result.user,
+                        session: result.session
+                    }
+                }));
+                
+                // Navigate to app
+                if (window.router) {
+                    window.router.navigate('/app');
+                } else {
+                    window.location.href = '/app';
+                }
+            } else {
+                // Email confirmation required - show success card
+                switchForm('success');
+            }
+        } else {
+            throw new Error(result.message || 'Signup failed');
+        }
+        
     } catch (error) {
         console.error('❌ Sign up failed:', error);
-        // Error is displayed by the auth module's notification system
-        // But also show fallback message for demo mode
+        
+        // Show user-friendly error messages
         const errorMessage = error.message || 'Sign up failed';
-        if (errorMessage.includes('not configured') || errorMessage.includes('not available')) {
+        
+        if (errorMessage.includes('reCAPTCHA')) {
+            showFieldError(emailInput, 'Security verification failed. Please try again.');
+        } else if (errorMessage.includes('Rate limit')) {
+            showFieldError(emailInput, 'Too many signup attempts. Please wait before trying again.');
+        } else if (errorMessage.includes('email already exists') || errorMessage.includes('already registered')) {
+            showFieldError(emailInput, 'An account with this email already exists. Please try signing in instead.');
+        } else if (errorMessage.includes('not configured') || errorMessage.includes('not available')) {
             showFieldError(emailInput, 'Demo mode: Authentication service not configured. Please check console for setup instructions.');
+        } else {
+            showFieldError(emailInput, errorMessage);
         }
     } finally {
         setLoading(false);
@@ -431,6 +558,7 @@ async function handleForgotPasswordSubmit(e) {
     if (isLoading) return;
 
     const emailInput = document.getElementById('resetEmail');
+    const recaptchaTokenField = document.getElementById('forgotRecaptchaToken');
     const email = emailInput.value.trim();
 
     if (!isValidEmail(email)) {
@@ -443,10 +571,31 @@ async function handleForgotPasswordSubmit(e) {
     setLoading(true);
 
     try {
+        // Generate reCAPTCHA token
+        console.log('🔐 Generating reCAPTCHA token for password reset...');
+        const recaptchaToken = await recaptcha.getForgotPasswordToken();
+        
+        if (recaptchaTokenField) {
+            recaptchaTokenField.value = recaptchaToken;
+        }
+        
+        console.log('✅ reCAPTCHA token generated for password reset');
+
         await authModule.resetPassword(email);
         // Let the auth module show the success message
     } catch (error) {
-        // Error is displayed by the auth module
+        console.error('❌ Password reset failed:', error);
+        
+        // Show user-friendly error messages
+        const errorMessage = error.message || 'Password reset failed';
+        
+        if (errorMessage.includes('reCAPTCHA')) {
+            showFieldError(emailInput, 'Security verification failed. Please try again.');
+        } else if (errorMessage.includes('Rate limit')) {
+            showFieldError(emailInput, 'Too many reset attempts. Please wait before trying again.');
+        } else {
+            showFieldError(emailInput, errorMessage);
+        }
     } finally {
         setLoading(false);
     }
