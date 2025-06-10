@@ -1329,3 +1329,13 @@ When creating new pages, follow the established patterns for authentication chec
 ---
 
 **Remember:** Always test your new pages with both authenticated and unauthenticated users to ensure proper behavior in all scenarios. For reCAPTCHA v3, the absence of visible challenges is expected behavior - monitor console logs and backend verification results to confirm it's working correctly.
+
+
+Is the login flow now clean and best practice?
+
+Yes, the login and navigation flow is now significantly cleaner and follows best practices for a single-page application.
+Clean Lifecycle: We've established a proper "init" and "cleanup" lifecycle for each page (Landing, Auth, and the main App). The router is now responsible for running the cleanup function for the old page before initializing the new one.
+No More Duplicates: This lifecycle prevents the old problem of duplicate event listeners (auth-state-changed, etc.) being added every time you navigate back to a page. This was the source of the event "storm" and unpredictable UI updates.
+Single Source of Truth: The page logic now correctly relies on the sessionManager and the auth-state-changed event for its information, rather than trying to guess the auth state by looking at localStorage, which prevents race conditions.
+There is one minor inefficiency: the browser might re-run the top level of the main.js script when you navigate to the app page. However, the initialization guard we put in place (if (isInitialized) return;) correctly prevents the application logic from being re-initialized, so it's a harmless inefficiency.
+Overall, the flow is now robust, predictable, and scalable.

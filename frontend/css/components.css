@@ -747,3 +747,19 @@ button[disabled] {
 .reset-btn:hover {
     background-color: #e68a00; /* Darker orange on hover */
 }
+
+/* =================================================================
+  Component-Specific Overrides & Global Component Styles
+================================================================= */
+
+/* reCAPTCHA Badge Visibility Control */
+/* Hide the badge by default on all pages */
+.grecaptcha-badge {
+    visibility: hidden;
+}
+
+/* Show the badge ONLY on the authentication page */
+.auth-body .grecaptcha-badge {
+    visibility: visible;
+}
+

@@ -80,6 +80,7 @@ After creating, you'll get:
 4. **Redirect URL** should already be filled:
    ```
    https://your-project.supabase.co/auth/v1/callback
+   
    ```
 5. Click **"Save"**
 
