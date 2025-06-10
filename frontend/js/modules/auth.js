@@ -233,7 +233,31 @@ class AuthModule {
             
             console.log('🔄 Auth state changed:', event);
 
-            // Centralized handling of all auth events
+            // **NEW: If in password recovery mode, ignore all auth events except PASSWORD_RECOVERY and SIGNED_OUT**
+            if (sessionManager.isPasswordRecovery) {
+                switch (event) {
+                                    case 'PASSWORD_RECOVERY':
+                    console.log('🔑 Password recovery mode detected from event.');
+                    sessionManager.activatePasswordRecovery();
+                    this.notifyAuthListeners(event, session);
+                    break;
+                    case 'SIGNED_OUT':
+                        console.log('🔑 Sign out during password recovery - allowing.');
+                        await this.handleSignOut();
+                        break;
+                    case 'SIGNED_IN':
+                    case 'INITIAL_SESSION':
+                        console.log(`🔑 Ignoring ${event} during password recovery mode.`);
+                        // Still notify listeners for UI updates, but don't process as login
+                        this.notifyAuthListeners('PASSWORD_RECOVERY', session);
+                        break;
+                    default:
+                        console.log(`🔑 Ignoring ${event} during password recovery mode.`);
+                }
+                return;
+            }
+
+            // Centralized handling of all auth events (only when NOT in password recovery)
             switch (event) {
                 case 'SIGNED_IN':
                     await this.handleAuthSuccess(session, true /* isLogin */, event);
@@ -241,13 +265,7 @@ class AuthModule {
                 
                 case 'INITIAL_SESSION':
                     if (session) {
-                        // If in password recovery, don't treat this as a full login
-                        if (sessionManager.isPasswordRecovery) {
-                            console.log('🔑 Continuing password recovery, ignoring initial session for navigation.');
-                            this.notifyAuthListeners('PASSWORD_RECOVERY', session);
-                        } else {
-                            await this.handleAuthSuccess(session, false /* isLogin */, event);
-                        }
+                        await this.handleAuthSuccess(session, false /* isLogin */, event);
                     } else {
                         // Check if this might be a Google OAuth callback that hasn't processed yet
                         const isGoogleOAuthCallback = window.location.search.includes('from=google');
@@ -287,7 +305,7 @@ class AuthModule {
 
                 case 'PASSWORD_RECOVERY':
                     console.log('🔑 Password recovery mode detected from event.');
-                    sessionManager.setPasswordRecovery(true);
+                    sessionManager.activatePasswordRecovery();
                     this.notifyAuthListeners(event, session);
                     break;
                     
@@ -303,6 +321,13 @@ class AuthModule {
     async handleAuthSuccess(session, isLogin = false, authEvent = null) {
         if (!session || !session.user) {
             console.error('Invalid session provided');
+            return;
+        }
+
+        // **NEW: Enhanced security checks before processing authentication**
+        if (!this.validateSessionSecurity(session, authEvent)) {
+            console.warn('🚨 Session failed security validation - blocking authentication');
+            await this.handleSignOut();
             return;
         }
 
@@ -423,6 +448,64 @@ class AuthModule {
             console.error('Error during user initialization:', error);
             showError('Authentication successful, but failed to load user data');
         }
+    }
+
+    /**
+     * NEW: Validate session security to prevent attacks
+     */
+    validateSessionSecurity(session, authEvent) {
+        // 1. Check for concurrent password recovery attacks
+        if (sessionManager.isPasswordRecovery && authEvent === 'SIGNED_IN') {
+            console.warn('🚨 Blocked SIGNED_IN during password recovery - potential session hijacking');
+            return false;
+        }
+
+        // 2. Validate JWT token structure
+        if (session.access_token && !this.isValidJWT(session.access_token)) {
+            console.warn('🚨 Invalid JWT structure detected');
+            return false;
+        }
+
+        // 3. Check for rapid successive authentication attempts
+        const now = Date.now();
+        const timeSinceLastAuth = now - (this.lastAuthTime || 0);
+        if (timeSinceLastAuth < 1000) { // Less than 1 second
+            console.warn('🚨 Rapid authentication attempts detected');
+            sessionManager.logSecurityEvent('rapid_auth_attempt', {
+                timeSinceLastAuth,
+                authEvent,
+                userId: session.user?.id
+            });
+            return false;
+        }
+        this.lastAuthTime = now;
+
+        // 4. Validate user email format to prevent injection
+        if (session.user?.email && !this.isValidEmail(session.user.email)) {
+            console.warn('🚨 Invalid email format in session');
+            return false;
+        }
+
+        // 5. Check for suspicious OAuth callbacks
+        if (authEvent === 'SIGNED_IN' && window.location.search.includes('from=google')) {
+            // Ensure this is a legitimate OAuth callback
+            const hasOAuthParams = window.location.search.includes('code=') || 
+                                 window.location.hash.includes('access_token=');
+            if (!hasOAuthParams) {
+                console.warn('🚨 Suspicious OAuth callback without parameters');
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * NEW: Validate email format
+     */
+    isValidEmail(email) {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        return emailRegex.test(email);
     }
 
     /**
@@ -972,8 +1055,10 @@ class AuthModule {
                 // After successful password update, sign the user out completely
                 await this.signOut();
 
-                // Clear the recovery flag and navigate to login
+                // **ENHANCED: Clear both local and global recovery state**
                 sessionManager.clearPasswordRecoveryFlag();
+                
+                // Navigate to login
                 router.navigate('/auth');
 
             } catch (error) {
