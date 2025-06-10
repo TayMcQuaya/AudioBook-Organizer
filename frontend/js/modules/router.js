@@ -167,10 +167,27 @@ class Router {
 
             // Check authentication requirements
             if (route.requiresAuth && !isAuthenticated) {
-                console.warn(`🔒 Route ${targetPath} requires authentication. Redirecting to login.`);
-                showInfo('Please sign in to access this page');
-                await this.navigate('/auth');
-                return;
+                // Special case: If this is a Google OAuth callback to /app, wait for auth to process
+                const isGoogleOAuthToApp = fullPath.includes('from=google') && targetPath === '/app';
+                if (isGoogleOAuthToApp) {
+                    console.log('🔄 Google OAuth callback detected, waiting for auth processing...');
+                    // Wait a moment for Supabase to process the OAuth tokens
+                    await new Promise(resolve => setTimeout(resolve, 2000));
+                    // Check auth again after waiting
+                    if (sessionManager.isAuthenticated) {
+                        console.log('✅ Authentication completed after OAuth processing');
+                        // Continue to load the app
+                    } else {
+                        console.warn('⚠️ OAuth processing failed, redirecting to auth');
+                        await this.navigate('/auth');
+                        return;
+                    }
+                } else {
+                    console.warn(`🔒 Route ${targetPath} requires authentication. Redirecting to login.`);
+                    showInfo('Please sign in to access this page');
+                    await this.navigate('/auth');
+                    return;
+                }
             }
             
             // Redirect authenticated users away from auth page, UNLESS it's a password recovery flow

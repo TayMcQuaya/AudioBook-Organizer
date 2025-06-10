@@ -63,7 +63,40 @@ export async function initAuthPage(auth) {
         if (params.get('from') === 'google') {
             console.log('📱 Detected Google OAuth callback');
             showInfo('Completing Google sign-in...');
-            // The auth state change listener will handle the redirect
+            
+            // Wait for Supabase to process the OAuth session
+            let attempts = 0;
+            const maxAttempts = 30; // 15 seconds max wait
+            
+            const waitForOAuthSession = async () => {
+                while (attempts < maxAttempts) {
+                    if (authModule.isAuthenticated()) {
+                        console.log('✅ Google OAuth session established');
+                        showSuccess('Google sign-in successful! Redirecting...');
+                        
+                        // Navigate to app after successful OAuth
+                        setTimeout(() => {
+                            if (window.router) {
+                                window.router.navigate('/app');
+                            } else {
+                                window.location.href = '/app';
+                            }
+                        }, 1000);
+                        return;
+                    }
+                    
+                    attempts++;
+                    await new Promise(resolve => setTimeout(resolve, 500));
+                }
+                
+                // If we get here, OAuth failed
+                console.error('❌ Google OAuth session not established after waiting');
+                showError('Google sign-in failed. Please try again.');
+                switchForm('login');
+            };
+            
+            // Start waiting for OAuth session
+            waitForOAuthSession();
             return;
         }
 

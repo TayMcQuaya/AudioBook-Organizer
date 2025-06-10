@@ -249,7 +249,22 @@ class AuthModule {
                             await this.handleAuthSuccess(session, false /* isLogin */, event);
                         }
                     } else {
-                        await this.handleSignOut();
+                        // Check if this might be a Google OAuth callback that hasn't processed yet
+                        const isGoogleOAuthCallback = window.location.search.includes('from=google');
+                        if (isGoogleOAuthCallback) {
+                            console.log('🔄 Google OAuth callback detected with no session yet, waiting...');
+                            // Don't sign out immediately for OAuth callbacks - give it time
+                            setTimeout(async () => {
+                                // Check again after a delay
+                                const { data } = await supabaseClient.auth.getSession();
+                                if (!data.session) {
+                                    console.log('⚠️ Still no session after OAuth delay, proceeding with sign out');
+                                    await this.handleSignOut();
+                                }
+                            }, 3000);
+                        } else {
+                            await this.handleSignOut();
+                        }
                     }
                     break;
 
@@ -391,7 +406,17 @@ class AuthModule {
                     }
                 }
             } else if (authEvent === 'INITIAL_SESSION') {
-                console.log('🔄 Session restored, staying on current page');
+                // For Google OAuth on auth page, navigate to app
+                if (window.location.search.includes('from=google') && window.location.pathname === '/auth') {
+                    console.log('🔄 Google OAuth session restored, navigating to app page');
+                    if (window.router) {
+                        await window.router.navigate('/app');
+                    } else {
+                        window.location.href = '/app';
+                    }
+                } else {
+                    console.log('🔄 Session restored, staying on current page');
+                }
             }
             
         } catch (error) {
@@ -576,7 +601,7 @@ class AuthModule {
             const { data, error } = await supabaseClient.auth.signInWithOAuth({
                 provider: 'google',
                 options: {
-                    redirectTo: `${window.location.origin}/app?from=google`,
+                    redirectTo: `${window.location.origin}/auth?from=google`,
                     queryParams: {
                         access_type: 'offline',
                         prompt: 'consent',
