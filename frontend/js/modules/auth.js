@@ -36,11 +36,61 @@ class AuthModule {
         this.maxRetries = 3;
         this.lastWelcomeShown = 0;  // Prevent repeated welcome messages
         this.wasInitialized = false; // Track if we've seen the first auth state change
-        this.welcomeShownThisSession = false; // Prevent multiple welcome messages
-        this.userInitialized = false; // Prevent multiple user initialization calls
+        this.welcomeShownThisSession = false; // Prevent multiple welcome messages - SESSION PERSISTENT
+        this.userInitialized = false; // Prevent multiple user initialization calls - SESSION PERSISTENT
+        this.newUserCreditsShown = false; // Prevent multiple new user credit messages - SESSION PERSISTENT
+        this.sessionId = null; // Track session ID for persistence
         this.initPasswordStrengthMeter();
         this.initPasswordVisibilityToggle();
+        
+        // Restore session-persistent flags from localStorage
+        this.restoreSessionFlags();
+        
         AuthModule.instance = this;
+    }
+
+    /**
+     * Restore session-persistent flags from localStorage
+     */
+    restoreSessionFlags() {
+        try {
+            const sessionData = localStorage.getItem('auth_session_data');
+            if (sessionData) {
+                const data = JSON.parse(sessionData);
+                // Only restore if it's the same session
+                if (data.sessionId && data.timestamp && (Date.now() - data.timestamp < 24 * 60 * 60 * 1000)) { // 24 hours
+                    this.welcomeShownThisSession = data.welcomeShownThisSession || false;
+                    this.userInitialized = data.userInitialized || false;
+                    this.newUserCreditsShown = data.newUserCreditsShown || false;
+                    this.sessionId = data.sessionId;
+                    console.log('🔄 Restored session flags:', { 
+                        welcomeShown: this.welcomeShownThisSession, 
+                        userInit: this.userInitialized,
+                        creditsShown: this.newUserCreditsShown 
+                    });
+                }
+            }
+        } catch (error) {
+            console.warn('Failed to restore session flags:', error);
+        }
+    }
+
+    /**
+     * Save session-persistent flags to localStorage
+     */
+    saveSessionFlags() {
+        try {
+            const sessionData = {
+                sessionId: this.sessionId,
+                welcomeShownThisSession: this.welcomeShownThisSession,
+                userInitialized: this.userInitialized,
+                newUserCreditsShown: this.newUserCreditsShown,
+                timestamp: Date.now()
+            };
+            localStorage.setItem('auth_session_data', JSON.stringify(sessionData));
+        } catch (error) {
+            console.warn('Failed to save session flags:', error);
+        }
     }
 
     /**
@@ -239,12 +289,22 @@ class AuthModule {
             return;
         }
 
+        // Generate or use existing session ID for tracking
+        const currentSessionId = session.access_token?.substring(0, 12) || Date.now().toString();
+        const isNewSession = this.sessionId !== currentSessionId;
+        
         // More comprehensive duplicate check - if we already have the same user and session
         if (this.user?.id === session.user.id && 
             this.session?.access_token === session.access_token &&
-            this.userInitialized) {
+            this.userInitialized && !isNewSession) {
             console.log('🔄 Ignoring duplicate auth success for same user session');
             return;
+        }
+
+        // Update session tracking
+        if (isNewSession) {
+            this.sessionId = currentSessionId;
+            console.log('🆕 New session detected:', this.sessionId);
         }
 
         this.session = session;
@@ -286,8 +346,9 @@ class AuthModule {
             
             console.log('✅ User authenticated:', this.user.email);
             
-            // Only show welcome message on actual login, not session restoration, and only once per session
-            if (isLogin && !this.welcomeShownThisSession) {
+            // Welcome message logic: Show ONLY on actual login (SIGNED_IN event), not session restoration
+            // And only if we haven't shown it for this session yet
+            if (authEvent === 'SIGNED_IN' && !this.welcomeShownThisSession) {
                 // Use actual name if available, otherwise use email
                 const displayName = this.user.user_metadata?.full_name || 
                                   this.user.user_metadata?.name || 
@@ -296,7 +357,13 @@ class AuthModule {
                                   this.user.email.split('@')[0];
                 showSuccess(`Welcome back, ${displayName}!`);
                 this.welcomeShownThisSession = true;
+                console.log('👋 Welcome message shown for login');
+            } else if (authEvent === 'INITIAL_SESSION') {
+                console.log('🔄 Session restored, skipping welcome message');
             }
+            
+            // Save session flags to persist across page navigations
+            this.saveSessionFlags();
             
         } catch (error) {
             console.error('Error during user initialization:', error);
@@ -341,9 +408,12 @@ class AuthModule {
         authToken = null;
         this.welcomeShownThisSession = false; // Reset welcome flag for next login
         this.userInitialized = false; // Reset user initialization flag for next login
+        this.newUserCreditsShown = false; // Reset new user credits flag for next login
+        this.sessionId = null; // Clear session ID
 
-        // Clear stored token
+        // Clear stored token and session flags
         localStorage.removeItem('auth_token');
+        localStorage.removeItem('auth_session_data');
         
         // Dispatch auth state change event for session manager
         window.dispatchEvent(new CustomEvent('auth-state-changed', {
@@ -394,10 +464,20 @@ class AuthModule {
             
             if (data.success) {
                 this.userInitialized = true; // Mark as initialized
-                if (data.is_new_user) {
+                
+                // Only show new user credits message once per session AND only for truly new users
+                if (data.is_new_user && !this.newUserCreditsShown) {
                     showSuccess(`Welcome! You've been granted ${data.credits} credits to get started.`);
+                    this.newUserCreditsShown = true;
+                    console.log('🎉 New user credits message shown');
+                } else if (data.is_new_user && this.newUserCreditsShown) {
+                    console.log('🔄 New user credits message already shown this session');
                 }
+                
                 console.log('✅ User initialized:', data);
+                
+                // Save session flags after initialization
+                this.saveSessionFlags();
             } else {
                 console.error('Failed to initialize user:', data);
             }
