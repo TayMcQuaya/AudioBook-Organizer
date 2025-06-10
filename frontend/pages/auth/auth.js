@@ -754,6 +754,12 @@ function handleInitialRoute() {
 function switchForm(formType, updateHistory = true) {
     currentForm = formType;
     
+    // **FIX: Add null checks for DOM elements before accessing style**
+    if (!elements.loginCard || !elements.signupCard || !elements.forgotPasswordCard || !elements.successCard) {
+        console.warn('⚠️ DOM elements not ready for form switching');
+        return;
+    }
+    
     // Hide all cards
     elements.loginCard.style.display = 'none';
     elements.signupCard.style.display = 'none';

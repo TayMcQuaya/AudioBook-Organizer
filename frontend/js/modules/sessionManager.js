@@ -18,6 +18,9 @@ class SessionManager {
         // **NEW: Global password recovery state management**
         this.RECOVERY_STORAGE_KEY = 'supabase_password_recovery_active';
         this.RECOVERY_TIMEOUT = 30 * 60 * 1000; // 30 minutes max recovery session
+        this.currentTabId = this.generateTabId(); // Generate unique tab ID for this session
+        this.isInitializing = true; // Flag to prevent storage event processing during init
+        this.lastLocalStorageWrite = null; // Track recent localStorage writes to prevent self-triggering
         
         // Operational flags
         this.isCheckingAuth = false;
@@ -41,36 +44,56 @@ class SessionManager {
         
         console.log('🔒 Initializing session manager...');
         
+        // **FIX: Set up event listeners FIRST, then check recovery state**
         this.setupEventListeners();
         
         this.isInitialized = true;
         
-        // **ENHANCED: Check for password recovery state from multiple sources**
+        // **REFINED: More specific check for password recovery state activation**
         const urlHash = window.location.hash;
         const urlSearch = window.location.search;
         const currentPath = window.location.pathname;
         
-        // Check if this is a password recovery scenario
-        const isRecoveryFromUrl = urlHash.includes('type=recovery') || 
-                                 urlHash.includes('#access_token') && currentPath === '/auth/reset-password' ||
-                                 urlSearch.includes('type=recovery') ||
-                                 currentPath === '/auth/reset-password';
+        // **NEW: Detect Google OAuth callback**
+        const isGoogleOAuthCallback = urlSearch.includes('from=google') || 
+                                    urlHash.includes('provider=google') ||
+                                    (urlHash.includes('access_token=') && !urlHash.includes('type=recovery'));
         
-        // **NEW: Check for global recovery state (cross-tab detection)**
-        const globalRecoveryState = this.getGlobalRecoveryState();
-        const isGlobalRecoveryActive = globalRecoveryState && !this.isRecoveryStateExpired(globalRecoveryState);
-        
-        if (isRecoveryFromUrl || isGlobalRecoveryActive) {
-            console.log('🔑 Password recovery mode detected during initialization', {
-                fromUrl: isRecoveryFromUrl,
-                fromGlobal: isGlobalRecoveryActive,
-                currentTab: currentPath
-            });
-            
+        // **FIX: Only detect actual password recovery, not Google OAuth callbacks**
+        const isRecoveryUrl = (urlHash.includes('type=recovery') || urlSearch.includes('type=recovery')) || 
+                             (currentPath === '/auth/reset-password') ||
+                             (urlHash.includes('access_token=') && urlHash.includes('type=recovery'));
+
+        if (isGoogleOAuthCallback) {
+            console.log('🔑 Google OAuth callback detected - clearing any orphaned recovery state');
+            // Clear any orphaned recovery state that might interfere with OAuth
+            this.clearPasswordRecoveryFlag();
+            this.isPasswordRecovery = false;
+        } else if (isRecoveryUrl) {
+            console.log('🔑 Password recovery mode activated from URL.', { path: window.location.pathname, hash: urlHash });
             this.activatePasswordRecovery();
+        } else {
+            // No recovery parameters in URL, check for orphaned state in localStorage
+            const globalRecoveryState = this.getGlobalRecoveryState();
+            if (globalRecoveryState) {
+                if (this.isRecoveryStateExpired(globalRecoveryState)) {
+                    console.log('🚮 Found and cleared expired password recovery state on initialization.');
+                    this.clearPasswordRecoveryFlag();
+                } else {
+                    console.log('🔑 Adopting active password recovery state from another session.');
+                    this.isPasswordRecovery = true; // Adopt state without refreshing the timer
+                    this.notifyStateChange();
+                }
+            }
         }
 
-        console.log('✅ Session manager initialized', this.isPasswordRecovery ? '(Password Recovery Mode)' : '');
+        // Final state reporting
+        console.log(`✅ Session manager initialized ${this.isPasswordRecovery ? '(Password Recovery Mode)' : ''}`);
+        
+        // **FIX: Clear initialization flag after a brief delay to allow initial setup**
+        setTimeout(() => {
+            this.isInitializing = false;
+        }, 100);
     }
 
     /**
@@ -405,10 +428,12 @@ class SessionManager {
      */
     clearPasswordRecoveryFlag(updateStorage = true) {
         this.isPasswordRecovery = false;
-        console.log('Password recovery state cleared.');
+        console.log('🔑 Password recovery state cleared');
         
         // **NEW: Clear global recovery state for cross-tab communication**
         if (updateStorage) {
+            // Track localStorage write to prevent same-tab processing
+            this.lastLocalStorageWrite = Date.now();
             localStorage.removeItem(this.RECOVERY_STORAGE_KEY);
             console.log('🔑 Global password recovery state cleared');
         }
@@ -419,7 +444,35 @@ class SessionManager {
      */
     handleRecoveryStorageChange(event) {
         if (event.key === this.RECOVERY_STORAGE_KEY) {
+            // **FIX: Ignore storage events during initialization**
+            if (this.isInitializing) {
+                console.log('🚫 Ignoring storage event during initialization');
+                return;
+            }
+            
             const recoveryState = event.newValue ? JSON.parse(event.newValue) : null;
+            console.log('🔄 Recovery storage change detected from another tab');
+            
+            // **ENHANCED FIX: Multiple checks to prevent same-tab processing**
+            if (recoveryState) {
+                // Check 1: Tab ID comparison
+                if (recoveryState.tabId === this.currentTabId) {
+                    console.log('🚫 Ignoring storage event from same tab (ID match):', recoveryState.tabId);
+                    return;
+                }
+                
+                // Check 2: Recent localStorage write detection
+                if (this.lastLocalStorageWrite && (Date.now() - this.lastLocalStorageWrite) < 200) {
+                    console.log('🚫 Ignoring storage event - recent write detected');
+                    return;
+                }
+                
+                // Check 3: Current path matches event path
+                if (recoveryState.path === window.location.pathname && window.location.pathname === '/auth/reset-password') {
+                    console.log('🚫 Ignoring storage event - same reset password page');
+                    return;
+                }
+            }
             
             if (recoveryState && !this.isRecoveryStateExpired(recoveryState)) {
                 console.log('🔑 Password recovery activated from another tab');
@@ -462,9 +515,13 @@ class SessionManager {
         const recoveryState = {
             active: true,
             timestamp: Date.now(),
-            tabId: this.generateTabId(),
+            tabId: this.currentTabId, // Use consistent tab ID
             path: window.location.pathname
         };
+        
+        // Track localStorage write to prevent same-tab processing
+        this.lastLocalStorageWrite = Date.now();
+        
         localStorage.setItem(this.RECOVERY_STORAGE_KEY, JSON.stringify(recoveryState));
         console.log('🔑 Global password recovery state activated', recoveryState);
     }
@@ -488,6 +545,19 @@ class SessionManager {
     isRecoveryStateExpired(recoveryState) {
         if (!recoveryState || !recoveryState.timestamp) return true;
         return (Date.now() - recoveryState.timestamp) > this.RECOVERY_TIMEOUT;
+    }
+
+    /**
+     * NEW: Check and cleanup expired recovery state
+     */
+    checkAndCleanupRecoveryState() {
+        const globalRecoveryState = this.getGlobalRecoveryState();
+        if (globalRecoveryState && this.isRecoveryStateExpired(globalRecoveryState)) {
+            console.log('🧹 Auto-cleanup: Found and cleared expired password recovery state');
+            this.clearPasswordRecoveryFlag();
+            return true; // State was cleaned up
+        }
+        return false; // No cleanup needed
     }
 
     /**

@@ -237,8 +237,8 @@ class AuthModule {
             if (sessionManager.isPasswordRecovery) {
                 switch (event) {
                                     case 'PASSWORD_RECOVERY':
-                    console.log('🔑 Password recovery mode detected from event.');
-                    sessionManager.activatePasswordRecovery();
+                    console.log('🔑 Password recovery mode detected from event (already active).');
+                    // Don't call activatePasswordRecovery() again - we're already in recovery mode
                     this.notifyAuthListeners(event, session);
                     break;
                     case 'SIGNED_OUT':
@@ -466,10 +466,13 @@ class AuthModule {
             return false;
         }
 
-        // 3. Check for rapid successive authentication attempts
+        // 3. Check for rapid successive authentication attempts (but allow OAuth flows)
         const now = Date.now();
         const timeSinceLastAuth = now - (this.lastAuthTime || 0);
-        if (timeSinceLastAuth < 1000) { // Less than 1 second
+        const isGoogleOAuthFlow = window.location.search.includes('from=google');
+        
+        // **FIX: Allow rapid events during OAuth flow (SIGNED_IN followed by INITIAL_SESSION is normal)**
+        if (timeSinceLastAuth < 1000 && !isGoogleOAuthFlow && authEvent !== 'INITIAL_SESSION') {
             console.warn('🚨 Rapid authentication attempts detected');
             sessionManager.logSecurityEvent('rapid_auth_attempt', {
                 timeSinceLastAuth,
@@ -486,16 +489,9 @@ class AuthModule {
             return false;
         }
 
-        // 5. Check for suspicious OAuth callbacks
-        if (authEvent === 'SIGNED_IN' && window.location.search.includes('from=google')) {
-            // Ensure this is a legitimate OAuth callback
-            const hasOAuthParams = window.location.search.includes('code=') || 
-                                 window.location.hash.includes('access_token=');
-            if (!hasOAuthParams) {
-                console.warn('🚨 Suspicious OAuth callback without parameters');
-                return false;
-            }
-        }
+        // 5. **REMOVED: Overly strict OAuth parameter check - Supabase handles this internally**
+        // Modern Supabase OAuth doesn't always include visible parameters in the URL
+        // The session itself being valid is sufficient validation
 
         return true;
     }
@@ -1091,6 +1087,27 @@ class AuthModule {
                 this.setLoading(updateBtn, false);
             }
         });
+
+        // **NEW: Add event listener for the exit recovery link**
+        const exitLink = document.getElementById('exit-recovery-link');
+        if (exitLink) {
+            exitLink.addEventListener('click', async (e) => {
+                e.preventDefault();
+                console.log('🚪 User manually exiting password recovery');
+                
+                // **FIX: Sign out completely to prevent auth restoration in other tabs**
+                try {
+                    await this.signOut();
+                    console.log('✅ Signed out during recovery exit');
+                } catch (error) {
+                    console.warn('⚠️ Sign out failed during recovery exit:', error);
+                }
+                
+                // Clear recovery state after sign out
+                sessionManager.clearPasswordRecoveryFlag();
+                router.navigate('/');
+            });
+        }
     }
 
     initPasswordStrengthMeter(inputId = 'password') {

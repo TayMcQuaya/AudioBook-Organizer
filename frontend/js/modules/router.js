@@ -162,10 +162,17 @@ class Router {
             const isAuthenticated = state.isAuthenticated ?? sessionManager.isAuthenticated;
             const isPasswordRecovery = sessionManager.isPasswordRecovery;
             
-            if (isPasswordRecovery && targetPath !== '/auth/reset-password') {
-                console.log('In password recovery mode, forcing navigation to reset password page.');
+            // **FIXED: Only block authenticated routes during password recovery, allow public pages**
+            if (isPasswordRecovery && route.requiresAuth) {
+                console.log('In password recovery mode, blocking access to authenticated route:', targetPath);
+                showInfo('Please complete your password reset first, or exit recovery mode to access this page.');
                 await this.navigate('/auth/reset-password', { pushState: false });
                 return;
+            }
+            
+            // **SAFETY CHECK: Clear orphaned recovery state if navigating to non-recovery public pages**
+            if (isPasswordRecovery && !route.requiresAuth && targetPath !== '/auth/reset-password') {
+                sessionManager.checkAndCleanupRecoveryState();
             }
 
             // Check authentication requirements
@@ -502,6 +509,13 @@ class Router {
     
     // Handle popstate events
     handlePopState(event) {
+        // **FIX: Ignore popstate events during password recovery initialization**
+        // Supabase triggers popstate events when processing recovery URLs
+        if (sessionManager.isPasswordRecovery && window.location.pathname === '/auth/reset-password') {
+            console.log('🚫 Ignoring popstate event during password recovery initialization');
+            return;
+        }
+        
         const path = event.state ? event.state.path : '/';
         this.handleRoute(path, { ...(event.state || {}), isPopState: true });
     }
