@@ -350,7 +350,7 @@ class AuthModule {
             
             // Welcome message logic: Show ONLY on actual login (SIGNED_IN event), not session restoration
             // And only if we haven't shown it for this session yet
-            if (authEvent === 'SIGNED_IN' && !this.welcomeShownThisSession) {
+            if ((authEvent === 'SIGNED_IN' || window.location.search.includes('from=google')) && !this.welcomeShownThisSession) {
                 // Use actual name if available, otherwise use email
                 const displayName = this.user.user_metadata?.full_name || 
                                   this.user.user_metadata?.name || 
@@ -367,13 +367,28 @@ class AuthModule {
             // Save session flags to persist across page navigations
             this.saveSessionFlags();
             
-            // Navigate to app page after successful authentication
+            // Get the return URL if it exists
+            const params = new URLSearchParams(window.location.search);
+            const returnUrl = params.get('return') || '/app';
+            
+            // Navigate after successful authentication
             if (authEvent === 'SIGNED_IN') {
-                console.log('🔄 Navigating to app page after login');
-                if (window.router) {
-                    await window.router.navigate('/app');
+                // For Google OAuth callback, navigate directly to app
+                if (window.location.search.includes('from=google')) {
+                    console.log('🔄 Google OAuth completed, navigating to app page');
+                    if (window.router) {
+                        await window.router.navigate('/app');
+                    } else {
+                        window.location.href = '/app';
+                    }
                 } else {
-                    window.location.href = '/app';
+                    // For regular login, use return URL
+                    console.log('🔄 Navigating to app page after login');
+                    if (window.router) {
+                        await window.router.navigate(returnUrl);
+                    } else {
+                        window.location.href = returnUrl;
+                    }
                 }
             } else if (authEvent === 'INITIAL_SESSION') {
                 console.log('🔄 Session restored, staying on current page');
@@ -503,34 +518,86 @@ class AuthModule {
     /**
      * Sign in with email and password
      */
-    async signIn(email, password) {
+    async signIn(email, password, recaptchaToken = null) {
         if (!supabaseClient) {
-            console.warn('⚠️ Supabase not available - simulating validation only');
-            showError('Authentication service is not available. This is a demo environment.');
-            throw new Error('Authentication not configured');
+            throw new Error('Supabase client not available');
         }
 
-        this.isLoading = true;
-        
         try {
+            // Call backend login endpoint with reCAPTCHA token first for security
+            const response = await fetch('/api/auth/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    email: email,
+                    password: password,
+                    recaptcha_token: recaptchaToken
+                })
+            });
+
+            const result = await response.json();
+
+            if (!result.success) {
+                throw new Error(result.message || 'Login failed');
+            }
+
+            // Now sign in with Supabase directly to get the session
             const { data, error } = await supabaseClient.auth.signInWithPassword({
-                email,
-                password
+                email: email,
+                password: password
             });
 
             if (error) {
-                throw error;
+                throw new Error(error.message || 'Authentication failed');
             }
 
-            console.log('✅ Sign in successful');
+            console.log('✅ Supabase sign-in successful');
             return { success: true, data };
-            
         } catch (error) {
-            console.error('❌ Sign in failed:', error);
             showError(error.message || 'Sign in failed');
-            throw error;
-        } finally {
-            this.isLoading = false;
+            return { success: false, error: error.message };
+        }
+    }
+
+    /**
+     * Sign in with Google OAuth
+     */
+    async signInWithGoogle() {
+        if (!supabaseClient) {
+            throw new Error('Supabase client not available');
+        }
+
+        try {
+            console.log('🔐 Starting Google OAuth sign in...');
+            
+            // Use Supabase's Google OAuth
+            const { data, error } = await supabaseClient.auth.signInWithOAuth({
+                provider: 'google',
+                options: {
+                    redirectTo: `${window.location.origin}/app?from=google`,
+                    queryParams: {
+                        access_type: 'offline',
+                        prompt: 'consent',
+                    }
+                }
+            });
+
+            if (error) {
+                console.error('❌ Google OAuth error:', error);
+                throw new Error(error.message || 'Google sign in failed');
+            }
+
+            console.log('✅ Google OAuth initiated successfully');
+            // Note: The actual authentication completion will be handled by the URL redirect
+            // and the onAuthStateChange listener will pick it up
+            
+            return { success: true };
+        } catch (error) {
+            console.error('❌ Google sign in failed:', error);
+            showError(error.message || 'Google sign in failed');
+            return { success: false, error: error.message };
         }
     }
 

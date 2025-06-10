@@ -219,10 +219,25 @@ class SessionManager {
         
         this.user = user;
         
-        if (isAuthenticated && session?.token && this.isValidJWT(session.token)) {
+        // Handle token storage
+        if (isAuthenticated && session?.token) {
+            if (this.isValidJWT(session.token)) {
                 localStorage.setItem('auth_token', session.token);
+                console.log('✅ Valid auth token stored');
+            } else {
+                console.warn('⚠️ Invalid JWT token received');
+            }
         } else if (!isAuthenticated) {
             localStorage.removeItem('auth_token');
+            console.log('🔑 Auth token removed');
+        }
+        
+        // Check if this is a Google OAuth callback
+        const params = new URLSearchParams(window.location.search);
+        const isGoogleCallback = params.get('from') === 'google';
+        
+        if (isAuthenticated && isGoogleCallback) {
+            console.log('✅ Google OAuth authentication completed');
         }
         
         console.log(`Session state updated. Auth: ${this.isAuthenticated}, Recovery: ${this.isPasswordRecovery}`);
@@ -246,6 +261,11 @@ class SessionManager {
             showInfo('You have been signed out');
         }
         
+        // Clear all auth-related storage
+        localStorage.removeItem('auth_token');
+        localStorage.removeItem('auth_session_data');
+        
+        // If on protected route, redirect to home
         if (window.router && ['/app', '/profile'].includes(window.location.pathname)) {
             window.router.navigate('/');
         }

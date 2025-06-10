@@ -69,6 +69,9 @@ async function checkAuthenticationState() {
         return;
     }
     
+    // Add auth state change listener for real-time updates
+    window.addEventListener('auth-state-changed', handleAuthStateChange);
+    
     // Wait for session manager to be initialized
     let attempts = 0;
     while (!window.sessionManager.isInitialized && attempts < 50) {
@@ -76,10 +79,15 @@ async function checkAuthenticationState() {
         attempts++;
     }
     
-    if (window.sessionManager.isAuthenticated) {
+    // Also check for auth token directly for faster response
+    const hasToken = localStorage.getItem('auth_token');
+    const isAuthenticated = window.sessionManager.isAuthenticated || (hasToken && window.authModule?.isAuthenticated());
+    
+    if (isAuthenticated) {
         console.log('User is authenticated on landing page');
+        const user = window.sessionManager.user || window.authModule?.getCurrentUser();
         // Trigger UI update for authenticated user
-        updateLandingPageForAuthenticatedUser(window.sessionManager.user);
+        updateLandingPageForAuthenticatedUser(user);
     } else {
         console.log('User is not authenticated on landing page');
         // Trigger UI update for unauthenticated user

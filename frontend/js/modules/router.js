@@ -175,9 +175,13 @@ class Router {
             
             // Redirect authenticated users away from auth page, UNLESS it's a password recovery flow
             if (targetPath === '/auth' && isAuthenticated && !isPasswordRecovery) {
-                console.log('👤 User already authenticated, redirecting to app');
-                await this.navigate('/app');
-                return;
+                // Check if this is a Google OAuth callback - if so, don't redirect here as auth module will handle it
+                const isGoogleCallback = fullPath.includes('from=google');
+                if (!isGoogleCallback) {
+                    console.log('👤 User already authenticated, redirecting to app');
+                    await this.navigate('/app');
+                    return;
+                }
             }
 
             // Update current route (use pathname for consistency)

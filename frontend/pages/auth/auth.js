@@ -3,8 +3,9 @@
  * Handles login, signup, and password reset functionality
  */
 
-// Import the reCAPTCHA service
+// Import the reCAPTCHA service and notifications
 import { recaptcha } from '../../js/modules/recaptcha.js';
+import { showInfo, showError, showSuccess } from '../../js/modules/notifications.js';
 
 // This script now works with the main AuthModule
 let authModule = null;
@@ -57,10 +58,20 @@ export async function initAuthPage(auth) {
         console.log('🔐 Initializing reCAPTCHA service...');
         await recaptcha.init();
 
+        // Check if this is a Google OAuth callback
+        const params = new URLSearchParams(window.location.search);
+        if (params.get('from') === 'google') {
+            console.log('📱 Detected Google OAuth callback');
+            showInfo('Completing Google sign-in...');
+            // The auth state change listener will handle the redirect
+            return;
+        }
+
         // Check if user is already authenticated
         if (authModule.isAuthenticated && authModule.isAuthenticated()) {
             console.log('User already authenticated, redirecting to app...');
-            window.location.href = '/app';
+            const returnUrl = params.get('return') || '/app';
+            window.location.href = returnUrl;
             return;
         }
         
@@ -287,31 +298,51 @@ function setupSocialAuth() {
     const googleSignInBtn = document.getElementById('googleSignInBtn');
     const googleSignUpBtn = document.getElementById('googleSignUpBtn');
     
-    const comingSoon = () => {
-        console.log('🔍 Google auth button clicked');
-        // Try to use the notifications module, fallback to alert
+    const handleGoogleAuth = async (action) => {
+        console.log(`🔍 Google ${action} button clicked`);
+        
+        if (!authModule) {
+            console.error('❌ Auth module not available');
+            showError('Authentication system not ready. Please refresh the page.');
+            return;
+        }
+
+        if (isLoading) {
+            console.log('⏳ Already loading, ignoring Google auth request');
+            return;
+        }
+
+        setLoading(true);
+
         try {
-            if (typeof showInfo === 'function') {
-                showInfo('Google authentication will be available soon!');
+            console.log(`🔐 Starting Google ${action}...`);
+            const result = await authModule.signInWithGoogle();
+            
+            if (result.success) {
+                console.log(`✅ Google ${action} initiated successfully`);
+                // The redirect will handle the rest
+                showInfo('Redirecting to Google...');
             } else {
-                alert('Google authentication will be available soon!');
+                throw new Error(result.error || `Google ${action} failed`);
             }
         } catch (error) {
-            console.error('Error showing notification:', error);
-            alert('Google authentication will be available soon!');
+            console.error(`❌ Google ${action} failed:`, error);
+            showError(error.message || `Google ${action} failed. Please try again.`);
+        } finally {
+            setLoading(false);
         }
     };
     
     if (googleSignInBtn) {
         console.log('✅ Google Sign In button found');
-        googleSignInBtn.addEventListener('click', comingSoon);
+        googleSignInBtn.addEventListener('click', () => handleGoogleAuth('sign in'));
     } else {
         console.warn('⚠️ Google Sign In button not found');
     }
     
     if (googleSignUpBtn) {
         console.log('✅ Google Sign Up button found');
-        googleSignUpBtn.addEventListener('click', comingSoon);
+        googleSignUpBtn.addEventListener('click', () => handleGoogleAuth('sign up'));
     } else {
         console.warn('⚠️ Google Sign Up button not found');
     }
@@ -720,18 +751,19 @@ function switchForm(formType, updateHistory = true) {
  */
 function handleAuthStateChange(event, session) {
     console.log('Auth page received auth state change:', event);
+    
+    // Get return URL from query parameters
+    const params = new URLSearchParams(window.location.search);
+    const returnUrl = params.get('return') || '/app';
+    
     if (event === 'SIGNED_IN' && session) {
-        // Check for return URL in query parameters
-        const params = new URLSearchParams(window.location.search);
-        const returnUrl = params.get('return');
-        
-        if (returnUrl) {
-            // Redirect back to the original page
-            window.location.href = decodeURIComponent(returnUrl);
-        } else {
-            // Default redirect to app
-            window.location.href = '/app';
+        // If this was a Google OAuth callback, show success message
+        if (params.get('from') === 'google') {
+            showSuccess('Successfully signed in with Google!');
         }
+        
+        // Redirect to the return URL or app
+        window.location.href = returnUrl;
     }
 }
 

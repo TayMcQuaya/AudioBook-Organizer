@@ -438,51 +438,75 @@ def create_auth_routes() -> Blueprint:
     @auth_bp.route('/init-user', methods=['POST'])
     @require_auth
     def initialize_user():
-        """Initialize user profile and credits for new users"""
+        """Initialize user profile and credits on first login"""
         try:
             user = get_current_user()
-            user_id = user['id']
-            email = user['email']
-            
-            # Get additional data from request
-            data = request.get_json() or {}
+            if not user:
+                return jsonify({
+                    'error': 'Authentication required',
+                    'message': 'You must be authenticated to initialize user profile'
+                }), 401
             
             # Get Supabase service
             supabase_service = get_supabase_service()
             
-            # Check if profile already exists
-            existing_profile = supabase_service.get_user_profile(user_id)
+            # Initialize user data (profile, credits, etc.)
+            result = supabase_service.initialize_user(user['id'], user['email'])
             
-            if not existing_profile:
-                # Create profile
-                profile_success = supabase_service.create_user_profile(user_id, email, data)
-                
-                if not profile_success:
-                    return jsonify({
-                        'error': 'Profile creation failed',
-                        'message': 'Failed to create user profile'
-                    }), 500
-            
-            # Note: Credits are automatically created by database trigger on signup
-            # We don't need to manually initialize them here
-            
-            # Get final profile and credits
-            profile = supabase_service.get_user_profile(user_id)
-            credits = supabase_service.get_user_credits(user_id)
-            
-            return jsonify({
-                'success': True,
-                'message': 'User data retrieved successfully',
-                'profile': profile,
-                'credits': credits,
-                'is_new_user': not existing_profile  # Indicate if profile was just created
-            })
+            return jsonify(result)
             
         except Exception as e:
             logger.error(f"User initialization error: {e}")
             return jsonify({
                 'error': 'Initialization failed',
                 'message': 'An error occurred during user initialization'
+            }), 500
+
+    @auth_bp.route('/google-callback', methods=['GET', 'POST'])
+    def google_oauth_callback():
+        """Handle Google OAuth callback and session setup"""
+        try:
+            # Get security service
+            security_service = get_security_service()
+            client_ip = security_service._get_client_ip()
+            
+            # Check rate limiting
+            rate_limit = security_service.check_rate_limit(client_ip, 'auth')
+            if not rate_limit['allowed']:
+                return jsonify({
+                    'error': 'Rate limit exceeded',
+                    'message': rate_limit['reason'],
+                    'retry_after': rate_limit.get('retry_after', 60)
+                }), 429
+            
+            # Record the attempt
+            security_service.record_attempt(client_ip, 'auth')
+            
+            # Get Supabase service
+            supabase_service = get_supabase_service()
+            
+            if not supabase_service.is_configured():
+                return jsonify({
+                    'error': 'Service unavailable',
+                    'message': 'Authentication service is not properly configured'
+                }), 503
+            
+            # For Google OAuth, the session is typically handled by Supabase client-side
+            # This endpoint can be used for additional server-side processing if needed
+            # For now, we'll return success since the client handles the OAuth flow
+            
+            logger.info("Google OAuth callback processed")
+            
+            return jsonify({
+                'success': True,
+                'message': 'Google OAuth completed successfully'
+            })
+            
+        except Exception as e:
+            logger.error(f"Google OAuth callback error: {e}")
+            return jsonify({
+                'error': 'OAuth callback failed',
+                'message': 'An error occurred during Google OAuth callback processing'
             }), 500
     
     @auth_bp.route('/security-status', methods=['GET'])

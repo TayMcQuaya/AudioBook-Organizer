@@ -269,6 +269,51 @@ class SupabaseService:
             logger.error(f"Error updating user profile: {e}")
             return False
     
+    def initialize_user(self, user_id: str, email: str, user_data: Dict[str, Any] = None) -> Dict[str, Any]:
+        """Initialize user profile and credits for new or existing users"""
+        try:
+            # Check if profile already exists
+            existing_profile = self.get_user_profile(user_id)
+            is_new_user = existing_profile is None
+            
+            if is_new_user:
+                # Create profile for new user
+                profile_success = self.create_user_profile(user_id, email, user_data or {})
+                
+                if not profile_success:
+                    return {
+                        'success': False,
+                        'error': 'Profile creation failed',
+                        'message': 'Failed to create user profile'
+                    }
+                
+                # Initialize credits for new user
+                credits_success = self.initialize_user_credits(user_id, 100)
+                
+                if not credits_success:
+                    logger.warning(f"Failed to initialize credits for new user {user_id}")
+                    # Don't fail the whole process if credits fail
+            
+            # Get final profile and credits
+            profile = self.get_user_profile(user_id)
+            credits = self.get_user_credits(user_id)
+            
+            return {
+                'success': True,
+                'message': 'User data retrieved successfully',
+                'profile': profile,
+                'credits': credits,
+                'is_new_user': is_new_user
+            }
+            
+        except Exception as e:
+            logger.error(f"Error initializing user {user_id}: {e}")
+            return {
+                'success': False,
+                'error': 'User initialization failed',
+                'message': 'An error occurred during user initialization'
+            }
+    
     # Credits System Methods
     
     def get_user_credits(self, user_id: str) -> int:
