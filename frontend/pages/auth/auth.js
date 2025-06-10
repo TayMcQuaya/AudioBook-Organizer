@@ -37,6 +37,9 @@ const elements = {
     loadingOverlay: null
 };
 
+// To hold a reference to the bound auth state change handler
+let authStateChangeHandler = null;
+
 /**
  * Initialize the authentication page
  * @param {object} auth - The authentication module instance
@@ -243,7 +246,8 @@ function setupEventListeners() {
     // Auth state listener (optional)
     if (authModule && typeof authModule.addAuthListener === 'function') {
         console.log('✅ Adding auth state listener');
-        authModule.addAuthListener(handleAuthStateChange);
+        authStateChangeHandler = (event, session) => handleAuthStateChange(event, session);
+        authModule.addAuthListener(authStateChangeHandler);
     } else {
         console.warn('⚠️ Auth module not available or addAuthListener not found');
     }
@@ -828,6 +832,28 @@ function updateFormButtons(loading) {
             if(btnLoading) btnLoading.style.display = 'none';
         }
     });
+}
+
+/**
+ * NEW: Cleanup function to be called by the router
+ */
+export function cleanupAuthPage() {
+    console.log('🧹 Cleaning up auth page event listeners...');
+    if (authModule && authStateChangeHandler) {
+        authModule.removeAuthListener(authStateChangeHandler);
+        console.log('✅ Removed auth state listener');
+    }
+    
+    // Remove form submission listeners to prevent duplicates
+    if (elements.loginForm) {
+        elements.loginForm.removeEventListener('submit', handleLoginSubmit);
+    }
+    if (elements.signupForm) {
+        elements.signupForm.removeEventListener('submit', handleSignupSubmit);
+    }
+    if (elements.forgotPasswordForm) {
+        elements.forgotPasswordForm.removeEventListener('submit', handleForgotPasswordSubmit);
+    }
 }
 
 // Export for external use

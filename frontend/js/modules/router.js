@@ -155,6 +155,9 @@ class Router {
                 return;
             }
             
+            // **NEW: Clean up previous page's resources before loading new one**
+            await this.cleanupCurrentPage();
+            
             // Resolve authentication status
             const isAuthenticated = state.isAuthenticated ?? sessionManager.isAuthenticated;
             const isPasswordRecovery = sessionManager.isPasswordRecovery;
@@ -290,14 +293,10 @@ class Router {
             document.body.className = 'landing-body app-ready';
 
             // Load landing page JavaScript
-            const scriptId = 'landing-page-script';
-            if (!document.getElementById(scriptId)) {
-                const landingScript = document.createElement('script');
-                landingScript.id = scriptId;
-                landingScript.type = 'module';
-                landingScript.src = '/pages/landing/landing.js';
-                document.head.appendChild(landingScript);
-            }
+            const { initLandingPage, cleanupLandingPage } = await import('/pages/landing/landing.js');
+            initLandingPage();
+            window.cleanupLandingPage = cleanupLandingPage; // Make cleanup available to the router
+
         } catch (error) {
             console.error('Error loading landing page:', error);
             showError('Failed to load landing page');
@@ -348,10 +347,9 @@ class Router {
 
             // Load app scripts if they aren't already loaded
             if (!window.isAppInitialized) {
-                const mainScript = document.createElement('script');
-                mainScript.type = 'module';
-                mainScript.src = '/js/main.js';
-                document.head.appendChild(mainScript);
+                const { initialize, cleanup } = await import('/js/main.js');
+                initialize();
+                window.cleanupApp = cleanup; // Make cleanup available
                 window.isAppInitialized = true;
             }
             
@@ -422,13 +420,10 @@ class Router {
             document.body.className = 'auth-body app-ready';
 
             // Load auth page JavaScript with proper module loading
-            const scriptId = 'auth-page-script';
-            const authScript = document.createElement('script');
-            authScript.id = scriptId;
-            authScript.type = 'module';
-            authScript.src = '/pages/auth/main.js';
-            document.head.appendChild(authScript);
-            
+            const { initAuthPage, cleanupAuthPage } = await import('/pages/auth/main.js');
+            initAuthPage(auth);
+            window.cleanupAuthPage = cleanupAuthPage; // Make cleanup available
+
             console.log('🔐 Auth page loaded successfully');
             
         } catch (error) {
@@ -514,6 +509,36 @@ class Router {
     // Get current user
     getCurrentUser() {
         return sessionManager.user;
+    }
+
+    /**
+     * NEW: Clean up resources of the current page before navigating away
+     */
+    async cleanupCurrentPage() {
+        if (!this.previousRoute) return;
+
+        console.log(`🧹 Cleaning up resources for route: ${this.previousRoute}`);
+        const previousRouteConfig = routeConfig[this.previousRoute];
+        if (!previousRouteConfig) return;
+
+        switch (previousRouteConfig.component) {
+            case 'landing':
+                if (window.cleanupLandingPage) {
+                    window.cleanupLandingPage();
+                }
+                break;
+            case 'app':
+                // Clean up app-specific resources
+                if (window.isAppInitialized && window.cleanupApp) {
+                     window.cleanupApp();
+                }
+                break;
+            case 'auth':
+                 if (window.cleanupAuthPage) {
+                    window.cleanupAuthPage();
+                }
+                break;
+        }
     }
 }
 

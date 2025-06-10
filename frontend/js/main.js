@@ -48,7 +48,7 @@ import {
 import { 
     performSmartSelect, 
     highlightSmartSelection, 
-    resetSmartSelect,
+    resetSmartSelect, 
     initializeSmartSelect 
 } from './modules/smartSelect.js';
 
@@ -72,11 +72,7 @@ import {
     clearTextSelection 
 } from './modules/selectionTools.js';
 
-
-
-import { 
-    initializeApp 
-} from './modules/appInitialization.js';
+import { initApp, cleanupApp } from './modules/appInitialization.js';
 
 import { 
     cleanupTextSelection 
@@ -109,8 +105,6 @@ window.refreshEditModeState = refreshEditModeState;
 window.getEditMode = getEditMode;
 window.cleanupTextSelection = cleanupTextSelection;
 
-
-
 // Smart Select function - automatically selects configurable character chunks ending on periods
 function smartSelect() {
     // Perform the smart selection
@@ -139,16 +133,23 @@ function resetSmartSelectPosition() {
     showSuccess('Smart selection position reset to the beginning!');
 }
 
-
-
-// Initialize application when DOM is ready
-// Check if DOM is already loaded, otherwise wait for it
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initializeApp);
-} else {
-    // DOM is already loaded, initialize immediately
-    initializeApp();
+function initialize() {
+    console.log('🚀 Initializing AudioBook Organizer...');
+    if (window.authModule) {
+        initApp(window.authModule);
+    } else {
+        console.error('Auth module not found, cannot initialize app');
+    }
 }
+
+function cleanup() {
+    console.log('🧹 Cleaning up main application...');
+    cleanupApp();
+}
+
+initialize();
+
+export { initialize, cleanup };
 
 
 

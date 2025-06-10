@@ -11,16 +11,12 @@ let selectedPlan = null;
 const loadingOverlay = document.getElementById('loadingOverlay');
 const mobileMenu = document.getElementById('mobileMenu');
 
-// Initialize landing page functionality
-// Check if DOM is already loaded, otherwise wait for it
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initializeLandingPage);
-} else {
-    // DOM is already loaded, initialize immediately
-    initializeLandingPage();
-}
+// Store the listener functions to be able to remove them later
+const authStateChangeListener = (event) => handleAuthStateChange(event.detail);
+const outsideClickListener = (event) => handleOutsideClick(event);
 
-async function initializeLandingPage() {
+// Initialize landing page functionality
+function init() {
     console.log('🚀 Landing page initialized');
     
     // Setup all interactive components
@@ -33,64 +29,50 @@ async function initializeLandingPage() {
     
     // Initialize appUI manager
     if (window.appUI) {
-        await window.appUI.init();
+        window.appUI.init().then(() => {
+            // Initial check of authentication state
+            checkAuthenticationState();
+        });
+    } else {
+        // Fallback if appUI is not ready
+        checkAuthenticationState();
     }
-    
-    // Ensure session manager is properly initialized and restored
-    if (window.sessionManager) {
-        if (!window.sessionManager.isInitialized) {
-            await window.sessionManager.init();
-        }
-        
-        // Wait a bit to ensure session is fully restored
-        await new Promise(resolve => setTimeout(resolve, 100));
-        
-        // Check auth status again to make sure it's current
-        await window.sessionManager.checkAuthStatus();
-    }
-    
-    // Check authentication state and update UI
-    await checkAuthenticationState();
     
     // Listen for auth state changes
-    window.addEventListener('auth-state-changed', handleAuthStateChange);
+    window.addEventListener('auth-state-changed', authStateChangeListener);
     
     // Add click outside handler for user dropdown
-    document.addEventListener('click', handleOutsideClick);
+    document.addEventListener('click', outsideClickListener);
 }
+
+function cleanup() {
+    console.log('🧹 Cleaning up landing page listeners');
+    window.removeEventListener('auth-state-changed', authStateChangeListener);
+    document.removeEventListener('click', outsideClickListener);
+}
+
+// The router is now responsible for calling init
+// // Check if DOM is already loaded, otherwise wait for it
+// if (document.readyState === 'loading') {
+//     document.addEventListener('DOMContentLoaded', init);
+// } else {
+//     // DOM is already loaded, initialize immediately
+//     init();
+// }
 
 /**
  * Check authentication state and update navigation accordingly
  */
-async function checkAuthenticationState() {
-    // Wait for session manager to be ready
-    if (!window.sessionManager) {
-        console.log('Session manager not available');
-        return;
-    }
+function checkAuthenticationState() {
+    // Rely on the session manager as the single source of truth
+    const isAuthenticated = window.sessionManager?.isAuthenticated;
+    const user = window.sessionManager?.user;
     
-    // Add auth state change listener for real-time updates
-    window.addEventListener('auth-state-changed', handleAuthStateChange);
-    
-    // Wait for session manager to be initialized
-    let attempts = 0;
-    while (!window.sessionManager.isInitialized && attempts < 50) {
-        await new Promise(resolve => setTimeout(resolve, 100));
-        attempts++;
-    }
-    
-    // Also check for auth token directly for faster response
-    const hasToken = localStorage.getItem('auth_token');
-    const isAuthenticated = window.sessionManager.isAuthenticated || (hasToken && window.authModule?.isAuthenticated());
-    
-    if (isAuthenticated) {
-        console.log('User is authenticated on landing page');
-        const user = window.sessionManager.user || window.authModule?.getCurrentUser();
-        // Trigger UI update for authenticated user
+    console.log(`Initial auth check on landing page. Authenticated: ${isAuthenticated}`);
+
+    if (isAuthenticated && user) {
         updateLandingPageForAuthenticatedUser(user);
     } else {
-        console.log('User is not authenticated on landing page');
-        // Trigger UI update for unauthenticated user
         updateLandingPageForUnauthenticatedUser();
     }
 }
@@ -98,12 +80,10 @@ async function checkAuthenticationState() {
 /**
  * Handle authentication state changes
  */
-function handleAuthStateChange(event) {
-    const { isAuthenticated, user } = event.detail;
+function handleAuthStateChange({ isAuthenticated, user }) {
     console.log('Landing page received auth state change:', isAuthenticated);
     
     if (isAuthenticated) {
-        // Update any landing page specific elements
         updateLandingPageForAuthenticatedUser(user);
     } else {
         updateLandingPageForUnauthenticatedUser();
@@ -116,38 +96,32 @@ function handleAuthStateChange(event) {
 function updateLandingPageForAuthenticatedUser(user) {
     console.log('🔄 Updating landing page for authenticated user:', user?.email || 'Unknown user');
     
-    // Create user navigation dropdown (this was the missing piece!)
+    // Create user navigation dropdown
     if (window.appUI && user) {
-        console.log('📝 Creating user navigation with appUI');
         window.appUI.createUserNavigation(user);
     } else if (!window.appUI) {
         console.warn('⚠️ appUI not available, cannot create user navigation');
     }
     
-    // Only show one "Open App" button - convert the primary "Get Started" button
-    const getStartedButtons = document.querySelectorAll('a[href="/auth?mode=signup"]');
-    console.log('📝 Found Get Started buttons:', getStartedButtons.length);
-    getStartedButtons.forEach((btn, index) => {
-        console.log(`📝 Converting button ${index} to Open App`);
+    // Convert all primary action buttons to "Open App"
+    const getStartedButtons = document.querySelectorAll('a[href="/auth?mode=signup"], .btn-primary.get-started');
+    getStartedButtons.forEach(btn => {
         btn.href = '/app';
         btn.innerHTML = '<span class="btn-icon">🚀</span>Open App';
-        btn.classList.add('btn-primary'); // Ensure consistent styling
+        // Ensure it doesn't get hidden by other rules
+        btn.style.display = 'inline-flex'; 
     });
     
     // Hide ALL demo/try buttons when authenticated
     const tryDemoButtons = document.querySelectorAll('[onclick*="tryAppDemo"], [onclick*="tryDemo"], .demo-btn');
-    console.log('📝 Found Try Demo buttons:', tryDemoButtons.length);
-    tryDemoButtons.forEach((btn, index) => {
-        console.log(`📝 Hiding demo button ${index}`);
+    tryDemoButtons.forEach(btn => {
         btn.style.display = 'none';
     });
     
     // Hide the static "Sign In" button (but don't hide user navigation)
     const signInButtons = document.querySelectorAll('a[href="/auth"]:not(.user-btn)');
-    console.log('📝 Found Sign In buttons to hide:', signInButtons.length);
     signInButtons.forEach(btn => {
         if (!btn.closest('.user-nav') && !btn.closest('.mobile-user-nav')) {
-            console.log('📝 Hiding Sign In button:', btn.textContent);
             btn.style.display = 'none';
         }
     });
@@ -164,29 +138,26 @@ function updateLandingPageForUnauthenticatedUser() {
         window.appUI.removeUserNavigation();
     }
     
-    // Show try demo buttons again
-    const tryDemoButtons = document.querySelectorAll('[onclick*="tryAppDemo"], [onclick*="navigateToApp"], .demo-btn');
-    console.log('📝 Found Try Demo buttons to restore:', tryDemoButtons.length);
-    tryDemoButtons.forEach((btn, index) => {
-        console.log(`📝 Restoring demo button ${index}`);
-        btn.style.display = '';
+    // Restore primary action buttons to "Get Started"
+    const appButtons = document.querySelectorAll('a[href="/app"]');
+    appButtons.forEach(btn => {
+        btn.href = '/auth?mode=signup';
+        btn.innerHTML = '<span class="btn-icon">🚀</span>Get Started Free';
+        btn.style.display = 'inline-flex';
+    });
+    
+    // Show try demo buttons again and ensure correct text/action
+    const tryDemoButtons = document.querySelectorAll('.demo-btn');
+    tryDemoButtons.forEach(btn => {
+        btn.style.display = 'inline-flex';
         btn.innerHTML = '<span class="btn-icon">📚</span>Try Demo Now';
         btn.setAttribute('onclick', 'tryAppDemo()');
     });
     
-    // Reset "Get Started" buttons
-    const appButtons = document.querySelectorAll('a[href="/app"]');
-    console.log('📝 Found App buttons to reset:', appButtons.length);
-    appButtons.forEach((btn, index) => {
-        console.log(`📝 Resetting app button ${index} to Get Started`);
-        btn.href = '/auth?mode=signup';
-        btn.innerHTML = '<span class="btn-icon">🚀</span>Get Started Free';
-    });
-    
     // Show auth signup links again
-    const signInButtons = document.querySelectorAll('a[href="/auth"]');
+    const signInButtons = document.querySelectorAll('a[href="/auth"]:not(.user-btn)');
     signInButtons.forEach(btn => {
-        btn.style.display = '';
+        btn.style.display = 'inline-flex';
     });
 }
 
@@ -492,10 +463,6 @@ window.tryAppDemo = tryAppDemo;
 
 // Export for module use
 export {
-    toggleMobileMenu,
-    scrollToDemo,
-    playDemo,
-    contactSales,
-    navigateToApp,
-    tryAppDemo
+    init as initLandingPage,
+    cleanup as cleanupLandingPage
 }; 

@@ -9,6 +9,33 @@ import { initializeEditProtection } from './editMode.js';
 import sessionManager from './sessionManager.js';
 import appUI from './appUI.js';
 
+let isInitialized = false;
+
+/**
+ * Cleanup function for the application
+ */
+export function cleanupApp() {
+    if (!isInitialized) return;
+    console.log('🧹 Cleaning up application resources...');
+
+    // Clean up text selection listeners
+    if (window.cleanupTextSelection) {
+        window.cleanupTextSelection();
+        console.log('...text selection cleaned up.');
+    }
+
+    // Clean up UI elements like user navigation
+    if (window.appUI) {
+        window.appUI.removeUserNavigation();
+        console.log('...user navigation removed.');
+    }
+    
+    // You could add more cleanup here, e.g., removing other listeners
+    
+    isInitialized = false;
+    console.log('✅ Application cleanup complete.');
+}
+
 // Show selection guide overlay for first-time users
 function showSelectionGuide() {
     if (!localStorage.getItem('selectionGuideShown')) {
@@ -71,7 +98,11 @@ async function initializeModules() {
 }
 
 // Main application initialization
-export async function initializeApp() {
+export async function initApp() {
+    if (isInitialized) {
+        console.log('App already initialized. Skipping.');
+        return;
+    }
     console.log('AudioBook Organizer - Initializing application...');
     
     // Initialize default state
@@ -86,6 +117,7 @@ export async function initializeApp() {
     // Handle URL hash navigation
     handleHashNavigation();
     
+    isInitialized = true;
     console.log('AudioBook Organizer - Application ready!');
 }
 
