@@ -172,8 +172,9 @@
     font-size: 0.8rem;
     padding: 2px 8px;
     border-radius: var(--radius-sm);
-    background: var(--background-light);
+    background: var(--bg-secondary);
     color: var(--text-secondary);
+    transition: background 0.3s ease, color 0.3s ease;
 }
 
 .copy-section-btn {
@@ -204,13 +205,15 @@
 }
 
 .section-text {
-    background-color: var(--background-light);
+    background-color: var(--bg-secondary);
     padding: var(--spacing-md);
     border-radius: var(--radius-sm);
     margin: var(--spacing-sm) 0;
     font-style: italic;
     max-height: 100px;
     overflow-y: auto;
+    color: var(--text-primary);
+    transition: background 0.3s ease, color 0.3s ease;
 }
 
 .audio-controls {
@@ -234,7 +237,9 @@
     padding: 8px;
     border: 1px solid var(--border-color);
     border-radius: var(--radius-sm);
-    background: white;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    transition: background 0.3s ease, border-color 0.3s ease, color 0.3s ease;
 }
 
 /* Button Styles */
@@ -304,6 +309,9 @@ button[disabled] {
     border: 1px solid var(--border-color);
     border-radius: var(--radius-sm);
     font-size: 0.9rem;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    transition: background 0.3s ease, border-color 0.3s ease, color 0.3s ease;
 }
 
 /* Loading and Error Messages */
@@ -311,14 +319,22 @@ button[disabled] {
 .error-message {
     margin-top: var(--spacing-sm);
     font-size: 0.9rem;
+    padding: 8px 12px;
+    border-radius: var(--radius-sm);
+    background: var(--bg-secondary);
+    transition: background 0.3s ease, color 0.3s ease;
 }
 
 .error-message {
-    color: #d32f2f;
+    color: #ff6b6b;
+    background: rgba(255, 107, 107, 0.1);
+    border: 1px solid rgba(255, 107, 107, 0.2);
 }
 
 .loading {
     color: var(--text-secondary);
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
 }
 
 /* Selection Tools */
@@ -327,10 +343,10 @@ button[disabled] {
     top: 50% !important;
     left: 50% !important;
     transform: translate(-50%, -50%) !important;
-    background: white;
+    background: var(--bg-primary);
     padding: var(--spacing-md);
     border-radius: var(--radius-md);
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+    box-shadow: var(--shadow-md);
     z-index: 1000 !important;
     min-width: 400px;
     max-width: 80vw;
@@ -338,6 +354,52 @@ button[disabled] {
     animation: fadeIn 0.2s ease-out;
     border: 1px solid var(--border-color);
     backdrop-filter: blur(10px);
+    color: var(--text-primary);
+    transition: background 0.3s ease, border-color 0.3s ease, color 0.3s ease;
+}
+
+/* Dark Theme Support for Components */
+[data-theme="dark"] #selection-tools {
+    background: var(--bg-primary);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+}
+
+[data-theme="dark"] .selection-preview {
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .modal {
+    background: var(--bg-primary);
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .modal-overlay {
+    background: rgba(0, 0, 0, 0.8);
+}
+
+[data-theme="dark"] input[type="file"] {
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] input[type="number"] {
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    border-color: var(--border-color);
+}
+
+[data-theme="dark"] .section-item {
+    background: var(--bg-secondary);
+    border-color: var(--border-color);
+}
+
+[data-theme="dark"] .section-item:hover {
+    background: var(--bg-primary);
+}
+
+[data-theme="dark"] .chapter-item {
+    background: var(--bg-secondary);
+    border-color: var(--border-color);
 }
 
 .selection-tools-content {
@@ -352,7 +414,7 @@ button[disabled] {
 }
 
 .selection-preview {
-    background: var(--background-light);
+    background: var(--bg-secondary);
     padding: var(--spacing-md);
     border-radius: var(--radius-sm);
     max-height: 300px;
@@ -365,10 +427,12 @@ button[disabled] {
     white-space: pre-wrap;
     word-wrap: break-word;
     font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    color: var(--text-primary);
+    transition: background 0.3s ease, border-color 0.3s ease, color 0.3s ease;
     
     /* Better scrollbar styling */
     scrollbar-width: thin;
-    scrollbar-color: #888 var(--background-light);
+    scrollbar-color: var(--text-muted) var(--bg-secondary);
 }
 
 .selection-preview::-webkit-scrollbar {
@@ -601,14 +665,15 @@ button[disabled] {
     align-items: center;
     gap: var(--spacing-sm);
     padding: var(--spacing-md);
-    background: var(--background-light);
+    background: var(--bg-secondary);
     cursor: pointer;
     user-select: none;
     border-bottom: 1px solid var(--border-color);
+    transition: background 0.3s ease;
 }
 
 .chapter-header:hover {
-    background: #f0f0f0;
+    background: var(--bg-primary);
 }
 
 .chapter-title {
@@ -639,8 +704,9 @@ button[disabled] {
     font-size: 0.9rem;
     color: var(--text-secondary);
     padding: 2px 8px;
-    background: rgba(0,0,0,0.05);
+    background: var(--bg-primary);
     border-radius: var(--radius-sm);
+    transition: background 0.3s ease, color 0.3s ease;
 }
 
 .chapter-collapse-icon {
@@ -668,11 +734,12 @@ button[disabled] {
 /* Chapter Audio Player */
 .chapter-audio-player {
     display: none;
-    background: white;
+    background: var(--bg-secondary);
     border: 1px solid var(--border-color);
     border-radius: var(--radius-sm);
     padding: var(--spacing-sm);
     margin-top: var(--spacing-sm);
+    transition: background 0.3s ease, border-color 0.3s ease;
 }
 
 .chapter-audio-player.active {
@@ -689,10 +756,11 @@ button[disabled] {
 .chapter-audio-progress {
     flex: 1;
     height: 4px;
-    background: var(--background-light);
+    background: var(--bg-primary);
     border-radius: 2px;
     cursor: pointer;
     position: relative;
+    transition: background 0.3s ease;
 }
 
 .chapter-audio-progress-bar {
@@ -713,10 +781,11 @@ button[disabled] {
 .chapter-audio-sections {
     display: flex;
     height: 20px;
-    background: var(--background-light);
+    background: var(--bg-primary);
     border-radius: var(--radius-sm);
     overflow: hidden;
     margin-top: var(--spacing-sm);
+    transition: background 0.3s ease;
 }
 
 .chapter-audio-section {
@@ -761,5 +830,75 @@ button[disabled] {
 /* Show the badge ONLY on the authentication page */
 .auth-body .grecaptcha-badge {
     visibility: visible;
+}
+
+/* Dark Theme Support for All Inputs */
+[data-theme="dark"] input,
+[data-theme="dark"] select,
+[data-theme="dark"] textarea {
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    border-color: var(--border-color);
+}
+
+[data-theme="dark"] input:focus,
+[data-theme="dark"] select:focus,
+[data-theme="dark"] textarea:focus {
+    background: var(--bg-primary);
+    border-color: var(--primary-color);
+}
+
+[data-theme="dark"] .file-upload input[type="file"] {
+    background: var(--bg-secondary);
+    border-color: var(--border-color);
+}
+
+[data-theme="dark"] .loading {
+    background: var(--bg-secondary);
+    color: var(--text-secondary);
+    border-color: var(--border-color);
+}
+
+[data-theme="dark"] .error-message {
+    background: rgba(255, 107, 107, 0.15);
+    border-color: rgba(255, 107, 107, 0.3);
+    color: #ff8a8a;
+}
+
+/* Dark Theme Support for Additional Components */
+[data-theme="dark"] .section-text {
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .section-status {
+    background: var(--bg-secondary);
+    color: var(--text-secondary);
+}
+
+[data-theme="dark"] .chapter-header {
+    background: var(--bg-secondary);
+}
+
+[data-theme="dark"] .chapter-header:hover {
+    background: var(--bg-primary);
+}
+
+[data-theme="dark"] .chapter-audio-player {
+    background: var(--bg-secondary);
+    border-color: var(--border-color);
+}
+
+[data-theme="dark"] .chapter-audio-progress {
+    background: var(--bg-primary);
+}
+
+[data-theme="dark"] .chapter-audio-sections {
+    background: var(--bg-primary);
+}
+
+[data-theme="dark"] .chapter-duration {
+    background: var(--bg-primary);
+    color: var(--text-secondary);
 }
 

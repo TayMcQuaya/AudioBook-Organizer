@@ -8,6 +8,7 @@ import { initializeTextSelection } from './textSelection.js';
 import { initializeEditProtection } from './editMode.js';
 import sessionManager from './sessionManager.js';
 import appUI from './appUI.js';
+import themeManager from './themeManager.js';
 
 let isInitialized = false;
 
@@ -79,7 +80,10 @@ function initializeDefaultState() {
 
 // Initialize all modules in correct order
 async function initializeModules() {
-    // Initialize session management first
+    // Initialize theme manager first
+    themeManager.init();
+    
+    // Initialize session management
     await sessionManager.init();
     
     // Initialize UI manager after session manager

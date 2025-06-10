@@ -136,6 +136,13 @@ class AppUIManager {
             navLinks.appendChild(userNav);
             userNav.style.display = 'block';
             
+            // Ensure dropdown is hidden initially
+            const dropdown = userNav.querySelector('.user-dropdown');
+            if (dropdown) {
+                dropdown.classList.remove('show');
+                console.log('✅ User dropdown created and properly hidden');
+            }
+            
             // Update mobile navigation
             this.updateMobileNavigation(user);
             
@@ -222,10 +229,14 @@ class AppUIManager {
      */
     toggleUserDropdown() {
         const dropdown = document.getElementById('userDropdown');
-        if (!dropdown) return;
+        if (!dropdown) {
+            console.warn('⚠️ User dropdown not found');
+            return;
+        }
         
         const isShowing = dropdown.classList.contains('show');
         dropdown.classList.toggle('show');
+        console.log(`🔄 User dropdown toggled: ${isShowing ? 'hiding' : 'showing'}`);
         
         if (!isShowing) {
             // Close dropdown when clicking outside
@@ -234,6 +245,7 @@ class AppUIManager {
                 if (!userBtn?.contains(event.target) && !dropdown.contains(event.target)) {
                     dropdown.classList.remove('show');
                     document.removeEventListener('click', closeDropdown);
+                    console.log('🔄 User dropdown closed by outside click');
                 }
             };
             setTimeout(() => document.addEventListener('click', closeDropdown), 0);

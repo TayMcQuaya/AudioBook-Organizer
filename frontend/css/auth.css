@@ -918,10 +918,6 @@
     100% { transform: rotate(360deg); }
 }
 
-.auth-body .auth-button {
-    /* Auth specific button styles if needed */
-}
-
 .auth-body .auth-button .button-text,
 .auth-body .auth-button .button-loading {
     transition: var(--auth-transition);
@@ -1122,4 +1118,17 @@
 .auth-body .strength-text.weak { color: rgb(239, 68, 68); }
 .auth-body .strength-text.fair { color: rgb(245, 158, 11); }
 .auth-body .strength-text.good { color: rgb(59, 130, 246); }
-.auth-body .strength-text.strong { color: rgb(34, 197, 94); } 
+.auth-body .strength-text.strong { color: rgb(34, 197, 94); }
+
+/* Google Icon Styling */
+.auth-body .google-icon {
+    width: 18px;
+    height: 18px;
+    display: inline-block;
+    vertical-align: middle;
+    margin-right: 8px;
+}
+
+.auth-body .btn .google-icon {
+    flex-shrink: 0;
+} 

@@ -1,21 +1,44 @@
 /* AudioBook Organizer - Main Styles */
 
 :root {
-    --primary-color: #4CAF50;
-    --primary-hover: #45a049;
-    --border-color: #e0e0e0;
-    --background-light: #f5f5f5;
-    --text-primary: #333;
-    --text-secondary: #666;
-    --shadow-sm: 0 2px 4px rgba(0,0,0,0.1);
-    --shadow-md: 0 4px 6px rgba(0,0,0,0.1);
+    /* Updated to match landing page purple theme */
+    --primary-color: #667eea;
+    --primary-hover: #5a67d8;
+    --primary-dark: #5a67d8;
+    --secondary-color: #764ba2;
+    --accent-color: #667eea;
+    
+    /* Background gradients with purple theme */
+    --gradient-primary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    --gradient-secondary: linear-gradient(45deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1));
+    
+    /* Text colors - Light Mode */
+    --text-primary: #2d3748;
+    --text-secondary: #4a5568;
+    --text-muted: #718096;
+    --text-light: rgba(255, 255, 255, 0.9);
+    
+    /* Background colors - Light Mode */
+    --bg-primary: #ffffff;
+    --bg-secondary: #f7fafc;
+    --background-light: #f8f9ff;
+    --app-bg: linear-gradient(135deg, #f8f9ff 0%, #f3f4ff 100%);
+    
+    /* UI elements */
+    --border-color: #e2e8f0;
+    --shadow-color: rgba(102, 126, 234, 0.1);
+    --shadow-sm: 0 2px 4px var(--shadow-color);
+    --shadow-md: 0 4px 6px var(--shadow-color);
+    --overlay-bg: rgba(102, 126, 234, 0.95);
+    
+    /* Radius and spacing */
     --radius-sm: 8px;
     --radius-md: 12px;
     --spacing-sm: 10px;
     --spacing-md: 20px;
-    --primary-color-rgb: 63, 131, 248;
+    --primary-color-rgb: 102, 126, 234;
 
-    /* Section Colors */
+    /* Section Colors - Light Mode */
     --section-color-1: #fff3e0;  /* Soft Orange */
     --section-color-2: #e8f5e9;  /* Soft Green */
     --section-color-3: #e3f2fd;  /* Soft Blue */
@@ -24,7 +47,49 @@
     --section-color-6: #e0f7fa;  /* Soft Cyan */
     --section-color-7: #f3e5f5;  /* Soft Purple */
     --section-color-8: #e8eaf6;  /* Soft Indigo */
+    
+    /* Animation */
+    --animation-duration: 0.3s;
+    --animation-ease: cubic-bezier(0.4, 0, 0.2, 1);
 }
+
+/* Dark Theme Variables */
+[data-theme="dark"] {
+    /* Text colors - Dark Mode */
+    --text-primary: #e2e8f0;
+    --text-secondary: #cbd5e0;
+    --text-muted: #a0aec0;
+    --text-light: rgba(255, 255, 255, 0.9);
+    
+    /* Background colors - Dark Mode */
+    --bg-primary: #1a202c;
+    --bg-secondary: #2d3748;
+    --background-light: #2d3748;
+    --app-bg: linear-gradient(135deg, #1a202c 0%, #2d3748 100%);
+    
+    /* UI elements - Dark Mode */
+    --border-color: #4a5568;
+    --shadow-color: rgba(0, 0, 0, 0.3);
+    --shadow-sm: 0 2px 4px var(--shadow-color);
+    --shadow-md: 0 4px 6px var(--shadow-color);
+    
+    /* Section Colors - Dark Mode */
+    --section-color-1: #2d1810;  /* Dark Orange */
+    --section-color-2: #1a2e1a;  /* Dark Green */
+    --section-color-3: #1a2533;  /* Dark Blue */
+    --section-color-4: #2d1a25;  /* Dark Pink */
+    --section-color-5: #2d2521;  /* Dark Brown */
+    --section-color-6: #1a2d2e;  /* Dark Cyan */
+    --section-color-7: #2a1a2d;  /* Dark Purple */
+    --section-color-8: #1f202d;  /* Dark Indigo */
+}
+
+/* Dark theme book content override */
+[data-theme="dark"] .book-content {
+    background: #2d3748 !important;
+    color: #ffffff !important;
+}
+
 
 * {
     box-sizing: border-box;
@@ -36,10 +101,11 @@ body {
     font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
     margin: 0;
     padding: 0;
-    background-color: var(--background-light);
+    background: var(--app-bg);
     min-height: 100vh;
     color: var(--text-primary);
     line-height: 1.6;
+    transition: background 0.3s ease, color 0.3s ease;
 }
 
 /* App-specific body class */
@@ -47,38 +113,132 @@ body.app-body {
     padding: 0;
     overflow: hidden;
     height: 100vh;
+    background: var(--app-bg);
+}
+
+/* App Navigation */
+.app-nav {
+    background: var(--bg-primary);
+    border-bottom: 1px solid var(--border-color);
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 1000;
+    box-shadow: var(--shadow-sm);
+    transition: background 0.3s ease, border-color 0.3s ease;
+}
+
+.app-nav .nav-container {
+    max-width: 2000px;
+    margin: 0 auto;
+    padding: 0 var(--spacing-md);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    height: 60px;
+}
+
+.app-nav .nav-brand .brand-link {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 600;
+    font-size: 1.25rem;
+    color: var(--text-primary);
+    text-decoration: none;
+}
+
+.app-nav .brand-icon {
+    font-size: 1.5rem;
+}
+
+.app-nav .nav-links {
+    display: flex;
+    align-items: center;
+    gap: 2rem;
+}
+
+/* Responsive styles for app navigation */
+@media (max-width: 768px) {
+    .app-nav .nav-container {
+        padding: 0 1rem;
+    }
+    
+    .app-nav .brand-link {
+        font-size: 1.1rem;
+    }
+    
+    .app-nav .brand-icon {
+        font-size: 1.3rem;
+    }
+    
+    .app-nav .nav-links {
+        gap: 1rem;
+    }
+    
+    .theme-toggle-btn {
+        width: 36px;
+        height: 36px;
+        font-size: 16px;
+    }
+}
+
+@media (max-width: 480px) {
+    .app-nav .nav-container {
+        height: 50px;
+    }
+    
+    .app-nav .brand-link {
+        font-size: 1rem;
+    }
+    
+    .theme-toggle-btn {
+        width: 32px;
+        height: 32px;
+        font-size: 14px;
+    }
+    
+    .main-container {
+        height: calc(100vh - 50px);
+        margin: 50px auto 0;
+        padding: 10px;
+        gap: 10px;
+    }
 }
 
 .main-container {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: var(--spacing-md);
-    height: 100vh;
+    height: calc(100vh - 60px); /* Account for navigation height */
     max-width: 2000px;
-    margin: 0 auto;
+    margin: 60px auto 0; /* Top margin for fixed navigation */
     padding: var(--spacing-md);
     box-sizing: border-box;
     overflow: hidden;
 }
 
 .column {
-    background: white;
+    background: var(--bg-primary);
     border-radius: var(--radius-md);
     box-shadow: var(--shadow-sm);
     display: flex;
     flex-direction: column;
     overflow: hidden;
     height: 100%;
+    transition: background 0.3s ease, box-shadow 0.3s ease;
 }
 
 .column-header {
     padding: var(--spacing-md);
     border-bottom: 1px solid var(--border-color);
-    background: white;
+    background: var(--bg-primary);
     position: sticky;
     top: 0;
     z-index: 10;
     flex-shrink: 0;
+    transition: background 0.3s ease, border-color 0.3s ease;
 }
 
 .column-header h2 {
@@ -103,10 +263,16 @@ body.app-body {
     max-width: 800px;
     margin: 0 auto;
     padding: var(--spacing-md);
-    background: white;
+    background: var(--bg-primary);
+    color: var(--text-primary);
     white-space: pre-wrap;
     min-height: 100%;
+    transition: background 0.3s ease, color 0.3s ease;
 }
+
+
+
+
 
 /* Sections Panel Specific Styles */
 .sections-list {
@@ -166,11 +332,13 @@ body.app-body {
 #smartSelectChars {
     width: 80px;
     padding: 6px 8px;
-    border: 1px solid #ddd;
+    border: 1px solid var(--border-color);
     border-radius: 4px;
     font-size: 14px;
     text-align: center;
-    background: white;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    transition: background 0.3s ease, border-color 0.3s ease, color 0.3s ease;
 }
 
 #smartSelectChars:focus {
@@ -216,12 +384,13 @@ body.app-body {
 
 #positionIndicator {
     font-size: 13px;
-    color: #666;
+    color: var(--text-secondary);
     font-weight: 500;
-    background: white;
+    background: var(--bg-primary);
     padding: 6px 12px;
     border-radius: 4px;
-    border: 1px solid #ddd;
+    border: 1px solid var(--border-color);
+    transition: background 0.3s ease, color 0.3s ease, border-color 0.3s ease;
 }
 
 .reset-btn {
@@ -294,4 +463,178 @@ body.app-body {
     0% { background-color: rgba(76, 175, 80, 0.4); }
     50% { background-color: rgba(76, 175, 80, 0.6); }
     100% { background-color: rgba(76, 175, 80, 0.2); }
+}
+
+/* User Navigation Styles for App Page */
+.app-nav .user-nav {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.app-nav .user-menu {
+    position: relative;
+}
+
+.app-nav .user-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    background: var(--primary-color);
+    color: white;
+    border: none;
+    border-radius: 25px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    min-width: 120px;
+}
+
+.app-nav .user-btn:hover {
+    background: var(--primary-dark);
+    color: white;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.app-nav .user-name {
+    max-width: 100px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.app-nav .user-icon {
+    font-size: 16px;
+}
+
+.app-nav .dropdown-arrow {
+    font-size: 10px;
+    transition: transform 0.3s ease;
+}
+
+.app-nav .user-btn:hover .dropdown-arrow {
+    transform: rotate(180deg);
+}
+
+.app-nav .user-dropdown {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    box-shadow: var(--shadow-md);
+    min-width: 180px;
+    opacity: 0 !important;
+    visibility: hidden !important;
+    transform: translateY(-10px);
+    transition: all 0.3s ease;
+    z-index: 1000;
+    margin-top: 8px;
+}
+
+.app-nav .user-dropdown.show {
+    opacity: 1 !important;
+    visibility: visible !important;
+    transform: translateY(0);
+}
+
+.app-nav .dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 16px;
+    color: var(--text-primary);
+    text-decoration: none;
+    background: none;
+    border: none;
+    width: 100%;
+    text-align: left;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.app-nav .dropdown-item:hover {
+    background-color: var(--bg-secondary);
+}
+
+.app-nav .dropdown-item:first-child {
+    border-top-left-radius: 12px;
+    border-top-right-radius: 12px;
+}
+
+.app-nav .dropdown-item:last-child {
+    border-bottom-left-radius: 12px;
+    border-bottom-right-radius: 12px;
+}
+
+.app-nav .dropdown-item.logout-btn {
+    color: #dc3545;
+    border-top: 1px solid #e9ecef;
+}
+
+.app-nav .dropdown-item.logout-btn:hover {
+    background-color: #f8d7da;
+}
+
+.item-icon {
+    font-size: 16px;
+}
+
+/* User Navigation Responsive */
+@media (max-width: 768px) {
+    .app-nav .user-btn {
+        padding: 6px 12px;
+        font-size: 12px;
+        min-width: 100px;
+    }
+    
+    .app-nav .user-name {
+        max-width: 80px;
+    }
+}
+
+@media (max-width: 480px) {
+    .app-nav .user-dropdown {
+        right: -10px;
+        min-width: 160px;
+    }
+}
+
+/* Theme Toggle Button */
+.theme-toggle-btn {
+    background: none;
+    border: 2px solid var(--border-color);
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 18px;
+}
+
+.theme-toggle-btn:hover {
+    background: var(--primary-color);
+    border-color: var(--primary-color);
+    transform: scale(1.1);
+}
+
+.theme-toggle-btn:hover .theme-icon {
+    filter: brightness(0) invert(1);
+}
+
+.theme-icon {
+    transition: transform 0.3s ease;
+}
+
+/* Theme toggle icon rotation on hover */
+.theme-toggle-btn:hover .theme-icon {
+    transform: rotate(180deg);
 } 

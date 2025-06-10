@@ -127,7 +127,7 @@ function addNotificationStyles() {
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%) scale(0.8);
-            background: white;
+            background: var(--bg-primary, white);
             border-radius: 12px;
             box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
             z-index: 10000;
@@ -190,7 +190,7 @@ function addNotificationStyles() {
         }
         
         .notification-close:hover {
-            background: var(--background-light, #f5f5f5);
+            background: var(--bg-secondary, #f5f5f5);
             color: var(--text-primary, #333);
         }
         
@@ -376,13 +376,13 @@ function addConfirmStyles() {
         }
         
         .notification-btn-cancel {
-            background: var(--background-light, #f5f5f5);
+            background: var(--bg-secondary, #f5f5f5);
             color: var(--text-secondary, #666);
             border: 1px solid var(--border-color, #e0e0e0);
         }
         
         .notification-btn-cancel:hover {
-            background: #e0e0e0;
+            background: var(--bg-tertiary, #e0e0e0);
             color: var(--text-primary, #333);
         }
         

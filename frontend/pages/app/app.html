@@ -9,8 +9,29 @@
     <link rel="stylesheet" href="/css/main.css">
     <link rel="stylesheet" href="/css/components.css">
     <link rel="stylesheet" href="/css/themes.css">
+    <link rel="stylesheet" href="/css/landing.css">
 </head>
 <body class="app-body">
+    <!-- App Navigation Header -->
+    <nav class="app-nav">
+        <div class="nav-container">
+            <div class="nav-brand">
+                <a href="/" class="brand-link" data-link>
+                    <span class="brand-icon">🎧</span>
+                    AudioBook Creator
+                </a>
+            </div>
+            <div class="nav-links">
+                <!-- Theme toggle button -->
+                <button class="theme-toggle-btn" onclick="toggleTheme()" title="Toggle Dark/Light Mode">
+                    <span class="theme-icon">🌙</span>
+                </button>
+                <!-- User navigation will be inserted here by appUI.js -->
+                <a href="/auth" class="btn btn-primary auth-btn">Sign In</a>
+            </div>
+        </div>
+    </nav>
+
     <div class="main-container">
         <!-- Left Column - Book Content -->
         <div class="column">
@@ -43,8 +64,8 @@
                         </div>
                     </div>
                 </div>
-                <div id="loadingIndicator" class="loading">Loading book content...</div>
-                <div id="errorMessage" class="error-message"></div>
+                <div id="loadingIndicator" class="loading" style="display: none;">Loading book content...</div>
+                <div id="errorMessage" class="error-message" style="display: none;"></div>
             </div>
             <div class="column-content">
                 <div id="bookContent" class="book-content" contenteditable="true" spellcheck="false" tabindex="0"></div>
