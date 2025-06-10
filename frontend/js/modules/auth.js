@@ -233,50 +233,52 @@ class AuthModule {
             
             console.log('🔄 Auth state changed:', event);
 
-            if (event === 'PASSWORD_RECOVERY') {
-                console.log('🔑 Password recovery mode detected from event.');
-                sessionManager.setPasswordRecovery(true);
-                this.notifyAuthListeners(event, session);
-                return;
-            }
-
-            if (event === 'USER_UPDATED') {
-                console.log('👤 User data was updated.');
-                this.user = { ...this.user, ...session.user };
-                sessionManager.handleAuthStateChange(true, this.user);
-                this.notifyAuthListeners(event, session);
-                return;
-            }
-
-            if (event === 'INITIAL_SESSION' && sessionManager.isPasswordRecovery) {
-                console.log('🔑 Continuing password recovery, ignoring initial session for navigation.');
-                this.notifyAuthListeners('PASSWORD_RECOVERY', session);
-                this.wasInitialized = true;
-                return;
-            }
-            
+            // Centralized handling of all auth events
             switch (event) {
                 case 'SIGNED_IN':
+                    await this.handleAuthSuccess(session, true /* isLogin */, event);
+                    break;
+                
                 case 'INITIAL_SESSION':
                     if (session) {
-                        await this.handleAuthSuccess(session, event === 'SIGNED_IN', event);
+                        // If in password recovery, don't treat this as a full login
+                        if (sessionManager.isPasswordRecovery) {
+                            console.log('🔑 Continuing password recovery, ignoring initial session for navigation.');
+                            this.notifyAuthListeners('PASSWORD_RECOVERY', session);
+                        } else {
+                            await this.handleAuthSuccess(session, false /* isLogin */, event);
+                        }
                     } else {
                         await this.handleSignOut();
                     }
                     break;
+
                 case 'SIGNED_OUT':
                     await this.handleSignOut();
                     break;
+
                 case 'TOKEN_REFRESHED':
                     await this.handleTokenRefresh(session);
                     break;
+
+                case 'USER_UPDATED':
+                    console.log('👤 User data was updated.');
+                    if (session && session.user) {
+                        this.user = { ...this.user, ...session.user };
+                        sessionManager.handleAuthStateChange(true, this.user);
+                        this.notifyAuthListeners(event, session);
+                    }
+                    break;
+
+                case 'PASSWORD_RECOVERY':
+                    console.log('🔑 Password recovery mode detected from event.');
+                    sessionManager.setPasswordRecovery(true);
+                    this.notifyAuthListeners(event, session);
+                    break;
+                    
+                default:
+                    console.warn(`Unhandled auth event: ${event}`);
             }
-            
-            // Mark as initialized after first auth state change
-            this.wasInitialized = true;
-            
-            // Notify all listeners
-            this.notifyAuthListeners(event, session);
         });
     }
 
@@ -364,6 +366,18 @@ class AuthModule {
             
             // Save session flags to persist across page navigations
             this.saveSessionFlags();
+            
+            // Navigate to app page after successful authentication
+            if (authEvent === 'SIGNED_IN') {
+                console.log('🔄 Navigating to app page after login');
+                if (window.router) {
+                    await window.router.navigate('/app');
+                } else {
+                    window.location.href = '/app';
+                }
+            } else if (authEvent === 'INITIAL_SESSION') {
+                console.log('🔄 Session restored, staying on current page');
+            }
             
         } catch (error) {
             console.error('Error during user initialization:', error);

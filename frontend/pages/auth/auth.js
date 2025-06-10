@@ -361,78 +361,36 @@ async function handleLoginSubmit(e) {
         return;
     }
 
-    console.log('✅ Starting sign in process...');
     setLoading(true);
 
     try {
-        // Generate reCAPTCHA token
+        // Generate reCAPTCHA token just before submission
         console.log('🔐 Generating reCAPTCHA token...');
         const recaptchaToken = await recaptcha.getLoginToken();
-        
-        if (recaptchaTokenField) {
-            recaptchaTokenField.value = recaptchaToken;
-        }
-        
         console.log('✅ reCAPTCHA token generated');
 
-        // Create login data with reCAPTCHA token
-        const loginData = {
-            email: email,
-            password: password,
-            recaptcha_token: recaptchaToken
-        };
-
-        // Make the login request to backend API instead of using Supabase directly
-        const response = await fetch('/api/auth/login', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(loginData)
-        });
-
-        const result = await response.json();
+        const result = await authModule.signIn(email, password, recaptchaToken);
 
         if (result.success) {
             console.log('✅ Sign in successful');
-            // Update auth module state with the session
-            if (result.session && result.user) {
-                // Trigger auth state change manually since we bypassed Supabase client
-                window.dispatchEvent(new CustomEvent('auth-state-changed', {
-                    detail: {
-                        isAuthenticated: true,
-                        user: result.user,
-                        session: result.session
-                    }
-                }));
-                
-                // Navigate to app
-                if (window.router) {
-                    window.router.navigate('/app');
-                } else {
-                    window.location.href = '/app';
-                }
-            }
+            // The onAuthStateChange listener in auth.js will handle the rest,
+            // including navigation. No need to call handleAuthSuccess directly.
         } else {
-            throw new Error(result.message || 'Login failed');
+            // showError is called inside signIn, so just log here
+            console.error('Sign in failed from form handler:', result.error);
         }
-        
     } catch (error) {
         console.error('❌ Sign in failed:', error);
+        const errorMessage = error.message || 'An unexpected error occurred.';
         
-        // Show user-friendly error messages
-        const errorMessage = error.message || 'Sign in failed';
-        
-        if (errorMessage.includes('reCAPTCHA')) {
-            showFieldError(emailInput, 'Security verification failed. Please try again.');
-        } else if (errorMessage.includes('Rate limit')) {
-            showFieldError(emailInput, 'Too many login attempts. Please wait before trying again.');
-        } else if (errorMessage.includes('Invalid email or password')) {
-            showFieldError(emailInput, 'Invalid email or password. Please check your credentials.');
-        } else if (errorMessage.includes('not configured') || errorMessage.includes('not available')) {
-            showFieldError(emailInput, 'Demo mode: Authentication service not configured. Please check console for setup instructions.');
+        if (errorMessage.includes('Invalid login credentials')) {
+            showFieldError(emailInput, 'Invalid email or password.');
+        } else if (errorMessage.includes('Email not confirmed')) {
+            showFieldError(emailInput, 'Please confirm your email before signing in.');
+        } else if (errorMessage.includes('reCAPTCHA')) {
+            showFieldError(emailInput, 'Security check failed. Please try again.');
         } else {
-            showFieldError(emailInput, errorMessage);
+            showFieldError(emailInput, 'An unknown error occurred during sign in.');
         }
     } finally {
         setLoading(false);
