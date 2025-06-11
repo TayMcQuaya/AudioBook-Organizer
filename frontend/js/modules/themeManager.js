@@ -14,8 +14,15 @@ class ThemeManager {
      * Initialize theme manager
      */
     init() {
-        // Load saved theme or detect system preference
-        this.loadTheme();
+        // Check if we're on the app page and force light theme on first visit
+        if (this.isAppPage() && this.isFirstAppVisit()) {
+            this.currentTheme = 'light';
+            localStorage.setItem(this.storageKey, 'light');
+            console.log('🎨 First app visit detected - starting with light theme');
+        } else {
+            // Load saved theme or detect system preference for other cases
+            this.loadTheme();
+        }
         
         // Apply initial theme
         this.applyTheme(this.currentTheme);
@@ -33,6 +40,20 @@ class ThemeManager {
         }
         
         console.log(`🎨 Theme Manager initialized with ${this.currentTheme} theme`);
+    }
+
+    /**
+     * Check if we're currently on the app page
+     */
+    isAppPage() {
+        return window.location.pathname === '/app' || document.body.classList.contains('app-body');
+    }
+
+    /**
+     * Check if this is the first visit to the app page (no saved theme preference)
+     */
+    isFirstAppVisit() {
+        return !localStorage.getItem(this.storageKey);
     }
 
     /**

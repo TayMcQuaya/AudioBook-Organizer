@@ -1888,4 +1888,82 @@ html {
         transform: translateX(5%);
         opacity: 1;
     }
-} 
+}
+
+/* Landing Page Theme Isolation - Prevent app dark theme from affecting landing page */
+.landing-body .highlighted-orange,
+.landing-body .highlighted-green,
+.landing-body .highlighted-blue,
+.landing-body .highlighted-purple,
+.landing-body .highlight-item,
+.landing-body .step-visual,
+.landing-body .upload-demo,
+.landing-body .chapters-demo,
+.landing-body .audio-demo,
+.landing-body .export-demo,
+.landing-body .chapter-demo-item,
+.landing-body .audio-player,
+.landing-body .export-option,
+.landing-body .feature-card .highlight-item {
+    /* Force light theme styles regardless of global theme - using fixed colors */
+    background: #f8f9fa !important;
+    color: #333 !important;
+    border-color: #dee2e6 !important;
+}
+
+/* Override specific highlighted text colors for landing page */
+.landing-body .highlighted-orange {
+    background: rgba(255, 152, 0, 0.1) !important;
+    border-left: 3px solid #ff9800 !important;
+    color: #e65100 !important;
+}
+
+.landing-body .highlighted-green {
+    background: rgba(76, 175, 80, 0.1) !important;
+    border-left: 3px solid #4caf50 !important;
+    color: #2e7d32 !important;
+}
+
+.landing-body .highlighted-blue {
+    background: rgba(33, 150, 243, 0.1) !important;
+    border-left: 3px solid #2196f3 !important;
+    color: #1565c0 !important;
+}
+
+.landing-body .highlighted-purple {
+    background: rgba(156, 39, 176, 0.1) !important;
+    border-left: 3px solid #9c27b0 !important;
+    color: #7b1fa2 !important;
+}
+
+/* Override highlight-item styles for landing page */
+.landing-body .highlight-item {
+    background: #f8f9fa !important;
+    color: #667eea !important;
+    border: 1px solid #e9ecef !important;
+}
+
+/* Override step-visual styles for landing page */
+.landing-body .step-visual {
+    background: #f8f9fa !important;
+    border: 1px solid #e9ecef !important;
+}
+
+.landing-body .chapter-demo-item {
+    background: white !important;
+    border-left: 3px solid #667eea !important;
+    color: #333 !important;
+}
+
+.landing-body .audio-player {
+    background: white !important;
+    border: 1px solid #e9ecef !important;
+}
+
+.landing-body .export-option {
+    background: white !important;
+    border: 1px solid #e9ecef !important;
+    color: #333 !important;
+}
+
+/* Root variables - Light theme colors for reference */ 
