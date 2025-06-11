@@ -807,6 +807,9 @@ html {
     content: '';
     position: absolute;
     top: 30px; /* Align with center of circle */
+    right: -120px; /* Start from right edge of circle */
+    width: calc(9rem + 60px); /* Grid gap + circle diameter */
+    height: 4px;
     background: linear-gradient(90deg, #667eea, #764ba2);
     border-radius: 2px;
     opacity: 0.8;
