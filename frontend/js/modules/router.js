@@ -1,4 +1,4 @@
-// AudioBook Organizer - Simple Client-Side Router
+// AudioBook Creator - Simple Client-Side Router
 
 import { showError, showInfo } from './notifications.js';
 import auth from './auth.js';
@@ -12,31 +12,31 @@ let guards = new Map();
 // Route definitions
 const routeConfig = {
     '/': {
-        title: 'AudioBook Organizer - Organize Your Digital Library',
+        title: 'AudioBook Creator - Organize Your Digital Library',
         component: 'landing',
         requiresAuth: false,
         layout: 'landing'
     },
     '/app': {
-        title: 'AudioBook Organizer - App',
+        title: 'AudioBook Creator - App',
         component: 'app',
         requiresAuth: true, // App requires authentication
         layout: 'app'
     },
     '/auth': {
-        title: 'Sign In - AudioBook Organizer',
+        title: 'Sign In - AudioBook Creator',
         component: 'auth',
         requiresAuth: false,
         layout: 'auth'
     },
     '/auth/reset-password': {
-        title: 'Reset Password - AudioBook Organizer',
+        title: 'Reset Password - AudioBook Creator',
         component: 'reset-password',
         requiresAuth: false, // Page is public, but requires a token in the URL
         layout: 'auth'
     },
     '/profile': {
-        title: 'Profile - AudioBook Organizer',
+        title: 'Profile - AudioBook Creator',
         component: 'profile',
         requiresAuth: true, // Profile requires authentication
         layout: 'app'
