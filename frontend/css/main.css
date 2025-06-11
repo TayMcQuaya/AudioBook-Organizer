@@ -144,13 +144,13 @@ body.app-body {
     align-items: center;
     gap: 0.5rem;
     font-weight: 600;
-    font-size: 1.25rem;
+    font-size: 1.6rem; 
     color: var(--text-primary);
     text-decoration: none;
 }
 
 .app-nav .brand-icon {
-    font-size: 1.5rem;
+    font-size: 1.8rem;
 }
 
 .app-nav .nav-links {
