@@ -401,6 +401,10 @@ button[disabled] {
     border-color: var(--border-color);
 }
 
+[data-theme="dark"] .chapter-sections {
+    background: var(--bg-primary);
+}
+
 .selection-tools-content {
     display: flex;
     flex-direction: column;
