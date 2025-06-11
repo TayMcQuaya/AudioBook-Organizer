@@ -799,20 +799,57 @@ html {
 .step {
     text-align: center;
     position: relative;
+    z-index: 1;
 }
 
+/* Enhanced step connector lines - properly connecting circle edges */
 .step::after {
     content: '';
     position: absolute;
-    top: 30px;
-    right: -1.5rem;
-    width: 50px;
-    height: 2px;
-    background: linear-gradient(90deg, var(--primary-color), transparent);
+    top: 30px; /* Align with center of circle */
+    background: linear-gradient(90deg, #667eea, #764ba2);
+    border-radius: 2px;
+    opacity: 0.8;
+    z-index: 0;
 }
 
+/* Hide connector on last step */
 .step:last-child::after {
     display: none;
+}
+
+/* Make connectors properly sized for larger screens */
+@media (min-width: 769px) {
+    .step::after {
+        right: -120px; /* Start from right edge of circle */
+        width: calc(9rem + 60px); /* Grid gap + circle diameter */
+        height: 4px;
+        box-shadow: 0 1px 3px rgba(102, 126, 234, 0.2);
+    }
+}
+
+/* Vertical connectors for mobile - properly connecting circles */
+@media (max-width: 768px) {
+    .steps-container {
+        grid-template-columns: 1fr;
+        gap: 3rem;
+    }
+    
+    /* Vertical connectors for mobile */
+    .step::after {
+        top: auto;
+        bottom: -calc(1.5rem + 30px); /* Start from bottom edge of circle */
+        left: 50%;
+        transform: translateX(-50%);
+        right: auto;
+        width: 4px;
+        height: calc(3rem + 60px); /* Gap + circle diameter */
+        background: linear-gradient(180deg, #667eea, #764ba2);
+    }
+    
+    .step:last-child::after {
+        display: none;
+    }
 }
 
 .step-number {
@@ -1455,13 +1492,7 @@ html {
         display: none;
     }
     
-    .steps-container {
-        grid-template-columns: 1fr;
-    }
-    
-    .step::after {
-        display: none;
-    }
+    /* Steps container is now handled in the step connector section above */
     
     .pricing-grid {
         grid-template-columns: 1fr;
