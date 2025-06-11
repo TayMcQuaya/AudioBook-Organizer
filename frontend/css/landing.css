@@ -2,56 +2,62 @@
 
 /* Landing Page CSS Variables */
 :root {
-    /* Updated to match auth page purple theme */
+    /* Color System */
     --primary-color: #667eea;
-    --primary-dark: #5a67d8;
     --secondary-color: #764ba2;
-    --accent-color: #667eea;
+    --primary-color-rgb: 102, 126, 234;
+    --accent-color: #ff6b6b;
+    --success-color: #51cf66;
+    --warning-color: #ffd43b;
+    --error-color: #ff6b6b;
     
-    /* Background gradients with purple theme */
-    --gradient-primary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    --gradient-secondary: linear-gradient(45deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1));
-    
-    /* Text colors */
-    --text-primary: #2d3748;
-    --text-secondary: #4a5568;
-    --text-muted: #718096;
+    /* Text Colors */
+    --text-primary: #2c3e50;
+    --text-secondary: #546e7a;
+    --text-muted: #90a4ae;
     --text-light: rgba(255, 255, 255, 0.9);
     
-    /* Background colors */
-    --bg-primary: #ffffff;
-    --bg-secondary: #f7fafc;
-    --landing-section-bg: linear-gradient(135deg, #f8f9ff 0%, #f3f4ff 100%);
+    /* Background Colors */
+    --background-primary: #ffffff;
+    --background-secondary: #f8f9fa;
+    --background-light: #f8f9fa;
+    --border-color: #dee2e6;
     
-    /* UI elements */
-    --border-color: #e2e8f0;
-    --shadow-color: rgba(102, 126, 234, 0.1);
-    --overlay-bg: rgba(102, 126, 234, 0.95);
+    /* Landing Page Specific */
+    --landing-hero-bg: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    --landing-text-hero: #ffffff;
+    --landing-section-bg: #ffffff;
+    --landing-container-max-width: 1200px;
+    --landing-section-padding: 60px 0;
     
-    /* Sizing */
-    --nav-height: 80px;
-    --container-padding: 2rem;
-    --section-padding: 5rem 0;
-    --section-title-size: clamp(2rem, 4vw, 3rem);
+    /* Corrected Navigation Height - matches actual navbar height */
+    --nav-height: 64px;
+    
+    /* Typography */
+    --hero-title-size: clamp(2.5rem, 5vw, 3.5rem);
+    --section-title-size: clamp(2rem, 4vw, 2.5rem);
+    --feature-title-size: 1.25rem;
+    
+    /* Spacing */
+    --spacing-xs: 0.25rem;
+    --spacing-sm: 0.5rem;
+    --spacing-md: 1rem;
+    --spacing-lg: 1.5rem;
+    --spacing-xl: 2rem;
+    
+    /* Border Radius */
+    --radius-sm: 4px;
+    --radius-md: 8px;
+    --radius-lg: 12px;
+    
+    /* Shadows */
+    --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.1);
+    --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
+    --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
     
     /* Animation */
     --animation-duration: 0.3s;
     --animation-ease: cubic-bezier(0.4, 0, 0.2, 1);
-    
-    /* Extend existing color palette */
-    --landing-hero-bg: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    --landing-card-bg: rgba(255, 255, 255, 0.95);
-    --landing-text-hero: #ffffff;
-    --landing-accent: #667eea;
-    
-    /* Spacing for landing - optimized for viewport fitting */
-    --landing-section-padding: 40px 0;
-    --landing-container-max-width: 1200px;
-    --landing-grid-gap: 1.5rem;
-    
-    /* Typography */
-    --hero-title-size: clamp(2.5rem, 5vw, 4rem);
-    --feature-title-size: 1.5rem;
 }
 
 /* Landing Page Body Styles */
@@ -66,7 +72,7 @@
     scroll-snap-type: y mandatory;
 }
 
-/* Add scroll offset for fixed navigation */
+/* Enhanced scroll configuration for perfect section alignment */
 html {
     scroll-padding-top: var(--nav-height);
 }
@@ -190,7 +196,7 @@ html {
     padding: 0.5rem 0;
 }
 
-/* Hero Section */
+/* Hero Section - Fixed height to prevent overlap */
 .hero {
     height: 100vh;
     display: flex;
@@ -201,6 +207,9 @@ html {
     overflow: hidden;
     scroll-snap-align: start;
     scroll-snap-stop: always;
+    margin-top: var(--nav-height);
+    min-height: calc(100vh - var(--nav-height));
+    box-sizing: border-box;
 }
 
 .hero-background {
@@ -654,7 +663,7 @@ html {
 }
 
 .feature-card .feature-highlights {
-    gap: 0.3rem;
+    gap: 0.5rem;
 }
 
 .feature-card .highlight-item {
@@ -764,8 +773,10 @@ html {
 
 .feature-highlights {
     display: flex;
+    flex-direction: column;
     flex-wrap: wrap;
     gap: 0.5rem;
+    margin-top: 1.5rem;
 }
 
 .highlight-item {
@@ -1937,12 +1948,17 @@ html {
 .landing-body .export-demo,
 .landing-body .chapter-demo-item,
 .landing-body .audio-player,
-.landing-body .export-option,
-.landing-body .feature-card .highlight-item {
+.landing-body .export-option{
     /* Force light theme styles regardless of global theme - using fixed colors */
     background: #f8f9fa !important;
     color: #333 !important;
     border-color: #dee2e6 !important;
+}
+
+.landing-body .feature-card .highlight-item {
+    background: rgba(76, 175, 80, 0.1) !important; /* Light green background */
+    color: #2e7d32 !important;                    /* Strong green text */
+    border: 1px solid #81c784 !important;         /* Softer green border */
 }
 
 /* Override specific highlighted text colors for landing page */
@@ -1987,6 +2003,14 @@ html {
     background: white !important;
     border-left: 3px solid #667eea !important;
     color: #333 !important;
+}
+
+/* Additional protection against global dark theme affecting landing page chapter items */
+[data-theme="dark"] .landing-body .chapter-demo-item {
+    background: white !important;
+    border-left: 3px solid #667eea !important;
+    color: #333 !important;
+    border-color: #e9ecef !important;
 }
 
 .landing-body .audio-player {
