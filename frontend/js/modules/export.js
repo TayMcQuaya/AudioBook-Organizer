@@ -5,6 +5,122 @@ import { hideExportModal } from './ui.js';
 import { createDownloadLink } from '../utils/dom.js';
 import { showError } from './notifications.js';
 
+// Update preview when export options change
+function updateExportPreview() {
+    const exportMetadata = document.getElementById('exportMetadata').checked;
+    const exportAudio = document.getElementById('exportAudio').checked;
+    const exportBookContent = document.getElementById('exportBookContent').checked;
+    const mergeAudio = document.getElementById('mergeAudio').checked;
+    const audioFormat = document.querySelector('input[name="audioFormat"]:checked').value;
+    
+    const previewContent = document.getElementById('previewContent');
+    const selectedItems = [];
+    
+    // Count what's selected
+    if (exportMetadata) selectedItems.push('metadata');
+    if (exportAudio) selectedItems.push('audio');
+    if (exportBookContent) selectedItems.push('bookContent');
+    if (mergeAudio) selectedItems.push('merged');
+    
+    // Count chapters that actually have audio files
+    let chaptersWithAudio = 0;
+    let totalSections = 0;
+    chapters.forEach(chapter => {
+        if (chapter.sections && chapter.sections.length > 0) {
+            const sectionsWithAudio = chapter.sections.filter(section => section.audioPath).length;
+            if (sectionsWithAudio > 0) {
+                chaptersWithAudio++;
+                totalSections += sectionsWithAudio;
+            }
+        }
+    });
+    
+    // Generate preview based on selections
+    if (selectedItems.length === 0) {
+        previewContent.innerHTML = '<span style="color: var(--error-color);">⚠️ No export options selected</span>';
+        return;
+    }
+    
+    // Check for single file downloads (no ZIP needed)
+    const isSingleFile = (
+        (selectedItems.length === 1 && mergeAudio && !exportMetadata && !exportAudio && !exportBookContent) ||
+        (selectedItems.length === 1 && exportMetadata && !exportAudio && !exportBookContent && !mergeAudio) ||
+        (selectedItems.length === 1 && exportBookContent && !exportMetadata && !exportAudio && !mergeAudio)
+    );
+    
+    if (isSingleFile) {
+        if (mergeAudio) {
+            // Only merged audio selected - direct download
+            const extension = audioFormat === 'mp3' ? 'mp3' : 'wav';
+            const chapterText = chaptersWithAudio === 1 ? '1 chapter' : `${chaptersWithAudio} chapters`;
+            previewContent.innerHTML = `Will download <strong>"merged_audiobook.${extension} (${chapterText})"</strong> (single file)`;
+        } else if (exportMetadata) {
+            // Only metadata selected
+            previewContent.innerHTML = `Will download <strong>"metadata.json"</strong> (single file)`;
+        } else if (exportBookContent) {
+            // Only book content selected
+            previewContent.innerHTML = `Will download <strong>"book_content.json"</strong> (single file)`;
+        }
+    } else {
+        // Multiple items - ZIP download
+        const files = [];
+        if (exportMetadata) files.push('• metadata.json (project structure)');
+        if (exportBookContent) files.push('• book_content.json (highlights & content)');
+        
+        if (exportAudio && totalSections > 0) {
+            const extension = audioFormat === 'mp3' ? 'mp3' : 'wav';
+            files.push(`• ${totalSections} individual audio file (.${extension})`);
+        }
+        
+        if (mergeAudio && chaptersWithAudio > 0) {
+            const extension = audioFormat === 'mp3' ? 'mp3' : 'wav';
+            const chapterText = chaptersWithAudio === 1 ? '1 chapter' : `${chaptersWithAudio} chapters`;
+            files.push(`• merged_audiobook.${extension} (${chapterText})`);
+        }
+        
+        previewContent.innerHTML = `Will download <strong>"audiobook_export.zip"</strong> containing:<br>${files.join('<br>')}`;
+    }
+}
+
+// Initialize export preview functionality
+export function initializeExportPreview() {
+    // Get all export option checkboxes and radio buttons
+    const checkboxes = document.querySelectorAll('#exportModal input[type="checkbox"], #exportModal input[type="radio"]');
+    
+    // Add event listeners to update preview when options change
+    checkboxes.forEach(input => {
+        input.addEventListener('change', () => {
+            updateExportPreview();
+            updateVisualStates(); // Update visual states for fallback browsers
+        });
+    });
+    
+    // Initial preview update
+    updateExportPreview();
+    updateVisualStates();
+}
+
+// Update visual states for browsers without :has() support
+function updateVisualStates() {
+    // Handle main export option labels
+    const exportLabels = document.querySelectorAll('.export-options > label');
+    exportLabels.forEach(label => {
+        const checkbox = label.querySelector('input[type="checkbox"]');
+        if (checkbox) {
+            label.classList.toggle('checked', checkbox.checked);
+        }
+    });
+    
+    // Handle audio format labels
+    const audioFormatLabels = document.querySelectorAll('.audio-format-selection > label:not(:first-of-type)');
+    audioFormatLabels.forEach(label => {
+        const radio = label.querySelector('input[type="radio"]');
+        if (radio) {
+            label.classList.toggle('checked', radio.checked);
+        }
+    });
+}
+
 // Export function - preserving exact logic from original
 export async function startExport() {
     const status = document.getElementById('status');
@@ -20,13 +136,28 @@ export async function startExport() {
         className: highlight.className
     }));
     
+    const exportMetadata = document.getElementById('exportMetadata').checked;
+    const exportAudio = document.getElementById('exportAudio').checked;
+    const exportBookContent = document.getElementById('exportBookContent').checked;
+    const mergeAudio = document.getElementById('mergeAudio').checked;
+    
+    // Smart ZIP detection - automatically create ZIP for multiple selections
+    const selectedCount = [exportMetadata, exportAudio, exportBookContent, mergeAudio].filter(Boolean).length;
+    const isSingleFileDownload = (
+        (selectedCount === 1 && mergeAudio && !exportMetadata && !exportAudio && !exportBookContent) ||
+        (selectedCount === 1 && exportMetadata && !exportAudio && !exportBookContent && !mergeAudio) ||
+        (selectedCount === 1 && exportBookContent && !exportMetadata && !exportAudio && !mergeAudio)
+    );
+    const autoCreateZip = !isSingleFileDownload;
+    
     const exportOptions = {
-        exportMetadataFlag: document.getElementById('exportMetadata').checked,
-        exportAudioFlag: document.getElementById('exportAudio').checked,
-        exportBookContentFlag: document.getElementById('exportBookContent').checked,
-        createZipFlag: document.getElementById('createZip').checked,
-        mergeAudioFlag: document.getElementById('mergeAudio').checked,
+        exportMetadataFlag: exportMetadata,
+        exportAudioFlag: exportAudio,
+        exportBookContentFlag: exportBookContent,
+        createZipFlag: autoCreateZip, // Smart auto-detection
+        mergeAudioFlag: mergeAudio,
         silenceDuration: parseInt(document.getElementById('silenceDuration').value),
+        audioFormat: document.querySelector('input[name="audioFormat"]:checked').value,
         chapters: chapters.map(chapter => ({
             ...chapter,
             sections: chapter.sections.map(section => ({
@@ -55,10 +186,25 @@ export async function startExport() {
             status.className = 'status success';
             status.textContent = 'Export completed successfully!';
             
-            if (exportOptions.createZipFlag) {
+            // Smart download logic based on what was selected
+            if (autoCreateZip) {
                 createDownloadLink(`/exports/${result.exportId}/audiobook_export.zip`, 'audiobook_export.zip');
-            } else if (exportOptions.mergeAudioFlag) {
-                createDownloadLink(`/exports/${result.exportId}/merged_audiobook.wav`, 'merged_audiobook.wav');
+            } else {
+                // Single file download
+                if (mergeAudio) {
+                    // Only merged audio selected - direct download
+                    const audioFormat = exportOptions.audioFormat || 'wav';
+                    const fileExtension = audioFormat === 'mp3' ? 'mp3' : 'wav';
+                    // Look for merged file in first chapter directory
+                    const fileName = `chapter_1_merged.${fileExtension}`;
+                    createDownloadLink(`/exports/${result.exportId}/chapter_1/${fileName}`, `merged_audiobook.${fileExtension}`);
+                } else if (exportMetadata) {
+                    // Only metadata selected
+                    createDownloadLink(`/exports/${result.exportId}/metadata.json`, 'metadata.json');
+                } else if (exportBookContent) {
+                    // Only book content selected  
+                    createDownloadLink(`/exports/${result.exportId}/book_content.json`, 'book_content.json');
+                }
             }
             
             setTimeout(hideExportModal, 2000);

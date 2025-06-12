@@ -21,9 +21,11 @@ class ExportService:
         export_options = {
             'exportMetadata': data.get('exportMetadataFlag', False),
             'exportAudio': data.get('exportAudioFlag', False),
+            'exportBookContent': data.get('exportBookContentFlag', False),
             'createZip': data.get('createZipFlag', False),
             'mergeAudio': data.get('mergeAudioFlag', False),
-            'silenceDuration': data.get('silenceDuration', 2)
+            'silenceDuration': data.get('silenceDuration', 2),
+            'audioFormat': data.get('audioFormat', 'wav')  # NEW: Support for MP3/WAV selection
         }
 
         # Create export directory for this session - exact logic preserved
@@ -34,6 +36,10 @@ class ExportService:
         # Export metadata if requested - exact logic preserved
         if export_options['exportMetadata']:
             self._export_metadata(chapters, export_path)
+
+        # Export book content if requested - NEW
+        if export_options['exportBookContent']:
+            self._export_book_content(data, export_path)
 
         # Handle audio processing - exact logic preserved
         if export_options['exportAudio'] or export_options['mergeAudio']:
@@ -86,10 +92,19 @@ class ExportService:
                     if os.path.exists(fs_audio_path):
                         processed_audio_files.append(fs_audio_path)
                         
-                        # Copy individual files if requested - exact logic preserved
+                        # Convert and export individual files if requested - MODIFIED
                         if export_options['exportAudio']:
-                            export_audio_path = os.path.join(chapter_dir, f"section_{section_idx+1}.wav")
-                            shutil.copy2(fs_audio_path, export_audio_path)
+                            audio_format = export_options.get('audioFormat', 'wav')
+                            file_extension = 'mp3' if audio_format == 'mp3' else 'wav'
+                            export_audio_path = os.path.join(chapter_dir, f"section_{section_idx+1}.{file_extension}")
+                            
+                            # Convert audio format if needed
+                            if audio_format == 'mp3':
+                                audio = AudioSegment.from_wav(fs_audio_path)
+                                audio.export(export_audio_path, format='mp3', bitrate='192k')
+                            else:
+                                # For WAV, just copy the file (preserves original quality)
+                                shutil.copy2(fs_audio_path, export_audio_path)
 
             # Merge chapter audio files if requested - exact logic preserved
             if export_options['mergeAudio'] and processed_audio_files:
@@ -107,24 +122,58 @@ class ExportService:
                 merged_audio += silence
             merged_audio += audio
 
-        # Export merged chapter audio - exact logic preserved
-        chapter_audio_path = os.path.join(chapter_dir, f"chapter_{chapter_idx+1}_merged.wav")
-        merged_audio.export(chapter_audio_path, format='wav')
+        # Export merged chapter audio with dynamic format - MODIFIED
+        audio_format = export_options.get('audioFormat', 'wav')
+        file_extension = 'mp3' if audio_format == 'mp3' else 'wav'
+        chapter_audio_path = os.path.join(chapter_dir, f"chapter_{chapter_idx+1}_merged.{file_extension}")
+        
+        # Export with format parameter - MODIFIED
+        if audio_format == 'mp3':
+            merged_audio.export(chapter_audio_path, format='mp3', bitrate='192k')
+        else:
+            merged_audio.export(chapter_audio_path, format='wav')
     
     def _create_zip_archive(self, export_path, export_options):
         """Create ZIP archive - exact logic preserved"""
         zip_path = os.path.join(export_path, 'audiobook_export.zip')
+        explicitly_added_files = set()  # Track files we explicitly add
+        
         with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
             # Add metadata if it exists - exact logic preserved
             if export_options['exportMetadata']:
                 metadata_path = os.path.join(export_path, 'metadata.json')
                 if os.path.exists(metadata_path):
                     zipf.write(metadata_path, 'metadata.json')
+                    explicitly_added_files.add('metadata.json')  # Track this file
             
-            # Add all files from the export directory - exact logic preserved
+            # Add book content if it exists - NEW
+            if export_options['exportBookContent']:
+                book_content_path = os.path.join(export_path, 'book_content.json')
+                if os.path.exists(book_content_path):
+                    zipf.write(book_content_path, 'book_content.json')
+                    explicitly_added_files.add('book_content.json')  # Track this file
+            
+            # Add all other files from the export directory - MODIFIED to prevent duplicates
             for root, _, files in os.walk(export_path):
                 for file in files:
                     if file != 'audiobook_export.zip':  # Don't include the zip file itself
                         file_path = os.path.join(root, file)
                         arcname = os.path.relpath(file_path, export_path)
-                        zipf.write(file_path, arcname) 
+                        
+                        # Skip files we already explicitly added - FIXED DUPLICATION
+                        if arcname not in explicitly_added_files:
+                            zipf.write(file_path, arcname)
+    
+    def _export_book_content(self, data, export_path):
+        """Export complete book content with highlights - NEW"""
+        book_content_data = {
+            'bookContent': data.get('bookContent', ''),
+            'bookText': data.get('bookText', ''),
+            'highlights': data.get('highlights', []),
+            'chapters': data.get('chapters', []),
+            'version': data.get('version', '1.0'),
+            'timestamp': data.get('timestamp', time.time())
+        }
+        book_content_path = os.path.join(export_path, 'book_content.json')
+        with open(book_content_path, 'w') as f:
+            json.dump(book_content_data, f, indent=2) 

@@ -637,4 +637,412 @@ body.app-body {
 /* Theme toggle icon rotation on hover */
 .theme-toggle-btn:hover .theme-icon {
     transform: rotate(180deg);
+}
+
+/* Add CSS at the end of the file for download preview styling */
+
+/* Download Preview Section */
+.download-preview {
+    margin-top: 16px;
+    padding: 14px;
+    background-color: var(--bg-secondary);
+    border-radius: 8px;
+    border-left: 4px solid var(--accent-color);
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.download-preview:hover {
+    background-color: var(--bg-hover);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.download-preview .preview-header {
+    font-weight: 600;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    color: var(--text-primary);
+    font-size: 0.95em;
+}
+
+.download-preview .preview-header span {
+    margin-right: 8px;
+    font-size: 1.1em;
+}
+
+.download-preview #previewContent {
+    font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+    font-size: 0.85em;
+    color: var(--text-secondary);
+    line-height: 1.4;
+    padding: 4px 0;
+}
+
+.download-preview #previewContent strong {
+    color: var(--accent-color);
+    font-weight: 600;
+}
+
+.download-preview #previewContent .error-color {
+    color: var(--error-color);
+}
+
+/* Export Modal Improvements */
+.export-options {
+    max-height: none;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.export-options label {
+    margin-bottom: 8px;
+    font-size: 0.9em;
+}
+
+.export-options > label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 14px;
+    background-color: var(--bg-secondary);
+    border-radius: 8px;
+    border: 2px solid transparent;
+    transition: all 0.2s ease;
+    cursor: pointer;
+    margin-bottom: 0;
+    position: relative;
+    font-size: 0.9em;
+}
+
+.export-options > label:hover {
+    background-color: var(--bg-hover);
+    border-color: var(--accent-color);
+}
+
+.export-options > label input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    margin: 0;
+    accent-color: var(--accent-color);
+    cursor: pointer;
+}
+
+.export-options .option-icon {
+    font-size: 16px;
+    flex-shrink: 0;
+    transition: transform 0.2s ease;
+}
+
+.export-options > label:hover .option-icon {
+    transform: scale(1.1);
+}
+
+.export-options > label::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    background: transparent;
+    border-radius: 8px 0 0 8px;
+    transition: background-color 0.2s ease;
+}
+
+/* Modern browsers with :has() support */
+@supports (selector(:has(*))) {
+    .export-options > label:has(input:checked)::before {
+        background: var(--accent-color);
+    }
+    
+    .export-options > label:has(input:checked) {
+        background-color: var(--bg-tertiary);
+        border-color: var(--accent-color);
+    }
+    
+    .audio-format-selection > label:has(input:checked) {
+        background-color: var(--accent-color);
+        color: white;
+        border-color: var(--accent-color);
+    }
+    
+    /* Ensure checked state is maintained on hover */
+    .audio-format-selection > label:has(input:checked):hover {
+        background-color: var(--accent-color);
+        color: white;
+        border-color: var(--accent-color);
+        opacity: 0.9;
+    }
+}
+
+/* Fallback for browsers without :has() support */
+@supports not (selector(:has(*))) {
+    .export-options > label.checked::before {
+        background: var(--accent-color);
+    }
+    
+    .export-options > label.checked {
+        background-color: var(--bg-tertiary);
+        border-color: var(--accent-color);
+    }
+    
+    .audio-format-selection > label.checked {
+        background-color: var(--accent-color);
+        color: white;
+        border-color: var(--accent-color);
+    }
+    
+    /* Ensure checked state is maintained on hover for fallback */
+    .audio-format-selection > label.checked:hover {
+        background-color: var(--accent-color);
+        color: white;
+        border-color: var(--accent-color);
+        opacity: 0.9;
+    }
+}
+
+.audio-format-selection {
+    background-color: var(--bg-tertiary);
+    padding: 12px;
+    border-radius: 8px;
+    margin: 6px 0 6px 30px;
+    border: 2px solid var(--border-color);
+    transition: all 0.2s ease;
+}
+
+.audio-format-selection:hover {
+    border-color: var(--accent-color);
+}
+
+.audio-format-selection > label:first-of-type {
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: var(--text-primary);
+    font-size: 0.85em;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.audio-format-selection > label:not(:first-of-type) {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 10px;
+    background-color: var(--bg-primary);
+    border-radius: 6px;
+    margin-bottom: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: 1px solid transparent;
+    font-size: 0.85em;
+}
+
+.audio-format-selection > label:not(:first-of-type):hover:not(:has(input:checked)) {
+    background-color: var(--bg-hover);
+    border-color: var(--accent-color);
+}
+
+/* Fallback for browsers without :has() support */
+.audio-format-selection > label:not(:first-of-type):hover:not(.checked) {
+    background-color: var(--bg-hover);
+    border-color: var(--accent-color);
+}
+
+.audio-format-selection input[type="radio"] {
+    width: 14px;
+    height: 14px;
+    margin: 0;
+    accent-color: white;
+}
+
+.silence-duration {
+    background-color: var(--bg-tertiary);
+    padding: 12px;
+    border-radius: 8px;
+    margin: 6px 0 0 30px;
+    border: 2px solid var(--border-color);
+    transition: all 0.2s ease;
+}
+
+.silence-duration:hover {
+    border-color: var(--accent-color);
+}
+
+.silence-duration label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 500;
+    color: var(--text-primary);
+    font-size: 0.9em;
+}
+
+.silence-duration input[type="number"] {
+    width: 70px;
+    padding: 6px 10px;
+    border: 2px solid var(--border-color);
+    border-radius: 6px;
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    font-size: 13px;
+    transition: all 0.2s ease;
+}
+
+.silence-duration input[type="number"]:focus {
+    outline: none;
+    border-color: var(--accent-color);
+    box-shadow: 0 0 0 3px rgba(var(--accent-color-rgb), 0.1);
+}
+
+/* Export Modal Responsive Design */
+@media (max-width: 768px) {
+    .export-options > label {
+        padding: 12px 14px;
+        font-size: 0.9em;
+    }
+    
+    .export-options .option-icon {
+        font-size: 16px;
+    }
+    
+    .audio-format-selection,
+    .silence-duration {
+        margin-left: 20px;
+        padding: 12px;
+    }
+    
+    .download-preview {
+        padding: 14px;
+        margin-top: 20px;
+    }
+    
+    .download-preview .preview-header {
+        font-size: 1em;
+    }
+    
+    .download-preview #previewContent {
+        font-size: 0.85em;
+    }
+}
+
+@media (max-width: 480px) {
+    .export-options > label {
+        padding: 10px 12px;
+        font-size: 0.85em;
+    }
+    
+    .audio-format-selection,
+    .silence-duration {
+        margin-left: 10px;
+        padding: 10px;
+    }
+    
+    .audio-format-selection > label:not(:first-of-type) {
+        padding: 6px 10px;
+        font-size: 0.85em;
+    }
+}
+
+/* Export Modal Specific Optimizations */
+#exportModal .modal {
+    max-height: 85vh;
+    min-width: 500px;
+    max-width: 550px;
+}
+
+#exportModal .modal-header {
+    padding-bottom: 12px;
+    margin-bottom: 16px;
+}
+
+#exportModal .modal-body {
+    margin-bottom: 16px;
+    padding: 0;
+    max-height: calc(85vh - 120px);
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--accent-color) transparent;
+}
+
+#exportModal .modal-body::-webkit-scrollbar {
+    width: 6px;
+}
+
+#exportModal .modal-body::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+#exportModal .modal-body::-webkit-scrollbar-thumb {
+    background-color: var(--accent-color);
+    border-radius: 3px;
+    opacity: 0.6;
+}
+
+#exportModal .modal-body::-webkit-scrollbar-thumb:hover {
+    opacity: 1;
+}
+
+#exportModal .modal-footer {
+    padding-top: 12px;
+    margin-top: 0;
+    justify-content: center;
+}
+
+/* Ensure modal content fits perfectly */
+@media (max-height: 800px) {
+    #exportModal .modal {
+        max-height: 80vh;
+    }
+    
+    .export-options {
+        gap: 10px;
+    }
+    
+    .export-options > label {
+        padding: 10px 12px;
+    }
+    
+    .download-preview {
+        margin-top: 12px;
+        padding: 12px;
+    }
+}
+
+@media (max-height: 700px) {
+    #exportModal .modal {
+        max-height: 75vh;
+    }
+    
+    .export-options {
+        gap: 8px;
+    }
+    
+    .export-options > label {
+        padding: 8px 10px;
+        font-size: 0.85em;
+    }
+    
+    .audio-format-selection,
+    .silence-duration {
+        padding: 10px;
+        margin-left: 25px;
+    }
+    
+    .download-preview {
+        margin-top: 10px;
+        padding: 10px;
+    }
+    
+    .download-preview .preview-header {
+        font-size: 0.9em;
+        margin-bottom: 6px;
+    }
+    
+    .download-preview #previewContent {
+        font-size: 0.8em;
+        line-height: 1.3;
+    }
 } 

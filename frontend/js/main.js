@@ -37,7 +37,8 @@ import {
 } from './modules/ui.js';
 
 import { 
-    startExport 
+    startExport,
+    initializeExportPreview
 } from './modules/export.js';
 
 import { 
@@ -104,6 +105,15 @@ window.toggleEditMode = toggleEditMode;
 window.refreshEditModeState = refreshEditModeState;
 window.getEditMode = getEditMode;
 window.cleanupTextSelection = cleanupTextSelection;
+
+// Enhanced showExportModal that initializes preview
+window.showExportModal = function() {
+    showExportModal();
+    // Initialize preview after modal is shown
+    setTimeout(() => {
+        initializeExportPreview();
+    }, 100);
+};
 
 // Smart Select function - automatically selects configurable character chunks ending on periods
 function smartSelect() {

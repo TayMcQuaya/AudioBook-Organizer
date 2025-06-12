@@ -135,29 +135,53 @@
                 <div class="export-options">
                     <label>
                         <input type="checkbox" id="exportMetadata" checked>
+                        <span class="option-icon">📋</span>
                         Export metadata (sections, chapters, highlights)
                     </label>
                     <label>
                         <input type="checkbox" id="exportAudio" checked>
+                        <span class="option-icon">🎵</span>
                         Export audio files
                     </label>
                     <label>
                         <input type="checkbox" id="exportBookContent" checked>
+                        <span class="option-icon">📖</span>
                         Export book content with highlights
                     </label>
                     <label>
-                        <input type="checkbox" id="createZip" checked>
-                        Create ZIP archive
-                    </label>
-                    <label>
                         <input type="checkbox" id="mergeAudio">
+                        <span class="option-icon">🔗</span>
                         Merge audio files
                     </label>
+                    <div class="audio-format-selection" style="margin-left: 20px;">
+                        <label style="font-weight: bold; display: block; margin-bottom: 8px;">
+                            Audio Format:
+                        </label>
+                        <label style="display: block; margin-bottom: 4px;">
+                            <input type="radio" name="audioFormat" value="wav" checked>
+                            WAV (uncompressed, larger files)
+                        </label>
+                        <label style="display: block; margin-bottom: 8px;">
+                            <input type="radio" name="audioFormat" value="mp3">
+                            MP3 (compressed, smaller files)
+                        </label>
+                    </div>
                     <div class="silence-duration" style="margin-left: 20px;">
                         <label>
                             Silence between sections (seconds):
                             <input type="number" id="silenceDuration" value="2" min="0" max="10">
                         </label>
+                    </div>
+                </div>
+                
+                <!-- Dynamic Download Preview Section -->
+                <div class="download-preview" id="downloadPreview">
+                    <div class="preview-header">
+                        <span>📦</span>
+                        Download Preview:
+                    </div>
+                    <div id="previewContent">
+                        Will download "audiobook_export.zip" containing multiple files
                     </div>
                 </div>
             </div>
