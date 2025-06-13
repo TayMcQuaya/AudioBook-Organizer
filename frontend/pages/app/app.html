@@ -88,6 +88,9 @@
                     <button onclick="createNewChapter()" class="create-chapter-btn">
                         <i>📚</i> New Chapter
                     </button>
+                    <button onclick="showReorderModal()" class="reorder-btn">
+                        <i>↕️</i> Reorder
+                    </button>
                     <button onclick="saveProgress()" class="save-btn">
                         <i>💾</i> Save
                     </button>
@@ -188,6 +191,30 @@
             <div class="modal-footer">
                 <div id="status" style="display: none;"></div>
                 <button onclick="startExport()">Export</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Reorder Modal -->
+    <div id="reorderModal" class="modal-overlay">
+        <div class="modal reorder-modal">
+            <div class="modal-header">
+                <h2>↕️ Reorder Chapters & Sections</h2>
+                <button class="modal-close" onclick="hideReorderModal()">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="reorder-instructions">
+                    <p><i>📚</i> Drag chapters to reorder them</p>
+                    <p><i>📝</i> Click on a chapter's dropdown to reorder its sections</p>
+                    <p><i>✏️</i> Double-click on chapter or section names to edit them</p>
+                </div>
+                <div id="reorderChaptersList" class="reorder-chapters-list">
+                    <!-- Chapter reorder items will be populated here -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button onclick="applyReorderChanges()" class="btn-primary">Apply Changes</button>
+                <button onclick="cancelReorderChanges()" class="btn-secondary">Cancel</button>
             </div>
         </div>
     </div>

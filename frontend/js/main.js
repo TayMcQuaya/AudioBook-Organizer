@@ -37,6 +37,13 @@ import {
 } from './modules/ui.js';
 
 import { 
+    showReorderModal,
+    hideReorderModal,
+    applyReorderChanges,
+    cancelReorderChanges
+} from './modules/reorder.js';
+
+import { 
     startExport,
     initializeExportPreview
 } from './modules/export.js';
@@ -96,6 +103,10 @@ window.copySectionText = copySectionText;
 window.showExportModal = showExportModal;
 window.hideExportModal = hideExportModal;
 window.startExport = startExport;
+window.showReorderModal = showReorderModal;
+window.hideReorderModal = hideReorderModal;
+window.applyReorderChanges = applyReorderChanges;
+window.cancelReorderChanges = cancelReorderChanges;
 window.saveProgress = saveProgress;
 window.loadProgress = loadProgress;
 window.uploadBook = uploadBook;

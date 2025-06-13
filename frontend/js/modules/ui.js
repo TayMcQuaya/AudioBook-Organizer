@@ -107,12 +107,22 @@ export function hideExportModal() {
 
 // Initialize modal click-outside-to-close functionality
 export function initializeModalHandlers() {
-    // Close modal when clicking outside
+    // Close export modal when clicking outside
     const exportModal = document.getElementById('exportModal');
     if (exportModal) {
         exportModal.addEventListener('click', function(e) {
             if (e.target === this) {
                 hideExportModal();
+            }
+        });
+    }
+    
+    // Close reorder modal when clicking outside
+    const reorderModal = document.getElementById('reorderModal');
+    if (reorderModal) {
+        reorderModal.addEventListener('click', function(e) {
+            if (e.target === this) {
+                window.hideReorderModal();
             }
         });
     }
