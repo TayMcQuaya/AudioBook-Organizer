@@ -353,11 +353,25 @@ class Router {
             }
 
             // Load app scripts if they aren't already loaded
-            if (!window.isAppInitialized) {
-                const { initialize, cleanup } = await import('/js/main.js');
-                initialize();
-                window.cleanupApp = cleanup; // Make cleanup available
-                window.isAppInitialized = true;
+            if (!window.isAppInitialized && !window.isAppInitializing) {
+                window.isAppInitializing = true;
+                try {
+                    const { initialize, cleanup } = await import('/js/main.js');
+                    await initialize(); // Make it async to wait for completion
+                    window.cleanupApp = cleanup; // Make cleanup available
+                    window.isAppInitialized = true;
+                } catch (error) {
+                    console.error('Error initializing app:', error);
+                    window.isAppInitialized = false;
+                } finally {
+                    window.isAppInitializing = false;
+                }
+            } else if (window.isAppInitializing) {
+                console.log('⏳ App initialization already in progress, waiting...');
+                // Wait for initialization to complete
+                while (window.isAppInitializing) {
+                    await new Promise(resolve => setTimeout(resolve, 100));
+                }
             }
             
             console.log('📱 App loaded successfully');
@@ -386,6 +400,7 @@ class Router {
                 const mainScript = document.querySelector('script[src="/js/main.js"]');
                 if (mainScript) mainScript.remove();
                 window.isAppInitialized = false;
+                window.isAppInitializing = false;
             }
 
             // Clean up any existing auth scripts

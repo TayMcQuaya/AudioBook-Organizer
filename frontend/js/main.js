@@ -227,10 +227,10 @@ function resetSmartSelectPosition() {
     showSuccess('Smart selection position reset to the beginning!');
 }
 
-function initialize() {
+async function initialize() {
     console.log('🚀 Initializing AudioBook Organizer...');
     if (window.authModule) {
-        initApp(window.authModule);
+        await initApp(window.authModule);
         
         // Initialize formatting system
         initializeFormattingShortcuts();

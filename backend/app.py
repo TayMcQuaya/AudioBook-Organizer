@@ -8,6 +8,7 @@ from .routes.static_routes import create_static_routes
 from .routes.upload_routes import create_upload_routes
 from .routes.export_routes import create_export_routes
 from .routes.auth_routes import create_auth_routes
+from .routes.project_routes import project_bp
 from .services.supabase_service import init_supabase_service
 from .services.security_service import init_security_service
 
@@ -51,6 +52,9 @@ def create_app(config_name='default'):
     # Register authentication routes
     auth_routes = create_auth_routes()
     app.register_blueprint(auth_routes)
+    
+    # Register project persistence routes
+    app.register_blueprint(project_bp, url_prefix='/api/projects')
     
     # Debug route to check all registered routes - exact functionality preserved
     @app.route('/debug/routes', methods=['GET'])

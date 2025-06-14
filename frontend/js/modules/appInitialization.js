@@ -9,8 +9,10 @@ import { initializeEditProtection } from './editMode.js';
 import sessionManager from './sessionManager.js';
 import appUI from './appUI.js';
 import themeManager from './themeManager.js';
+import { loadFromDatabase, startAutoSave, stopAutoSave } from './storage.js';
 
 let isInitialized = false;
+let isInitializing = false;
 
 /**
  * Cleanup function for the application
@@ -18,6 +20,9 @@ let isInitialized = false;
 export function cleanupApp() {
     if (!isInitialized) return;
     console.log('🧹 Cleaning up application resources...');
+
+    // Stop auto-save functionality
+    stopAutoSave();
 
     // Clean up text selection listeners
     if (window.cleanupTextSelection) {
@@ -34,6 +39,8 @@ export function cleanupApp() {
     // You could add more cleanup here, e.g., removing other listeners
     
     isInitialized = false;
+    isInitializing = false;
+    window.isAppInitialized = false;
     console.log('✅ Application cleanup complete.');
 }
 
@@ -78,6 +85,40 @@ function initializeDefaultState() {
     console.log('Application initialized with clean state');
 }
 
+// Restore latest project from database
+async function restoreLatestProject() {
+    try {
+        console.log('🔄 Attempting to restore latest project...');
+        
+        // Check if user is authenticated
+        if (!window.authModule?.isAuthenticated()) {
+            console.log('👤 User not authenticated, skipping project restoration');
+            return false;
+        }
+        
+        // Check if we already have content (avoid overwriting user's current work)
+        if (chapters.length > 0 || document.getElementById('bookContent')?.textContent?.trim()) {
+            console.log('📝 Current project exists, skipping auto-restoration');
+            return false;
+        }
+        
+        // Try to restore from database
+        const restored = await loadFromDatabase();
+        
+        if (restored) {
+            console.log('✅ Project restored successfully from database');
+            return true;
+        } else {
+            console.log('📭 No previous project found, starting fresh');
+            return false;
+        }
+        
+    } catch (error) {
+        console.error('❌ Error during project restoration:', error);
+        return false;
+    }
+}
+
 // Initialize all modules in correct order
 async function initializeModules() {
     // Initialize theme manager first
@@ -103,31 +144,54 @@ async function initializeModules() {
 
 // Main application initialization
 export async function initApp() {
-    if (isInitialized) {
-        console.log('App already initialized. Skipping.');
+    // Prevent double initialization
+    if (isInitialized || isInitializing) {
+        console.log('App already initialized or initializing. Skipping.');
         return;
     }
+    
     console.log('AudioBook Organizer - Initializing application...');
+    isInitializing = true;
     
-    // Initialize default state
-    initializeDefaultState();
-    
-    // Show selection guide for new users
-    showSelectionGuide();
-    
-    // Initialize all modules
-    await initializeModules();
-    
-    // Handle URL hash navigation
-    handleHashNavigation();
-    
-    isInitialized = true;
-    console.log('AudioBook Organizer - Application ready!');
+    try {
+        // Initialize default state
+        initializeDefaultState();
+        
+        // Show selection guide for new users
+        showSelectionGuide();
+        
+        // Initialize all modules
+        await initializeModules();
+        
+        // Try to restore latest project from database
+        await restoreLatestProject();
+        
+        // Start auto-save functionality
+        startAutoSave();
+        
+        // Handle URL hash navigation
+        handleHashNavigation();
+        
+        // Mark as initialized
+        isInitialized = true;
+        window.isAppInitialized = true;
+        console.log('AudioBook Organizer - Application ready!');
+        
+    } catch (error) {
+        console.error('❌ Error during app initialization:', error);
+        isInitialized = false;
+        window.isAppInitialized = false;
+    } finally {
+        isInitializing = false;
+    }
 }
 
 // Get initialization status (useful for debugging)
 export function getInitializationStatus() {
     return {
+        isInitialized,
+        isInitializing,
+        windowFlag: window.isAppInitialized,
         selectionGuideShown: localStorage.getItem('selectionGuideShown') === 'true',
         chaptersCount: chapters.length,
         isAuthenticated: sessionManager.isAuthenticated,

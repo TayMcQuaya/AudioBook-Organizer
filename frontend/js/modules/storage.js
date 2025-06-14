@@ -1,6 +1,6 @@
 // AudioBook Organizer - Storage Management
 
-import { bookText, chapters, currentColorIndex, setBookText, setChapters, setCurrentColorIndex } from './state.js';
+import { bookText, chapters, currentColorIndex, setBookText, setChapters, setCurrentColorIndex, setAutoSaveTrigger } from './state.js';
 import { updateChaptersList } from './ui.js';
 import { getNodeOffset, findTextNodeWithContent } from '../utils/helpers.js';
 import { createBlob, createObjectURL, revokeObjectURL, createDownloadLink } from '../utils/dom.js';
@@ -160,7 +160,7 @@ async function mergeProjects(importedProject) {
 /**
  * Get current project data in standard format
  */
-function getCurrentProjectData() {
+export function getCurrentProjectData() {
     // Get current user info
     const currentUser = window.authModule?.getCurrentUser();
     const userId = currentUser?.id || 'anonymous';
@@ -404,4 +404,202 @@ function loadProjectDirectly(projectData) {
         chaptersCount: chapters.length,
         highlightsRestored: projectData.highlights?.length || 0
     });
+}
+
+// =============================================================================
+// AUTO-PERSISTENCE FUNCTIONALITY
+// =============================================================================
+
+/**
+ * Auto-save timer and debouncing
+ */
+let autoSaveTimer = null;
+let autoSaveInterval = null;
+const AUTO_SAVE_DELAY = 2000; // 2 seconds debounce
+const AUTO_SAVE_INTERVAL = 30000; // 30 seconds periodic save
+
+/**
+ * Save current project to database (auto-save)
+ * This extends the existing saveProgress() functionality
+ */
+export async function saveToDatabase() {
+    try {
+        // Get current project data using existing function
+        const projectData = getCurrentProjectData();
+        
+        // Only save if we have meaningful content
+        if (!projectData.bookText.trim() && projectData.chapters.length === 0) {
+            console.log('🔄 Skipping auto-save: No meaningful content to save');
+            return false;
+        }
+        
+        // Get auth token for API call
+        const authToken = window.authModule?.getAuthToken();
+        if (!authToken) {
+            console.warn('⚠️ Cannot auto-save: User not authenticated');
+            return false;
+        }
+        
+        // Make API call to save project
+        const response = await fetch('/api/projects/save', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${authToken}`
+            },
+            body: JSON.stringify(projectData)
+        });
+        
+        if (response.ok) {
+            const result = await response.json();
+            console.log('✅ Project auto-saved to database');
+            
+            // Dispatch custom event for UI updates (optional)
+            window.dispatchEvent(new CustomEvent('project-auto-saved', {
+                detail: { timestamp: new Date().toISOString() }
+            }));
+            
+            return true;
+        } else {
+            const error = await response.json();
+            console.warn('⚠️ Auto-save failed:', error.error || 'Unknown error');
+            return false;
+        }
+        
+    } catch (error) {
+        console.error('❌ Auto-save error:', error);
+        return false;
+    }
+}
+
+/**
+ * Load latest project from database (auto-restore)
+ */
+export async function loadFromDatabase() {
+    try {
+        // Get auth token for API call
+        const authToken = window.authModule?.getAuthToken();
+        if (!authToken) {
+            console.log('👤 User not authenticated, skipping auto-restore');
+            return false;
+        }
+        
+        // Make API call to get latest project
+        const response = await fetch('/api/projects/latest', {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${authToken}`
+            }
+        });
+        
+        if (response.ok) {
+            const result = await response.json();
+            
+            if (result.success && result.project) {
+                console.log('📂 Restoring project from database...');
+                
+                // Use existing loadProjectDirectly function
+                loadProjectDirectly(result.project);
+                
+                // Show restore notification
+                showSuccess(`📂 Project restored! Last saved: ${new Date(result.metadata.updated_at).toLocaleString()}`);
+                
+                console.log('✅ Project restored from database:', {
+                    title: result.metadata.title,
+                    updated_at: result.metadata.updated_at
+                });
+                
+                return true;
+            } else {
+                console.log('📭 No previous project found in database');
+                return false;
+            }
+        } else if (response.status === 404) {
+            console.log('📭 No previous project found in database');
+            return false;
+        } else {
+            const error = await response.json();
+            console.warn('⚠️ Failed to load project from database:', error.error || 'Unknown error');
+            return false;
+        }
+        
+    } catch (error) {
+        console.error('❌ Auto-restore error:', error);
+        return false;
+    }
+}
+
+/**
+ * Trigger debounced auto-save
+ * Called whenever project state changes
+ */
+export function triggerAutoSave() {
+    // Clear existing debounce timer
+    if (autoSaveTimer) {
+        clearTimeout(autoSaveTimer);
+    }
+    
+    // Set new debounce timer
+    autoSaveTimer = setTimeout(() => {
+        saveToDatabase();
+    }, AUTO_SAVE_DELAY);
+}
+
+/**
+ * Start periodic auto-save
+ * Called during app initialization
+ */
+export function startAutoSave() {
+    // Clear any existing interval
+    if (autoSaveInterval) {
+        clearInterval(autoSaveInterval);
+    }
+    
+    // Set up the auto-save trigger for state changes
+    setAutoSaveTrigger(triggerAutoSave);
+    
+    // Start periodic auto-save
+    autoSaveInterval = setInterval(() => {
+        // Only save if we have meaningful content
+        if (bookText.trim() || chapters.length > 0) {
+            saveToDatabase();
+        }
+    }, AUTO_SAVE_INTERVAL);
+    
+    console.log('🔄 Auto-save started (30-second intervals + state change triggers)');
+}
+
+/**
+ * Stop auto-save (cleanup)
+ */
+export function stopAutoSave() {
+    if (autoSaveTimer) {
+        clearTimeout(autoSaveTimer);
+        autoSaveTimer = null;
+    }
+    
+    if (autoSaveInterval) {
+        clearInterval(autoSaveInterval);
+        autoSaveInterval = null;
+    }
+    
+    // Clear the auto-save trigger
+    setAutoSaveTrigger(null);
+    
+    console.log('🛑 Auto-save stopped');
+}
+
+/**
+ * Enhanced save functionality that supports both manual download and auto-save to database
+ * This maintains backward compatibility - existing saveProgress() works as before
+ * New saveProgressEnhanced() supports both modes
+ */
+export function saveProgressEnhanced(isAutoSave = false) {
+    if (isAutoSave) {
+        // Auto-save to database
+        return saveToDatabase();
+    } else {
+        // Manual save - use existing download functionality
+        return saveProgress();
+    }
 } 

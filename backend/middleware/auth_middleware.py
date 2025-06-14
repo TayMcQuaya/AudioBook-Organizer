@@ -90,7 +90,8 @@ def require_auth(f: Callable) -> Callable:
             
             logger.info(f"✅ User authenticated: {user['email']} ({user['id']})")
             
-            return f(*args, **kwargs)
+            # Pass current_user as the first argument to the decorated function
+            return f(user, *args, **kwargs)
             
         except AuthenticationError as e:
             logger.warning(f"Authentication failed: {e}")

@@ -334,10 +334,10 @@ def create_auth_routes() -> Blueprint:
     
     @auth_bp.route('/profile', methods=['GET'])
     @require_auth
-    def get_profile():
+    def get_profile(current_user):
         """Get user profile information"""
         try:
-            user = get_current_user()
+            user = current_user
             user_id = user['id']
             
             # Get Supabase service
@@ -366,10 +366,10 @@ def create_auth_routes() -> Blueprint:
     
     @auth_bp.route('/profile', methods=['PUT'])
     @require_auth
-    def update_profile():
+    def update_profile(current_user):
         """Update user profile information"""
         try:
-            user = get_current_user()
+            user = current_user
             user_id = user['id']
             
             data = request.get_json()
@@ -410,10 +410,10 @@ def create_auth_routes() -> Blueprint:
     
     @auth_bp.route('/credits', methods=['GET'])
     @require_auth
-    def get_credits():
+    def get_credits(current_user):
         """Get user's current credit balance"""
         try:
-            user = get_current_user()
+            user = current_user
             user_id = user['id']
             
             # Get Supabase service
@@ -437,10 +437,10 @@ def create_auth_routes() -> Blueprint:
     
     @auth_bp.route('/init-user', methods=['POST'])
     @require_auth
-    def initialize_user():
+    def initialize_user(current_user):
         """Initialize user profile and credits on first login"""
         try:
-            user = get_current_user()
+            user = current_user
             if not user:
                 return jsonify({
                     'error': 'Authentication required',
