@@ -8,6 +8,11 @@ import { removeHighlightFromText } from './sections.js';
 
 // Chapter Management - preserving exact logic from original
 export function createNewChapter() {
+    // Get current user info for attribution
+    const currentUser = window.authModule?.getCurrentUser();
+    const userId = currentUser?.id || 'anonymous';
+    const timestamp = new Date().toISOString();
+    
     const chapter = {
         id: Date.now(),
         name: `Chapter ${chapters.length + 1}`,
@@ -15,7 +20,11 @@ export function createNewChapter() {
         sections: [],
         collapsed: false,
         description: '',
-        totalDuration: 0
+        totalDuration: 0,
+        // NEW: User attribution for collaboration
+        createdBy: userId,
+        lastModifiedBy: userId,
+        lastModified: timestamp
     };
     addChapter(chapter);
     updateChaptersList();
@@ -24,7 +33,15 @@ export function createNewChapter() {
 export function updateChapterName(chapterId, newName) {
     const chapter = findChapter(chapterId);
     if (chapter) {
+        // Update name and track modification
         chapter.name = newName;
+        
+        // Update modification tracking
+        const currentUser = window.authModule?.getCurrentUser();
+        const userId = currentUser?.id || 'anonymous';
+        chapter.lastModifiedBy = userId;
+        chapter.lastModified = new Date().toISOString();
+        
         updateChaptersList();
     }
 }

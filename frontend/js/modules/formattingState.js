@@ -20,6 +20,11 @@ export class FormattingRange {
         const headingTypes = ['title', 'subtitle', 'section', 'subsection'];
         this.className = headingTypes.includes(type) ? `fmt-${type}` : `fmt-${type}${level > 1 ? `-${level}` : ''}`;
         this.data = data;
+        
+        // NEW: User attribution for collaboration
+        const currentUser = window.authModule?.getCurrentUser();
+        this.createdBy = currentUser?.id || 'anonymous';
+        this.createdAt = new Date().toISOString();
     }
 }
 
@@ -32,6 +37,11 @@ export class FormattingComment {
         this.author = author;
         this.timestamp = new Date().toISOString();
         this.resolved = false;
+        
+        // NEW: Enhanced user attribution for collaboration
+        const currentUser = window.authModule?.getCurrentUser();
+        this.createdBy = currentUser?.id || author || 'anonymous';
+        this.createdAt = this.timestamp;
     }
 }
 

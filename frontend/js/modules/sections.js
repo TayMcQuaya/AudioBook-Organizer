@@ -65,6 +65,11 @@ export function createSection() {
     }
     const colorIndex = currentColorIndex;
     
+    // Get current user info for attribution
+    const currentUser = window.authModule?.getCurrentUser();
+    const userId = currentUser?.id || 'anonymous';
+    const timestamp = new Date().toISOString();
+    
     // Create section object
     const section = {
         id: Date.now(),
@@ -72,7 +77,11 @@ export function createSection() {
         colorIndex: colorIndex,
         status: 'pending',
         name: `Section ${getNextSectionNumber(chapters[chapters.length - 1].id)}`,
-        chapterId: chapters[chapters.length - 1].id
+        chapterId: chapters[chapters.length - 1].id,
+        // NEW: User attribution for collaboration
+        createdBy: userId,
+        lastModifiedBy: userId,
+        lastModified: timestamp
     };
     
     // Create highlight span
@@ -332,7 +341,15 @@ export function updateSectionName(sectionId, newName) {
     for (const chapter of chapters) {
         const section = chapter.sections.find(s => s.id === sectionId);
         if (section) {
+            // Update name and track modification
             section.name = newName;
+            
+            // Update modification tracking
+            const currentUser = window.authModule?.getCurrentUser();
+            const userId = currentUser?.id || 'anonymous';
+            section.lastModifiedBy = userId;
+            section.lastModified = new Date().toISOString();
+            
             updateChaptersList();
             break;
         }

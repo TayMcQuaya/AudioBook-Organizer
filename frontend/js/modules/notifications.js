@@ -282,6 +282,11 @@ export function showConfirm(message, onConfirm, onCancel = null, confirmText = '
     // Remove any existing notification
     removeExistingNotification();
 
+    // Generate unique IDs for this dialog
+    const dialogId = `confirm-dialog-${Date.now()}`;
+    const confirmFuncName = `confirmAction_${Date.now()}`;
+    const cancelFuncName = `cancelConfirm_${Date.now()}`;
+
     // Create backdrop overlay
     const backdrop = document.createElement('div');
     backdrop.id = 'notification-backdrop';
@@ -291,18 +296,19 @@ export function showConfirm(message, onConfirm, onCancel = null, confirmText = '
     const notification = document.createElement('div');
     notification.id = 'custom-notification';
     notification.className = 'notification notification-confirm';
+    notification.dataset.dialogId = dialogId;
     
     notification.innerHTML = `
         <div class="notification-content">
             <div class="notification-header">
                 <div class="notification-icon">❓</div>
                 <div class="notification-title">Confirmation Required</div>
-                <button class="notification-close" onclick="cancelConfirm()">×</button>
+                <button class="notification-close" data-action="cancel">×</button>
             </div>
             <div class="notification-message">${message}</div>
             <div class="notification-actions">
-                <button class="notification-btn notification-btn-cancel" onclick="cancelConfirm()">${cancelText}</button>
-                <button class="notification-btn notification-btn-confirm" onclick="confirmAction()">${confirmText}</button>
+                <button class="notification-btn notification-btn-cancel" data-action="cancel">${cancelText}</button>
+                <button class="notification-btn notification-btn-confirm" data-action="confirm">${confirmText}</button>
             </div>
         </div>
     `;
@@ -321,22 +327,37 @@ export function showConfirm(message, onConfirm, onCancel = null, confirmText = '
         notification.classList.add('notification-show');
     }, 10);
     
-    // Make functions global for this dialog
-    window.confirmAction = function() {
-        closeNotification();
-        if (onConfirm) onConfirm();
-        cleanup();
-    };
+    // Add event listeners instead of global functions
+    function handleClick(e) {
+        const action = e.target.dataset.action;
+        if (action === 'confirm') {
+            closeNotification();
+            if (onConfirm) onConfirm();
+            cleanup();
+        } else if (action === 'cancel') {
+            closeNotification();
+            if (onCancel) onCancel();
+            cleanup();
+        }
+    }
     
-    window.cancelConfirm = function() {
-        closeNotification();
-        if (onCancel) onCancel();
-        cleanup();
-    };
+    // Add click listeners to all buttons
+    notification.addEventListener('click', handleClick);
+    
+    // Handle escape key
+    function handleKeydown(e) {
+        if (e.key === 'Escape') {
+            closeNotification();
+            if (onCancel) onCancel();
+            cleanup();
+        }
+    }
+    
+    document.addEventListener('keydown', handleKeydown);
     
     function cleanup() {
-        delete window.confirmAction;
-        delete window.cancelConfirm;
+        notification.removeEventListener('click', handleClick);
+        document.removeEventListener('keydown', handleKeydown);
     }
 }
 
