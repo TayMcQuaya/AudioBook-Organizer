@@ -139,17 +139,90 @@ function handleToolbarClick(e) {
     }
 }
 
+// Clear heading formatting from selected text
+function clearHeadingFormatting() {
+    const selection = window.getSelection();
+    if (!selection.rangeCount) {
+        console.log('🔧 FORMATTING TOOLBAR: No text selected for clearing formatting');
+        return;
+    }
+    
+    const range = selection.getRangeAt(0);
+    const selectedText = range.toString();
+    
+    if (!selectedText.trim()) {
+        console.log('🔧 FORMATTING TOOLBAR: No text selected for clearing formatting');
+        return;
+    }
+    
+    const bookContent = document.getElementById('bookContent');
+    if (!bookContent) {
+        console.error('Book content element not found');
+        return;
+    }
+    
+    // Calculate positions in the plain text content
+    const startPos = getPositionInText(bookContent, range.startContainer, range.startOffset);
+    const endPos = getPositionInText(bookContent, range.endContainer, range.endOffset);
+    
+    // Find overlapping heading formats
+    const headingTypes = ['title', 'subtitle', 'section', 'subsection'];
+    const overlappingHeadings = formattingData.ranges.filter(r => 
+        headingTypes.includes(r.type) && !(r.end <= startPos || r.start >= endPos)
+    );
+    
+    console.log(`🔧 FORMATTING TOOLBAR: Found ${overlappingHeadings.length} heading formats to remove`);
+    
+    // Remove all heading formatting in the selected range
+    overlappingHeadings.forEach(range => {
+        console.log(`🔧 FORMATTING TOOLBAR: Removing ${range.type} formatting`);
+        removeFormattingRange(range.id);
+    });
+    
+    if (overlappingHeadings.length > 0) {
+        // Apply DOM changes after removing formatting
+        applyFormattingToDOM();
+        
+        // Preserve selection after clearing formatting
+        setTimeout(() => {
+            try {
+                const { startNode, startOffset, endNode, endOffset } = 
+                    findTextNodesAtPositions(bookContent, startPos, endPos);
+                
+                if (startNode && endNode) {
+                    const newRange = document.createRange();
+                    newRange.setStart(startNode, startOffset);
+                    newRange.setEnd(endNode, endOffset);
+                    
+                    const newSelection = window.getSelection();
+                    newSelection.removeAllRanges();
+                    newSelection.addRange(newRange);
+                    
+                    console.log('🔧 FORMATTING TOOLBAR: Selection preserved after clearing formatting');
+                }
+            } catch (error) {
+                console.error('🔧 FORMATTING TOOLBAR: Error preserving selection after clearing:', error);
+            }
+        }, 50);
+    } else {
+        console.log('🔧 FORMATTING TOOLBAR: No heading formatting found to clear');
+    }
+}
+
 // Handle select dropdown changes
 function handleToolbarChange(e) {
     const select = e.target;
     if (!select.classList.contains('heading-select')) return;
     
     const format = select.value || 'normal';
+    console.log('🎯 HEADING SELECTION: Format selected:', format);
+    
     if (format === 'normal') {
-        // TODO: Implement normal text formatting (remove heading styles)
-        console.log('Normal text selected - clear heading formatting');
+        console.log('🔧 FORMATTING TOOLBAR: Normal text selected - clearing heading formatting');
+        clearHeadingFormatting();
     } else {
         const level = getHeadingLevel(format);
+        console.log('🎯 HEADING SELECTION: Applying format:', format, 'with level:', level);
         applyFormatting(format, level);
     }
 }
@@ -263,56 +336,58 @@ function applyFormatting(type, level = 1) {
         return;
     }
     
-    // Check if the selected text already has this formatting
-    const existingFormats = getFormattingAtPosition(startPos);
-    const existingFormat = existingFormats.find(f => 
-        f.type === type && 
-        Math.abs(f.start - startPos) <= 1 && 
-        Math.abs(f.end - endPos) <= 1
+    // Get overlapping formatting ranges
+    const overlappingRanges = formattingData.ranges.filter(r => 
+        !(r.end <= startPos || r.start >= endPos) // Any overlap
     );
     
-    if (existingFormat) {
-        // Remove the existing formatting
+    console.log(`🔧 FORMATTING TOOLBAR: Found ${overlappingRanges.length} overlapping ranges`);
+    
+    // Check if we're trying to apply the same format that's already there
+    const sameTypeFormat = overlappingRanges.find(f => f.type === type);
+    if (sameTypeFormat) {
         console.log(`🔧 FORMATTING TOOLBAR: Removing existing ${type} formatting`);
+        removeFormattingRange(sameTypeFormat.id);
         
-        // Store original selection details before DOM manipulation (for removal case)
-        const originalStartContainer = range.startContainer;
-        const originalStartOffset = range.startOffset;
-        const originalEndContainer = range.endContainer;
-        const originalEndOffset = range.endOffset;
-        const originalSelectedText = selectedText;
+        // Apply DOM changes after removing formatting
+        applyFormattingToDOM();
         
-        const removed = removeFormattingRange(existingFormat.id);
-        if (removed) {
-            applyFormattingToDOM();
-            
-            // FIXED: Preserve selection after removing formatting too
-            setTimeout(() => {
-                try {
-                    // Try to restore selection at the same positions after removing formatting
-                    const { startNode, startOffset, endNode, endOffset } = 
-                        findTextNodesAtPositions(bookContent, startPos, endPos);
+        // Preserve selection after removing formatting
+        setTimeout(() => {
+            try {
+                const { startNode, startOffset, endNode, endOffset } = 
+                    findTextNodesAtPositions(bookContent, startPos, endPos);
+                
+                if (startNode && endNode) {
+                    const newRange = document.createRange();
+                    newRange.setStart(startNode, startOffset);
+                    newRange.setEnd(endNode, endOffset);
                     
-                    if (startNode && endNode) {
-                        const newRange = document.createRange();
-                        newRange.setStart(startNode, startOffset);
-                        newRange.setEnd(endNode, endOffset);
-                        
-                        const newSelection = window.getSelection();
-                        newSelection.removeAllRanges();
-                        newSelection.addRange(newRange);
-                        
-                        console.log('🔧 FORMATTING TOOLBAR: Selection preserved after removing formatting');
-                    } else {
-                        console.log('🔧 FORMATTING TOOLBAR: Could not restore selection after removing formatting');
-                    }
-                } catch (error) {
-                    console.error('🔧 FORMATTING TOOLBAR: Error preserving selection after removal:', error);
+                    const newSelection = window.getSelection();
+                    newSelection.removeAllRanges();
+                    newSelection.addRange(newRange);
+                    
+                    console.log('🔧 FORMATTING TOOLBAR: Selection preserved after removing formatting');
                 }
-            }, 50);
-        }
+            } catch (error) {
+                console.error('🔧 FORMATTING TOOLBAR: Error preserving selection after removal:', error);
+            }
+        }, 50);
         return;
     }
+    
+    // For heading formats, remove any existing heading formats (only one heading type allowed)
+    const headingTypes = ['title', 'subtitle', 'section', 'subsection'];
+    if (headingTypes.includes(type)) {
+        const existingHeadings = overlappingRanges.filter(r => headingTypes.includes(r.type));
+        existingHeadings.forEach(range => {
+            console.log(`🔧 FORMATTING TOOLBAR: Removing existing heading ${range.type} to apply new heading ${type}`);
+            removeFormattingRange(range.id);
+        });
+    }
+    
+    // For text formats (bold, italic, underline), we can combine them with headings
+    // So we don't remove overlapping heading formats when applying text formats
     
     console.log(`🔧 FORMATTING TOOLBAR: Applying ${type} formatting to text "${selectedText.substring(0, 50)}..." at positions ${startPos}-${endPos}`);
     console.log('🔧 FORMATTING TOOLBAR: Total book content length:', bookContent.textContent.length);
@@ -521,6 +596,7 @@ function updateToolbarButtons() {
             ['title', 'subtitle', 'section', 'subsection'].includes(f)
         );
         select.value = headingFormat || '';
+        console.log('Updated dropdown to:', headingFormat || 'normal');
     }
 }
 

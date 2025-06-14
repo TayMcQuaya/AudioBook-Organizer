@@ -295,6 +295,41 @@ document.addEventListener('DOMContentLoaded', () => {
     setTimeout(window.verifyCSSLoading, 1000);
 });
 
+// Formatting system test function (simplified)
+window.testFormattingStyles = function() {
+    console.log('🧪 Testing formatting styles...');
+    
+    const bookContent = document.getElementById('bookContent');
+    if (!bookContent) {
+        console.log('❌ No book content found');
+        return;
+    }
+    
+    // Test each formatting type
+    const testFormats = ['fmt-title', 'fmt-subtitle', 'fmt-section', 'fmt-subsection', 'fmt-bold', 'fmt-italic', 'fmt-underline'];
+    
+    testFormats.forEach(className => {
+        const testEl = document.createElement('div');
+        testEl.className = className;
+        testEl.textContent = `Test ${className}`;
+        testEl.style.position = 'absolute';
+        testEl.style.left = '-9999px';
+        bookContent.appendChild(testEl);
+        
+        const computedStyle = window.getComputedStyle(testEl);
+        console.log(`✅ ${className}:`, {
+            fontSize: computedStyle.fontSize,
+            fontWeight: computedStyle.fontWeight,
+            fontStyle: computedStyle.fontStyle,
+            textDecoration: computedStyle.textDecoration
+        });
+        
+        testEl.remove();
+    });
+    
+    console.log('🧪 Formatting test complete');
+};
+
 initialize();
 
 export { initialize, cleanup };

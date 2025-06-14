@@ -1,55 +1,87 @@
 /* AudioBook Organizer - Formatting Styles */
 
-/* SIMPLE CSS LOAD TEST */
 #bookContent {
     position: relative;
 }
 
-/* DEBUGGING: CSS Load Test Marker - Maximum specificity to override everything */
-html body::after,
-html[data-theme] body::after,
-html[data-theme="dark"] body::after,
-html[data-theme="light"] body::after {
-    content: "FORMATTING.CSS LOADED ✅" !important;
-    position: fixed !important;
-    top: 0 !important;
-    right: 0 !important;
-    background: lime !important;
-    color: black !important;
-    padding: 10px !important;
-    z-index: 99999 !important;
-    font-size: 14px !important;
+/* ========================================
+   HEADING FORMATS (H1, H2, H3, H4)
+   ======================================== */
+
+/* H1 - Main Title (matches HTML h1 standard: 2em, bold) */
+[data-formatting-id].fmt-title,
+.fmt-title {
+    display: block !important;
+    font-size: 2em !important;
     font-weight: bold !important;
-    font-family: monospace !important;
-    border: 3px solid red !important;
+    margin-block: 0.67em !important;
+    line-height: 1.2 !important;
+    color: inherit !important;
 }
 
-/* DEBUGGING: Ultra-specific test with maximum override power */
-html body #bookContent.book-content,
-html body div#bookContent.book-content,
-html body .app-body #bookContent.book-content,
-html body .app-body div#bookContent.book-content,
-html[data-theme] body #bookContent.book-content,
-html[data-theme="dark"] body #bookContent.book-content,
-html[data-theme="light"] body #bookContent.book-content,
-html[data-theme] body .app-body #bookContent.book-content,
-html[data-theme="dark"] body .app-body #bookContent.book-content,
-html[data-theme="light"] body .app-body #bookContent.book-content {
-    background: red !important;
-    border: 10px solid blue !important;
-    color: white !important;
-    font-size: 20px !important;
+/* H2 - Subtitle (matches HTML h2 standard: 1.5em, bold) */
+[data-formatting-id].fmt-subtitle,
+.fmt-subtitle {
+    display: block !important;
+    font-size: 1.5em !important;
+    font-weight: bold !important;
+    margin-block: 0.83em !important;
+    line-height: 1.3 !important;
+    color: inherit !important;
 }
 
-/* DEBUGGING: Super general test if previous doesn't work */
-html body .book-content,
-html[data-theme] body .book-content,
-html[data-theme="dark"] body .book-content,
-html[data-theme="light"] body .book-content {
-    background: red !important;
-    border: 10px solid blue !important;
-    color: white !important;
-    font-size: 20px !important;
+/* H3 - Section (matches HTML h3 standard: 1.17em, bold) */
+[data-formatting-id].fmt-section,
+.fmt-section {
+    display: block !important;
+    font-size: 1.17em !important;
+    font-weight: bold !important;
+    margin-block: 1em !important;
+    line-height: 1.4 !important;
+    color: inherit !important;
+}
+
+/* H4 - Subsection (matches HTML h4 standard: 1em, bold) */
+[data-formatting-id].fmt-subsection,
+.fmt-subsection {
+    display: block !important;
+    font-size: 1em !important;
+    font-weight: bold !important;
+    margin-block: 1.33em !important;
+    line-height: 1.4 !important;
+    color: inherit !important;
+}
+
+/* ========================================
+   COMBINED FORMATTING STYLES
+   Support for bold/italic/underline on headings
+   ======================================== */
+
+/* Bold formatting - can be combined with headings */
+.fmt-bold,
+.fmt-title.fmt-bold,
+.fmt-subtitle.fmt-bold,
+.fmt-section.fmt-bold,
+.fmt-subsection.fmt-bold {
+    font-weight: bold !important;
+}
+
+/* Italic formatting - can be combined with headings */
+.fmt-italic,
+.fmt-title.fmt-italic,
+.fmt-subtitle.fmt-italic,
+.fmt-section.fmt-italic,
+.fmt-subsection.fmt-italic {
+    font-style: italic !important;
+}
+
+/* Underline formatting - can be combined with headings */
+.fmt-underline,
+.fmt-title.fmt-underline,
+.fmt-subtitle.fmt-underline,
+.fmt-section.fmt-underline,
+.fmt-subsection.fmt-underline {
+    text-decoration: underline !important;
 }
 
 /* ========================================
@@ -145,69 +177,24 @@ html[data-theme="light"] body .book-content {
    TEXT FORMATTING STYLES
    ======================================== */
 
-/* Text Formatting Styles - Clean without background colors */
+/* Text Formatting Styles */
+[data-formatting-id].fmt-bold,
 .fmt-bold {
     font-weight: bold !important;
 }
 
+[data-formatting-id].fmt-italic,
 .fmt-italic {
     font-style: italic !important;
 }
 
+[data-formatting-id].fmt-underline,
 .fmt-underline {
     text-decoration: underline !important;
 }
 
-.fmt-title {
-    font-size: 2.5em !important;
-    font-weight: bold !important;
-    margin: 1.5em 0 1em 0 !important;
-    line-height: 1.2 !important;
-    color: #2c3e50 !important;
-    border-bottom: 3px solid #4CAF50 !important;
-    padding-bottom: 0.3em !important;
-    display: block !important;
-    background-color: rgba(76, 175, 80, 0.1) !important;
-    padding: 0.2em 0.5em !important;
-    border-radius: 5px !important;
-}
-
-.fmt-subtitle {
-    font-size: 2em !important;
-    font-weight: bold !important;
-    margin: 1.2em 0 0.8em 0 !important;
-    line-height: 1.3 !important;
-    color: #34495e !important;
-    display: block !important;
-    background-color: rgba(52, 73, 94, 0.1) !important;
-    padding: 0.2em 0.5em !important;
-    border-radius: 5px !important;
-}
-
-.fmt-section {
-    font-size: 1.5em !important;
-    font-weight: 600 !important;
-    margin: 1em 0 0.6em 0 !important;
-    line-height: 1.4 !important;
-    color: #4CAF50 !important;
-    display: block !important;
-    background-color: rgba(76, 175, 80, 0.1) !important;
-    padding: 0.2em 0.5em !important;
-    border-radius: 5px !important;
-}
-
-.fmt-subsection {
-    font-size: 1.2em !important;
-    font-weight: 600 !important;
-    margin: 0.8em 0 0.5em 0 !important;
-    line-height: 1.4 !important;
-    color: #5D6D7E !important;
-    display: block !important;
-    background-color: rgba(93, 109, 126, 0.1) !important;
-    padding: 0.2em 0.5em !important;
-    border-radius: 5px !important;
-}
-
+/* Quote formatting */
+[data-formatting-id].fmt-quote,
 .fmt-quote {
     display: block !important;
     margin: 1em 2em !important;
@@ -453,10 +440,7 @@ html[data-theme="light"] body .book-content {
 .book-content.edit-mode .fmt-subtitle,
 .book-content.edit-mode .fmt-section,
 .book-content.edit-mode .fmt-subsection {
-    border: 1px dashed transparent;
-    padding: 4px 6px;
-    margin: 0.5em 0;
-    border-radius: 4px;
+    /* Clean edit mode - no visual indicators */
     transition: all 0.2s ease;
 }
 
@@ -464,8 +448,8 @@ html[data-theme="light"] body .book-content {
 .book-content.edit-mode .fmt-subtitle:hover,
 .book-content.edit-mode .fmt-section:hover,
 .book-content.edit-mode .fmt-subsection:hover {
-    border-color: #4CAF50;
-    background: rgba(76, 175, 80, 0.05);
+    /* Subtle hover effect - just cursor change */
+    cursor: text;
 }
 
 .book-content.edit-mode .fmt-quote {
@@ -619,7 +603,10 @@ html[data-theme="light"] body .book-content {
     
     .fmt-title,
     .fmt-subtitle,
-    .fmt-section {
+    .fmt-section,
+    span[data-formatting-id].fmt-title,
+    span[data-formatting-id].fmt-subtitle,
+    span[data-formatting-id].fmt-section {
         border-bottom-color: #000;
     }
     
@@ -655,7 +642,11 @@ html[data-theme="light"] body .book-content {
     .fmt-title,
     .fmt-subtitle,
     .fmt-section,
-    .fmt-subsection {
+    .fmt-subsection,
+    span[data-formatting-id].fmt-title,
+    span[data-formatting-id].fmt-subtitle,
+    span[data-formatting-id].fmt-section,
+    span[data-formatting-id].fmt-subsection {
         break-after: avoid;
         color: #000 !important;
     }
@@ -667,45 +658,4 @@ html[data-theme="light"] body .book-content {
     }
 }
 
-/* ========================================
-   ADVANCED FORMATTING STYLES
-   ======================================== */
-
-span[data-formatting-id].fmt-section,
-.fmt-section,
-*[data-formatting-id].fmt-section {
-    display: block !important;
-    font-size: 1.8em !important;
-    font-weight: 700 !important;
-    background-color: #e3f2fd !important;
-    border: 3px solid #2196f3 !important;
-    color: #0d47a1 !important;
-    margin: 0.8em 0 !important;
-    padding: 12px !important;
-}
-
-span[data-formatting-id].fmt-subsection,
-.fmt-subsection,
-*[data-formatting-id].fmt-subsection {
-    display: block !important;
-    font-size: 1.4em !important;
-    font-weight: 600 !important;
-    background-color: #f3e5f5 !important;
-    border: 2px solid #9c27b0 !important;
-    color: #4a148c !important;
-    margin: 0.6em 0 !important;
-    padding: 10px !important;
-}
-
-span[data-formatting-id].fmt-quote,
-.fmt-quote,
-*[data-formatting-id].fmt-quote {
-    display: block !important;
-    margin: 1em 2em !important;
-    padding: 1em 1.5em !important;
-    background: #f9f9f9 !important;
-    border-left: 4px solid #4CAF50 !important;
-    font-style: italic !important;
-    color: #555 !important;
-    position: relative !important;
-} 
+/* Duplicate styles removed - consolidated above */ 

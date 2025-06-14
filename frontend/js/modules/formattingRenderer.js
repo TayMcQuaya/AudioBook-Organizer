@@ -110,88 +110,114 @@ function applyFormattingRanges() {
     const bookContent = document.getElementById('bookContent');
     if (!bookContent) return;
     
-    // Sort ranges by start position and length (shorter ranges first)
-    const sortedRanges = [...formattingData.ranges].sort((a, b) => {
-        // First sort by start position
-        if (a.start !== b.start) {
-            return a.start - b.start;
+    // Group overlapping ranges to combine their CSS classes
+    const rangeGroups = groupOverlappingRanges(formattingData.ranges);
+    
+    // Apply each group as a single formatted element
+    rangeGroups.forEach(group => {
+        try {
+            applyFormattingGroup(group, bookContent);
+        } catch (error) {
+            console.warn('Failed to apply formatting group:', group, error);
         }
-        // For same start position, sort by length (shorter first)
-        const aLen = a.end - a.start;
-        const bLen = b.end - b.start;
-        return aLen - bLen;
+    });
+}
+
+// Group overlapping ranges so we can combine their CSS classes
+function groupOverlappingRanges(ranges) {
+    if (!ranges.length) return [];
+    
+    // Sort ranges by start position
+    const sortedRanges = [...ranges].sort((a, b) => a.start - b.start);
+    const groups = [];
+    
+    for (const range of sortedRanges) {
+        // Find if this range overlaps with any existing group
+        let addedToGroup = false;
+        
+        for (const group of groups) {
+            // Check if range overlaps with this group
+            const groupStart = Math.min(...group.ranges.map(r => r.start));
+            const groupEnd = Math.max(...group.ranges.map(r => r.end));
+            
+            if (!(range.end <= groupStart || range.start >= groupEnd)) {
+                // Overlapping - add to this group
+                group.ranges.push(range);
+                addedToGroup = true;
+                break;
+            }
+        }
+        
+        if (!addedToGroup) {
+            // Create new group
+            groups.push({
+                ranges: [range],
+                start: range.start,
+                end: range.end
+            });
+        }
+    }
+    
+    // Update group boundaries after adding all ranges
+    groups.forEach(group => {
+        group.start = Math.min(...group.ranges.map(r => r.start));
+        group.end = Math.max(...group.ranges.map(r => r.end));
     });
     
-    // Create a map to track formatted regions
-    const formattedRegions = new Map();
+    return groups;
+}
+
+// Apply a group of overlapping ranges as a single element with combined CSS classes
+function applyFormattingGroup(group, bookContent) {
+    const { startNode, startOffset, endNode, endOffset } = 
+        findTextNodes(bookContent, group.start, group.end);
     
-    sortedRanges.forEach(range => {
-        try {
-            // Find the text nodes that contain this range
-            const { startNode, startOffset, endNode, endOffset } = 
-                findTextNodes(bookContent, range.start, range.end);
-            
-            if (!startNode || !endNode) {
-                console.warn('Could not find text nodes for range:', range);
-                return;
-            }
-            
-            // Create the formatting element
-            const formattingElement = document.createElement('span');
-            formattingElement.className = range.className;
-            formattingElement.dataset.formattingId = range.id;
-            formattingElement.dataset.formattingType = range.type;
-            
-            // Create range and get content
-            const domRange = document.createRange();
-            domRange.setStart(startNode, startOffset);
-            domRange.setEnd(endNode, endOffset);
-            
-            // Check if this range overlaps with existing formatting
-            const existingFormatting = Array.from(formattedRegions.entries())
-                .filter(([key, value]) => {
-                    const [existingStart, existingEnd] = key.split('-').map(Number);
-                    return !(existingEnd <= range.start || existingStart >= range.end);
-                });
-            
-            if (existingFormatting.length > 0) {
-                // This range overlaps with existing formatting
-                // We need to preserve the existing formatting
-                const selectedContent = domRange.cloneContents();
-                const formattedContent = selectedContent.querySelectorAll('[data-formatting-id]');
-                
-                // Apply our new formatting while preserving existing ones
-                formattedContent.forEach(existing => {
-                    const wrapper = document.createElement('span');
-                    wrapper.className = range.className;
-                    wrapper.dataset.formattingId = range.id;
-                    wrapper.dataset.formattingType = range.type;
-                    existing.parentNode.insertBefore(wrapper, existing);
-                    wrapper.appendChild(existing);
-                });
-                
-                formattingElement.appendChild(selectedContent);
-            } else {
-                // No overlapping formatting, just set the text content
-                formattingElement.textContent = domRange.toString();
-            }
-            
-            // Insert the formatted element
-            domRange.deleteContents();
-            domRange.insertNode(formattingElement);
-            
-            // Add to formatted regions map
-            formattedRegions.set(`${range.start}-${range.end}`, range);
-            
-            console.log('Applied formatting:', {
-                type: range.type,
-                start: range.start,
-                end: range.end,
-                overlapping: existingFormatting.length
-            });
-        } catch (error) {
-            console.warn('Failed to apply formatting range:', range, error);
-        }
+    if (!startNode || !endNode) {
+        console.warn('Could not find text nodes for group:', group);
+        return;
+    }
+    
+    // Determine element type - use div if any range is block-level
+    const blockLevelTypes = ['title', 'subtitle', 'section', 'subsection', 'quote'];
+    const hasBlockLevel = group.ranges.some(r => blockLevelTypes.includes(r.type));
+    const elementType = hasBlockLevel ? 'div' : 'span';
+    
+    // Combine CSS classes from all ranges in the group
+    const cssClasses = group.ranges.map(r => r.className).join(' ');
+    
+    // Create the combined formatting element
+    const formattingElement = document.createElement(elementType);
+    formattingElement.className = cssClasses;
+    
+    // Set data attributes for all ranges (use primary range for main attributes)
+    const primaryRange = group.ranges[0]; // First range becomes primary
+    formattingElement.dataset.formattingId = primaryRange.id;
+    formattingElement.dataset.formattingType = primaryRange.type;
+    
+    // Add additional range IDs for tracking
+    formattingElement.dataset.allRangeIds = group.ranges.map(r => r.id).join(',');
+    formattingElement.dataset.allRangeTypes = group.ranges.map(r => r.type).join(',');
+    
+    // Create range and replace content
+    const domRange = document.createRange();
+    domRange.setStart(startNode, startOffset);
+    domRange.setEnd(endNode, endOffset);
+    
+    const selectedText = domRange.toString();
+    formattingElement.textContent = selectedText;
+    
+    // Insert the formatted element
+    domRange.deleteContents();
+    domRange.insertNode(formattingElement);
+    
+    console.log('Applied combined formatting:', {
+        rangeCount: group.ranges.length,
+        types: group.ranges.map(r => r.type),
+        start: group.start,
+        end: group.end,
+        elementType: elementType,
+        cssClasses: cssClasses,
+        textContent: selectedText.substring(0, 50) + '...'
     });
 }
 

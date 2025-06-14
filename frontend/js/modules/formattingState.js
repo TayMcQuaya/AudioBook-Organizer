@@ -15,7 +15,10 @@ export class FormattingRange {
         this.end = end;
         this.type = type;
         this.level = level;
-        this.className = `fmt-${type}${level > 1 ? `-${level}` : ''}`;
+        // For heading types, don't append level to className since CSS classes are predefined
+        // For other types (like future multi-level formatting), keep the level
+        const headingTypes = ['title', 'subtitle', 'section', 'subsection'];
+        this.className = headingTypes.includes(type) ? `fmt-${type}` : `fmt-${type}${level > 1 ? `-${level}` : ''}`;
         this.data = data;
     }
 }
