@@ -4,6 +4,7 @@ import { setBookText, clearChapters } from './state.js';
 import { updateChaptersList, updateSelectionColor } from './ui.js';
 import { initializeSmartSelect } from './smartSelect.js';
 import { showError } from './notifications.js';
+import { clearFormatting } from './formattingState.js';
 
 // File validation constants
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
@@ -67,6 +68,9 @@ function handleUploadSuccess(text) {
     clearChapters();
     updateChaptersList();
     updateSelectionColor();
+    
+    // Clear any existing formatting
+    clearFormatting();
     
     // Initialize smart select functionality
     initializeSmartSelect();

@@ -6,6 +6,7 @@ import { getNodeOffset, findTextNodeWithContent } from '../utils/helpers.js';
 import { createBlob, createObjectURL, revokeObjectURL, createDownloadLink } from '../utils/dom.js';
 import { showError, showSuccess } from './notifications.js';
 import { initializeSmartSelect } from './smartSelect.js';
+import { formattingData, setFormattingData, clearFormatting } from './formattingState.js';
 
 // Save/Load functions - preserving exact logic from original
 export function saveProgress() {
@@ -24,8 +25,9 @@ export function saveProgress() {
         chapters: chapters,
         currentColorIndex: currentColorIndex,
         highlights: highlights,
+        formattingData: formattingData,
         timestamp: new Date().toISOString(),
-        version: '1.0'
+        version: '1.1'
     };
 
     // Create and download the JSON file
@@ -61,6 +63,15 @@ export async function loadProgress(input) {
                 // Restore color index
                 if (projectData.currentColorIndex !== undefined) {
                     setCurrentColorIndex(projectData.currentColorIndex);
+                }
+
+                // Restore formatting data
+                if (projectData.formattingData) {
+                    setFormattingData(projectData.formattingData);
+                    console.log(`Loaded formatting data: ${projectData.formattingData.ranges?.length || 0} ranges, ${projectData.formattingData.comments?.length || 0} comments`);
+                } else {
+                    clearFormatting();
+                    console.log('No formatting data in project file');
                 }
 
                 // Restore highlights with improved logic
@@ -171,6 +182,16 @@ export async function loadProgress(input) {
                 
                 // Reinitialize smart select functionality
                 initializeSmartSelect();
+                
+                // Apply formatting if it exists
+                if (projectData.formattingData && (projectData.formattingData.ranges?.length > 0 || projectData.formattingData.comments?.length > 0)) {
+                    import('./formattingRenderer.js').then(({ applyFormattingToDOM }) => {
+                        applyFormattingToDOM();
+                        console.log('Applied formatting to loaded project');
+                    }).catch(error => {
+                        console.error('Error applying formatting after load:', error);
+                    });
+                }
                 
                 // Show success message
                 showSuccess('📂 Project loaded successfully!');

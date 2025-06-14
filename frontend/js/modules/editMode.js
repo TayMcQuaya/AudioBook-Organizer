@@ -6,6 +6,7 @@ import { showSuccess, showInfo, showWarning } from './notifications.js';
 // Edit mode state
 let isEditMode = false;
 let originalContent = ''; // Track original content when entering edit mode
+let originalFormattingData = null; // Track original formatting data when entering edit mode
 
 // Edit protection event handlers
 let protectionHandlers = {
@@ -203,8 +204,8 @@ export async function toggleEditMode() {
     console.log('Toggling edit mode. Current state:', isEditMode ? 'EDIT' : 'VIEW');
     
     if (isEditMode) {
-        // Exiting Edit Mode - check for changes
-        const currentContent = bookContent.textContent;
+        // Exiting Edit Mode - check for changes (compare HTML to preserve formatting)
+        const currentContent = bookContent.innerHTML;
         const hasChanges = currentContent !== originalContent;
         
         if (hasChanges) {
@@ -215,14 +216,30 @@ export async function toggleEditMode() {
                 // User cancelled, stay in edit mode
                 return;
             } else if (choice === 'save') {
-                // Save changes
-                setBookText(currentContent);
+                // Save changes (preserve formatting)
+                setBookText(bookContent.textContent); // Save plain text for state
                 exitEditMode();
                 showSuccess('✅ Changes saved successfully! View mode enabled.');
             } else if (choice === 'discard') {
-                // Discard changes - restore original content
-                bookContent.textContent = originalContent;
-                setBookText(originalContent);
+                // Discard changes - restore original content AND clear formatting data
+                bookContent.innerHTML = originalContent;
+                setBookText(bookContent.textContent); // Update state with plain text
+                
+                // FIXED: Restore original formatting data when discarding changes
+                try {
+                    const { setFormattingData } = await import('./formattingState.js');
+                    if (originalFormattingData) {
+                        setFormattingData(originalFormattingData);
+                        console.log('✅ Original formatting data restored when discarding changes');
+                    } else {
+                        const { clearFormatting } = await import('./formattingState.js');
+                        clearFormatting();
+                        console.log('✅ Formatting data cleared when discarding changes (no original data)');
+                    }
+                } catch (error) {
+                    console.error('Error restoring original formatting data:', error);
+                }
+                
                 exitEditMode();
                 showWarning('🗑️ Changes discarded! Original content restored and view mode enabled.');
             }
@@ -233,14 +250,14 @@ export async function toggleEditMode() {
         }
     } else {
         // Entering Edit Mode
-        enterEditMode();
+        await enterEditMode();
     }
     
     console.log(`Edit mode: ${isEditMode ? 'ON' : 'OFF'}`);
 }
 
 // Enter edit mode
-function enterEditMode() {
+async function enterEditMode() {
     const bookContent = document.getElementById('bookContent');
     const toggleBtn = document.getElementById('toggleEditBtn');
     const btnIcon = toggleBtn.querySelector('i');
@@ -248,8 +265,18 @@ function enterEditMode() {
     
     isEditMode = true;
     
-    // Store original content when entering edit mode
-    originalContent = bookContent.textContent;
+    // Store original content when entering edit mode (preserve formatting)
+    originalContent = bookContent.innerHTML;
+    
+    // FIXED: Store original formatting data to restore on discard
+    try {
+        const { formattingData } = await import('./formattingState.js');
+        originalFormattingData = JSON.parse(JSON.stringify(formattingData)); // Deep copy
+        console.log('✅ Original formatting data stored');
+    } catch (error) {
+        console.error('Error storing original formatting data:', error);
+        originalFormattingData = null;
+    }
     
     // Update UI
     bookContent.classList.add('edit-mode');
@@ -260,10 +287,44 @@ function enterEditMode() {
     // Remove edit protection
     removeEditProtection();
     
+    // FIXED: Synchronous formatting initialization with proper error handling
+    try {
+        // Show formatting toolbar
+        const { showFormattingToolbar } = await import('./formattingToolbar.js');
+        showFormattingToolbar();
+        console.log('✅ Formatting toolbar shown');
+        
+        // Apply any existing formatting
+        const { applyFormattingToDOM } = await import('./formattingRenderer.js');
+        applyFormattingToDOM();
+        console.log('✅ Formatting applied to DOM');
+        
+        // Initialize formatting shortcuts if not already done
+        const { initializeFormattingShortcuts, initializeSelectionTracking } = await import('./formattingToolbar.js');
+        initializeFormattingShortcuts();
+        initializeSelectionTracking();
+        console.log('✅ Formatting shortcuts initialized');
+        
+        // Log debugging info
+        const { logFormattingState } = await import('./formattingState.js');
+        logFormattingState();
+        
+        // DEBUGGING: Force CSS test
+        setTimeout(() => {
+            console.log('🔍 DEBUGGING: Book content classes:', bookContent.className);
+            console.log('🔍 DEBUGGING: Book content computed styles:', window.getComputedStyle(bookContent));
+            console.log('🔍 DEBUGGING: Formatting elements in DOM:', bookContent.querySelectorAll('[data-formatting-id]').length);
+        }, 100);
+        
+    } catch (error) {
+        console.error('❌ Error initializing formatting in edit mode:', error);
+        // Continue with basic edit mode even if formatting fails
+    }
+    
     // Focus the content area
     bookContent.focus();
     
-    showInfo('📝 Edit mode enabled! You can now modify the book text.');
+    showInfo('📝 Edit mode enabled! You can now modify the book text and apply formatting.');
 }
 
 // Exit edit mode
@@ -281,11 +342,19 @@ function exitEditMode() {
     btnIcon.textContent = '👁';
     btnText.textContent = 'View Mode';
     
+    // Hide formatting toolbar
+    import('./formattingToolbar.js').then(({ hideFormattingToolbar }) => {
+        hideFormattingToolbar();
+    }).catch(error => {
+        console.error('Error hiding formatting toolbar:', error);
+    });
+    
     // Re-apply edit protection
     applyEditProtection();
     
-    // Clear original content
+    // Clear original content and formatting data
     originalContent = '';
+    originalFormattingData = null;
 }
 
 // Track if we've already shown the warning to avoid spam

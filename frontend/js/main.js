@@ -86,6 +86,16 @@ import {
     cleanupTextSelection 
 } from './modules/textSelection.js';
 
+import { 
+    initializeFormattingShortcuts,
+    initializeSelectionTracking,
+    initializeToolbarPositioning
+} from './modules/formattingToolbar.js';
+
+import { 
+    initializeCommentsSystem
+} from './modules/commentsSystem.js';
+
 // Make functions globally available for HTML onclick handlers
 window.createNewChapter = createNewChapter;
 window.updateChapterName = updateChapterName;
@@ -126,6 +136,69 @@ window.showExportModal = function() {
     }, 100);
 };
 
+// DEBUGGING: Add formatting diagnostics to global scope
+window.debugFormatting = function() {
+    import('./modules/formattingState.js').then(({ runFormattingSystemDiagnostics }) => {
+        runFormattingSystemDiagnostics();
+    }).catch(error => {
+        console.error('Could not load formatting diagnostics:', error);
+    });
+};
+
+// DEBUGGING: Quick test function
+window.testFormatting = function() {
+    console.log('🧪 QUICK FORMATTING TEST:');
+    
+    // Check if we're in edit mode
+    if (!getEditMode()) {
+        console.log('   - Not in edit mode. Please enter edit mode first.');
+        return;
+    }
+    
+    // Try to select some text and apply formatting
+    const bookContent = document.getElementById('bookContent');
+    if (!bookContent || bookContent.textContent.length < 20) {
+        console.log('   - Need more text content to test.');
+        return;
+    }
+    
+    // Create a selection
+    const range = document.createRange();
+    const textNode = bookContent.firstChild;
+    if (textNode && textNode.nodeType === Node.TEXT_NODE) {
+        range.setStart(textNode, 0);
+        range.setEnd(textNode, Math.min(10, textNode.textContent.length));
+        
+        const selection = window.getSelection();
+        selection.removeAllRanges();
+        selection.addRange(range);
+        
+        console.log('   - Text selected:', selection.toString());
+        
+        // Test applying bold formatting
+        setTimeout(() => {
+            console.log('   - You can now click the Bold button to test formatting!');
+            console.log('   - For nested formatting, apply Bold first, then select the same text and apply Italic');
+        }, 100);
+    }
+};
+
+// DEBUGGING: Test nested formatting fixes
+window.testNestedFormatting = function() {
+    import('./modules/formattingRenderer.js').then(({ testNestedFormatting }) => {
+        testNestedFormatting();
+    });
+};
+
+// DEBUGGING: Test persistence fixes
+window.testPersistenceFix = function() {
+    console.log('🧪 TESTING PERSISTENCE FIXES:');
+    console.log('1. Apply some formatting');
+    console.log('2. Exit edit mode and choose "Discard"');
+    console.log('3. Re-enter edit mode');
+    console.log('4. Check if formatting is gone (should be!)');
+};
+
 // Smart Select function - automatically selects configurable character chunks ending on periods
 function smartSelect() {
     // Perform the smart selection
@@ -158,6 +231,14 @@ function initialize() {
     console.log('🚀 Initializing AudioBook Organizer...');
     if (window.authModule) {
         initApp(window.authModule);
+        
+        // Initialize formatting system
+        initializeFormattingShortcuts();
+        initializeSelectionTracking();
+        initializeToolbarPositioning();
+        initializeCommentsSystem();
+        
+        console.log('✨ Formatting system initialized');
     } else {
         console.error('Auth module not found, cannot initialize app');
     }
@@ -167,6 +248,52 @@ function cleanup() {
     console.log('🧹 Cleaning up main application...');
     cleanupApp();
 }
+
+// Add CSS load verification
+window.verifyCSSLoading = function() {
+    console.log('🔍 Verifying CSS loading...');
+    
+    // Check if formatting.css is loaded
+    const formattingStyles = Array.from(document.styleSheets)
+        .find(sheet => sheet.href && sheet.href.includes('formatting.css'));
+    
+    console.log('Formatting CSS loaded:', !!formattingStyles);
+    
+    if (formattingStyles) {
+        try {
+            // Test element
+            const testEl = document.createElement('div');
+            testEl.className = 'fmt-bold';
+            testEl.style.position = 'absolute';
+            testEl.style.left = '-9999px';
+            document.body.appendChild(testEl);
+            
+            const computedStyle = window.getComputedStyle(testEl);
+            console.log('Test element styles:', {
+                fontWeight: computedStyle.fontWeight,
+                backgroundColor: computedStyle.backgroundColor
+            });
+            
+            document.body.removeChild(testEl);
+        } catch (error) {
+            console.error('Error testing CSS:', error);
+        }
+    }
+    
+    // Check book content element
+    const bookContent = document.getElementById('bookContent');
+    if (bookContent) {
+        console.log('Book content element:', {
+            className: bookContent.className,
+            computedStyle: window.getComputedStyle(bookContent)
+        });
+    }
+};
+
+// Run CSS verification on load
+document.addEventListener('DOMContentLoaded', () => {
+    setTimeout(window.verifyCSSLoading, 1000);
+});
 
 initialize();
 

@@ -1245,3 +1245,47 @@ button[disabled] {
     transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
+/* Formatting styles */
+.fmt-bold {
+    font-weight: bold !important;
+}
+
+.fmt-italic {
+    font-style: italic !important;
+}
+
+.fmt-underline {
+    text-decoration: underline !important;
+}
+
+/* Ensure nested formatting elements inherit and combine styles */
+.fmt-bold .fmt-italic,
+.fmt-italic .fmt-bold {
+    font-weight: bold !important;
+    font-style: italic !important;
+}
+
+.fmt-bold .fmt-underline,
+.fmt-underline .fmt-bold {
+    font-weight: bold !important;
+    text-decoration: underline !important;
+}
+
+.fmt-italic .fmt-underline,
+.fmt-underline .fmt-italic {
+    font-style: italic !important;
+    text-decoration: underline !important;
+}
+
+/* Handle all three formats combined */
+.fmt-bold .fmt-italic .fmt-underline,
+.fmt-bold .fmt-underline .fmt-italic,
+.fmt-italic .fmt-bold .fmt-underline,
+.fmt-italic .fmt-underline .fmt-bold,
+.fmt-underline .fmt-bold .fmt-italic,
+.fmt-underline .fmt-italic .fmt-bold {
+    font-weight: bold !important;
+    font-style: italic !important;
+    text-decoration: underline !important;
+}
+
