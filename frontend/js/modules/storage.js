@@ -277,112 +277,168 @@ function loadProjectDirectly(projectData) {
         console.log('No formatting data in project file');
     }
 
-    // Restore highlights with improved logic
-    if (projectData.highlights && Array.isArray(projectData.highlights)) {
-        console.log(`Restoring ${projectData.highlights.length} highlights...`);
-        let restoredCount = 0;
-        
-        projectData.highlights.forEach((highlight, index) => {
-            try {
-                console.log(`Restoring highlight ${index + 1}: "${highlight.text.substring(0, 50)}..."`);
-                
-                // Create the highlight element
-                const span = document.createElement('span');
-                span.className = highlight.className;
-                span.textContent = highlight.text;
-                span.dataset.sectionId = highlight.sectionId;
-
-                // More robust text finding approach
-                const fullText = bookContent.textContent;
-                const searchText = highlight.text;
-                let foundIndex = fullText.indexOf(searchText);
-                
-                if (foundIndex === -1) {
-                    // Try trimmed version in case of whitespace differences
-                    foundIndex = fullText.indexOf(searchText.trim());
-                }
-                
-                if (foundIndex !== -1) {
-                    // Use TreeWalker to find the exact text nodes
-                    const walker = document.createTreeWalker(
-                        bookContent,
-                        NodeFilter.SHOW_TEXT,
-                        null,
-                        false
-                    );
-
-                    let currentPos = 0;
-                    let startNode = null;
-                    let startOffset = 0;
-                    let endNode = null;
-                    let endOffset = 0;
-                    let charsToSelect = searchText.length;
-                    let charsSelected = 0;
-
-                    // Find start and end positions for the exact text
-                    while (walker.nextNode() && charsSelected < charsToSelect) {
-                        const node = walker.currentNode;
-                        const nodeText = node.textContent;
-                        const nodeLength = nodeText.length;
-                        
-                        // Check if start position is in this node
-                        if (!startNode && currentPos + nodeLength > foundIndex) {
-                            startNode = node;
-                            startOffset = foundIndex - currentPos;
-                        }
-                        
-                        // If we have a start node, calculate how many characters we need
-                        if (startNode) {
-                            const availableFromThisNode = nodeLength - (startNode === node ? startOffset : 0);
-                            const neededFromThisNode = Math.min(availableFromThisNode, charsToSelect - charsSelected);
-                            
-                            charsSelected += neededFromThisNode;
-                            
-                            if (charsSelected >= charsToSelect) {
-                                endNode = node;
-                                endOffset = (startNode === node ? startOffset : 0) + neededFromThisNode;
-                                break;
-                            }
-                        }
-                        
-                        currentPos += nodeLength;
-                    }
-
-                    if (startNode && endNode) {
-                        const range = document.createRange();
-                        range.setStart(startNode, startOffset);
-                        range.setEnd(endNode, endOffset);
-                        
-                        // Verify we're selecting the right text
-                        const selectedText = range.toString();
-                        if (selectedText === searchText || selectedText === searchText.trim()) {
-                            range.deleteContents();
-                            range.insertNode(span);
-                            restoredCount++;
-                            console.log(`✓ Successfully restored highlight ${index + 1}`);
-                        } else {
-                            console.warn(`✗ Text mismatch for highlight ${index + 1}:`, {
-                                expected: searchText,
-                                found: selectedText
-                            });
-                        }
-                    } else {
-                        console.warn(`✗ Could not create range for highlight ${index + 1}`);
-                    }
-                } else {
-                    console.warn(`✗ Text not found for highlight ${index + 1}: "${searchText.substring(0, 50)}..."`);
-                }
-            } catch (highlightError) {
-                console.error(`✗ Failed to restore highlight ${index + 1}:`, highlightError);
-            }
-        });
-        
-        console.log(`Highlight restoration complete: ${restoredCount}/${projectData.highlights.length} restored`);
-    }
-
-    // Update UI
+    // Update UI immediately (don't wait for highlights)
     updateChaptersList();
     
+    // Show success message early
+    showSuccess('📂 Project loaded successfully!');
+    
+    console.log('Project loaded successfully:', {
+        bookTextLength: bookText.length,
+        chaptersCount: chapters.length,
+        highlightsToRestore: projectData.highlights?.length || 0
+    });
+
+    // Restore highlights asynchronously to avoid blocking UI
+    if (projectData.highlights && Array.isArray(projectData.highlights)) {
+        restoreHighlightsAsync(projectData.highlights, bookContent);
+    } else {
+        // If no highlights, complete initialization immediately
+        completeProjectLoad(projectData);
+    }
+}
+
+/**
+ * Restore highlights asynchronously using requestAnimationFrame to avoid blocking UI
+ */
+async function restoreHighlightsAsync(highlights, bookContent) {
+    console.log(`🔄 Restoring ${highlights.length} highlights asynchronously...`);
+    let restoredCount = 0;
+    const batchSize = 5; // Process 5 highlights at a time
+    
+    // Process highlights in batches
+    for (let i = 0; i < highlights.length; i += batchSize) {
+        const batch = highlights.slice(i, i + batchSize);
+        
+        // Process this batch
+        await new Promise(resolve => {
+            requestAnimationFrame(() => {
+                batch.forEach((highlight, batchIndex) => {
+                    const globalIndex = i + batchIndex;
+                    try {
+                        if (restoreSingleHighlight(highlight, globalIndex + 1, bookContent)) {
+                            restoredCount++;
+                        }
+                    } catch (error) {
+                        console.error(`✗ Failed to restore highlight ${globalIndex + 1}:`, error);
+                    }
+                });
+                resolve();
+            });
+        });
+        
+        // Small delay between batches to keep UI responsive
+        if (i + batchSize < highlights.length) {
+            await new Promise(resolve => setTimeout(resolve, 10));
+        }
+    }
+    
+    console.log(`✅ Highlight restoration complete: ${restoredCount}/${highlights.length} restored`);
+    
+    // Complete the project load
+    completeProjectLoad({ formattingData: window.formattingData });
+}
+
+/**
+ * Restore a single highlight (optimized version)
+ */
+function restoreSingleHighlight(highlight, index, bookContent) {
+    console.log(`Restoring highlight ${index}: "${highlight.text.substring(0, 50)}..."`);
+    
+    // Create the highlight element
+    const span = document.createElement('span');
+    span.className = highlight.className;
+    span.textContent = highlight.text;
+    span.dataset.sectionId = highlight.sectionId;
+
+    // More robust text finding approach
+    const fullText = bookContent.textContent;
+    const searchText = highlight.text;
+    let foundIndex = fullText.indexOf(searchText);
+    
+    if (foundIndex === -1) {
+        // Try trimmed version in case of whitespace differences
+        foundIndex = fullText.indexOf(searchText.trim());
+    }
+    
+    if (foundIndex !== -1) {
+        // Use TreeWalker to find the exact text nodes
+        const walker = document.createTreeWalker(
+            bookContent,
+            NodeFilter.SHOW_TEXT,
+            null,
+            false
+        );
+
+        let currentPos = 0;
+        let startNode = null;
+        let startOffset = 0;
+        let endNode = null;
+        let endOffset = 0;
+        let charsToSelect = searchText.length;
+        let charsSelected = 0;
+
+        // Find start and end positions for the exact text
+        while (walker.nextNode() && charsSelected < charsToSelect) {
+            const node = walker.currentNode;
+            const nodeText = node.textContent;
+            const nodeLength = nodeText.length;
+            
+            // Check if start position is in this node
+            if (!startNode && currentPos + nodeLength > foundIndex) {
+                startNode = node;
+                startOffset = foundIndex - currentPos;
+            }
+            
+            // If we have a start node, calculate how many characters we need
+            if (startNode) {
+                const availableFromThisNode = nodeLength - (startNode === node ? startOffset : 0);
+                const neededFromThisNode = Math.min(availableFromThisNode, charsToSelect - charsSelected);
+                
+                charsSelected += neededFromThisNode;
+                
+                if (charsSelected >= charsToSelect) {
+                    endNode = node;
+                    endOffset = (startNode === node ? startOffset : 0) + neededFromThisNode;
+                    break;
+                }
+            }
+            
+            currentPos += nodeLength;
+        }
+
+        if (startNode && endNode) {
+            const range = document.createRange();
+            range.setStart(startNode, startOffset);
+            range.setEnd(endNode, endOffset);
+            
+            // Verify we're selecting the right text
+            const selectedText = range.toString();
+            if (selectedText === searchText || selectedText === searchText.trim()) {
+                range.deleteContents();
+                range.insertNode(span);
+                console.log(`✓ Successfully restored highlight ${index}`);
+                return true;
+            } else {
+                console.warn(`✗ Text mismatch for highlight ${index}:`, {
+                    expected: searchText,
+                    found: selectedText
+                });
+            }
+        } else {
+            console.warn(`✗ Could not create range for highlight ${index}`);
+        }
+    } else {
+        console.warn(`✗ Text not found for highlight ${index}: "${searchText.substring(0, 50)}..."`);
+    }
+    
+    return false;
+}
+
+/**
+ * Complete project loading after highlights are restored
+ */
+function completeProjectLoad(projectData) {
     // Reinitialize smart select functionality
     initializeSmartSelect();
     
@@ -395,15 +451,6 @@ function loadProjectDirectly(projectData) {
             console.error('Error applying formatting after load:', error);
         });
     }
-    
-    // Show success message
-    showSuccess('📂 Project loaded successfully!');
-    
-    console.log('Project loaded successfully:', {
-        bookTextLength: bookText.length,
-        chaptersCount: chapters.length,
-        highlightsRestored: projectData.highlights?.length || 0
-    });
 }
 
 // =============================================================================

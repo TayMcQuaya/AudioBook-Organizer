@@ -229,6 +229,7 @@ function resetSmartSelectPosition() {
 
 async function initialize() {
     console.log('🚀 Initializing AudioBook Organizer...');
+    
     if (window.authModule) {
         await initApp(window.authModule);
         
@@ -240,7 +241,7 @@ async function initialize() {
         
         console.log('✨ Formatting system initialized');
     } else {
-        console.error('Auth module not found, cannot initialize app');
+        console.error('❌ Auth module not found, cannot initialize app');
     }
 }
 
@@ -330,8 +331,7 @@ window.testFormattingStyles = function() {
     console.log('🧪 Formatting test complete');
 };
 
-initialize();
-
+// Export the functions for the router to use
 export { initialize, cleanup };
 
 

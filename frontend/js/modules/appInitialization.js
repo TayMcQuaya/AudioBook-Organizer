@@ -12,7 +12,6 @@ import themeManager from './themeManager.js';
 import { loadFromDatabase, startAutoSave, stopAutoSave } from './storage.js';
 
 let isInitialized = false;
-let isInitializing = false;
 
 /**
  * Cleanup function for the application
@@ -39,7 +38,6 @@ export function cleanupApp() {
     // You could add more cleanup here, e.g., removing other listeners
     
     isInitialized = false;
-    isInitializing = false;
     window.isAppInitialized = false;
     console.log('✅ Application cleanup complete.');
 }
@@ -102,8 +100,14 @@ async function restoreLatestProject() {
             return false;
         }
         
+        // Show loading indicator
+        showLoadingIndicator('Restoring your project...');
+        
         // Try to restore from database
         const restored = await loadFromDatabase();
+        
+        // Hide loading indicator
+        hideLoadingIndicator();
         
         if (restored) {
             console.log('✅ Project restored successfully from database');
@@ -115,7 +119,71 @@ async function restoreLatestProject() {
         
     } catch (error) {
         console.error('❌ Error during project restoration:', error);
+        hideLoadingIndicator();
         return false;
+    }
+}
+
+// Show loading indicator
+function showLoadingIndicator(message = 'Loading...') {
+    // Create or update loading indicator
+    let loadingEl = document.getElementById('app-loading-indicator');
+    if (!loadingEl) {
+        loadingEl = document.createElement('div');
+        loadingEl.id = 'app-loading-indicator';
+        loadingEl.style.cssText = `
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 20px 30px;
+            border-radius: 8px;
+            z-index: 10000;
+            font-family: system-ui, sans-serif;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        `;
+        
+        loadingEl.innerHTML = `
+            <div style="
+                width: 20px;
+                height: 20px;
+                border: 2px solid rgba(255,255,255,0.3);
+                border-top: 2px solid white;
+                border-radius: 50%;
+                animation: spin 1s linear infinite;
+            "></div>
+            <span id="loading-message">${message}</span>
+        `;
+        
+        // Add CSS animation
+        if (!document.getElementById('loading-spinner-styles')) {
+            const style = document.createElement('style');
+            style.id = 'loading-spinner-styles';
+            style.textContent = `
+                @keyframes spin {
+                    0% { transform: rotate(0deg); }
+                    100% { transform: rotate(360deg); }
+                }
+            `;
+            document.head.appendChild(style);
+        }
+        
+        document.body.appendChild(loadingEl);
+    } else {
+        document.getElementById('loading-message').textContent = message;
+        loadingEl.style.display = 'flex';
+    }
+}
+
+// Hide loading indicator
+function hideLoadingIndicator() {
+    const loadingEl = document.getElementById('app-loading-indicator');
+    if (loadingEl) {
+        loadingEl.style.display = 'none';
     }
 }
 
@@ -145,13 +213,12 @@ async function initializeModules() {
 // Main application initialization
 export async function initApp() {
     // Prevent double initialization
-    if (isInitialized || isInitializing) {
-        console.log('App already initialized or initializing. Skipping.');
+    if (isInitialized) {
+        console.log('App already initialized. Skipping.');
         return;
     }
     
-    console.log('AudioBook Organizer - Initializing application...');
-    isInitializing = true;
+    console.log('📱 AudioBook Organizer - Initializing application...');
     
     try {
         // Initialize default state
@@ -175,14 +242,12 @@ export async function initApp() {
         // Mark as initialized
         isInitialized = true;
         window.isAppInitialized = true;
-        console.log('AudioBook Organizer - Application ready!');
+        console.log('✅ AudioBook Organizer - Application ready!');
         
     } catch (error) {
         console.error('❌ Error during app initialization:', error);
         isInitialized = false;
         window.isAppInitialized = false;
-    } finally {
-        isInitializing = false;
     }
 }
 
@@ -190,7 +255,6 @@ export async function initApp() {
 export function getInitializationStatus() {
     return {
         isInitialized,
-        isInitializing,
         windowFlag: window.isAppInitialized,
         selectionGuideShown: localStorage.getItem('selectionGuideShown') === 'true',
         chaptersCount: chapters.length,

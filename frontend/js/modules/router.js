@@ -352,25 +352,16 @@ class Router {
                 appContainer.innerHTML = bodyContent;
             }
 
-            // Load app scripts if they aren't already loaded
-            if (!window.isAppInitialized && !window.isAppInitializing) {
-                window.isAppInitializing = true;
+            // Initialize app if not already initialized
+            if (!window.isAppInitialized) {
                 try {
                     const { initialize, cleanup } = await import('/js/main.js');
-                    await initialize(); // Make it async to wait for completion
-                    window.cleanupApp = cleanup; // Make cleanup available
+                    await initialize();
+                    window.cleanupApp = cleanup;
                     window.isAppInitialized = true;
                 } catch (error) {
                     console.error('Error initializing app:', error);
                     window.isAppInitialized = false;
-                } finally {
-                    window.isAppInitializing = false;
-                }
-            } else if (window.isAppInitializing) {
-                console.log('⏳ App initialization already in progress, waiting...');
-                // Wait for initialization to complete
-                while (window.isAppInitializing) {
-                    await new Promise(resolve => setTimeout(resolve, 100));
                 }
             }
             

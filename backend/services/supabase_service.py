@@ -9,6 +9,8 @@ from typing import Dict, Optional, Any, List
 from supabase import create_client, Client
 from jose import jwt, JWTError
 import datetime
+import concurrent.futures
+import time
 
 logger = logging.getLogger(__name__)
 
@@ -21,6 +23,10 @@ class SupabaseService:
         self.key = supabase_key
         self.jwt_secret = jwt_secret
         self.client: Client = None
+        
+        # Simple cache for user initialization (session-based)
+        self._user_init_cache = {}
+        self._cache_ttl = 300  # 5 minutes cache
         
         if supabase_url and supabase_key:
             try:
@@ -270,15 +276,37 @@ class SupabaseService:
             return False
     
     def initialize_user(self, user_id: str, email: str, user_data: Dict[str, Any] = None) -> Dict[str, Any]:
-        """Initialize user profile and credits for new or existing users"""
+        """Initialize user profile and credits for new or existing users - OPTIMIZED"""
         try:
-            # Check if profile already exists
-            existing_profile = self.get_user_profile(user_id)
+            # Check cache first
+            cached_data = self._get_cached_user_data(user_id)
+            if cached_data:
+                logger.info(f"🚀 Using cached user data for {user_id}")
+                return cached_data
+            # Single query to get both profile and credits in parallel
+            profile_future = None
+            credits_future = None
+            
+            # Use concurrent queries to reduce latency
+            with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
+                profile_future = executor.submit(self.get_user_profile, user_id)
+                credits_future = executor.submit(self.get_user_credits, user_id)
+                
+                # Get results
+                existing_profile = profile_future.result()
+                existing_credits = credits_future.result()
+            
             is_new_user = existing_profile is None
             
             if is_new_user:
-                # Create profile for new user
-                profile_success = self.create_user_profile(user_id, email, user_data or {})
+                # For new users, create profile and credits in parallel
+                with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
+                    profile_task = executor.submit(self.create_user_profile, user_id, email, user_data or {})
+                    credits_task = executor.submit(self.initialize_user_credits, user_id, 100)
+                    
+                    # Wait for both to complete
+                    profile_success = profile_task.result()
+                    credits_success = credits_task.result()
                 
                 if not profile_success:
                     return {
@@ -287,24 +315,34 @@ class SupabaseService:
                         'message': 'Failed to create user profile'
                     }
                 
-                # Initialize credits for new user
-                credits_success = self.initialize_user_credits(user_id, 100)
-                
                 if not credits_success:
                     logger.warning(f"Failed to initialize credits for new user {user_id}")
                     # Don't fail the whole process if credits fail
+                
+                # Get the newly created data
+                with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
+                    profile_future = executor.submit(self.get_user_profile, user_id)
+                    credits_future = executor.submit(self.get_user_credits, user_id)
+                    
+                    profile = profile_future.result()
+                    credits = credits_future.result()
+            else:
+                # For existing users, we already have the data
+                profile = existing_profile
+                credits = existing_credits
             
-            # Get final profile and credits
-            profile = self.get_user_profile(user_id)
-            credits = self.get_user_credits(user_id)
-            
-            return {
+            result = {
                 'success': True,
                 'message': 'User data retrieved successfully',
                 'profile': profile,
                 'credits': credits,
                 'is_new_user': is_new_user
             }
+            
+            # Cache the result for future requests
+            self._cache_user_data(user_id, result)
+            
+            return result
             
         except Exception as e:
             logger.error(f"Error initializing user {user_id}: {e}")
@@ -403,6 +441,27 @@ class SupabaseService:
         except Exception as e:
             logger.error(f"Error logging usage: {e}")
             return False
+
+    def _is_cache_valid(self, user_id: str) -> bool:
+        """Check if cached user data is still valid"""
+        if user_id not in self._user_init_cache:
+            return False
+        
+        cache_entry = self._user_init_cache[user_id]
+        return (time.time() - cache_entry['timestamp']) < self._cache_ttl
+    
+    def _get_cached_user_data(self, user_id: str) -> Optional[Dict[str, Any]]:
+        """Get cached user data if valid"""
+        if self._is_cache_valid(user_id):
+            return self._user_init_cache[user_id]['data']
+        return None
+    
+    def _cache_user_data(self, user_id: str, data: Dict[str, Any]) -> None:
+        """Cache user data with timestamp"""
+        self._user_init_cache[user_id] = {
+            'data': data,
+            'timestamp': time.time()
+        }
 
 # Global Supabase service instance
 _supabase_service: Optional[SupabaseService] = None
