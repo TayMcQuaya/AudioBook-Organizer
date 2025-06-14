@@ -510,33 +510,88 @@ function handleCommentCreation() {
 // Handle clear formatting
 function handleClearFormatting() {
     const selection = window.getSelection();
-    if (!selection.rangeCount) {
-        console.log('No text selected for clearing formatting');
-        return;
-    }
-    
-    const range = selection.getRangeAt(0);
     const bookContent = document.getElementById('bookContent');
     
-    if (!bookContent.contains(range.startContainer)) {
-        console.log('Selection not in book content');
+    if (!bookContent) {
+        console.error('🧹 CLEAR FORMATTING: Book content element not found');
         return;
     }
     
-    const startPos = getPositionInText(bookContent, range.startContainer, range.startOffset);
-    const endPos = getPositionInText(bookContent, range.endContainer, range.endOffset);
+    let startPos, endPos, hasSelection = false;
     
-    // Remove formatting in the selected range
-    const rangesToRemove = formattingData.ranges.filter(r => 
-        !(r.end <= startPos || r.start >= endPos) // Overlapping ranges
-    );
+    // Check if there's a text selection
+    if (selection.rangeCount > 0) {
+        const range = selection.getRangeAt(0);
+        const selectedText = range.toString();
+        
+        // Only treat as selection if there's actual text selected
+        if (selectedText.trim() && bookContent.contains(range.startContainer)) {
+            hasSelection = true;
+            startPos = getPositionInText(bookContent, range.startContainer, range.startOffset);
+            endPos = getPositionInText(bookContent, range.endContainer, range.endOffset);
+            console.log(`🧹 CLEAR FORMATTING: Clearing formatting from selected text (positions ${startPos} to ${endPos})`);
+        }
+    }
     
+    let rangesToRemove;
+    
+    if (hasSelection) {
+        // Clear formatting only in the selected range
+        rangesToRemove = formattingData.ranges.filter(r => 
+            !(r.end <= startPos || r.start >= endPos) // Overlapping ranges
+        );
+        console.log(`🧹 CLEAR FORMATTING: Found ${rangesToRemove.length} formatting ranges in selection to remove:`);
+    } else {
+        // Clear ALL formatting in the entire document
+        rangesToRemove = [...formattingData.ranges]; // Copy all ranges
+        console.log(`🧹 CLEAR FORMATTING: No text selected - clearing ALL formatting (${rangesToRemove.length} ranges):`);
+    }
+    
+    // Log what we're removing
+    rangesToRemove.forEach(r => {
+        console.log(`🧹 CLEAR FORMATTING: - Removing ${r.type} formatting (${r.start}-${r.end})`);
+    });
+    
+    // Remove all the formatting ranges
     rangesToRemove.forEach(r => removeFormattingRange(r.id));
     
     if (rangesToRemove.length > 0) {
         applyFormattingToDOM();
         updateToolbarState();
-        console.log(`Cleared ${rangesToRemove.length} formatting ranges`);
+        
+        if (hasSelection) {
+            console.log(`🧹 CLEAR FORMATTING: Successfully cleared ${rangesToRemove.length} formatting ranges from selection`);
+            
+            // Preserve selection after clearing formatting
+            setTimeout(() => {
+                try {
+                    const { startNode, startOffset, endNode, endOffset } = 
+                        findTextNodesAtPositions(bookContent, startPos, endPos);
+                    
+                    if (startNode && endNode) {
+                        const newRange = document.createRange();
+                        newRange.setStart(startNode, startOffset);
+                        newRange.setEnd(endNode, endOffset);
+                        
+                        const newSelection = window.getSelection();
+                        newSelection.removeAllRanges();
+                        newSelection.addRange(newRange);
+                        
+                        console.log('🧹 CLEAR FORMATTING: Selection preserved after clearing formatting');
+                    }
+                } catch (error) {
+                    console.error('🧹 CLEAR FORMATTING: Error preserving selection after clearing:', error);
+                }
+            }, 50);
+        } else {
+            console.log(`🧹 CLEAR FORMATTING: Successfully cleared ALL ${rangesToRemove.length} formatting ranges from entire document`);
+        }
+    } else {
+        if (hasSelection) {
+            console.log('🧹 CLEAR FORMATTING: No formatting found to clear in selected range');
+        } else {
+            console.log('🧹 CLEAR FORMATTING: No formatting found to clear in entire document');
+        }
     }
 }
 

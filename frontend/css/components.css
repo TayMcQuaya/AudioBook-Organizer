@@ -84,33 +84,7 @@
     box-shadow: inset 0 0 0 2px rgba(255, 87, 34, 0.3), 0 4px 12px rgba(255, 87, 34, 0.2);
 }
 
-/* Edit Mode Indicator */
-.book-content.edit-mode::before {
-    content: "✏️ EDIT MODE - Click anywhere to edit text";
-    position: absolute;
-    top: -35px;
-    left: 0;
-    background: linear-gradient(135deg, #FF9800, #FF5722);
-    color: white;
-    padding: 6px 12px;
-    border-radius: 4px;
-    font-size: 12px;
-    font-weight: 600;
-    z-index: 10;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-    animation: editModeNotification 0.5s ease-out;
-}
-
-@keyframes editModeNotification {
-    0% { 
-        opacity: 0; 
-        transform: translateY(-10px); 
-    }
-    100% { 
-        opacity: 1; 
-        transform: translateY(0); 
-    }
-}
+/* Edit Mode Indicator - REMOVED to prevent overlap with formatting toolbar */
 
 /* Ensure text selection and cursor work properly */
 .book-content * {

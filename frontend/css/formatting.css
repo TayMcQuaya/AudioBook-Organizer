@@ -174,6 +174,100 @@
 }
 
 /* ========================================
+   DARK THEME SUPPORT FOR FORMATTING TOOLBAR
+   ======================================== */
+
+[data-theme="dark"] .formatting-toolbar {
+    background: #2d2d2d;
+    border-color: #404040;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+[data-theme="dark"] .toolbar-section {
+    border-right-color: #404040;
+}
+
+[data-theme="dark"] .toolbar-btn {
+    color: #e0e0e0;
+}
+
+[data-theme="dark"] .toolbar-btn:hover {
+    background: #404040;
+    border-color: #555555;
+}
+
+[data-theme="dark"] .toolbar-btn.active {
+    background: #4CAF50;
+    color: white;
+    border-color: #4CAF50;
+}
+
+[data-theme="dark"] .toolbar-btn.active:hover {
+    background: #45a049;
+    border-color: #45a049;
+}
+
+[data-theme="dark"] .heading-select {
+    background: #404040;
+    border-color: #555555;
+    color: #e0e0e0;
+}
+
+[data-theme="dark"] .heading-select:hover {
+    border-color: #4CAF50;
+}
+
+[data-theme="dark"] .heading-select:focus {
+    border-color: #4CAF50;
+    box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.2);
+}
+
+[data-theme="dark"] .heading-select option {
+    background: #404040;
+    color: #e0e0e0;
+}
+
+/* Dark theme for quote formatting */
+[data-theme="dark"] .fmt-quote {
+    background: #2d2d2d !important;
+    color: #e0e0e0 !important;
+    border-left-color: #4CAF50 !important;
+}
+
+[data-theme="dark"] .fmt-quote::before {
+    color: #4CAF50 !important;
+}
+
+/* Dark theme for comment system */
+[data-theme="dark"] .comment-popup {
+    background: #2d2d2d;
+    border-color: #404040;
+    color: #e0e0e0;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+
+[data-theme="dark"] .comment-dialog {
+    background: rgba(0, 0, 0, 0.8);
+}
+
+[data-theme="dark"] .comment-dialog-content {
+    background: #2d2d2d;
+    border-color: #404040;
+    color: #e0e0e0;
+}
+
+[data-theme="dark"] .comment-dialog-content textarea {
+    background: #404040;
+    border-color: #555555;
+    color: #e0e0e0;
+}
+
+[data-theme="dark"] .comment-dialog-content textarea:focus {
+    border-color: #4CAF50;
+    box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.2);
+}
+
+/* ========================================
    TEXT FORMATTING STYLES
    ======================================== */
 
