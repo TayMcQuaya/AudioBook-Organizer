@@ -58,7 +58,11 @@ def require_auth(f: Callable) -> Callable:
             # Extract token from header
             token = extract_token_from_header()
             
+            # DEBUG: Log token extraction
+            logger.info(f"🔍 DEBUG: Token extracted - exists: {bool(token)}, length: {len(token) if token else 0}")
+            
             if not token:
+                logger.warning("🔍 DEBUG: No token found in header")
                 return jsonify({
                     'error': 'Authentication required',
                     'message': 'Authorization header with Bearer token is required'
@@ -68,16 +72,23 @@ def require_auth(f: Callable) -> Callable:
             supabase_service = get_supabase_service()
             
             if not supabase_service.is_configured():
-                logger.error("Supabase service not configured - cannot authenticate")
+                logger.error("🔍 DEBUG: Supabase service not configured")
                 return jsonify({
                     'error': 'Authentication service unavailable',
                     'message': 'Authentication service is not properly configured'
                 }), 503
             
+            # DEBUG: Log before token verification
+            logger.info(f"🔍 DEBUG: About to verify token for user")
+            
             # Verify token and extract user
             user = supabase_service.get_user_from_token(token)
             
+            # DEBUG: Log verification result
+            logger.info(f"🔍 DEBUG: Token verification result - user found: {bool(user)}")
+            
             if not user:
+                logger.warning("🔍 DEBUG: Token verification failed - user is None")
                 return jsonify({
                     'error': 'Invalid token',
                     'message': 'The provided token is invalid or expired'

@@ -140,13 +140,9 @@ class SupabaseService:
             }
     
     def verify_jwt_token(self, token: str) -> Optional[Dict[str, Any]]:
-        """Verify and decode JWT token from Supabase"""
-        if not self.jwt_secret:
-            logger.error("JWT secret not configured")
-            return None
-            
+        """Verify JWT token and return payload if valid"""
         if not token:
-            logger.warning("No token provided for verification")
+            logger.warning("Token is empty or None")
             return None
             
         # Validate token format before attempting to decode
@@ -161,6 +157,9 @@ class SupabaseService:
             return None
             
         try:
+            # DEBUG: Log token verification attempt
+            logger.info(f"🔍 DEBUG: Attempting JWT decode with secret length: {len(self.jwt_secret) if self.jwt_secret else 0}")
+            
             # Decode the token using Supabase JWT secret
             payload = jwt.decode(
                 token, 
@@ -171,8 +170,13 @@ class SupabaseService:
             
             # Check if token is expired
             exp = payload.get('exp')
-            if exp and datetime.datetime.utcnow().timestamp() > exp:
-                logger.warning("Token has expired")
+            current_time = datetime.datetime.utcnow().timestamp()
+            
+            # DEBUG: Log time comparison
+            logger.info(f"🔍 DEBUG: Token exp: {exp}, Current time: {current_time}, Diff: {(exp - current_time) if exp else 'no-exp'}")
+            
+            if exp and current_time > exp:
+                logger.warning(f"🔍 DEBUG: Token has expired - exp: {exp}, current: {current_time}")
                 return None
                 
             logger.debug(f"JWT token verified successfully for user: {payload.get('email', 'unknown')}")
@@ -180,17 +184,19 @@ class SupabaseService:
             
         except JWTError as e:
             error_msg = str(e).lower()
+            # DEBUG: More detailed error logging
+            logger.error(f"🔍 DEBUG: JWT Error - {type(e).__name__}: {e}")
             if 'not enough segments' in error_msg:
                 logger.warning(f"JWT verification failed: Invalid token format - {e}")
             elif 'expired' in error_msg:
                 logger.warning(f"JWT verification failed: Token expired - {e}")
             elif 'signature' in error_msg:
-                logger.warning(f"JWT verification failed: Invalid signature - {e}")
+                logger.warning(f"🔍 DEBUG: JWT signature verification failed - this usually means wrong JWT secret or system clock issues")
             else:
                 logger.error(f"JWT verification failed: {e}")
             return None
         except Exception as e:
-            logger.error(f"Unexpected error during token verification: {e}")
+            logger.error(f"🔍 DEBUG: Unexpected error during token verification: {type(e).__name__}: {e}")
             return None
     
     def get_user_from_token(self, token: str) -> Optional[Dict[str, Any]]:
