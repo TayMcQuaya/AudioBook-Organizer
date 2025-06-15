@@ -85,53 +85,12 @@ def create_app(config_name='default'):
     # Debug endpoint for time checking
     @app.route('/debug/time', methods=['GET'])
     def debug_time():
-        current_timestamp = datetime.datetime.utcnow().timestamp()
+        current_timestamp = datetime.utcnow().timestamp()
         return jsonify({
             'server_timestamp': current_timestamp,
-            'server_time_readable': datetime.datetime.utcnow().isoformat() + 'Z',
-            'server_timezone': str(datetime.datetime.now().astimezone().tzinfo)
+            'server_time_readable': datetime.utcnow().isoformat() + 'Z',
+            'server_timezone': str(datetime.now().astimezone().tzinfo)
         })
-    
-    # Serve static files and SPA routes
-    @app.route('/')
-    @app.route('/auth')
-    @app.route('/auth/reset-password')
-    @app.route('/app')
-    @app.route('/profile')
-    def serve_spa():
-        return send_from_directory(app.static_folder, 'index.html')
-    
-    @app.route('/test-auth-fix')
-    def serve_test_auth_fix():
-        return send_from_directory(app.static_folder, 'test_auth_fix.html')
-    
-    @app.route('/favicon.ico')
-    def serve_favicon():
-        return send_from_directory(os.path.join(app.static_folder, 'public', 'icons'), 'favicon.ico')
-    
-    @app.route('/css/<path:filename>')
-    def serve_css(filename):
-        return send_from_directory(os.path.join(app.static_folder, 'css'), filename)
-    
-    @app.route('/js/<path:filename>')
-    def serve_js(filename):
-        return send_from_directory(os.path.join(app.static_folder, 'js'), filename)
-    
-    @app.route('/pages/<path:filename>')
-    def serve_pages(filename):
-        return send_from_directory(os.path.join(app.static_folder, 'pages'), filename)
-    
-    @app.route('/public/<path:filename>')
-    def serve_public(filename):
-        return send_from_directory(os.path.join(app.static_folder, 'public'), filename)
-    
-    @app.route('/uploads/<filename>')
-    def serve_upload(filename):
-        return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
-    
-    @app.route('/exports/<export_id>/<filename>')
-    def serve_export(export_id, filename):
-        return send_from_directory(os.path.join(app.config['EXPORT_FOLDER'], export_id), filename)
     
     return app
 
