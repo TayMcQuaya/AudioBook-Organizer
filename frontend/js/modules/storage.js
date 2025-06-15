@@ -165,6 +165,17 @@ export function getCurrentProjectData() {
     const currentUser = window.authModule?.getCurrentUser();
     const userId = currentUser?.id || 'anonymous';
     
+    // Get current file info
+    let currentFileType = 'txt';
+    let currentFileName = '';
+    try {
+        const stateModule = window.stateModule || {};
+        currentFileType = stateModule.getCurrentFileType?.() || 'txt';
+        currentFileName = stateModule.getCurrentFileName?.() || '';
+    } catch (error) {
+        console.warn('Could not get file type info:', error);
+    }
+    
     // Get all highlights from DOM
     const bookContent = document.getElementById('bookContent');
     const highlights = Array.from(bookContent.querySelectorAll('.section-highlight')).map(highlight => ({
@@ -183,6 +194,10 @@ export function getCurrentProjectData() {
             lastModified: new Date().toISOString(),
             collaborators: [userId],
             version: '1.2'
+        },
+        metadata: {
+            filename: currentFileName,
+            fileType: currentFileType
         },
         chapters: chapters,
         currentColorIndex: currentColorIndex,
@@ -273,6 +288,19 @@ function loadProjectDirectly(projectData) {
         setFormattingData(projectData.formattingData);
         console.log(`Loaded formatting data: ${projectData.formattingData.ranges?.length || 0} ranges, ${projectData.formattingData.comments?.length || 0} comments`);
         
+        // Detect and set file type based on formatting data
+        const hasFormattingRanges = projectData.formattingData.ranges && projectData.formattingData.ranges.length > 0;
+        const fileType = hasFormattingRanges ? 'docx' : 'txt';
+        const fileName = projectData.metadata?.filename || '';
+        
+        // Import and set file type for proper edit mode behavior
+        import('./state.js').then(({ setCurrentFileType }) => {
+            setCurrentFileType(fileType, fileName);
+            console.log(`📁 File type detected and set during load: ${fileType} (${fileName})`);
+        }).catch(error => {
+            console.error('Error setting file type during load:', error);
+        });
+        
         // Apply formatting immediately for consistent view/edit mode display
         import('./formattingRenderer.js').then(({ applyFormattingToDOM }) => {
             applyFormattingToDOM();
@@ -281,6 +309,14 @@ function loadProjectDirectly(projectData) {
             console.error('Error applying formatting during load:', error);
         });
     } else {
+        // No formatting data - this is a TXT file
+        import('./state.js').then(({ setCurrentFileType }) => {
+            setCurrentFileType('txt', '');
+            console.log('📁 File type set to TXT (no formatting data)');
+        }).catch(error => {
+            console.error('Error setting file type during load:', error);
+        });
+        
         clearFormatting();
         console.log('No formatting data in project file');
     }

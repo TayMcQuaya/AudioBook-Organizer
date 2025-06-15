@@ -6,6 +6,10 @@ export let chapters = [];
 export let currentColorIndex = 1;
 export const MAX_COLORS = 8;
 
+// File type tracking for different edit mode behaviors
+export let currentFileType = 'txt'; // 'txt' or 'docx'
+export let currentFileName = '';
+
 // Chapter audio players map
 export const chapterPlayers = new Map();
 
@@ -40,6 +44,30 @@ export function setCurrentColorIndex(index) {
     triggerAutoSaveIfEnabled();
 }
 
+// File type management
+export function setCurrentFileType(fileType, fileName = '') {
+    currentFileType = fileType.toLowerCase();
+    currentFileName = fileName;
+    console.log(`📁 File type set to: ${currentFileType} (${fileName})`);
+    triggerAutoSaveIfEnabled();
+}
+
+export function getCurrentFileType() {
+    return currentFileType;
+}
+
+export function getCurrentFileName() {
+    return currentFileName;
+}
+
+export function isDocxFile() {
+    return currentFileType === 'docx';
+}
+
+export function isTxtFile() {
+    return currentFileType === 'txt';
+}
+
 export function addChapter(chapter) {
     chapters.push(chapter);
     triggerAutoSaveIfEnabled();
@@ -64,4 +92,14 @@ export function getNextColor() {
     const nextColor = currentColorIndex;
     currentColorIndex = currentColorIndex % MAX_COLORS + 1;
     return nextColor;
+}
+
+// Make state module available globally for storage access
+if (typeof window !== 'undefined') {
+    window.stateModule = {
+        getCurrentFileType,
+        getCurrentFileName,
+        isDocxFile,
+        isTxtFile
+    };
 } 

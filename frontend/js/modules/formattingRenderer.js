@@ -103,7 +103,7 @@ function applyFormattingRangesEnhanced() {
     if (!bookContent) return;
     
     // Use the state's bookText as the single source of truth for content.
-    const text = bookText.get(); 
+    const text = bookText; 
     if (typeof text !== 'string') {
         console.error("🎨 FORMATTING: bookText is not available or not a string, cannot render.");
         return;
@@ -134,12 +134,99 @@ function applyFormattingRangesEnhanced() {
                 linkElement.textContent = segmentText;
                 linkElement.target = '_blank'; // Open in new tab
                 linkElement.rel = 'noopener noreferrer';
+                linkElement.className = 'fmt-link';
                  // Add other formatting classes if they exist
                 const otherTypes = segment.types.filter(t => !t.startsWith('link-'));
                 if(otherTypes.length > 0) {
-                    linkElement.className = otherTypes.map(type => `fmt-${type}`).join(' ');
+                    linkElement.className += ' ' + otherTypes.map(type => `fmt-${type}`).join(' ');
                 }
                 fragment.appendChild(linkElement);
+
+            } else if (segment.types.includes('image')) {
+                // Handle images
+                const imageElement = createImageElement(segment, segmentText);
+                fragment.appendChild(imageElement);
+
+            } else if (segment.types.includes('table')) {
+                // Handle tables
+                const tableElement = createTableElement(segment, segmentText);
+                fragment.appendChild(tableElement);
+
+            } else if (segment.types.includes('list') || segment.types.includes('list-item')) {
+                // Handle lists - create simple bullet points only for non-empty content
+                if (segmentText.trim().length > 0) {
+                    const listElement = document.createElement('div');
+                    listElement.className = 'fmt-list-item';
+                    
+                    // Add bullet point for list items
+                    if (segment.types.includes('list-item')) {
+                        // Enhanced bullet cleaning for complex corrupted patterns
+                        let cleanText = segmentText;
+                        
+                        // First pass: Remove obvious bullet patterns
+                        cleanText = cleanText
+                            .replace(/^[•·‣▪▫‪‫\s]*/, '') // Remove leading bullets and whitespace
+                            .replace(/[•·‣▪▫‪‫]\s*$/, '') // Remove trailing bullets
+                            .replace(/^\d+\.\s*/, '') // Remove numbered list prefixes
+                            .replace(/^[a-zA-Z]\.\s*/, '') // Remove lettered list prefixes
+                            .replace(/^[-*+]\s*/, '') // Remove dash/asterisk bullets
+                            .replace(/\n\s*[•·‣▪▫‪‫]\s*/g, '\n') // Remove bullets after line breaks
+                            .replace(/\s+[•·‣▪▫‪‫]\s+/g, ' ') // Remove bullets in middle of text
+                            .trim();
+                        
+                        // Second pass: Handle complex corrupted patterns from console logs
+                        // Pattern: "• / sssss Johnson..." -> "Johnson..."
+                        cleanText = cleanText.replace(/^[•·‣▪▫‪‫]\s*\/?\s*[a-zA-Z0-9]*\s*/, '');
+                        
+                        // Pattern: "• 30• 01889 National..." -> "National..."
+                        cleanText = cleanText.replace(/^[•·‣▪▫‪‫]\s*\d*[•·‣▪▫‪‫]?\s*\d*\s*/, '');
+                        
+                        // Pattern: "C• 74• 59880/ Smith..." -> "Smith..."
+                        cleanText = cleanText.replace(/^[a-zA-Z]*[•·‣▪▫‪‫]\s*\d*[•·‣▪▫‪‫]?\s*\d*\/?\s*/, '');
+                        
+                        // Pattern: "ic• le• /127796 Universitat..." -> "Universitat..."
+                        cleanText = cleanText.replace(/^[a-zA-Z]*[•·‣▪▫‪‫]\s*[a-zA-Z]*[•·‣▪▫‪‫]?\s*\/?\d*\s*/, '');
+                        
+                        // Third pass: Aggressive cleanup for any remaining artifacts
+                        // Remove any sequence of: letters/numbers + bullets + more letters/numbers at start
+                        cleanText = cleanText.replace(/^[a-zA-Z0-9\/]*[•·‣▪▫‪‫][a-zA-Z0-9\/]*[•·‣▪▫‪‫]?[a-zA-Z0-9\/]*\s*/, '');
+                        
+                        // Fourth pass: Handle specific patterns from user's example
+                        // Pattern: "sss • National Library..." -> "National Library..."
+                        cleanText = cleanText.replace(/^[a-zA-Z0-9]+\s*[•·‣▪▫‪‫]\s*/, '');
+                        
+                        // Pattern: "880/ • Smith..." -> "Smith..."
+                        cleanText = cleanText.replace(/^\d+\/?\s*[•·‣▪▫‪‫]\s*/, '');
+                        
+                        // Fifth pass: Ultra-aggressive cleanup for remaining corruption
+                        // Remove any remaining bullets mixed with random characters at the start
+                        cleanText = cleanText.replace(/^[^A-Z]*[•·‣▪▫‪‫][^A-Z]*/, '');
+                        
+                        // Final cleanup: normalize whitespace and trim
+                        cleanText = cleanText.replace(/\s+/g, ' ').trim();
+                        
+                        // Debug logging for bullet cleaning
+                        if (segmentText !== cleanText) {
+                            console.log(`🔧 LIST ITEM: Cleaned "${segmentText}" -> "${cleanText}"`);
+                        }
+                        
+                        // Only add bullet if there's actual content after cleaning
+                        if (cleanText.length > 0) {
+                            listElement.innerHTML = `• ${cleanText}`;
+                        } else {
+                            // If no content after cleaning, don't add bullet
+                            console.log(`🔧 LIST ITEM: Empty after cleaning, using original: "${segmentText}"`);
+                            listElement.textContent = segmentText;
+                        }
+                    } else {
+                        listElement.textContent = segmentText;
+                    }
+                    
+                    fragment.appendChild(listElement);
+                } else {
+                    // For empty list items, just add the text without bullet
+                    fragment.appendChild(document.createTextNode(segmentText));
+                }
 
             } else {
                 // Handle standard formatting
@@ -327,6 +414,94 @@ function handleTextNodeFallback(container, startPos, endPos) {
         endNode: lastNode,
         endOffset: Math.min(endPos, lastNode.textContent.length)
     };
+}
+
+// Helper function to create image elements
+function createImageElement(segment, segmentText) {
+    const imageContainer = document.createElement('div');
+    imageContainer.className = 'fmt-image-container';
+    
+    // Find image metadata from formatting ranges
+    const imageRange = formattingData.ranges.find(range => 
+        range.type === 'image' && 
+        range.start <= segment.start && 
+        range.end >= segment.end
+    );
+    
+    if (imageRange && imageRange.meta && imageRange.meta.src) {
+        const img = document.createElement('img');
+        img.src = imageRange.meta.src;
+        img.alt = imageRange.meta.alt || 'Document image';
+        img.className = 'fmt-image';
+        img.style.maxWidth = '100%';
+        img.style.height = 'auto';
+        
+        imageContainer.appendChild(img);
+        
+        // Add caption if alt text exists
+        if (imageRange.meta.alt && imageRange.meta.alt !== 'Document image') {
+            const caption = document.createElement('div');
+            caption.className = 'fmt-image-caption';
+            caption.textContent = imageRange.meta.alt;
+            imageContainer.appendChild(caption);
+        }
+    } else {
+        // Fallback: show placeholder text
+        const placeholder = document.createElement('div');
+        placeholder.className = 'fmt-image-placeholder';
+        placeholder.textContent = segmentText;
+        imageContainer.appendChild(placeholder);
+    }
+    
+    return imageContainer;
+}
+
+// Helper function to create table elements
+function createTableElement(segment, segmentText) {
+    const tableContainer = document.createElement('div');
+    tableContainer.className = 'fmt-table-container';
+    
+    // For now, show table content as formatted text
+    // In a full implementation, you'd parse the table structure
+    const tableContent = document.createElement('div');
+    tableContent.className = 'fmt-table-content';
+    tableContent.textContent = segmentText;
+    
+    tableContainer.appendChild(tableContent);
+    return tableContainer;
+}
+
+// Helper function to create list elements
+function createListElement(segment, segmentText) {
+    const listContainer = document.createElement('div');
+    listContainer.className = 'fmt-list-container';
+    
+    // Find list metadata from formatting ranges
+    const listRange = formattingData.ranges.find(range => 
+        (range.type === 'list' || range.type === 'list-item') && 
+        range.start <= segment.start && 
+        range.end >= segment.end
+    );
+    
+    if (listRange && listRange.meta && listRange.meta.type) {
+        const listElement = document.createElement(listRange.meta.type === 'ordered' ? 'ol' : 'ul');
+        listElement.className = 'fmt-list';
+        
+        const listItem = document.createElement('li');
+        listItem.className = 'fmt-list-item';
+        listItem.textContent = segmentText;
+        
+        listElement.appendChild(listItem);
+        listContainer.appendChild(listElement);
+    } else {
+        // Fallback: show as formatted text
+        const listContent = document.createElement('div');
+        listContent.className = 'fmt-list-content';
+        listContent.textContent = segmentText;
+        listContainer.appendChild(listContent);
+    }
+    
+    return listContainer;
 }
 
 // Validation function specifically for DOCX formatting

@@ -8,6 +8,7 @@ import {
 } from './formattingState.js';
 import { applyFormattingToDOM } from './formattingRenderer.js';
 import { getEditMode } from './editMode.js';
+import { isDocxFile, isTxtFile } from './state.js';
 
 let toolbar = null;
 let activeFormats = new Set();
@@ -35,6 +36,109 @@ export function createFormattingToolbar() {
     toolbar = document.createElement('div');
     toolbar.id = 'formattingToolbar';
     toolbar.className = 'formatting-toolbar';
+    
+    // Create different toolbars based on file type
+    if (isTxtFile()) {
+        createTxtToolbar();
+    } else if (isDocxFile()) {
+        createDocxToolbar();
+    } else {
+        createDefaultToolbar();
+    }
+    
+    // Add event listeners
+    toolbar.addEventListener('click', handleToolbarClick);
+    toolbar.addEventListener('change', handleToolbarChange);
+    
+    console.log(`Formatting toolbar created for ${isDocxFile() ? 'DOCX' : 'TXT'} file`);
+    return toolbar;
+}
+
+// Create simple toolbar for TXT files
+function createTxtToolbar() {
+    toolbar.innerHTML = `
+        <div class="toolbar-info">
+            <span class="file-type-indicator">📄 TXT File</span>
+        </div>
+        <div class="toolbar-section">
+            <button class="toolbar-btn" data-format="bold" title="Bold (Ctrl+B)">
+                <strong>B</strong>
+            </button>
+            <button class="toolbar-btn" data-format="italic" title="Italic (Ctrl+I)">
+                <em>I</em>
+            </button>
+            <button class="toolbar-btn" data-format="underline" title="Underline (Ctrl+U)">
+                <u>U</u>
+            </button>
+        </div>
+        <div class="toolbar-section">
+            <select class="heading-select" data-format="heading" title="Text Style">
+                <option value="">Normal Text</option>
+                <option value="title">Title (H1)</option>
+                <option value="subtitle">Subtitle (H2)</option>
+                <option value="section">Section (H3)</option>
+            </select>
+        </div>
+        <div class="toolbar-section">
+            <button class="toolbar-btn" data-format="comment" title="Add Comment">
+                💬
+            </button>
+        </div>
+        <div class="toolbar-section">
+            <button class="toolbar-btn" data-format="clear" title="Clear Formatting">
+                🧹
+            </button>
+        </div>
+    `;
+}
+
+// Create advanced toolbar for DOCX files
+function createDocxToolbar() {
+    toolbar.innerHTML = `
+        <div class="toolbar-info">
+            <span class="file-type-indicator">📋 DOCX File</span>
+            <span class="docx-warning" title="Edit carefully to preserve rich formatting">⚠️</span>
+        </div>
+        <div class="toolbar-section">
+            <button class="toolbar-btn" data-format="bold" title="Bold (Ctrl+B)">
+                <strong>B</strong>
+            </button>
+            <button class="toolbar-btn" data-format="italic" title="Italic (Ctrl+I)">
+                <em>I</em>
+            </button>
+            <button class="toolbar-btn" data-format="underline" title="Underline (Ctrl+U)">
+                <u>U</u>
+            </button>
+        </div>
+        <div class="toolbar-section">
+            <select class="heading-select" data-format="heading" title="Text Style">
+                <option value="">Normal Text</option>
+                <option value="title">Title (H1)</option>
+                <option value="subtitle">Subtitle (H2)</option>
+                <option value="section">Section (H3)</option>
+                <option value="subsection">Subsection (H4)</option>
+            </select>
+        </div>
+        <div class="toolbar-section">
+            <button class="toolbar-btn" data-format="quote" title="Quote Block">
+                <span style="font-family: serif; font-size: 18px;">"</span>
+            </button>
+        </div>
+        <div class="toolbar-section">
+            <button class="toolbar-btn" data-format="comment" title="Add Comment">
+                💬
+            </button>
+        </div>
+        <div class="toolbar-section">
+            <button class="toolbar-btn docx-clear-btn" data-format="clear" title="Clear Formatting (Use with caution on DOCX)">
+                🧹
+            </button>
+        </div>
+    `;
+}
+
+// Create default toolbar (fallback)
+function createDefaultToolbar() {
     toolbar.innerHTML = `
         <div class="toolbar-section">
             <button class="toolbar-btn" data-format="bold" title="Bold (Ctrl+B)">
@@ -72,13 +176,6 @@ export function createFormattingToolbar() {
             </button>
         </div>
     `;
-    
-    // Add event listeners
-    toolbar.addEventListener('click', handleToolbarClick);
-    toolbar.addEventListener('change', handleToolbarChange);
-    
-    console.log('Formatting toolbar created');
-    return toolbar;
 }
 
 // Show the formatting toolbar
@@ -88,7 +185,13 @@ export function showFormattingToolbar() {
         return;
     }
     
-    const toolbar = createFormattingToolbar();
+    // Always recreate toolbar to ensure it matches current file type
+    if (toolbar && toolbar.parentNode) {
+        toolbar.parentNode.removeChild(toolbar);
+        toolbar = null;
+    }
+    
+    const currentToolbar = createFormattingToolbar();
     const bookContent = document.getElementById('bookContent');
     
     if (!bookContent) {
@@ -98,15 +201,15 @@ export function showFormattingToolbar() {
     
     // Position toolbar above book content
     const bookRect = bookContent.getBoundingClientRect();
-    toolbar.style.position = 'fixed';
-    toolbar.style.top = Math.max(10, bookRect.top - 60) + 'px';
-    toolbar.style.left = bookRect.left + 'px';
-    toolbar.style.zIndex = '1000';
-    toolbar.style.display = 'flex';
+    currentToolbar.style.position = 'fixed';
+    currentToolbar.style.top = Math.max(10, bookRect.top - 60) + 'px';
+    currentToolbar.style.left = bookRect.left + 'px';
+    currentToolbar.style.zIndex = '1000';
+    currentToolbar.style.display = 'flex';
     
     // Add to DOM if not already present
-    if (!toolbar.parentNode) {
-        document.body.appendChild(toolbar);
+    if (!currentToolbar.parentNode) {
+        document.body.appendChild(currentToolbar);
     }
     
     console.log('Formatting toolbar shown');
@@ -292,6 +395,7 @@ function findTextNodesAtPositions(container, startPos, endPos) {
 function applyFormatting(type, level = 1) {
     console.log(`🔧 FORMATTING TOOLBAR: Starting formatting application...`);
     console.log(`🔧 FORMATTING TOOLBAR: Type: ${type} Level: ${level}`);
+    console.log(`🔧 FORMATTING TOOLBAR: File type: ${isDocxFile() ? 'DOCX' : 'TXT'}`);
     
     const selection = window.getSelection();
     if (!selection.rangeCount) {

@@ -173,6 +173,52 @@
     box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.2);
 }
 
+/* File type indicators in toolbar */
+.toolbar-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding-right: 12px;
+    border-right: 1px solid #e8e8e8;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.file-type-indicator {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    color: #666;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.docx-warning {
+    color: #ff9800;
+    font-size: 14px;
+    cursor: help;
+}
+
+.docx-clear-btn {
+    background: #fff3e0 !important;
+    color: #ff9800 !important;
+    border-color: #ffcc80 !important;
+}
+
+.docx-clear-btn:hover {
+    background: #ffe0b2 !important;
+    border-color: #ffb74d !important;
+}
+
+/* Edit mode styles for different file types */
+.edit-mode-txt {
+    border-left: 3px solid #4CAF50;
+}
+
+.edit-mode-docx {
+    border-left: 3px solid #ff9800;
+}
+
 /* ========================================
    DARK THEME SUPPORT FOR FORMATTING TOOLBAR
    ======================================== */
@@ -225,6 +271,30 @@
 [data-theme="dark"] .heading-select option {
     background: #404040;
     color: #e0e0e0;
+}
+
+/* Dark theme for file type indicators */
+[data-theme="dark"] .toolbar-info {
+    border-right-color: #404040;
+}
+
+[data-theme="dark"] .file-type-indicator {
+    color: #b0b0b0;
+}
+
+[data-theme="dark"] .docx-warning {
+    color: #ffb74d;
+}
+
+[data-theme="dark"] .docx-clear-btn {
+    background: #3e2723 !important;
+    color: #ffb74d !important;
+    border-color: #5d4037 !important;
+}
+
+[data-theme="dark"] .docx-clear-btn:hover {
+    background: #4e342e !important;
+    border-color: #6d4c41 !important;
 }
 
 /* Dark theme for quote formatting */

@@ -1,6 +1,6 @@
 // AudioBook Organizer - Edit Mode Module
 
-import { setBookText } from './state.js';
+import { setBookText, isDocxFile, isTxtFile, getCurrentFileName } from './state.js';
 import { showSuccess, showInfo, showWarning } from './notifications.js';
 
 // Edit mode state
@@ -216,12 +216,19 @@ export async function toggleEditMode() {
                 // User cancelled, stay in edit mode
                 return;
             } else if (choice === 'save') {
-                // Save changes (preserve formatting)
-                setBookText(bookContent.textContent); // Save plain text for state
+                // Save changes and update formatting positions
+                const newText = bookContent.textContent;
+                setBookText(newText); // Save plain text for state
                 
-                // Ensure formatting remains applied in view mode
+                // Update formatting ranges to match new text length
                 try {
+                    const { updateFormattingForTextChange } = await import('./formattingState.js');
                     const { applyFormattingToDOM } = await import('./formattingRenderer.js');
+                    
+                    // Update formatting positions based on text changes
+                    updateFormattingForTextChange(newText);
+                    console.log('✅ Formatting ranges updated for text changes');
+                    
                     // Apply formatting after a brief delay to ensure DOM is stable
                     setTimeout(() => {
                         applyFormattingToDOM();
@@ -286,7 +293,7 @@ async function enterEditMode() {
     // Store original content when entering edit mode (preserve formatting)
     originalContent = bookContent.innerHTML;
     
-    // FIXED: Store original formatting data to restore on discard
+    // Store original formatting data to restore on discard
     try {
         const { formattingData } = await import('./formattingState.js');
         originalFormattingData = JSON.parse(JSON.stringify(formattingData)); // Deep copy
@@ -296,53 +303,92 @@ async function enterEditMode() {
         originalFormattingData = null;
     }
     
-    // Update UI
+    // Determine edit mode type based on file type
+    const fileType = isDocxFile() ? 'DOCX' : 'TXT';
+    const fileName = getCurrentFileName();
+    
+    // Update UI with file type indication
     bookContent.classList.add('edit-mode');
+    bookContent.classList.add(isDocxFile() ? 'edit-mode-docx' : 'edit-mode-txt');
     toggleBtn.classList.add('edit-active');
     btnIcon.textContent = '📝';
-    btnText.textContent = 'Edit Mode';
+    btnText.textContent = `Edit Mode (${fileType})`;
     
     // Remove edit protection
     removeEditProtection();
     
-    // FIXED: Synchronous formatting initialization with proper error handling
-    try {
-        // Show formatting toolbar
-        const { showFormattingToolbar } = await import('./formattingToolbar.js');
-        showFormattingToolbar();
-        console.log('✅ Formatting toolbar shown');
-        
-        // Apply any existing formatting
-        const { applyFormattingToDOM } = await import('./formattingRenderer.js');
-        applyFormattingToDOM();
-        console.log('✅ Formatting applied to DOM');
-        
-        // Initialize formatting shortcuts if not already done
-        const { initializeFormattingShortcuts, initializeSelectionTracking } = await import('./formattingToolbar.js');
-        initializeFormattingShortcuts();
-        initializeSelectionTracking();
-        console.log('✅ Formatting shortcuts initialized');
-        
-        // Log debugging info
-        const { logFormattingState } = await import('./formattingState.js');
-        logFormattingState();
-        
-        // DEBUGGING: Force CSS test
-        setTimeout(() => {
-            console.log('🔍 DEBUGGING: Book content classes:', bookContent.className);
-            console.log('🔍 DEBUGGING: Book content computed styles:', window.getComputedStyle(bookContent));
-            console.log('🔍 DEBUGGING: Formatting elements in DOM:', bookContent.querySelectorAll('[data-formatting-id]').length);
-        }, 100);
-        
-    } catch (error) {
-        console.error('❌ Error initializing formatting in edit mode:', error);
-        // Continue with basic edit mode even if formatting fails
+    // Handle different edit modes
+    if (isTxtFile()) {
+        await enterTxtEditMode(bookContent, fileName);
+    } else if (isDocxFile()) {
+        await enterDocxEditMode(bookContent, fileName);
     }
     
     // Focus the content area
     bookContent.focus();
+}
+
+// Enter TXT edit mode (simple, fast, no formatting complications)
+async function enterTxtEditMode(bookContent, fileName) {
+    console.log('📝 Entering TXT edit mode for:', fileName);
     
-    showInfo('📝 Edit mode enabled! You can now modify the book text and apply formatting.');
+    try {
+        // Show simple formatting toolbar for TXT files
+        const { showFormattingToolbar } = await import('./formattingToolbar.js');
+        showFormattingToolbar();
+        console.log('✅ TXT formatting toolbar shown');
+        
+        // Initialize basic formatting shortcuts
+        const { initializeFormattingShortcuts, initializeSelectionTracking } = await import('./formattingToolbar.js');
+        initializeFormattingShortcuts();
+        initializeSelectionTracking();
+        console.log('✅ TXT formatting shortcuts initialized');
+        
+        showInfo('📝 TXT Edit mode enabled! You can modify text and apply basic formatting.');
+        
+    } catch (error) {
+        console.error('❌ Error initializing TXT edit mode:', error);
+        showInfo('📝 TXT Edit mode enabled! (Basic editing only)');
+    }
+}
+
+// Enter DOCX edit mode (formatting-aware, more complex)
+async function enterDocxEditMode(bookContent, fileName) {
+    console.log('📝 Entering DOCX edit mode for:', fileName);
+    
+    try {
+        // Show DOCX-aware formatting toolbar
+        const { showFormattingToolbar } = await import('./formattingToolbar.js');
+        showFormattingToolbar();
+        console.log('✅ DOCX formatting toolbar shown');
+        
+        // Apply existing DOCX formatting to DOM
+        const { applyFormattingToDOM } = await import('./formattingRenderer.js');
+        applyFormattingToDOM();
+        console.log('✅ DOCX formatting applied to DOM');
+        
+        // Initialize DOCX-aware formatting shortcuts
+        const { initializeFormattingShortcuts, initializeSelectionTracking } = await import('./formattingToolbar.js');
+        initializeFormattingShortcuts();
+        initializeSelectionTracking();
+        console.log('✅ DOCX formatting shortcuts initialized');
+        
+        // Log debugging info for DOCX
+        const { logFormattingState } = await import('./formattingState.js');
+        logFormattingState();
+        
+        showInfo('📝 DOCX Edit mode enabled! Rich formatting is preserved. Edit carefully to maintain formatting.');
+        
+        // DEBUGGING: Force CSS test for DOCX
+        setTimeout(() => {
+            console.log('🔍 DOCX DEBUGGING: Book content classes:', bookContent.className);
+            console.log('🔍 DOCX DEBUGGING: Formatting elements in DOM:', bookContent.querySelectorAll('[data-formatting-id]').length);
+        }, 100);
+        
+    } catch (error) {
+        console.error('❌ Error initializing DOCX edit mode:', error);
+        showInfo('📝 DOCX Edit mode enabled! (Limited formatting support)');
+    }
 }
 
 // Exit edit mode
@@ -354,8 +400,8 @@ function exitEditMode() {
     
     isEditMode = false;
     
-    // Update UI
-    bookContent.classList.remove('edit-mode');
+    // Update UI - remove all edit mode classes
+    bookContent.classList.remove('edit-mode', 'edit-mode-txt', 'edit-mode-docx');
     toggleBtn.classList.remove('edit-active');
     btnIcon.textContent = '👁';
     btnText.textContent = 'View Mode';

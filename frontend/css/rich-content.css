@@ -1,0 +1,258 @@
+/* Rich Content Formatting Styles for DOCX Import */
+
+/* Link formatting */
+.fmt-link {
+    color: var(--primary-color);
+    text-decoration: underline;
+    cursor: pointer;
+    transition: color 0.2s ease;
+}
+
+.fmt-link:hover {
+    color: var(--primary-hover);
+    text-decoration: none;
+}
+
+.fmt-link:visited {
+    color: var(--secondary-color);
+}
+
+/* Image formatting */
+.fmt-image-container {
+    margin: 15px 0;
+    text-align: center;
+}
+
+.fmt-image {
+    max-width: 100%;
+    height: auto;
+    border-radius: var(--radius-sm);
+    box-shadow: var(--shadow-sm);
+    transition: transform 0.2s ease;
+}
+
+.fmt-image:hover {
+    transform: scale(1.02);
+    box-shadow: var(--shadow-md);
+}
+
+.fmt-image-caption {
+    margin-top: 8px;
+    font-size: 0.9em;
+    color: var(--text-muted);
+    font-style: italic;
+}
+
+.fmt-image-placeholder {
+    background: var(--bg-secondary);
+    border: 2px dashed var(--border-color);
+    border-radius: var(--radius-sm);
+    padding: 20px;
+    color: var(--text-muted);
+    font-style: italic;
+    text-align: center;
+}
+
+/* Table formatting */
+.fmt-table-container {
+    margin: 15px 0;
+    overflow-x: auto;
+}
+
+.fmt-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: var(--bg-primary);
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+}
+
+.fmt-table th,
+.fmt-table td {
+    padding: 12px;
+    text-align: left;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.fmt-table th {
+    background: var(--bg-secondary);
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.fmt-table tr:hover {
+    background: var(--bg-secondary);
+}
+
+.fmt-table-content {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    padding: 15px;
+    font-family: monospace;
+    white-space: pre-wrap;
+    overflow-x: auto;
+}
+
+/* List formatting */
+.fmt-list-container {
+    margin: 10px 0;
+}
+
+.fmt-list {
+    margin: 0;
+    padding-left: 25px;
+}
+
+.fmt-list-item {
+    margin: 5px 0;
+    line-height: 1.5;
+    display: block;
+}
+
+.fmt-list-content {
+    background: var(--bg-secondary);
+    border-left: 4px solid var(--primary-color);
+    padding: 10px 15px;
+    margin: 10px 0;
+    border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+}
+
+/* Quote formatting */
+.fmt-quote {
+    background: var(--bg-secondary);
+    border-left: 4px solid var(--primary-color);
+    padding: 15px 20px;
+    margin: 15px 0;
+    border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+    font-style: italic;
+    position: relative;
+}
+
+.fmt-quote::before {
+    content: '"';
+    font-size: 3em;
+    color: var(--primary-color);
+    position: absolute;
+    top: -10px;
+    left: 10px;
+    opacity: 0.3;
+}
+
+/* Heading enhancements for DOCX */
+.fmt-heading {
+    margin: 20px 0 15px 0;
+    font-weight: 600;
+    line-height: 1.3;
+}
+
+.fmt-heading[data-level="1"] {
+    font-size: 2em;
+    color: var(--primary-color);
+    border-bottom: 2px solid var(--primary-color);
+    padding-bottom: 10px;
+}
+
+.fmt-heading[data-level="2"] {
+    font-size: 1.6em;
+    color: var(--text-primary);
+}
+
+.fmt-heading[data-level="3"] {
+    font-size: 1.3em;
+    color: var(--text-secondary);
+}
+
+.fmt-heading[data-level="4"],
+.fmt-heading[data-level="5"],
+.fmt-heading[data-level="6"] {
+    font-size: 1.1em;
+    color: var(--text-secondary);
+}
+
+/* Enhanced text formatting */
+.fmt-bold {
+    font-weight: 600;
+}
+
+.fmt-italic {
+    font-style: italic;
+}
+
+.fmt-underline {
+    text-decoration: underline;
+}
+
+/* Dark theme adjustments for rich content */
+[data-theme="dark"] .fmt-image {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+}
+
+[data-theme="dark"] .fmt-table {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+}
+
+[data-theme="dark"] .fmt-image-placeholder {
+    background: var(--bg-secondary);
+    border-color: var(--border-color);
+}
+
+[data-theme="dark"] .fmt-table-content {
+    background: var(--bg-secondary);
+    border-color: var(--border-color);
+}
+
+[data-theme="dark"] .fmt-list-content {
+    background: var(--bg-secondary);
+}
+
+[data-theme="dark"] .fmt-quote {
+    background: var(--bg-secondary);
+}
+
+/* Responsive adjustments for rich content */
+@media (max-width: 768px) {
+    .fmt-image-container {
+        margin: 10px 0;
+    }
+    
+    .fmt-table-container {
+        margin: 10px 0;
+    }
+    
+    .fmt-table th,
+    .fmt-table td {
+        padding: 8px;
+        font-size: 0.9em;
+    }
+    
+    .fmt-quote {
+        padding: 10px 15px;
+        margin: 10px 0;
+    }
+    
+    .fmt-heading[data-level="1"] {
+        font-size: 1.6em;
+    }
+    
+    .fmt-heading[data-level="2"] {
+        font-size: 1.3em;
+    }
+}
+
+@media (max-width: 480px) {
+    .fmt-table th,
+    .fmt-table td {
+        padding: 6px;
+        font-size: 0.8em;
+    }
+    
+    .fmt-quote {
+        padding: 8px 12px;
+    }
+    
+    .fmt-list {
+        padding-left: 20px;
+    }
+} 

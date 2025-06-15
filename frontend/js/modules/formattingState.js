@@ -381,6 +381,57 @@ export function testFormattingSystem() {
     return 'Test completed - check console for results';
 }
 
+// Update formatting ranges when text content changes (for edit mode)
+export function updateFormattingForTextChange(newText) {
+    const newLength = newText.length;
+    
+    console.log(`🔧 Updating formatting for text change. New length: ${newLength}`);
+    
+    // Filter out ranges that are now beyond the text length
+    const validRanges = formattingData.ranges.filter(range => {
+        if (range.start >= newLength) {
+            console.log(`⚠️ Removing range beyond text: ${range.start}-${range.end} (text length: ${newLength})`);
+            return false;
+        }
+        return true;
+    });
+    
+    // Adjust ranges that extend beyond the new text length
+    const adjustedRanges = validRanges.map(range => {
+        if (range.end > newLength) {
+            console.log(`🔧 Adjusting range end: ${range.start}-${range.end} -> ${range.start}-${newLength}`);
+            return {
+                ...range,
+                end: newLength
+            };
+        }
+        return range;
+    });
+    
+    // Update the formatting data
+    const originalCount = formattingData.ranges.length;
+    formattingData.ranges = adjustedRanges;
+    
+    // Clean up any invalid ranges
+    cleanupFormattingRanges();
+    
+    console.log(`✅ Formatting updated: ${originalCount} -> ${formattingData.ranges.length} ranges`);
+    
+    // Also update comments that are beyond the text length
+    const validComments = formattingData.comments.filter(comment => {
+        if (comment.position >= newLength) {
+            console.log(`⚠️ Removing comment beyond text: position ${comment.position} (text length: ${newLength})`);
+            return false;
+        }
+        return true;
+    });
+    
+    const originalCommentCount = formattingData.comments.length;
+    formattingData.comments = validComments;
+    
+    console.log(`✅ Comments updated: ${originalCommentCount} -> ${formattingData.comments.length} comments`);
+}
+
 // Make it available globally for easy testing
 if (typeof window !== 'undefined') {
     window.testFormattingSystem = testFormattingSystem;
