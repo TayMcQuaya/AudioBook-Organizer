@@ -9,6 +9,7 @@ from .routes.upload_routes import create_upload_routes
 from .routes.export_routes import create_export_routes
 from .routes.auth_routes import create_auth_routes
 from .routes.project_routes import project_bp
+from .routes.docx_routes import docx_bp
 from .services.supabase_service import init_supabase_service
 from .services.security_service import init_security_service
 
@@ -55,6 +56,9 @@ def create_app(config_name='default'):
     
     # Register project persistence routes
     app.register_blueprint(project_bp, url_prefix='/api/projects')
+    
+    # Register DOCX processing routes
+    app.register_blueprint(docx_bp)
     
     # Debug route to check all registered routes - exact functionality preserved
     @app.route('/debug/routes', methods=['GET'])
