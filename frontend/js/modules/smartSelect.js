@@ -357,8 +357,27 @@ export function highlightSmartSelection(selection) {
                     windowSelection.removeAllRanges();
                     windowSelection.addRange(range);
                     
-                    // Scroll to the selection
-                    span.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    // Scroll to the selection within the column content container
+                    const columnContent = bookContent.closest('.column-content');
+                    if (columnContent) {
+                        // Get the position of the span relative to the scrollable container
+                        const spanRect = span.getBoundingClientRect();
+                        const containerRect = columnContent.getBoundingClientRect();
+                        const relativeTop = spanRect.top - containerRect.top;
+                        const containerHeight = columnContent.clientHeight;
+                        
+                        // Calculate the scroll position to center the span in the container
+                        const targetScrollTop = columnContent.scrollTop + relativeTop - (containerHeight / 2) + (spanRect.height / 2);
+                        
+                        // Smooth scroll within the container
+                        columnContent.scrollTo({
+                            top: targetScrollTop,
+                            behavior: 'smooth'
+                        });
+                    } else {
+                        // Fallback to original behavior if container not found
+                        span.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }
                     
                     return true;
                 } catch (e) {
