@@ -272,6 +272,14 @@ function loadProjectDirectly(projectData) {
     if (projectData.formattingData) {
         setFormattingData(projectData.formattingData);
         console.log(`Loaded formatting data: ${projectData.formattingData.ranges?.length || 0} ranges, ${projectData.formattingData.comments?.length || 0} comments`);
+        
+        // Apply formatting immediately for consistent view/edit mode display
+        import('./formattingRenderer.js').then(({ applyFormattingToDOM }) => {
+            applyFormattingToDOM();
+            console.log('Applied formatting to loaded project (immediate)');
+        }).catch(error => {
+            console.error('Error applying formatting during load:', error);
+        });
     } else {
         clearFormatting();
         console.log('No formatting data in project file');
@@ -442,15 +450,9 @@ function completeProjectLoad(projectData) {
     // Reinitialize smart select functionality
     initializeSmartSelect();
     
-    // Apply formatting if it exists
-    if (projectData.formattingData && (projectData.formattingData.ranges?.length > 0 || projectData.formattingData.comments?.length > 0)) {
-        import('./formattingRenderer.js').then(({ applyFormattingToDOM }) => {
-            applyFormattingToDOM();
-            console.log('Applied formatting to loaded project');
-        }).catch(error => {
-            console.error('Error applying formatting after load:', error);
-        });
-    }
+    // Note: Formatting is now applied immediately during loadProjectDirectly(),
+    // so we don't need to apply it again here
+    console.log('Project load completed - formatting already applied');
 }
 
 // =============================================================================

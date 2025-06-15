@@ -218,6 +218,19 @@ export async function toggleEditMode() {
             } else if (choice === 'save') {
                 // Save changes (preserve formatting)
                 setBookText(bookContent.textContent); // Save plain text for state
+                
+                // Ensure formatting remains applied in view mode
+                try {
+                    const { applyFormattingToDOM } = await import('./formattingRenderer.js');
+                    // Apply formatting after a brief delay to ensure DOM is stable
+                    setTimeout(() => {
+                        applyFormattingToDOM();
+                        console.log('✅ Formatting maintained in view mode after save');
+                    }, 100);
+                } catch (error) {
+                    console.error('Error maintaining formatting after save:', error);
+                }
+                
                 exitEditMode();
                 showSuccess('✅ Changes saved successfully! View mode enabled.');
             } else if (choice === 'discard') {
@@ -231,6 +244,11 @@ export async function toggleEditMode() {
                     if (originalFormattingData) {
                         setFormattingData(originalFormattingData);
                         console.log('✅ Original formatting data restored when discarding changes');
+                        
+                        // Apply the restored formatting to DOM for consistent display
+                        const { applyFormattingToDOM } = await import('./formattingRenderer.js');
+                        applyFormattingToDOM();
+                        console.log('✅ Original formatting applied to DOM after discard');
                     } else {
                         const { clearFormatting } = await import('./formattingState.js');
                         clearFormatting();
