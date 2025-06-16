@@ -13,6 +13,14 @@ export let currentFileName = '';
 // Chapter audio players map
 export const chapterPlayers = new Map();
 
+// Table of Contents state
+export let tocState = {
+    isVisible: false,
+    headers: [],
+    activeHeaderId: null,
+    isScrolling: false
+};
+
 // Auto-save functionality
 let triggerAutoSaveFunction = null;
 
@@ -92,6 +100,23 @@ export function getNextColor() {
     const nextColor = currentColorIndex;
     currentColorIndex = currentColorIndex % MAX_COLORS + 1;
     return nextColor;
+}
+
+// TOC state management
+export function setTOCVisible(visible) {
+    tocState.isVisible = visible;
+}
+
+export function setTOCHeaders(headers) {
+    tocState.headers = headers;
+}
+
+export function setActiveHeader(headerId) {
+    tocState.activeHeaderId = headerId;
+}
+
+export function setTOCScrolling(isScrolling) {
+    tocState.isScrolling = isScrolling;
 }
 
 // Make state module available globally for storage access

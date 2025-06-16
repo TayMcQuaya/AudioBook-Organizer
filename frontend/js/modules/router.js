@@ -574,6 +574,10 @@ class Router {
                 if (window.isAppInitialized && window.cleanupApp) {
                      window.cleanupApp();
                 }
+                // Also clean up Table of Contents
+                if (window.cleanupTableOfContents) {
+                    window.cleanupTableOfContents();
+                }
                 break;
             case 'auth':
                  if (window.cleanupAuthPage) {

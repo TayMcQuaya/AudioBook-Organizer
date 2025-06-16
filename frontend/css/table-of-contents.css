@@ -1,0 +1,459 @@
+/* Table of Contents Sidebar Styles */
+
+/* ===============================================
+   TOC Overlay Design (No Layout Disruption)
+   =============================================== */
+
+/* TOC as overlay - does not affect existing layout */
+.toc-sidebar {
+    position: fixed;
+    top: 60px; /* Below navigation */
+    left: -320px; /* Hidden by default */
+    bottom: 0;
+    width: 320px;
+    z-index: 1001; /* Above backdrop */
+    transition: left 0.3s var(--animation-ease);
+    box-shadow: 2px 0 10px rgba(0, 0, 0, 0.2);
+}
+
+.toc-sidebar.toc-open {
+    left: 0; /* Slide in from left */
+}
+
+/* Backdrop removed - using click-outside detection instead */
+
+/* ===============================================
+   TOC Sidebar Structure
+   =============================================== */
+
+.toc-sidebar {
+    background: var(--bg-primary);
+    border-right: 1px solid var(--border-color);
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    transition: all 0.3s var(--animation-ease);
+    z-index: 10;
+}
+
+.toc-header {
+    padding: var(--spacing-md);
+    border-bottom: 1px solid var(--border-color);
+    background: var(--bg-secondary);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+.toc-header h3 {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.toc-close-btn {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: 0.25rem;
+    border-radius: var(--radius-sm);
+    transition: all 0.2s ease;
+    line-height: 1;
+    width: 2rem;
+    height: 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.toc-close-btn:hover {
+    background: rgba(var(--primary-color-rgb), 0.1);
+    color: var(--primary-color);
+    transform: scale(1.1);
+}
+
+.toc-content {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+.toc-footer {
+    padding: var(--spacing-sm) var(--spacing-md);
+    border-top: 1px solid var(--border-color);
+    background: var(--bg-secondary);
+    flex-shrink: 0;
+}
+
+.toc-count {
+    color: var(--text-muted);
+    font-size: 0.85rem;
+}
+
+/* ===============================================
+   TOC List Items
+   =============================================== */
+
+.toc-list {
+    padding: 0;
+    margin: 0;
+}
+
+.toc-item {
+    padding: 12px var(--spacing-md);
+    border-bottom: 1px solid rgba(var(--primary-color-rgb), 0.05);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    background: var(--bg-primary);
+}
+
+.toc-item:hover {
+    background: rgba(var(--primary-color-rgb), 0.08);
+    border-left: 3px solid rgba(var(--primary-color-rgb), 0.3);
+}
+
+.toc-item.active {
+    background: rgba(var(--primary-color-rgb), 0.12);
+    border-left: 3px solid var(--primary-color);
+    font-weight: 500;
+}
+
+.toc-item.active::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 3px;
+    background: var(--primary-color);
+    box-shadow: 0 0 8px rgba(var(--primary-color-rgb), 0.4);
+}
+
+/* Header level styling */
+.toc-item[data-level="1"] {
+    font-weight: 600;
+    font-size: 1rem;
+    color: var(--text-primary);
+}
+
+.toc-item[data-level="2"] {
+    font-weight: 500;
+    font-size: 0.95rem;
+    color: var(--text-primary);
+    padding-left: calc(var(--spacing-md) + 1rem);
+}
+
+.toc-item[data-level="3"] {
+    font-weight: 400;
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    padding-left: calc(var(--spacing-md) + 2rem);
+}
+
+.toc-item[data-level="4"] {
+    font-weight: 400;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    padding-left: calc(var(--spacing-md) + 3rem);
+}
+
+.toc-item-icon {
+    font-size: 0.9rem;
+    color: var(--text-muted);
+    flex-shrink: 0;
+    margin-top: 0.1rem;
+}
+
+.toc-item-text {
+    flex: 1;
+    line-height: 1.4;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+}
+
+/* ===============================================
+   TOC Toggle Button
+   =============================================== */
+
+.toc-toggle-btn {
+    background: var(--gradient-primary);
+    color: white;
+    border: none;
+    border-radius: var(--radius-sm);
+    padding: 0.5rem 0.75rem;
+    font-size: 0.85rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    box-shadow: var(--shadow-sm);
+}
+
+.toc-toggle-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-md);
+    background: var(--gradient-secondary);
+}
+
+.toc-toggle-btn:active {
+    transform: translateY(0);
+}
+
+.toc-toggle-btn i {
+    font-style: normal;
+    font-size: 1rem;
+}
+
+.toc-toggle-text {
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+
+/* ===============================================
+   Scrollbar Styling (matching app theme)
+   =============================================== */
+
+.toc-content::-webkit-scrollbar {
+    width: 6px;
+}
+
+.toc-content::-webkit-scrollbar-track {
+    background: var(--bg-secondary);
+}
+
+.toc-content::-webkit-scrollbar-thumb {
+    background: rgba(var(--primary-color-rgb), 0.3);
+    border-radius: 3px;
+}
+
+.toc-content::-webkit-scrollbar-thumb:hover {
+    background: rgba(var(--primary-color-rgb), 0.5);
+}
+
+/* ===============================================
+   Empty State
+   =============================================== */
+
+.toc-empty {
+    padding: 2rem var(--spacing-md);
+    text-align: center;
+    color: var(--text-muted);
+}
+
+.toc-empty-icon {
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+    opacity: 0.5;
+}
+
+.toc-empty-text {
+    font-size: 0.9rem;
+    line-height: 1.4;
+}
+
+/* ===============================================
+   Loading State
+   =============================================== */
+
+.toc-loading {
+    padding: 2rem var(--spacing-md);
+    text-align: center;
+    color: var(--text-muted);
+}
+
+.toc-loading-spinner {
+    width: 20px;
+    height: 20px;
+    border: 2px solid rgba(var(--primary-color-rgb), 0.2);
+    border-top: 2px solid var(--primary-color);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 0 auto 0.5rem;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* ===============================================
+   Dark Theme Overrides
+   =============================================== */
+
+[data-theme="dark"] .toc-sidebar {
+    border-right-color: var(--border-color);
+}
+
+[data-theme="dark"] .toc-item:hover {
+    background: rgba(var(--primary-color-rgb), 0.15);
+}
+
+[data-theme="dark"] .toc-item.active {
+    background: rgba(var(--primary-color-rgb), 0.2);
+}
+
+[data-theme="dark"] .toc-close-btn:hover {
+    background: rgba(var(--primary-color-rgb), 0.2);
+}
+
+/* ===============================================
+   Responsive Design
+   =============================================== */
+
+/* Tablet */
+@media (max-width: 1024px) {
+    .main-container.toc-open {
+        --toc-width: 260px;
+    }
+    
+    .toc-item {
+        padding: 10px var(--spacing-sm);
+    }
+    
+    .toc-header {
+        padding: var(--spacing-sm);
+    }
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+    .toc-sidebar {
+        width: 280px;
+    }
+    
+    .toc-toggle-btn {
+        padding: 0.4rem 0.6rem;
+        font-size: 0.8rem;
+    }
+    
+    .toc-toggle-text {
+        display: none;
+    }
+}
+
+/* Small Mobile */
+@media (max-width: 480px) {
+    .toc-sidebar.mobile-overlay {
+        width: 240px;
+    }
+    
+    .toc-item {
+        padding: 8px var(--spacing-sm);
+        font-size: 0.85rem;
+    }
+    
+    .toc-item[data-level="2"] {
+        padding-left: calc(var(--spacing-sm) + 0.75rem);
+    }
+    
+    .toc-item[data-level="3"] {
+        padding-left: calc(var(--spacing-sm) + 1.5rem);
+    }
+    
+    .toc-item[data-level="4"] {
+        padding-left: calc(var(--spacing-sm) + 2.25rem);
+    }
+}
+
+/* ===============================================
+   Animation Utilities
+   =============================================== */
+
+.toc-item-enter {
+    opacity: 0;
+    transform: translateY(-10px);
+    animation: tocItemEnter 0.3s ease forwards;
+}
+
+@keyframes tocItemEnter {
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.toc-highlight-pulse {
+    animation: tocHighlightPulse 0.6s ease;
+}
+
+@keyframes tocHighlightPulse {
+    0%, 100% { 
+        background: rgba(var(--primary-color-rgb), 0.12);
+    }
+    50% { 
+        background: rgba(var(--primary-color-rgb), 0.25);
+        transform: scale(1.02);
+    }
+}
+
+/* Header Flash Animation (like sections) */
+.toc-flash {
+    animation: tocFlash 0.6s ease-out;
+}
+
+@keyframes tocFlash {
+    0% { 
+        background-color: rgba(255, 255, 0, 0.4);
+        transform: scale(1.02);
+    }
+    50% { 
+        background-color: rgba(255, 255, 0, 0.6);
+    }
+    100% { 
+        background-color: transparent;
+        transform: scale(1);
+    }
+}
+
+/* ===============================================
+   Accessibility
+   =============================================== */
+
+.toc-item:focus {
+    outline: 2px solid var(--primary-color);
+    outline-offset: -2px;
+    background: rgba(var(--primary-color-rgb), 0.1);
+}
+
+.toc-close-btn:focus {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
+}
+
+.toc-toggle-btn:focus {
+    outline: 2px solid rgba(255, 255, 255, 0.8);
+    outline-offset: 2px;
+}
+
+/* Reduced motion preferences */
+@media (prefers-reduced-motion: reduce) {
+    .toc-sidebar,
+    .toc-item,
+    .toc-close-btn,
+    .toc-toggle-btn {
+        transition: none;
+    }
+    
+    .toc-item-enter,
+    .toc-highlight-pulse {
+        animation: none;
+    }
+    
+    .main-container {
+        transition: none;
+    }
+} 

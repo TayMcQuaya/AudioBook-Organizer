@@ -604,7 +604,83 @@ function updateRangesForDeletion(deletePosition, deleteLength) {
     formattingData.comments = updatedComments;
 }
 
+// ===============================================
+// Table of Contents extraction functionality
+// ===============================================
+
+/**
+ * Extract table of contents from formatting data
+ * Returns array of header objects sorted by position
+ */
+export function extractTableOfContents() {
+    if (!formattingData?.ranges) {
+        console.log('📋 No formatting data available for TOC extraction');
+        return [];
+    }
+    
+    const headerTypes = ['title', 'subtitle', 'section', 'subsection'];
+    const bookContent = document.getElementById('bookContent');
+    
+    if (!bookContent || !bookContent.textContent) {
+        console.log('📋 No book content available for TOC extraction');
+        return [];
+    }
+    
+    const fullText = bookContent.textContent;
+    
+    const headers = formattingData.ranges
+        .filter(range => headerTypes.includes(range.type))
+        .map(range => {
+            const text = extractHeaderText(range, fullText);
+            const level = getHeaderLevel(range.type);
+            
+            return {
+                id: range.id,
+                type: range.type,
+                level: level,
+                text: text,
+                position: range.start,
+                endPosition: range.end
+            };
+        })
+        .sort((a, b) => a.position - b.position);
+    
+    console.log(`📋 Extracted ${headers.length} headers for table of contents`);
+    return headers;
+}
+
+/**
+ * Extract clean text for a header range
+ */
+function extractHeaderText(range, fullText) {
+    if (!fullText || range.start < 0 || range.end > fullText.length) {
+        return 'Untitled Header';
+    }
+    
+    const text = fullText.substring(range.start, range.end).trim();
+    
+    // Clean up the text
+    return text
+        .replace(/\s+/g, ' ') // Normalize whitespace
+        .substring(0, 100) // Limit length for UI
+        .trim() || 'Untitled Header';
+}
+
+/**
+ * Get numeric level for header type
+ */
+function getHeaderLevel(type) {
+    const levelMap = {
+        'title': 1,
+        'subtitle': 2,
+        'section': 3,
+        'subsection': 4
+    };
+    return levelMap[type] || 1;
+}
+
 // Make it available globally for easy testing
 if (typeof window !== 'undefined') {
     window.testFormattingSystem = testFormattingSystem;
+    window.extractTableOfContents = extractTableOfContents;
 } 

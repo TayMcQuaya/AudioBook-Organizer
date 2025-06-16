@@ -10,6 +10,7 @@ import sessionManager from './sessionManager.js';
 import appUI from './appUI.js';
 import themeManager from './themeManager.js';
 import { loadFromDatabase, startAutoSave, stopAutoSave } from './storage.js';
+import { initializeTableOfContents, cleanupTableOfContents } from './tableOfContents.js';
 
 let isInitialized = false;
 
@@ -22,6 +23,9 @@ export function cleanupApp() {
 
     // Stop auto-save functionality
     stopAutoSave();
+
+    // Clean up Table of Contents
+    cleanupTableOfContents();
 
     // Clean up text selection listeners
     if (window.cleanupTextSelection) {
@@ -232,6 +236,9 @@ export async function initApp() {
         
         // Try to restore latest project from database
         await restoreLatestProject();
+        
+        // Initialize Table of Contents
+        initializeTableOfContents();
         
         // Start auto-save functionality
         startAutoSave();

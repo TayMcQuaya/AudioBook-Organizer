@@ -135,6 +135,13 @@ function handleUploadSuccess(text, formattingData = null, metadata = null) {
     // Initialize smart select functionality
     initializeSmartSelect();
     
+    // Refresh Table of Contents with new content
+    setTimeout(() => {
+        if (window.refreshTableOfContents) {
+            window.refreshTableOfContents();
+        }
+    }, 200); // Allow DOM to update
+    
     hideLoading();
     hideError();
     
