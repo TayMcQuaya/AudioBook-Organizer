@@ -199,17 +199,24 @@ export function showFormattingToolbar() {
         return;
     }
     
-    // Position toolbar above book content
-    const bookRect = bookContent.getBoundingClientRect();
-    currentToolbar.style.position = 'fixed';
-    currentToolbar.style.top = Math.max(10, bookRect.top - 60) + 'px';
-    currentToolbar.style.left = bookRect.left + 'px';
-    currentToolbar.style.zIndex = '1000';
-    currentToolbar.style.display = 'flex';
+    // Find the column-content container that holds the book content
+    const columnContent = bookContent.closest('.column-content');
     
-    // Add to DOM if not already present
+    if (!columnContent) {
+        console.warn('Column content container not found - cannot show toolbar');
+        return;
+    }
+    
+    // Remove any inline styles that might interfere with sticky positioning
+    currentToolbar.style.position = '';
+    currentToolbar.style.top = '';
+    currentToolbar.style.left = '';
+    currentToolbar.style.zIndex = '';
+    currentToolbar.style.display = '';
+    
+    // Insert toolbar at the beginning of the column-content container
     if (!currentToolbar.parentNode) {
-        document.body.appendChild(currentToolbar);
+        columnContent.insertBefore(currentToolbar, columnContent.firstChild);
     }
     
     console.log('Formatting toolbar shown');

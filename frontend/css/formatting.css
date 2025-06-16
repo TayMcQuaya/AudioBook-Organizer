@@ -100,6 +100,13 @@
     backdrop-filter: blur(10px);
     user-select: none;
     z-index: 1000;
+    
+    /* NEW: Sticky positioning above content container */
+    position: sticky;
+    top: 10px;
+    margin: 0 auto 10px auto;
+    width: fit-content;
+    max-width: 90%;
 }
 
 .toolbar-section {
