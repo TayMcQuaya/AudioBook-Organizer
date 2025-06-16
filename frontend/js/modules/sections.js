@@ -434,8 +434,32 @@ export function navigateToSection(sectionId) {
     const highlight = document.querySelector(`.section-highlight[data-section-id="${sectionId}"]`);
     if (!highlight) return;
 
-    // Scroll the highlight into view with some padding
-    highlight.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    // ✅ FIX: Scroll within the content container instead of the entire page
+    const bookContent = document.getElementById('bookContent');
+    const columnContent = bookContent?.closest('.column-content');
+    
+    if (columnContent) {
+        // Get the position of the highlight relative to the scrollable container
+        const highlightRect = highlight.getBoundingClientRect();
+        const containerRect = columnContent.getBoundingClientRect();
+        const relativeTop = highlightRect.top - containerRect.top;
+        const containerHeight = columnContent.clientHeight;
+        
+        // Calculate the scroll position to center the highlight in the container
+        const targetScrollTop = columnContent.scrollTop + relativeTop - (containerHeight / 2) + (highlightRect.height / 2);
+        
+        // Smooth scroll within the content container only
+        columnContent.scrollTo({
+            top: targetScrollTop,
+            behavior: 'smooth'
+        });
+        
+        console.log(`✅ Scrolled to section ${sectionId} within content container`);
+    } else {
+        // Fallback to original behavior if container not found
+        console.warn('Column content container not found, using fallback scroll');
+        highlight.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
 
     // Add flash animation
     highlight.classList.remove('flash');
