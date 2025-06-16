@@ -122,39 +122,50 @@ class DocxService:
     def _process_paragraph_enhanced(self, paragraph, para_start_pos: int, processing_notes: List[str]) -> Tuple[str, List[Dict]]:
         """
         Enhanced paragraph processing with better run handling
+        CRITICAL: Use paragraph.text to preserve hyperlinks and all content
         """
-        para_text_parts = []
+        # Use paragraph.text to ensure we get ALL text including hyperlinks
+        # This is the SAME method used in extract_text_only that preserves URLs
+        para_text = paragraph.text
+        para_end = para_start_pos + len(para_text)
+        
+        # Now extract formatting from runs, but map to the complete paragraph text
         para_formatting = []
         current_pos = para_start_pos
         
-        # Process each run in the paragraph
+        # Process each run for formatting (but don't rely on run text for content)
         for run_idx, run in enumerate(paragraph.runs):
             if not run.text:
                 continue
             
-            # Get run text with preserved whitespace
+            # Calculate run position within the complete paragraph text
             run_text = self._preserve_run_whitespace(run.text)
             run_start = current_pos
             run_end = current_pos + len(run_text)
             
-            # Extract character-level formatting
-            run_formatting = self._extract_run_formatting(
-                run, run_start, run_end, processing_notes
-            )
-            para_formatting.extend(run_formatting)
+            # Ensure run doesn't exceed paragraph bounds
+            if run_end > para_end:
+                run_end = para_end
+                
+            if run_start < run_end:
+                # Extract character-level formatting for this run
+                run_formatting = self._extract_run_formatting(
+                    run, run_start, run_end, processing_notes
+                )
+                para_formatting.extend(run_formatting)
             
-            # Add run text
-            para_text_parts.append(run_text)
             current_pos = run_end
         
-        # Add paragraph-level formatting if applicable
-        para_text = ''.join(para_text_parts)
-        para_end = para_start_pos + len(para_text)
-        
+        # Add paragraph-level formatting
         paragraph_formatting = self._extract_paragraph_formatting(
             paragraph, para_start_pos, para_end, processing_notes
         )
         para_formatting.extend(paragraph_formatting)
+        
+        # Log if there's a mismatch (for debugging)
+        total_run_text = ''.join(run.text for run in paragraph.runs if run.text)
+        if len(total_run_text) != len(para_text):
+            processing_notes.append(f"Text mismatch detected - paragraph: {len(para_text)} chars, runs: {len(total_run_text)} chars (hyperlinks preserved)")
         
         return para_text, para_formatting
     
@@ -208,15 +219,18 @@ class DocxService:
                 'source': 'run_underline'
             })
         
-        # Enhanced font size-based heading detection
+        # Enhanced font size-based heading detection - but only for significantly larger text
         if hasattr(run.font, 'size') and run.font.size:
             size_pt = run.font.size.pt
-            heading_type = self._determine_heading_from_size(size_pt)
-            if heading_type:
-                formatting_ranges.append({
-                    'start': start,
-                    'end': end,
-                    'type': heading_type,
+            # Only apply size-based formatting if the text is SIGNIFICANTLY larger than normal
+            # and doesn't already have bold formatting (to avoid double-bold)
+            if size_pt >= 16 and not run.bold:  # More conservative threshold
+                heading_type = self._determine_heading_from_size(size_pt)
+                if heading_type:
+                    formatting_ranges.append({
+                        'start': start,
+                        'end': end,
+                        'type': heading_type,
                     'level': 1,
                     'source': f'font_size_{size_pt}pt'
                 })

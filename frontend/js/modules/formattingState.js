@@ -432,6 +432,178 @@ export function updateFormattingForTextChange(newText) {
     console.log(`✅ Comments updated: ${originalCommentCount} -> ${formattingData.comments.length} comments`);
 }
 
+// NEW FUNCTION: Update formatting positions based on specific edit operations
+export function updateFormattingPositionsForEdits(textDiffs) {
+    if (!textDiffs || textDiffs.length === 0) {
+        console.log('🔧 No text diffs provided, using fallback text length adjustment');
+        // Fallback to existing method if no diffs
+        return;
+    }
+    
+    console.log(`🔧 FORMATTING: Updating positions for ${textDiffs.length} text differences`);
+    
+    // Sort diffs by position (latest first) to avoid position conflicts during updates
+    const sortedDiffs = [...textDiffs].sort((a, b) => b.position - a.position);
+    
+    // Track cumulative offset changes
+    let cumulativeOffset = 0;
+    
+    // Process each diff and update formatting ranges accordingly
+    for (const diff of sortedDiffs) {
+        console.log(`🔧 FORMATTING: Processing ${diff.type} at position ${diff.position}`);
+        
+        switch (diff.type) {
+            case 'insert':
+                // Text was inserted - shift all ranges after this position forward
+                updateRangesForInsertion(diff.position, diff.length);
+                cumulativeOffset += diff.length;
+                break;
+                
+            case 'delete':
+                // Text was deleted - shift all ranges after this position backward
+                updateRangesForDeletion(diff.position, diff.length);
+                cumulativeOffset -= diff.length;
+                break;
+                
+            case 'replace':
+                // Single character replacement - no position shift needed
+                // (unless the replacement changed the length, which we handle as insert+delete)
+                break;
+        }
+    }
+    
+    // Clean up any invalid ranges that might have been created
+    cleanupFormattingRanges();
+    
+    console.log(`✅ FORMATTING: Updated ranges for ${sortedDiffs.length} edits, cumulative offset: ${cumulativeOffset}`);
+}
+
+// Helper function: Update formatting ranges when text is inserted
+function updateRangesForInsertion(insertPosition, insertLength) {
+    console.log(`🔧 FORMATTING: Updating ranges for insertion at ${insertPosition}, length ${insertLength}`);
+    
+    const updatedRanges = formattingData.ranges.map(range => {
+        // If range starts after the insertion point, shift it forward
+        if (range.start >= insertPosition) {
+            console.log(`📍 Shifting range start: ${range.start} -> ${range.start + insertLength}`);
+            return {
+                ...range,
+                start: range.start + insertLength,
+                end: range.end + insertLength
+            };
+        }
+        
+        // If range spans across the insertion point, extend the end
+        if (range.start < insertPosition && range.end > insertPosition) {
+            console.log(`📍 Extending range end: ${range.end} -> ${range.end + insertLength}`);
+            return {
+                ...range,
+                end: range.end + insertLength
+            };
+        }
+        
+        // Range is completely before insertion point - no change needed
+        return range;
+    });
+    
+    formattingData.ranges = updatedRanges;
+    
+    // Also update comment positions
+    const updatedComments = formattingData.comments.map(comment => {
+        if (comment.position >= insertPosition) {
+            return {
+                ...comment,
+                position: comment.position + insertLength
+            };
+        }
+        return comment;
+    });
+    
+    formattingData.comments = updatedComments;
+}
+
+// Helper function: Update formatting ranges when text is deleted
+function updateRangesForDeletion(deletePosition, deleteLength) {
+    console.log(`🔧 FORMATTING: Updating ranges for deletion at ${deletePosition}, length ${deleteLength}`);
+    
+    const deleteEnd = deletePosition + deleteLength;
+    
+    const updatedRanges = formattingData.ranges
+        .map(range => {
+            // If range is completely within the deleted area, remove it
+            if (range.start >= deletePosition && range.end <= deleteEnd) {
+                console.log(`🗑️ Removing range completely within deletion: ${range.start}-${range.end}`);
+                return null; // Mark for removal
+            }
+            
+            // If range starts within deletion but ends after, adjust start
+            if (range.start >= deletePosition && range.start < deleteEnd && range.end > deleteEnd) {
+                console.log(`📍 Adjusting range start after deletion: ${range.start} -> ${deletePosition}`);
+                return {
+                    ...range,
+                    start: deletePosition,
+                    end: range.end - deleteLength
+                };
+            }
+            
+            // If range starts before deletion but ends within, adjust end
+            if (range.start < deletePosition && range.end > deletePosition && range.end <= deleteEnd) {
+                console.log(`📍 Adjusting range end before deletion: ${range.end} -> ${deletePosition}`);
+                return {
+                    ...range,
+                    end: deletePosition
+                };
+            }
+            
+            // If range spans across the entire deletion, adjust end only
+            if (range.start < deletePosition && range.end > deleteEnd) {
+                console.log(`📍 Adjusting range spanning deletion: ${range.end} -> ${range.end - deleteLength}`);
+                return {
+                    ...range,
+                    end: range.end - deleteLength
+                };
+            }
+            
+            // If range starts after deletion, shift it backward
+            if (range.start >= deleteEnd) {
+                console.log(`📍 Shifting range backward: ${range.start}-${range.end} -> ${range.start - deleteLength}-${range.end - deleteLength}`);
+                return {
+                    ...range,
+                    start: range.start - deleteLength,
+                    end: range.end - deleteLength
+                };
+            }
+            
+            // Range is completely before deletion - no change needed
+            return range;
+        })
+        .filter(range => range !== null); // Remove marked ranges
+    
+    formattingData.ranges = updatedRanges;
+    
+    // Also update comment positions
+    const updatedComments = formattingData.comments
+        .map(comment => {
+            // Remove comments within the deleted area
+            if (comment.position >= deletePosition && comment.position < deleteEnd) {
+                return null; // Mark for removal
+            }
+            
+            // Shift comments after deletion backward
+            if (comment.position >= deleteEnd) {
+                return {
+                    ...comment,
+                    position: comment.position - deleteLength
+                };
+            }
+            
+            return comment;
+        })
+        .filter(comment => comment !== null);
+    
+    formattingData.comments = updatedComments;
+}
+
 // Make it available globally for easy testing
 if (typeof window !== 'undefined') {
     window.testFormattingSystem = testFormattingSystem;

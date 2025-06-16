@@ -91,3 +91,5 @@ ExoWave/
 test files/
 test_auth_fix.html
 test_persistence.html
+
+*.docx

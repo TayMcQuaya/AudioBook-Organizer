@@ -103,11 +103,21 @@ function applyFormattingRangesEnhanced() {
     if (!bookContent) return;
     
     // Use the state's bookText as the single source of truth for content.
-    const text = bookText; 
+    // But also validate against the actual DOM content to ensure consistency
+    const domText = bookContent.textContent;
+    const stateText = bookText;
+    
+    // Use DOM text if state text is not available or they're significantly different
+    const text = (typeof stateText === 'string' && Math.abs(stateText.length - domText.length) < 10) 
+        ? stateText 
+        : domText;
+    
     if (typeof text !== 'string') {
-        console.error("🎨 FORMATTING: bookText is not available or not a string, cannot render.");
+        console.error("🎨 FORMATTING: No valid text source available, cannot render.");
         return;
     }
+    
+    console.log(`🎨 FORMATTING: Using text source - State: ${stateText?.length || 'N/A'}, DOM: ${domText.length}, Selected: ${text.length}`);
 
     // Generate a complete map of all segments (formatted and unformatted).
     const segments = optimizeFormattingRangesForDocx(formattingData.ranges, text.length);

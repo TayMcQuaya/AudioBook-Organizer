@@ -1,6 +1,6 @@
 // AudioBook Organizer - Edit Mode Module
 
-import { setBookText, isDocxFile, isTxtFile, getCurrentFileName } from './state.js';
+import { setBookText, isDocxFile, isTxtFile, getCurrentFileName, getCurrentFileType, bookText } from './state.js';
 import { showSuccess, showInfo, showWarning } from './notifications.js';
 
 // Edit mode state
@@ -216,27 +216,8 @@ export async function toggleEditMode() {
                 // User cancelled, stay in edit mode
                 return;
             } else if (choice === 'save') {
-                // Save changes and update formatting positions
-                const newText = bookContent.textContent;
-                setBookText(newText); // Save plain text for state
-                
-                // Update formatting ranges to match new text length
-                try {
-                    const { updateFormattingForTextChange } = await import('./formattingState.js');
-                    const { applyFormattingToDOM } = await import('./formattingRenderer.js');
-                    
-                    // Update formatting positions based on text changes
-                    updateFormattingForTextChange(newText);
-                    console.log('✅ Formatting ranges updated for text changes');
-                    
-                    // Apply formatting after a brief delay to ensure DOM is stable
-                    setTimeout(() => {
-                        applyFormattingToDOM();
-                        console.log('✅ Formatting maintained in view mode after save');
-                    }, 100);
-                } catch (error) {
-                    console.error('Error maintaining formatting after save:', error);
-                }
+                // ENHANCED SAVE: Preserve formatting with intelligent position tracking
+                await saveChangesWithFormattingPreservation(bookContent);
                 
                 exitEditMode();
                 showSuccess('✅ Changes saved successfully! View mode enabled.');
@@ -571,4 +552,209 @@ export function refreshEditModeState() {
     }
     
     console.log('Edit mode state refreshed. Mode:', isEditMode ? 'EDIT' : 'VIEW', 'Protection active:', isProtectionActive);
+}
+
+// NEW FUNCTION: Enhanced save with proper formatting preservation
+async function saveChangesWithFormattingPreservation(bookContent) {
+    try {
+        const { updateFormattingPositionsForEdits } = await import('./formattingState.js');
+        const { applyFormattingToDOM } = await import('./formattingRenderer.js');
+        
+        // Get the current edited text
+        const newText = bookContent.textContent;
+        
+        // Calculate text differences to understand where edits occurred
+        const textDiffs = calculateTextDifferences(originalContent, bookContent.innerHTML, newText);
+        
+        console.log('🔧 SAVE: Calculated text differences:', textDiffs);
+        
+        // Update state with new text
+        setBookText(newText);
+        
+        // Apply intelligent formatting position updates based on actual edits
+        updateFormattingPositionsForEdits(textDiffs);
+        
+        console.log('✅ SAVE: Formatting ranges updated for edits');
+        
+        // Apply formatting after a brief delay to ensure DOM is stable
+        setTimeout(() => {
+            applyFormattingToDOM();
+            console.log('✅ SAVE: Formatting maintained after save');
+        }, 100);
+        
+    } catch (error) {
+        console.error('❌ SAVE: Error preserving formatting:', error);
+        // Fallback to simple save
+        const newText = bookContent.textContent;
+        setBookText(newText);
+        
+        try {
+            const { updateFormattingForTextChange } = await import('./formattingState.js');
+            updateFormattingForTextChange(newText);
+        } catch (fallbackError) {
+            console.error('❌ SAVE: Fallback also failed:', fallbackError);
+        }
+    }
+}
+
+// NEW FUNCTION: Calculate differences between original and edited text
+function calculateTextDifferences(originalHTML, currentHTML, currentText) {
+    try {
+        // Extract original plain text for comparison
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = originalHTML;
+        const originalText = tempDiv.textContent;
+        
+        console.log(`🔍 TEXT DIFF: Original length: ${originalText.length}, Current length: ${currentText.length}`);
+        
+        // Simple difference detection - find where text was inserted/deleted
+        const diffs = [];
+        let originalPos = 0;
+        let currentPos = 0;
+        
+        // Use a sliding window approach to find differences
+        while (originalPos < originalText.length || currentPos < currentText.length) {
+            // Check if characters match
+            if (originalPos < originalText.length && 
+                currentPos < currentText.length && 
+                originalText[originalPos] === currentText[currentPos]) {
+                originalPos++;
+                currentPos++;
+                continue;
+            }
+            
+            // Find the next matching position
+            let matchFound = false;
+            
+            // Look ahead for insertions (text added in current)
+            for (let lookAhead = 1; lookAhead <= 50 && currentPos + lookAhead < currentText.length; lookAhead++) {
+                if (originalPos < originalText.length && 
+                    originalText[originalPos] === currentText[currentPos + lookAhead]) {
+                    // Found insertion
+                    const insertedText = currentText.substring(currentPos, currentPos + lookAhead);
+                    diffs.push({
+                        type: 'insert',
+                        position: currentPos,
+                        length: lookAhead,
+                        text: insertedText
+                    });
+                    currentPos += lookAhead;
+                    matchFound = true;
+                    break;
+                }
+            }
+            
+            if (matchFound) continue;
+            
+            // Look ahead for deletions (text removed from original)
+            for (let lookAhead = 1; lookAhead <= 50 && originalPos + lookAhead < originalText.length; lookAhead++) {
+                if (currentPos < currentText.length && 
+                    originalText[originalPos + lookAhead] === currentText[currentPos]) {
+                    // Found deletion
+                    const deletedText = originalText.substring(originalPos, originalPos + lookAhead);
+                    diffs.push({
+                        type: 'delete',
+                        position: originalPos,
+                        length: lookAhead,
+                        text: deletedText
+                    });
+                    originalPos += lookAhead;
+                    matchFound = true;
+                    break;
+                }
+            }
+            
+            if (!matchFound) {
+                // Single character change - treat as replacement
+                if (originalPos < originalText.length && currentPos < currentText.length) {
+                    diffs.push({
+                        type: 'replace',
+                        position: currentPos,
+                        length: 1,
+                        oldChar: originalText[originalPos],
+                        newChar: currentText[currentPos]
+                    });
+                }
+                originalPos++;
+                currentPos++;
+            }
+        }
+        
+        console.log(`🔍 TEXT DIFF: Found ${diffs.length} differences:`, diffs);
+        return diffs;
+        
+    } catch (error) {
+        console.error('❌ TEXT DIFF: Error calculating differences:', error);
+        return [];
+    }
+}
+
+// Make it available globally for easy testing
+if (typeof window !== 'undefined') {
+    window.testFormattingSystem = testFormattingSystem;
+}
+
+// NEW FUNCTION: Debug helper for formatting issues
+export function debugFormattingIssues() {
+    console.log('🔍 ===== FORMATTING DEBUG REPORT =====');
+    
+    const bookContent = document.getElementById('bookContent');
+    if (!bookContent) {
+        console.log('❌ No book content element found');
+        return;
+    }
+    
+    // Get current state
+    console.log('📊 STATE:');
+    console.log('  - Edit mode:', isEditMode);
+    console.log('  - File type:', getCurrentFileType());
+    console.log('  - Current fileName:', getCurrentFileName());
+    
+    // Get text info
+    console.log('📄 TEXT INFO:');
+    console.log('  - DOM text length:', bookContent.textContent.length);
+    console.log('  - State text length:', bookText?.length || 'N/A');
+    console.log('  - Original content length:', originalContent?.length || 'N/A');
+    
+    // Get formatting info
+    import('./formattingState.js').then(({ formattingData, getFormattingStats }) => {
+        console.log('🎨 FORMATTING INFO:');
+        const stats = getFormattingStats();
+        console.log('  - Formatting ranges:', stats.ranges);
+        console.log('  - Comments:', stats.comments);
+        console.log('  - Version:', stats.version);
+        
+        if (formattingData.ranges.length > 0) {
+            console.log('  - First few ranges:', formattingData.ranges.slice(0, 3));
+            console.log('  - Last few ranges:', formattingData.ranges.slice(-3));
+        }
+        
+        // Check for potential issues
+        const textLength = bookContent.textContent.length;
+        const invalidRanges = formattingData.ranges.filter(range => 
+            range.start < 0 || range.end > textLength || range.start >= range.end
+        );
+        
+        if (invalidRanges.length > 0) {
+            console.warn('⚠️ INVALID RANGES DETECTED:', invalidRanges);
+        } else {
+            console.log('✅ All formatting ranges appear valid');
+        }
+        
+    }).catch(error => {
+        console.error('❌ Error accessing formatting state:', error);
+    });
+    
+    // Get DOM info
+    console.log('🏗️ DOM INFO:');
+    console.log('  - Formatted elements:', bookContent.querySelectorAll('[data-formatting-id]').length);
+    console.log('  - Total child nodes:', bookContent.childNodes.length);
+    console.log('  - Classes:', bookContent.className);
+    
+    console.log('🔍 ===== DEBUG REPORT COMPLETE =====');
+}
+
+// Make debug function available globally
+if (typeof window !== 'undefined') {
+    window.debugFormattingIssues = debugFormattingIssues;
 } 

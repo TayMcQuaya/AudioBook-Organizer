@@ -110,8 +110,8 @@ def upload_docx(current_user):
                 processing_info = docx_service.get_processing_info(temp_file.name)
                 current_app.logger.info(f'DOCX processing info: {processing_info}')
                 
-                # Extract ONLY text content (no formatting)
-                result = docx_service.extract_text_only(temp_file.name)
+                # Extract text content WITH formatting
+                result = docx_service.extract_content_with_formatting(temp_file.name)
                 
                 # Debug logging to understand what's being processed
                 current_app.logger.info(f'DOCX text length: {len(result["text"])}')
