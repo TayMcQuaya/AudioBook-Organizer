@@ -16,34 +16,14 @@ export function createSection() {
         text = window.smartSelectionData.text;
         console.log('Using smart selection data for section creation');
         
-        // Find and remove the smart selected element, replacing it with plain text
+        // Find the smart selected element - but preserve its formatted content
         const smartSelectedElement = document.querySelector('.smart-selected-text');
         if (smartSelectedElement) {
-            // Get the text content before manipulating the DOM
-            const selectedText = smartSelectedElement.textContent;
-            const parent = smartSelectedElement.parentNode;
-            
-            // Create a range that selects only the text content, not the element itself
+            // Create a range that selects the entire smart-selected element
             selectionRange = document.createRange();
-            selectionRange.selectNodeContents(smartSelectedElement);
+            selectionRange.selectNode(smartSelectedElement);
             
-            // Store the start and end containers/offsets before DOM manipulation
-            const startContainer = selectionRange.startContainer;
-            const startOffset = selectionRange.startOffset;
-            const endContainer = selectionRange.endContainer;
-            const endOffset = selectionRange.endOffset;
-            
-            // Replace the smart selected element with plain text
-            const textNode = document.createTextNode(selectedText);
-            parent.replaceChild(textNode, smartSelectedElement);
-            
-            // DON'T normalize yet - create the range first
-            // Create a precise range that selects exactly the text we want
-            selectionRange = document.createRange();
-            selectionRange.setStart(textNode, 0);
-            selectionRange.setEnd(textNode, selectedText.length);
-            
-            console.log('Smart selection element removed and replaced with plain text');
+            console.log('Smart selection element found - will preserve its formatting');
         }
     } else {
         // Fall back to regular selection
@@ -84,15 +64,48 @@ export function createSection() {
         lastModified: timestamp
     };
     
-    // Create highlight span
+    // Create highlight span that will preserve existing formatting
     const span = document.createElement('span');
     span.className = `section-highlight section-color-${colorIndex}`;
-    span.textContent = text;
     span.dataset.sectionId = section.id;
     
-    // Replace selected text with highlighted span
-    selectionRange.deleteContents();
-    selectionRange.insertNode(span);
+    // ✅ PRESERVE FORMATTING: Extract and preserve existing content instead of replacing with plain text
+    try {
+        // Extract the existing formatted content (this preserves all HTML formatting)
+        const formattedContent = selectionRange.extractContents();
+        
+        // If the content came from a smart-selected-text element, unwrap it first
+        if (window.smartSelectionData) {
+            // The formattedContent is the smart-selected-text span, get its children
+            const smartSpan = formattedContent.querySelector('.smart-selected-text');
+            if (smartSpan) {
+                // Move all children from smart span to our section span
+                while (smartSpan.firstChild) {
+                    span.appendChild(smartSpan.firstChild);
+                }
+            } else {
+                // Fallback: append the extracted content directly
+                span.appendChild(formattedContent);
+            }
+        } else {
+            // For manual selections, append the extracted content directly
+            span.appendChild(formattedContent);
+        }
+        
+        // Insert the section highlight span at the selection position
+        selectionRange.insertNode(span);
+        
+        console.log('✅ Section created with preserved formatting');
+        
+    } catch (error) {
+        console.error('Error preserving formatting during section creation:', error);
+        
+        // Fallback to original behavior if preservation fails
+        console.log('Falling back to plain text section creation');
+        span.textContent = text;
+        selectionRange.deleteContents();
+        selectionRange.insertNode(span);
+    }
     
     // Now normalize the parent to clean up any fragmented text nodes
     const bookContent = document.getElementById('bookContent');
