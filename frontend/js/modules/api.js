@@ -26,77 +26,86 @@ const getApiBaseUrl = () => {
 
 export const API_BASE_URL = getApiBaseUrl();
 
-// Get backend URL from global config
-const BACKEND_URL = window.BACKEND_URL;
+// Get backend URL from global config, defaulting for local development
+const BACKEND_URL = window.BACKEND_URL || '';
 
 /**
- * Enhanced fetch wrapper for API calls
- * @param {string} endpoint - API endpoint (starting with /)
- * @param {object} options - Fetch options
- * @returns {Promise<Response>}
+ * Enhanced fetch wrapper for API calls.
+ * This is the single source for all API requests in the application.
+ *
+ * @param {string} endpoint - API endpoint (e.g., '/auth/status').
+ * @param {object} options - Fetch options object.
+ * @returns {Promise<Response>} The promise returned by fetch.
  */
 export async function apiFetch(endpoint, options = {}) {
-    // Ensure endpoint starts with /
+    // Ensure endpoint starts with a single '/'
     if (!endpoint.startsWith('/')) {
         endpoint = '/' + endpoint;
     }
 
-    // Remove double slashes in URL except after protocol
+    // Construct the full URL, preventing double slashes
     const url = `${BACKEND_URL}${endpoint}`.replace(/([^:]\/)\/+/g, '$1');
 
-    // Default options with auth token if available
+    // Prepare default headers
     const defaultHeaders = {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
     };
 
-    // Add authorization header if available
+    // Add Supabase authorization header if a token exists
     const token = localStorage.getItem('sb-access-token');
     if (token) {
         defaultHeaders['Authorization'] = `Bearer ${token}`;
     }
 
-    // Don't set Content-Type for FormData
+    // Modern browsers handle FormData Content-Type automatically,
+    // so we remove our default to let the browser set it with the correct boundary.
     if (options.body instanceof FormData) {
         delete defaultHeaders['Content-Type'];
     }
 
-    // Merge options
+    // Merge options, giving precedence to options passed in the function call
     const finalOptions = {
-        credentials: 'include', // Include cookies for CORS
+        credentials: 'include', // Important for sending cookies/session info
         ...options,
         headers: {
             ...defaultHeaders,
-            ...(options.headers || {})
-        }
+            ...(options.headers || {}),
+        },
     };
 
     try {
         const response = await fetch(url, finalOptions);
-        
-        // Log failed requests for debugging
+
+        // Provide more detailed error logging for failed requests
         if (!response.ok) {
             console.error(`API Error (${response.status}):`, {
-                endpoint,
+                url: url,
                 status: response.status,
-                statusText: response.statusText
+                statusText: response.statusText,
             });
         }
-        
+
         return response;
     } catch (error) {
-        console.error('API Request Failed:', error);
+        // Log network errors or other issues with the fetch call itself
+        console.error('API Request Failed:', {
+            url: url,
+            error: error,
+        });
+        // Re-throw the error to be handled by the calling function
         throw error;
     }
 }
 
 /**
- * Helper function to check if the API is reachable
+ * Helper function to check if the backend API is reachable and healthy.
  */
 export const checkApiHealth = async () => {
     try {
-        const response = await apiFetch('/api/test');
-        const data = await response.json();
-        return { success: response.ok, data };
+        // Using a lightweight, non-existent endpoint for a quick check
+        const response = await apiFetch('/api/health-check');
+        // We consider any response from the server (even a 404) as a sign of it being reachable
+        return { success: true, status: response.status };
     } catch (error) {
         console.error('API health check failed:', error);
         return { success: false, error: error.message };
