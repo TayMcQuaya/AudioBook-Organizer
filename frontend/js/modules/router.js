@@ -404,8 +404,10 @@ class Router {
 
             document.body.className = 'temp-auth-body app-ready';
 
-            // Manually load and execute the temp-auth.js script since innerHTML doesn't execute scripts
+            // Wait a moment for DOM to be ready, then load the script
             console.log('🔧 Loading temp-auth script...');
+            await new Promise(resolve => setTimeout(resolve, 100)); // Small delay for DOM
+            
             try {
                 // Import the temp-auth module to ensure it initializes
                 await import('/pages/temp-auth/temp-auth.js?t=' + Date.now());

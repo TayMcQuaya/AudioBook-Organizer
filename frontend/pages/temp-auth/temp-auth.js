@@ -22,15 +22,24 @@ class TempAuth {
     }
     
     setupForm() {
-        // Get form elements
-        this.form = document.getElementById('tempAuthForm');
-        this.passwordInput = document.getElementById('password');
-        this.submitBtn = document.getElementById('submitBtn');
-        this.errorMessage = document.getElementById('errorMessage');
-        this.loadingIndicator = document.getElementById('loadingIndicator');
+        // Wait for elements to be available with retry logic
+        const waitForElements = () => {
+            this.form = document.getElementById('tempAuthForm');
+            this.passwordInput = document.getElementById('password');
+            this.submitBtn = document.getElementById('submitBtn');
+            this.errorMessage = document.getElementById('errorMessage');
+            this.loadingIndicator = document.getElementById('loadingIndicator');
+            
+            if (!this.form) {
+                console.log('🔧 Waiting for temp auth form to be available...');
+                // Retry after a short delay
+                setTimeout(() => this.setupForm(), 50);
+                return false;
+            }
+            return true;
+        };
         
-        if (!this.form) {
-            console.error('Temp auth form not found');
+        if (!waitForElements()) {
             return;
         }
         
