@@ -1,6 +1,8 @@
 // Temporary Authentication Module
 // Handles authentication state in testing mode
 
+import { apiFetch } from './api.js';
+
 class TempAuthManager {
     constructor() {
         this.isTestingMode = false;
@@ -13,7 +15,7 @@ class TempAuthManager {
         
         try {
             // Check server status to determine if we're in testing mode
-            const response = await fetch('/api/auth/temp-status', {
+            const response = await apiFetch('/api/auth/temp-status', {
                 credentials: 'same-origin'
             });
             
@@ -48,7 +50,7 @@ class TempAuthManager {
         // Check authentication status every 30 seconds
         this.checkInterval = setInterval(async () => {
             try {
-                const response = await fetch('/api/auth/temp-status', {
+                const response = await apiFetch('/api/auth/temp-status', {
                     credentials: 'same-origin'
                 });
                 
@@ -78,7 +80,7 @@ class TempAuthManager {
         if (!this.isTestingMode) return;
         
         try {
-            await fetch('/api/auth/temp-logout', {
+            await apiFetch('/api/auth/temp-logout', {
                 method: 'POST',
                 credentials: 'same-origin'
             });

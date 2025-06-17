@@ -4,6 +4,7 @@ import { chapters, bookText } from './state.js';
 import { hideExportModal } from './ui.js';
 import { createDownloadLink } from '../utils/dom.js';
 import { showError } from './notifications.js';
+import { apiFetch } from './api.js';
 
 // Update preview when export options change
 function updateExportPreview() {
@@ -172,7 +173,7 @@ export async function startExport() {
     };
     
     try {
-        const response = await fetch('/api/export', {
+        const response = await apiFetch('/api/export', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -221,7 +222,7 @@ export async function startExport() {
 // Import exported content function - preserving exact logic from original
 export async function importExportedContent(exportId) {
     try {
-        const response = await fetch(`/exports/${exportId}/metadata.json`);
+        const response = await apiFetch(`/exports/${exportId}/metadata.json`);
         if (!response.ok) throw new Error('Failed to load exported content');
         
         const exportData = await response.json();

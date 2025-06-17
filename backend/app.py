@@ -16,11 +16,17 @@ from .routes.password_protection import create_password_protection_routes
 from .services.supabase_service import init_supabase_service
 from .services.security_service import init_security_service
 
-def create_app(config_name='default'):
+def create_app(config_name=None):
     """
     Create and configure Flask application.
     Preserves all functionality from original server.py
     """
+    # Auto-detect environment if not specified
+    if config_name is None:
+        config_name = os.environ.get('FLASK_ENV', 'development')
+        if config_name not in config:
+            config_name = 'production' if os.environ.get('FLASK_ENV') == 'production' else 'development'
+    
     # Initialize Flask app - exact settings preserved
     app = Flask(__name__, static_url_path='', static_folder='../frontend')
     app.config.from_object(config[config_name])
@@ -33,8 +39,13 @@ def create_app(config_name='default'):
     # Enable CORS for all routes - exact setting preserved
     CORS(app)
     
-    # Debug logging - exact setting preserved
-    app.logger.setLevel('DEBUG')
+    # Configure logging based on environment
+    if config_name == 'production':
+        app.logger.setLevel(logging.INFO)
+        app.logger.info(f"🚀 Starting AudioBook Organizer in PRODUCTION mode")
+    else:
+        app.logger.setLevel(logging.DEBUG)
+        app.logger.info(f"🔧 Starting AudioBook Organizer in DEVELOPMENT mode")
     
     # Ensure directories exist - exact logic preserved
     ensure_directories_exist(app.config['UPLOAD_FOLDER'], app.config['EXPORT_FOLDER'])

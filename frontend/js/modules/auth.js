@@ -7,6 +7,9 @@ import { showError, showSuccess, showInfo } from './notifications.js';
 import { validatePassword, checkPasswordStrength } from './validators.js';
 import sessionManager from './sessionManager.js';
 import { router } from './router.js';
+import { showNotification } from './notifications.js';
+import { recaptcha } from './recaptcha.js';
+import { apiFetch } from './api.js';
 
 // Supabase client (will be initialized dynamically)
 let supabaseClient = null;
@@ -135,7 +138,7 @@ class AuthModule {
      */
     async loadAuthConfig() {
         try {
-            const response = await fetch('/api/auth/config');
+            const response = await apiFetch('/api/auth/config');
             const data = await response.json();
             
             if (data.success && data.config) {
@@ -584,12 +587,8 @@ class AuthModule {
         }
 
         try {
-            const response = await fetch('/api/auth/init-user', {
+            const response = await apiFetch('/api/auth/init-user', {
                 method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${authToken}`,
-                    'Content-Type': 'application/json'
-                },
                 body: JSON.stringify({})
             });
 
@@ -629,11 +628,8 @@ class AuthModule {
 
         try {
             // Call backend login endpoint with reCAPTCHA token first for security
-            const response = await fetch('/api/auth/login', {
+            const response = await apiFetch('/api/auth/login', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
                 body: JSON.stringify({
                     email: email,
                     password: password,
@@ -840,11 +836,7 @@ class AuthModule {
      */
     async checkAuthStatus() {
         try {
-            const token = this.getAuthToken();
-            
-            const response = await fetch('/api/auth/status', {
-                headers: token ? { 'Authorization': `Bearer ${token}` } : {}
-            });
+            const response = await apiFetch('/api/auth/status');
 
             const data = await response.json();
             
@@ -870,11 +862,7 @@ class AuthModule {
         }
 
         try {
-            const response = await fetch('/api/auth/credits', {
-                headers: {
-                    'Authorization': `Bearer ${this.getAuthToken()}`
-                }
-            });
+            const response = await apiFetch('/api/auth/credits');
 
             const data = await response.json();
             
@@ -933,42 +921,41 @@ class AuthModule {
     }
 
     /**
-     * Make authenticated API request
+     * Centralized method for making authenticated API requests
+     * @param {string} endpoint - The API endpoint (e.g., '/api/data')
+     * @param {object} options - Options for the fetch call
+     * @returns {Promise<Response>}
      */
     async apiRequest(endpoint, options = {}) {
-        const token = this.getAuthToken();
-        
         const defaultOptions = {
-            headers: {
-                'Content-Type': 'application/json',
-                ...(token && { 'Authorization': `Bearer ${token}` })
-            }
+            headers: {}
         };
+
+        // Get the latest auth token from Supabase
+        const session = await this.getSession();
+        if (session && session.access_token) {
+            defaultOptions.headers['Authorization'] = `Bearer ${session.access_token}`;
+        }
 
         const mergedOptions = {
             ...defaultOptions,
             ...options,
             headers: {
                 ...defaultOptions.headers,
-                ...options.headers
-            }
+                ...options.headers,
+            },
         };
 
-        try {
-            const response = await fetch(endpoint, mergedOptions);
-            
-            // Handle authentication errors
-            if (response.status === 401) {
-                console.warn('Authentication token expired or invalid');
-                await this.signOut();
-                throw new Error('Authentication required');
-            }
-            
-            return response;
-        } catch (error) {
-            console.error('API request failed:', error);
-            throw error;
+        const response = await apiFetch(endpoint, mergedOptions);
+
+        if (response.status === 401) {
+            console.warn(`Unauthorized request to ${endpoint}.`);
+            // Attempt to refresh the token and retry, or sign out
+            // For now, we rely on the main auth listener to catch this
+            showNotification('Your session may have expired. Please refresh if you see issues.', 'warning');
         }
+        
+        return response;
     }
 
     handlePasswordRecoveryPage() {

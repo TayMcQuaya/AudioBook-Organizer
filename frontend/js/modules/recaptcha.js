@@ -4,6 +4,7 @@
  */
 
 import { showError, showInfo } from './notifications.js';
+import { apiFetch } from './api.js';
 
 class RecaptchaService {
     constructor() {
@@ -19,7 +20,7 @@ class RecaptchaService {
     async init() {
         try {
             // Get security configuration from backend
-            const response = await fetch('/api/auth/security-status');
+            const response = await apiFetch('/api/auth/security-status');
             const data = await response.json();
             
             if (data.success && data.security_status) {

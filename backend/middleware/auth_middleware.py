@@ -55,6 +55,31 @@ def require_auth(f: Callable) -> Callable:
     @wraps(f)
     def decorated_function(*args, **kwargs):
         try:
+            from flask import current_app, session
+            
+            # Check if we're in testing mode
+            if current_app.config.get('TESTING_MODE'):
+                # In testing mode, check for temp authentication
+                if session.get('temp_authenticated'):
+                    # Create a mock user for testing mode
+                    mock_user = {
+                        'id': 'temp_user',
+                        'email': 'temp@testing.mode',
+                        'role': 'user'
+                    }
+                    g.current_user = mock_user
+                    g.user_id = mock_user['id']
+                    g.user_email = mock_user['email']
+                    logger.info("✅ Testing mode - User authenticated via temp auth")
+                    return f(mock_user, *args, **kwargs)
+                else:
+                    logger.warning("🔍 Testing mode - No temp authentication found")
+                    return jsonify({
+                        'error': 'Authentication required',
+                        'message': 'Please authenticate with the temporary password first'
+                    }), 401
+            
+            # Normal mode - require JWT token
             # Extract token from header
             token = extract_token_from_header()
             
@@ -166,6 +191,14 @@ def require_credits(min_credits: int = 1):
         @require_auth  # Must be authenticated first
         def decorated_function(*args, **kwargs):
             try:
+                from flask import current_app
+                
+                # In testing mode, bypass credit checks
+                if current_app.config.get('TESTING_MODE'):
+                    g.current_credits = 999999  # Unlimited credits in testing
+                    logger.info(f"✅ Testing mode - Bypassing credit check for {min_credits} credits")
+                    return f(*args, **kwargs)
+                
                 user_id = g.user_id
                 
                 # Get Supabase service

@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Project Persistence Test</title>
+    <!-- 
+    DEVELOPMENT TOOL ONLY - DO NOT DEPLOY TO PRODUCTION
+    This file is for testing persistence functionality during development.
+    Remove or restrict access in production environments.
+    -->
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ccc; }
+        .success { color: green; }
+        .error { color: red; }
+        .info { color: blue; }
+        button { margin: 5px; padding: 10px; }
+        #output { background: #f5f5f5; padding: 10px; max-height: 400px; overflow-y: auto; }
+        .warning { background: #fff3cd; border: 1px solid #ffeaa7; padding: 10px; margin-bottom: 20px; border-radius: 4px; }
+    </style>
+</head>
+<body>
+    <h1>Project Persistence Test</h1>
+    
+    <div class="warning">
+        <strong>⚠️ Development Tool Only</strong><br>
+        This is a development testing tool. Do not use in production environments.
+        Only use this if you understand the technical implications.
+    </div>
+    
+    <div class="test-section">
+        <h3>Authentication Test</h3>
+        <button onclick="testAuth()">Check Authentication</button>
+        <div id="authResult"></div>
+    </div>
+    
+    <div class="test-section">
+        <h3>API Endpoints Test</h3>
+        <button onclick="testDebug()">Test Debug (No Auth)</button>
+        <button onclick="testSaveProject()">Test Save Project</button>
+        <button onclick="testLoadProject()">Test Load Project</button>
+        <button onclick="testProjectStatus()">Test Project Status</button>
+        <div id="apiResult"></div>
+    </div>
+    
+    <div class="test-section">
+        <h3>Auto-Save Functionality Test</h3>
+        <button onclick="testAutoSave()">Test Auto-Save Functions</button>
+        <div id="autoSaveResult"></div>
+    </div>
+    
+    <div id="output"></div>
+
+    <script>
+        // Helper function to log messages
+        function log(message, type = 'info') {
+            const output = document.getElementById('output');
+            const timestamp = new Date().toLocaleTimeString();
+            const className = type === 'error' ? 'error' : type === 'success' ? 'success' : 'info';
+            output.innerHTML += `<div class="${className}">[${timestamp}] ${message}</div>`;
+            output.scrollTop = output.scrollHeight;
+            console.log(message);
+        }
+
+        // Test authentication status
+        async function testAuth() {
+            const resultDiv = document.getElementById('authResult');
+            
+            try {
+                // Check if we have an auth token
+                const authToken = localStorage.getItem('auth_token');
+                
+                if (authToken) {
+                    resultDiv.innerHTML = '<span class="success">✅ Auth token found in localStorage</span>';
+                    log('Auth token found: ' + authToken.substring(0, 20) + '...');
+                    
+                    // Test if token is valid by calling a protected endpoint
+                    const response = await fetch('/api/projects/status', {
+                        headers: {
+                            'Authorization': `Bearer ${authToken}`
+                        }
+                    });
+                    
+                    if (response.ok) {
+                        const data = await response.json();
+                        log('Token is valid. User ID: ' + data.user_id, 'success');
+                        resultDiv.innerHTML += '<br><span class="success">✅ Token is valid</span>';
+                    } else {
+                        log('Token is invalid or expired', 'error');
+                        resultDiv.innerHTML += '<br><span class="error">❌ Token is invalid</span>';
+                    }
+                } else {
+                    resultDiv.innerHTML = '<span class="error">❌ No auth token found</span>';
+                    log('No auth token found. Please log in first.', 'error');
+                }
+            } catch (error) {
+                log('Auth test error: ' + error.message, 'error');
+                resultDiv.innerHTML = '<span class="error">❌ Auth test failed</span>';
+            }
+        }
+
+        // Test save project endpoint
+        async function testSaveProject() {
+            const resultDiv = document.getElementById('apiResult');
+            
+            try {
+                const authToken = localStorage.getItem('auth_token');
+                if (!authToken) {
+                    log('Cannot test save: No auth token', 'error');
+                    return;
+                }
+
+                // Create test project data
+                const testProject = {
+                    bookText: 'This is a test project created at ' + new Date().toISOString(),
+                    chapters: [
+                        {
+                            id: '1',
+                            name: 'Test Chapter 1',
+                            sections: []
+                        }
+                    ],
+                    currentColorIndex: 1,
+                    highlights: [],
+                    formattingData: {},
+                    projectMetadata: {
+                        createdBy: 'test-user',
+                        lastModified: new Date().toISOString(),
+                        version: '1.2'
+                    },
+                    timestamp: new Date().toISOString(),
+                    version: '1.2'
+                };
+
+                log('Attempting to save test project...');
+                
+                const response = await fetch('/api/projects/save', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify(testProject)
+                });
+
+                if (response.ok) {
+                    const result = await response.json();
+                    log('Project saved successfully: ' + JSON.stringify(result), 'success');
+                    resultDiv.innerHTML = '<span class="success">✅ Save test passed</span>';
+                } else {
+                    const error = await response.json();
+                    log('Save failed: ' + JSON.stringify(error), 'error');
+                    resultDiv.innerHTML = '<span class="error">❌ Save test failed</span>';
+                }
+            } catch (error) {
+                log('Save test error: ' + error.message, 'error');
+                resultDiv.innerHTML = '<span class="error">❌ Save test failed</span>';
+            }
+        }
+
+        // Test load project endpoint
+        async function testLoadProject() {
+            try {
+                const authToken = localStorage.getItem('auth_token');
+                if (!authToken) {
+                    log('Cannot test load: No auth token', 'error');
+                    return;
+                }
+
+                log('Attempting to load latest project...');
+                
+                const response = await fetch('/api/projects/latest', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+
+                if (response.ok) {
+                    const result = await response.json();
+                    log('Project loaded successfully: ' + JSON.stringify(result, null, 2), 'success');
+                } else if (response.status === 404) {
+                    log('No project found (this is normal for first-time users)', 'info');
+                } else {
+                    const error = await response.json();
+                    log('Load failed: ' + JSON.stringify(error), 'error');
+                }
+            } catch (error) {
+                log('Load test error: ' + error.message, 'error');
+            }
+        }
+
+        // Test project status endpoint
+        async function testProjectStatus() {
+            try {
+                const authToken = localStorage.getItem('auth_token');
+                if (!authToken) {
+                    log('Cannot test status: No auth token', 'error');
+                    return;
+                }
+
+                log('Getting project status...');
+                
+                const response = await fetch('/api/projects/status', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+
+                if (response.ok) {
+                    const result = await response.json();
+                    log('Project status: ' + JSON.stringify(result, null, 2), 'success');
+                } else {
+                    const error = await response.json();
+                    log('Status failed: ' + JSON.stringify(error), 'error');
+                }
+            } catch (error) {
+                log('Status test error: ' + error.message, 'error');
+            }
+        }
+
+        // Test debug endpoint (no auth required)
+        async function testDebug() {
+            try {
+                log('Testing debug endpoint...');
+                
+                const response = await fetch('/api/projects/debug');
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    log('Debug info: ' + JSON.stringify(result, null, 2), 'success');
+                } else {
+                    const error = await response.json();
+                    log('Debug failed: ' + JSON.stringify(error), 'error');
+                }
+            } catch (error) {
+                log('Debug test error: ' + error.message, 'error');
+            }
+        }
+
+        // Test auto-save functionality
+        async function testAutoSave() {
+            const resultDiv = document.getElementById('autoSaveResult');
+            
+            try {
+                // Check if auto-save functions are available
+                if (typeof window.saveToDatabase === 'undefined') {
+                    log('Auto-save functions not available. This test should be run in the app context.', 'error');
+                    resultDiv.innerHTML = '<span class="error">❌ Auto-save functions not available</span>';
+                    return;
+                }
+
+                log('Testing auto-save functionality...');
+                
+                // This would test the auto-save functions if we were in the app context
+                resultDiv.innerHTML = '<span class="info">ℹ️ Auto-save test requires app context</span>';
+                log('Auto-save test requires running in the main application context', 'info');
+                
+            } catch (error) {
+                log('Auto-save test error: ' + error.message, 'error');
+                resultDiv.innerHTML = '<span class="error">❌ Auto-save test failed</span>';
+            }
+        }
+
+        // Initialize
+        log('Project Persistence Test Page Loaded');
+        log('Please ensure you are logged in before running tests');
+    </script>
+</body>
+</html>
+ 

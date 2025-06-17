@@ -7,6 +7,7 @@ import { createBlob, createObjectURL, revokeObjectURL, createDownloadLink } from
 import { showError, showSuccess, showConfirm } from './notifications.js';
 import { initializeSmartSelect } from './smartSelect.js';
 import { formattingData, setFormattingData, clearFormatting } from './formattingState.js';
+import { apiFetch } from './api.js';
 
 // Save/Load functions - preserving exact logic from original
 export function saveProgress() {
@@ -531,12 +532,8 @@ export async function saveToDatabase() {
         }
         
         // Make API call to save project
-        const response = await fetch('/api/projects/save', {
+        const response = await apiFetch('/api/projects/save', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${authToken}`
-            },
             body: JSON.stringify(projectData)
         });
         
@@ -609,11 +606,8 @@ export async function loadFromDatabase() {
         }
         
         // Make API call to get latest project
-        const response = await fetch('/api/projects/latest', {
-            method: 'GET',
-            headers: {
-                'Authorization': `Bearer ${authToken}`
-            }
+        const response = await apiFetch('/api/projects/latest', {
+            method: 'GET'
         });
         
         if (response.ok) {

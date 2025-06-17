@@ -5,6 +5,7 @@
 
 import { showSuccess, showError, showInfo } from './notifications.js';
 import { supabaseClient } from './auth.js';
+import { apiFetch } from './api.js';
 
 class SessionManager {
     constructor() {
@@ -199,7 +200,7 @@ class SessionManager {
             }
 
             // Verify with backend
-                            const response = await fetch('/api/auth/status', {
+                            const response = await apiFetch('/api/auth/status', {
                                 headers: { 
                                     'Authorization': `Bearer ${authToken}`,
                                     'Content-Type': 'application/json'

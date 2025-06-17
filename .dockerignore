@@ -1,0 +1,30 @@
+# Git
+.git
+.gitignore
+
+# Docker
+.dockerignore
+Dockerfile
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.env
+
+# Workspace
+.vscode/
+
+# Project Files
+archive/
+documentation/
+ExoWave/
+exports/
+frontend/
+"test files"/
+uploads/
+*.md 

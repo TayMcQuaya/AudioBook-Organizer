@@ -85,6 +85,22 @@ class ProductionConfig(Config):
     """Production configuration"""
     DEBUG = False
     SECRET_KEY = os.environ.get('SECRET_KEY')
+    
+    # Production server settings
+    HOST = '0.0.0.0'
+    PORT = int(os.environ.get('PORT', 8000))
+    
+    # Enhanced security settings for production
+    SESSION_COOKIE_SECURE = True
+    SESSION_COOKIE_HTTPONLY = True
+    SESSION_COOKIE_SAMESITE = 'Lax'
+    
+    # Production-specific rate limiting
+    RATE_LIMITING = {
+        'ENABLED': True,
+        'AUTH_ATTEMPTS_PER_MINUTE': int(os.getenv('AUTH_ATTEMPTS_PER_MINUTE', '3')),
+        'AUTH_ATTEMPTS_PER_HOUR': int(os.getenv('AUTH_ATTEMPTS_PER_HOUR', '10')),
+    }
 
 # Configuration mapping
 config = {

@@ -4,6 +4,7 @@ import { chapters, findChapter, currentColorIndex, chapterPlayers } from './stat
 import { createNewChapter } from './chapters.js';
 import { updateChaptersList, updateSelectionColor } from './ui.js';
 import { showWarning, showError, showSuccess } from './notifications.js';
+import { apiFetch } from './api.js';
 
 // Section Management - preserving exact logic from original
 export function createSection() {
@@ -476,48 +477,60 @@ export function navigateToSection(sectionId) {
 export async function attachAudio(chapterId, sectionId, input) {
     const file = input.files[0];
     if (!file) return;
-    
+
+    // Validate file type and size
+    const allowedTypes = ['audio/mpeg', 'audio/wav', 'audio/mp3'];
+    if (!allowedTypes.includes(file.type)) {
+        showError('Please upload an MP3 or WAV file.');
+        return;
+    }
+    const maxSize = 50 * 1024 * 1024; // 50MB
+    if (file.size > maxSize) {
+        showError('File is too large. Maximum size is 50MB.');
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('chapterId', chapterId);
+    formData.append('sectionId', sectionId);
+
     try {
-        const formData = new FormData();
-        formData.append('audio', file);
-        
-        const audioControls = input.parentElement;
-        const loadingSpan = document.createElement('span');
-        loadingSpan.textContent = file.name.toLowerCase().endsWith('.mp3') ? 'Converting and uploading...' : 'Uploading...';
-        audioControls.appendChild(loadingSpan);
-        input.disabled = true;
-        
-        const response = await fetch('/api/upload', {
+        const response = await apiFetch('/api/upload', {
             method: 'POST',
-            body: formData
+            body: formData,
         });
-        
+
         if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
+            const errorData = await response.json().catch(() => ({ message: 'An unknown error occurred' }));
+            throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
         }
+
+        const data = await response.json();
         
-        const result = await response.json();
-        if (!result.success) {
-            throw new Error(result.error);
+        if (!data.success) {
+            throw new Error(data.message || 'Failed to upload audio');
         }
-        
+
+        // Update section state with audio path
         const chapter = findChapter(chapterId);
-        const section = chapter?.sections.find(s => s.id === sectionId);
-        if (section) {
-            section.audioPath = result.path;
-            section.status = 'done';
-            updateChaptersList();
+        if (chapter) {
+            const section = chapter.sections.find(s => s.id === sectionId);
+            if (section) {
+                section.audioPath = data.filePath;
+                section.status = 'processed';
+                // Update player in state
+                if (chapterPlayers[chapter.id]) {
+                    chapterPlayers[chapter.id].updatePlaylist();
+                }
+            }
         }
+        updateChaptersList();
+        showSuccess('Audio attached successfully!');
+
     } catch (error) {
-        console.error('Error uploading audio:', error);
-        showError('Failed to upload audio file: ' + error.message);
-    } finally {
-        const audioControls = input.parentElement;
-        const loadingSpan = audioControls.querySelector('span');
-        if (loadingSpan) {
-            audioControls.removeChild(loadingSpan);
-        }
-        input.disabled = false;
+        console.error('Audio upload failed:', error);
+        showError(`Audio upload failed: ${error.message}`);
     }
 }
 

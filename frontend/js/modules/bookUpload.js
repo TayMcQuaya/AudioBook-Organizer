@@ -5,6 +5,7 @@ import { updateChaptersList, updateSelectionColor } from './ui.js';
 import { initializeSmartSelect } from './smartSelect.js';
 import { showError } from './notifications.js';
 import { clearFormatting } from './formattingState.js';
+import { apiFetch } from './api.js';
 
 // File validation constants
 const MAX_FILE_SIZE_TXT = 10 * 1024 * 1024; // 10MB for TXT
@@ -380,52 +381,47 @@ function mergeDocxResults(backendResult, frontendResult) {
     };
 }
 
-// Process DOCX file on server (original function)
+// Process DOCX file with backend (for backward compatibility and plain text)
 async function processDocxFile(file) {
     const formData = new FormData();
     formData.append('file', file);
-    
+
     try {
-        // Get auth token - try multiple methods for reliability
-        let authToken = window.authModule?.getAuthToken();
-        
-        // Fallback to localStorage if authModule not available
-        if (!authToken) {
-            authToken = localStorage.getItem('auth_token');
-        }
-        
-        if (!authToken) {
-            throw new Error('Authentication required for DOCX processing. Please sign in first.');
-        }
-        
-        const response = await fetch('/api/upload/docx', {
+        const response = await apiFetch('/api/upload/docx', {
             method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${authToken}`
-            },
-            body: formData
+            body: formData,
         });
-        
+
         if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.error || 'Failed to process DOCX file');
+            const errorData = await response.json().catch(() => ({ message: 'An unknown error occurred' }));
+            throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
         }
+
+        const data = await response.json();
         
-        const result = await response.json();
-        
-        if (!result.success) {
-            throw new Error(result.error || 'DOCX processing failed');
+        if (!data.success) {
+            throw new Error(data.message || 'Failed to process DOCX file on backend');
         }
-        
-        return result;
-        
+
+        return {
+            success: true,
+            text: data.text,
+            formatting_data: data.formatting_data,
+            metadata: data.metadata || { processing_method: 'backend' }
+        };
     } catch (error) {
-        console.error('DOCX processing error:', error);
-        throw error;
+        console.error('❌ Backend DOCX processing error:', error);
+        return {
+            success: false,
+            error: `Backend processing failed: ${error.message}`,
+            text: '',
+            formatting_data: { ranges: [] },
+            metadata: { processing_method: 'backend_failed' }
+        };
     }
 }
 
-// Handle file reading error
+// Handle file upload errors (e.g., network issues, server errors)
 function handleUploadError(error) {
     hideLoading();
     
