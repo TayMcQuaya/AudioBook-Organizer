@@ -3,7 +3,7 @@
 # Basic Flask Settings
 FLASK_ENV=production
 FLASK_DEBUG=False
-SECRET_KEY=3Z5pC-hUvfzW_YEcW3NiIK9NTgTNyCuxbvj3-Ue2UXA
+SECRET_KEY=3Z5pC-hUvfzW_YEcW3NiIK9NTgTNyCuxbvj3-Ue2UXA <- oh lol , it has been already replaced dont even try :)
 
 # Testing Mode Settings
 TESTING_MODE=true

@@ -146,29 +146,31 @@ def upload_docx(current_user):
                 
                 # Consume credits and log successful processing (only in normal mode)
                 if not current_app.config.get('TESTING_MODE'):
-                supabase_service = get_supabase_service()
-                if supabase_service and supabase_service.is_configured():
-                    try:
-                        # Deduct credits for DOCX processing
-                        credit_success = supabase_service.update_user_credits(current_user['id'], -5)
-                        if not credit_success:
-                            current_app.logger.warning('Failed to deduct credits for DOCX processing')
-                        
-                        # Log usage
-                        supabase_service.log_usage(
-                            current_user['id'],
-                            'docx_processed',
-                            credits_used=5,
-                            metadata={
-                                'filename': filename,
-                                'file_size': file_size,
-                                'text_length': len(result['text']),
-                                'formatting_ranges': len(result['formatting_ranges']),
-                                'processing_time': processing_time
-                            }
-                        )
-                    except Exception as log_error:
-                        current_app.logger.warning(f'Failed to log usage: {log_error}')
+                    supabase_service = get_supabase_service()
+                    if supabase_service and supabase_service.is_configured():
+                        try:
+                            # Deduct credits for DOCX processing
+                            credit_success = supabase_service.update_user_credits(current_user['id'], -5)
+                            if not credit_success:
+                                current_app.logger.warning('Failed to deduct credits for DOCX processing')
+                            
+                            # Log usage
+                            supabase_service.log_usage(
+                                current_user['id'],
+                                'docx_processed',
+                                credits_used=5,
+                                metadata={
+                                    'filename': filename,
+                                    'file_size': file_size,
+                                    'text_length': len(result['text']),
+                                    'formatting_ranges': len(result['formatting_ranges']),
+                                    'processing_time': processing_time
+                                }
+                            )
+                        except Exception as log_error:
+                            current_app.logger.warning(f'Failed to log usage: {log_error}')
+                    else:
+                        current_app.logger.info('✅ Testing mode - Skipping credit deduction and usage logging')
                 else:
                     current_app.logger.info('✅ Testing mode - Skipping credit deduction and usage logging')
                 
