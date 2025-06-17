@@ -159,20 +159,32 @@ class TempAuth {
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                credentials: 'same-origin', // Include session cookies
+                credentials: 'include', // Changed from 'same-origin' to 'include' for cross-origin
                 body: JSON.stringify({ password })
             });
             
             const data = await response.json();
             
             if (data.success) {
-                // Success! Redirect to app
+                // Success! Update authentication status
                 console.log('Temporary authentication successful');
+                
+                // Update tempAuthManager status
+                if (window.tempAuthManager) {
+                    window.tempAuthManager.isAuthenticated = true;
+                    console.log('🔧 Updated tempAuthManager.isAuthenticated to true');
+                }
+                
                 this.showSuccess();
                 
-                // Small delay to show success, then redirect
+                // Small delay to show success, then navigate via router
                 setTimeout(() => {
-                    window.location.href = '/app';
+                    // Use router navigation instead of hard redirect to maintain SPA state
+                    if (window.router) {
+                        window.router.navigate('/app');
+                    } else {
+                        window.location.href = '/app';
+                    }
                 }, 1000);
             } else {
                 this.showError(data.error || 'Authentication failed');

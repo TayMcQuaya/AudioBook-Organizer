@@ -85,6 +85,9 @@ class Router {
         // Make auth module globally available
         window.authModule = auth;
         
+        // Make tempAuthManager globally available
+        window.tempAuthManager = tempAuthManager;
+        
         // Listen for browser back/forward
         window.addEventListener('popstate', this.handlePopState);
         

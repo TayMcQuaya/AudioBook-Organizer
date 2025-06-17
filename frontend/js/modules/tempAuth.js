@@ -16,7 +16,7 @@ class TempAuthManager {
         try {
             // Check server status to determine if we're in testing mode
             const response = await apiFetch('/api/auth/temp-status', {
-                credentials: 'same-origin'
+                credentials: 'include'
             });
             
             if (response.ok) {
@@ -52,7 +52,7 @@ class TempAuthManager {
         this.checkInterval = setInterval(async () => {
             try {
                 const response = await apiFetch('/api/auth/temp-status', {
-                    credentials: 'same-origin'
+                    credentials: 'include'
                 });
                 
                 if (response.ok) {
