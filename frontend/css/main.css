@@ -1071,7 +1071,7 @@ body.testing-mode .app-nav::before {
     content: "⚡ Early Access Mode";
     position: fixed;
     top: 30px; /* Half of nav height (60px) */
-    left: 380px; /* Position it after "AudioBook Organizer" text */
+    left: 400px; /* Position it after "AudioBook Organizer" text */
     transform: translateY(-50%);
     background: rgba(255, 193, 7, 0.2);
     color: #ffc107;
