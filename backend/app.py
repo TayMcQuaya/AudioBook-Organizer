@@ -126,6 +126,22 @@ def create_app(config_name=None):
             'server_timezone': str(datetime.now().astimezone().tzinfo)
         })
     
+    # Debug endpoint for testing mode configuration
+    @app.route('/debug/config', methods=['GET'])
+    def debug_config():
+        """Debug endpoint to check testing mode configuration"""
+        return jsonify({
+            'testing_mode': app.config.get('TESTING_MODE', False),
+            'temporary_password_configured': bool(app.config.get('TEMPORARY_PASSWORD')),
+            'temporary_password_value': app.config.get('TEMPORARY_PASSWORD', 'NOT_SET'),
+            'environment': os.environ.get('FLASK_ENV', 'unknown'),
+            'available_env_vars': {
+                'TESTING_MODE': os.environ.get('TESTING_MODE', 'NOT_SET'),
+                'TEMPORARY_PASSWORD': os.environ.get('TEMPORARY_PASSWORD', 'NOT_SET'),
+                'FLASK_ENV': os.environ.get('FLASK_ENV', 'NOT_SET')
+            }
+        })
+    
     return app
 
 def run_app():

@@ -11,11 +11,21 @@ def create_password_protection_routes(app):
     def temp_login():
         """Handle temporary password authentication"""
         try:
+            print(f"🔧 DEBUG: temp-login route called")
+            print(f"🔧 DEBUG: Request method: {request.method}")
+            print(f"🔧 DEBUG: Request content type: {request.content_type}")
+            print(f"🔧 DEBUG: TESTING_MODE config: {app.config.get('TESTING_MODE')}")
+            print(f"🔧 DEBUG: TEMPORARY_PASSWORD config: {bool(app.config.get('TEMPORARY_PASSWORD'))}")
+            
             data = request.get_json()
-            password = data.get('password', '')
+            print(f"🔧 DEBUG: Request data: {data}")
+            
+            password = data.get('password', '') if data else ''
+            print(f"🔧 DEBUG: Password received (length): {len(password)}")
             
             # Check if we're in testing mode
             if not app.config.get('TESTING_MODE'):
+                print(f"🔧 DEBUG: Testing mode not enabled")
                 return jsonify({
                     'success': False,
                     'error': 'Testing mode not enabled'
@@ -23,20 +33,27 @@ def create_password_protection_routes(app):
             
             # Verify password
             correct_password = app.config.get('TEMPORARY_PASSWORD')
+            print(f"🔧 DEBUG: Correct password configured: {bool(correct_password)}")
+            
             if not correct_password:
+                print(f"🔧 DEBUG: Temporary password not configured")
                 return jsonify({
                     'success': False,
                     'error': 'Temporary password not configured'
                 }), 500
             
+            print(f"🔧 DEBUG: Password match: {password == correct_password}")
+            
             if password == correct_password:
                 # Set session flag for authenticated access
                 session['temp_authenticated'] = True
+                print(f"🔧 DEBUG: Authentication successful, session set")
                 return jsonify({
                     'success': True,
                     'message': 'Authentication successful'
                 })
             else:
+                print(f"🔧 DEBUG: Password mismatch")
                 return jsonify({
                     'success': False,
                     'error': 'Invalid password'
@@ -44,6 +61,8 @@ def create_password_protection_routes(app):
                 
         except Exception as e:
             print(f"Error in temp login: {e}")
+            import traceback
+            print(f"🔧 DEBUG: Full traceback: {traceback.format_exc()}")
             return jsonify({
                 'success': False,
                 'error': 'Server error'
