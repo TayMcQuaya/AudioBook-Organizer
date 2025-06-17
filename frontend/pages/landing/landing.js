@@ -371,11 +371,20 @@ function setupScrollEffects() {
 function setupAppWindowTilt() {
     const appWindow = document.querySelector('.app-window');
     if (!appWindow) {
-        console.warn('⚠️ App window element not found for tilt effect');
-        // Try again after a short delay in case DOM is still loading
-        setTimeout(() => {
-            setupAppWindowTilt();
-        }, 100);
+        // Only try a few times, then give up
+        if (!setupAppWindowTilt.retryCount) {
+            setupAppWindowTilt.retryCount = 0;
+        }
+        setupAppWindowTilt.retryCount++;
+        
+        if (setupAppWindowTilt.retryCount <= 10) {
+            console.warn('⚠️ App window element not found for tilt effect (attempt ' + setupAppWindowTilt.retryCount + '/10)');
+            setTimeout(() => {
+                setupAppWindowTilt();
+            }, 100);
+        } else {
+            console.warn('⚠️ App window element not found after 10 attempts - skipping tilt effect');
+        }
         return;
     }
     

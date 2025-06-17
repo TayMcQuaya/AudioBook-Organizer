@@ -38,7 +38,7 @@ def create_app(config_name=None):
     
     # Define allowed origins for CORS using a regular expression
     # This allows the main Vercel app URL and any of its preview deployments.
-    allowed_origins_regex = r"https://audio-book-organizer(-[a-z0-9]+)?\.vercel\.app"
+    allowed_origins_regex = r"https://audio-book-organizer(-[a-z0-9\-]+)?\.vercel\.app"
 
     CORS(
         app,
@@ -47,6 +47,7 @@ def create_app(config_name=None):
             "http://127.0.0.1:3000",
             "http://localhost:5000",
             "http://127.0.0.1:5000",
+            "https://audio-book-organizer-git-main-taymcquayas-projects.vercel.app",  # Add your specific URL
             allowed_origins_regex  # Add the regex to the list of origins
         ],
         supports_credentials=True
