@@ -26,60 +26,6 @@ const getApiBaseUrl = () => {
 
 export const API_BASE_URL = getApiBaseUrl();
 
-/**
- * A wrapper around the native fetch function that automatically prepends
- * the correct API base URL to the request URL and includes proper headers.
- *
- * @param {string} url - The API endpoint (e.g., '/api/auth/status').
- * @param {object} options - The options object for the fetch call.
- * @returns {Promise<Response>} The promise returned by fetch.
- */
-export const apiFetch = (url, options = {}) => {
-  const apiUrl = `${API_BASE_URL}${url}`;
-  
-  // Ensure proper headers are set
-  const defaultHeaders = {};
-  
-  // Only set Content-Type for non-FormData requests
-  // FormData automatically sets the correct Content-Type with boundary
-  if (!(options.body instanceof FormData)) {
-    defaultHeaders['Content-Type'] = 'application/json';
-  }
-  
-  // Add authorization header if available
-  const token = localStorage.getItem('sb-access-token');
-  if (token) {
-    defaultHeaders['Authorization'] = `Bearer ${token}`;
-  }
-  
-  // Merge headers and ensure credentials are included for session-based auth
-  const mergedOptions = {
-    credentials: 'include', // Include cookies for session-based authentication
-    ...options,
-    headers: {
-      ...defaultHeaders,
-      ...options.headers,
-    },
-  };
-  
-  console.log(`API Request: ${apiUrl}`, mergedOptions);
-  return fetch(apiUrl, mergedOptions);
-};
-
-/**
- * Helper function to check if the API is reachable
- */
-export const checkApiHealth = async () => {
-  try {
-    const response = await apiFetch('/api/test');
-    const data = await response.json();
-    return { success: response.ok, data };
-  } catch (error) {
-    console.error('API health check failed:', error);
-    return { success: false, error: error.message };
-  }
-};
-
 // Get backend URL from global config
 const BACKEND_URL = window.BACKEND_URL;
 
@@ -98,22 +44,30 @@ export async function apiFetch(endpoint, options = {}) {
     // Remove double slashes in URL except after protocol
     const url = `${BACKEND_URL}${endpoint}`.replace(/([^:]\/)\/+/g, '$1');
 
-    // Default options
-    const defaultOptions = {
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        credentials: 'include', // Include cookies for CORS
+    // Default options with auth token if available
+    const defaultHeaders = {
+        'Content-Type': 'application/json'
     };
+
+    // Add authorization header if available
+    const token = localStorage.getItem('sb-access-token');
+    if (token) {
+        defaultHeaders['Authorization'] = `Bearer ${token}`;
+    }
+
+    // Don't set Content-Type for FormData
+    if (options.body instanceof FormData) {
+        delete defaultHeaders['Content-Type'];
+    }
 
     // Merge options
     const finalOptions = {
-        ...defaultOptions,
+        credentials: 'include', // Include cookies for CORS
         ...options,
         headers: {
-            ...defaultOptions.headers,
-            ...(options.headers || {}),
-        },
+            ...defaultHeaders,
+            ...(options.headers || {})
+        }
     };
 
     try {
@@ -124,7 +78,7 @@ export async function apiFetch(endpoint, options = {}) {
             console.error(`API Error (${response.status}):`, {
                 endpoint,
                 status: response.status,
-                statusText: response.statusText,
+                statusText: response.statusText
             });
         }
         
@@ -134,5 +88,19 @@ export async function apiFetch(endpoint, options = {}) {
         throw error;
     }
 }
+
+/**
+ * Helper function to check if the API is reachable
+ */
+export const checkApiHealth = async () => {
+    try {
+        const response = await apiFetch('/api/test');
+        const data = await response.json();
+        return { success: response.ok, data };
+    } catch (error) {
+        console.error('API health check failed:', error);
+        return { success: false, error: error.message };
+    }
+};
 
 // Export other API-related utilities here if needed 
