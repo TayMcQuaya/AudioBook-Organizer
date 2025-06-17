@@ -18,6 +18,12 @@ const routeConfig = {
         requiresAuth: false,
         layout: 'landing'
     },
+    '/temp-auth': {
+        title: 'Access Required - AudioBook Organizer',
+        component: 'temp-auth',
+        requiresAuth: false,
+        layout: 'temp-auth'
+    },
     '/app': {
         title: 'AudioBook Organizer - App',
         component: 'app',
@@ -169,16 +175,23 @@ class Router {
             
             // **TESTING MODE CHECKS**
             if (tempAuthManager.isTestingMode) {
-                // Block access to landing page in testing mode
-                if (targetPath === '/' && tempAuthManager.shouldBlockLandingPage()) {
-                    console.log('🧪 Testing mode: Blocking landing page access');
-                    await this.navigate('/app', true);
+                // If not authenticated in testing mode, redirect to temp-auth page
+                if (!tempAuthManager.isAuthenticated && targetPath !== '/temp-auth') {
+                    console.log('🧪 Testing mode: Redirecting to temp authentication');
+                    await this.navigate('/temp-auth', true);
                     return;
                 }
                 
-                // Block access to auth pages in testing mode
+                // Block access to normal auth pages in testing mode (redirect to temp-auth)
                 if ((targetPath === '/auth' || targetPath === '/auth/reset-password' || targetPath === '/profile') && tempAuthManager.shouldBlockAuthPages()) {
                     console.log('🧪 Testing mode: Blocking auth page access');
+                    await this.navigate('/temp-auth', true);
+                    return;
+                }
+                
+                // If authenticated and on temp-auth page, redirect to app
+                if (tempAuthManager.isAuthenticated && targetPath === '/temp-auth') {
+                    console.log('🧪 Testing mode: Already authenticated, redirecting to app');
                     await this.navigate('/app', true);
                     return;
                 }
@@ -266,6 +279,9 @@ class Router {
                 case 'landing':
                     await this.loadLandingPage();
                     break;
+                case 'temp-auth':
+                    await this.loadTempAuthPage();
+                    break;
                 case 'app':
                     await this.loadApp();
                     break;
@@ -336,6 +352,35 @@ class Router {
         } catch (error) {
             console.error('Error loading landing page:', error);
             showError('Failed to load landing page');
+        }
+    }
+    
+    // Load temp auth page
+    async loadTempAuthPage() {
+        try {
+            const appContainer = document.getElementById('appContainer');
+            if (!appContainer) {
+                throw new Error('App container not found for router.');
+            }
+
+            // Load temp auth page HTML
+            const response = await fetch('/pages/temp-auth/temp-auth.html');
+            if (!response.ok) throw new Error(`Failed to fetch temp auth page: ${response.status}`);
+            const html = await response.text();
+
+            // Extract body content and inject it
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            appContainer.innerHTML = doc.body.innerHTML;
+
+            document.body.className = 'temp-auth-body app-ready';
+
+            // The temp-auth.js script is already included in the HTML, so it will initialize automatically
+            console.log('✅ Temp auth page loaded');
+
+        } catch (error) {
+            console.error('Error loading temp auth page:', error);
+            showError('Failed to load temp auth page');
         }
     }
     

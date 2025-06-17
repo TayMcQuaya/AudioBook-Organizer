@@ -100,7 +100,8 @@ class TempAuthManager {
     
     // Check if landing page should be accessible
     shouldBlockLandingPage() {
-        return this.isTestingMode;
+        // Landing page is now always accessible - we redirect to temp-auth instead
+        return false;
     }
     
     // Check if auth pages should be accessible
