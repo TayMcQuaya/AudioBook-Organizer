@@ -96,6 +96,8 @@ import {
     initializeCommentsSystem
 } from './modules/commentsSystem.js';
 
+import testingModeUI from './modules/testingModeUI.js';
+
 // Make functions globally available for HTML onclick handlers
 window.createNewChapter = createNewChapter;
 window.updateChapterName = updateChapterName;
@@ -238,6 +240,9 @@ async function initialize() {
         initializeSelectionTracking();
         initializeToolbarPositioning();
         initializeCommentsSystem();
+        
+        // Initialize testing mode UI if needed
+        await testingModeUI.init();
         
         console.log('✨ Formatting system initialized');
     } else {

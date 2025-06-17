@@ -518,7 +518,12 @@ export async function saveToDatabase() {
             return false;
         }
         
-        // Get auth token for API call
+        // Check if we're in testing mode - use localStorage instead
+        if (window.tempAuthManager?.isTestingMode) {
+            return saveToLocalStorage(projectData);
+        }
+        
+        // Get auth token for API call (normal mode)
         const authToken = window.authModule?.getAuthToken();
         if (!authToken) {
             console.warn('⚠️ Cannot auto-save: User not authenticated');
@@ -558,11 +563,45 @@ export async function saveToDatabase() {
 }
 
 /**
+ * Save project data to localStorage (testing mode)
+ */
+function saveToLocalStorage(projectData) {
+    try {
+        const storageData = {
+            ...projectData,
+            savedAt: new Date().toISOString(),
+            testingMode: true
+        };
+        
+        localStorage.setItem('audiobook_testing_project', JSON.stringify(storageData));
+        console.log('✅ Project auto-saved to localStorage (testing mode)');
+        
+        // Dispatch custom event for UI updates
+        window.dispatchEvent(new CustomEvent('project-auto-saved', {
+            detail: { 
+                timestamp: new Date().toISOString(),
+                storage: 'localStorage'
+            }
+        }));
+        
+        return true;
+    } catch (error) {
+        console.error('❌ localStorage save error:', error);
+        return false;
+    }
+}
+
+/**
  * Load latest project from database (auto-restore)
  */
 export async function loadFromDatabase() {
     try {
-        // Get auth token for API call
+        // Check if we're in testing mode - use localStorage instead
+        if (window.tempAuthManager?.isTestingMode) {
+            return loadFromLocalStorage();
+        }
+        
+        // Get auth token for API call (normal mode)
         const authToken = window.authModule?.getAuthToken();
         if (!authToken) {
             console.log('👤 User not authenticated, skipping auto-restore');
@@ -610,6 +649,47 @@ export async function loadFromDatabase() {
         
     } catch (error) {
         console.error('❌ Auto-restore error:', error);
+        return false;
+    }
+}
+
+/**
+ * Load project data from localStorage (testing mode)
+ */
+function loadFromLocalStorage() {
+    try {
+        const stored = localStorage.getItem('audiobook_testing_project');
+        if (!stored) {
+            console.log('📭 No previous project found in localStorage');
+            return false;
+        }
+        
+        const projectData = JSON.parse(stored);
+        
+        // Validate the data
+        if (!projectData.bookText && (!projectData.chapters || projectData.chapters.length === 0)) {
+            console.log('📭 No meaningful content in stored project');
+            return false;
+        }
+        
+        console.log('📂 Restoring project from localStorage...');
+        
+        // Use existing loadProjectDirectly function
+        loadProjectDirectly(projectData);
+        
+        // Show restore notification
+        const savedTime = projectData.savedAt ? new Date(projectData.savedAt).toLocaleString() : 'Unknown';
+        showSuccess(`📂 Work restored! Last saved: ${savedTime}`);
+        
+        console.log('✅ Project restored from localStorage:', {
+            bookTextLength: projectData.bookText?.length || 0,
+            chaptersCount: projectData.chapters?.length || 0,
+            savedAt: projectData.savedAt
+        });
+        
+        return true;
+    } catch (error) {
+        console.error('❌ localStorage restore error:', error);
         return false;
     }
 }
@@ -686,5 +766,20 @@ export function saveProgressEnhanced(isAutoSave = false) {
     } else {
         // Manual save - use existing download functionality
         return saveProgress();
+    }
+}
+
+/**
+ * Clear testing mode data from localStorage
+ * Called when exiting testing mode for security
+ */
+export function clearTestingModeData() {
+    try {
+        localStorage.removeItem('audiobook_testing_project');
+        console.log('🧹 Testing mode data cleared from localStorage');
+        return true;
+    } catch (error) {
+        console.error('❌ Error clearing testing mode data:', error);
+        return false;
     }
 } 

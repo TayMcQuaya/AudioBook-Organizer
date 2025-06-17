@@ -24,6 +24,15 @@ class Config:
     HOST = os.environ.get('FLASK_HOST', 'localhost')
     PORT = int(os.environ.get('FLASK_PORT', 3000))
     
+    # Temporary production password (for testing phase)
+    TEMPORARY_PASSWORD = os.environ.get('TEMPORARY_PASSWORD')
+    TESTING_MODE = os.environ.get('TESTING_MODE', 'false').lower() in ['true', '1', 'yes']
+    
+    # Session configuration for temporary authentication
+    SESSION_COOKIE_SECURE = os.environ.get('SESSION_COOKIE_SECURE', 'false').lower() in ['true', '1', 'yes']
+    SESSION_COOKIE_HTTPONLY = True
+    SESSION_COOKIE_SAMESITE = 'Lax'
+    
     # Supabase configuration
     SUPABASE_URL = os.environ.get('SUPABASE_URL')
     SUPABASE_KEY = os.environ.get('SUPABASE_ANON_KEY')  # Fixed: Use ANON_KEY for main key

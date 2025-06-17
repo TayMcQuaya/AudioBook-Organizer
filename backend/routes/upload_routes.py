@@ -1,14 +1,17 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, current_app
+import os
 from ..services.audio_service import AudioService
+from ..routes.password_protection import require_temp_auth
 
 def create_upload_routes(app, upload_folder):
     """
-    Create upload routes.
-    Preserves the exact logic from original server.py
+    Create file upload routes.
+    Preserves the exact logic from original server.py but adapted for modular architecture
     """
     audio_service = AudioService(upload_folder)
     
     @app.route('/api/upload', methods=['POST', 'OPTIONS'])
+    @require_temp_auth
     def upload_audio():
         """
         Handle audio file upload.

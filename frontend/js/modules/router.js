@@ -3,6 +3,7 @@
 import { showError, showInfo } from './notifications.js';
 import auth from './auth.js';
 import sessionManager from './sessionManager.js';
+import tempAuthManager from './tempAuth.js';
 
 // Router state
 let currentRoute = '/';
@@ -60,11 +61,20 @@ class Router {
     async init() {
         if (this.isInitialized) return;
         
-        // Initialize auth module
-        await auth.init();
+        // Initialize temporary authentication manager first
+        const tempAuthResult = await tempAuthManager.init();
+        if (!tempAuthResult) {
+            // Temp auth redirected us, don't continue with router init
+            return;
+        }
         
-        // Initialize session manager
-        await sessionManager.init();
+        // Initialize auth module only if not in testing mode
+        if (!tempAuthManager.shouldBypassAuth()) {
+            await auth.init();
+            await sessionManager.init();
+        } else {
+            console.log('🧪 Testing mode: Bypassing normal authentication');
+        }
         
         // Make auth module globally available
         window.authModule = auth;
@@ -76,7 +86,9 @@ class Router {
         document.addEventListener('click', this.handleLinkClick);
         
         // Wait for auth state to be ready before handling initial route
-        await this.waitForAuthReady();
+        if (!tempAuthManager.shouldBypassAuth()) {
+            await this.waitForAuthReady();
+        }
         
         // Initialize current route with full path including query parameters
         await this.handleRoute(window.location.pathname + window.location.search);
@@ -155,12 +167,29 @@ class Router {
                 return;
             }
             
+            // **TESTING MODE CHECKS**
+            if (tempAuthManager.isTestingMode) {
+                // Block access to landing page in testing mode
+                if (targetPath === '/' && tempAuthManager.shouldBlockLandingPage()) {
+                    console.log('🧪 Testing mode: Blocking landing page access');
+                    await this.navigate('/app', true);
+                    return;
+                }
+                
+                // Block access to auth pages in testing mode
+                if ((targetPath === '/auth' || targetPath === '/auth/reset-password' || targetPath === '/profile') && tempAuthManager.shouldBlockAuthPages()) {
+                    console.log('🧪 Testing mode: Blocking auth page access');
+                    await this.navigate('/app', true);
+                    return;
+                }
+            }
+            
             // **NEW: Clean up previous page's resources before loading new one**
             await this.cleanupCurrentPage();
             
             // Resolve authentication status
-            const isAuthenticated = state.isAuthenticated ?? sessionManager.isAuthenticated;
-            const isPasswordRecovery = sessionManager.isPasswordRecovery;
+            const isAuthenticated = state.isAuthenticated ?? (tempAuthManager.shouldBypassAuth() ? true : sessionManager.isAuthenticated);
+            const isPasswordRecovery = tempAuthManager.shouldBypassAuth() ? false : sessionManager.isPasswordRecovery;
             
             // **FIXED: Only block authenticated routes during password recovery, allow public pages**
             if (isPasswordRecovery && route.requiresAuth) {

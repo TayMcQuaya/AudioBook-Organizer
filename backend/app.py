@@ -12,6 +12,7 @@ from .routes.export_routes import create_export_routes
 from .routes.auth_routes import create_auth_routes
 from .routes.project_routes import project_bp
 from .routes.docx_routes import docx_bp
+from .routes.password_protection import create_password_protection_routes
 from .services.supabase_service import init_supabase_service
 from .services.security_service import init_security_service
 
@@ -23,6 +24,11 @@ def create_app(config_name='default'):
     # Initialize Flask app - exact settings preserved
     app = Flask(__name__, static_url_path='', static_folder='../frontend')
     app.config.from_object(config[config_name])
+    
+    # Configure session for temporary authentication
+    app.config['SESSION_COOKIE_SECURE'] = app.config.get('SESSION_COOKIE_SECURE', False)
+    app.config['SESSION_COOKIE_HTTPONLY'] = app.config.get('SESSION_COOKIE_HTTPONLY', True)
+    app.config['SESSION_COOKIE_SAMESITE'] = app.config.get('SESSION_COOKIE_SAMESITE', 'Lax')
     
     # Enable CORS for all routes - exact setting preserved
     CORS(app)
@@ -61,6 +67,9 @@ def create_app(config_name='default'):
     
     # Register DOCX processing routes
     app.register_blueprint(docx_bp)
+    
+    # Register password protection routes
+    create_password_protection_routes(app)
     
     # Debug route to check all registered routes - exact functionality preserved
     @app.route('/debug/routes', methods=['GET'])

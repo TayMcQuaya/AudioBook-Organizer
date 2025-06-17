@@ -11,6 +11,7 @@ import appUI from './appUI.js';
 import themeManager from './themeManager.js';
 import { loadFromDatabase, startAutoSave, stopAutoSave } from './storage.js';
 import { initializeTableOfContents, cleanupTableOfContents } from './tableOfContents.js';
+import tempAuthManager from './tempAuth.js';
 
 let isInitialized = false;
 
@@ -92,8 +93,19 @@ async function restoreLatestProject() {
     try {
         console.log('🔄 Attempting to restore latest project...');
         
-        // Check if user is authenticated
-        if (!window.authModule?.isAuthenticated()) {
+        // Check authentication based on mode
+        let isAuthenticated = false;
+        if (tempAuthManager.isTestingMode) {
+            // In testing mode, check temp auth
+            isAuthenticated = tempAuthManager.isAuthenticated;
+            console.log('Testing mode - auth status:', isAuthenticated);
+        } else {
+            // In normal mode, check Supabase auth
+            isAuthenticated = window.authModule?.isAuthenticated();
+            console.log('Normal mode - auth status:', isAuthenticated);
+        }
+        
+        if (!isAuthenticated) {
             console.log('👤 User not authenticated, skipping project restoration');
             return false;
         }
@@ -105,16 +117,20 @@ async function restoreLatestProject() {
         }
         
         // Show loading indicator
-        showLoadingIndicator('Restoring your project...');
+        const loadingMessage = tempAuthManager.isTestingMode ? 
+            'Restoring your work...' : 
+            'Restoring your project...';
+        showLoadingIndicator(loadingMessage);
         
-        // Try to restore from database
+        // Try to restore from appropriate storage
         const restored = await loadFromDatabase();
         
         // Hide loading indicator
         hideLoadingIndicator();
         
         if (restored) {
-            console.log('✅ Project restored successfully from database');
+            const storageType = tempAuthManager.isTestingMode ? 'browser storage' : 'database';
+            console.log(`✅ Project restored successfully from ${storageType}`);
             return true;
         } else {
             console.log('📭 No previous project found, starting fresh');
@@ -193,7 +209,13 @@ function hideLoadingIndicator() {
 
 // Initialize all modules in correct order
 async function initializeModules() {
-    // Initialize theme manager first
+    // Initialize temporary auth manager first (for testing mode)
+    await tempAuthManager.init();
+    
+    // Make tempAuthManager globally accessible for storage module
+    window.tempAuthManager = tempAuthManager;
+    
+    // Initialize theme manager
     themeManager.init();
     
     // Initialize session management

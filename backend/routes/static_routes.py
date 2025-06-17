@@ -1,4 +1,4 @@
-from flask import Blueprint, send_from_directory, send_file
+from flask import Blueprint, send_from_directory, send_file, session, redirect, current_app
 import os
 
 def create_static_routes(app):
@@ -8,13 +8,51 @@ def create_static_routes(app):
     """
     
     @app.route('/')
+    def serve_root():
+        """Serve root route - redirect based on testing mode"""
+        # Check if we're in testing mode
+        if app.config.get('TESTING_MODE'):
+            # Check if user is already authenticated
+            if session.get('temp_authenticated'):
+                return redirect('/app')
+            else:
+                return send_from_directory('../frontend/pages/temp-auth', 'temp-auth.html')
+        else:
+            # Normal mode - serve landing page
+            return send_from_directory('../frontend/public', 'index.html')
+    
     @app.route('/app')
+    def serve_app():
+        """Serve app route - check authentication in testing mode"""
+        if app.config.get('TESTING_MODE'):
+            # In testing mode, check temp authentication
+            if not session.get('temp_authenticated'):
+                return redirect('/')
+        
+        return send_from_directory('../frontend/public', 'index.html')
+    
     @app.route('/auth')
     @app.route('/profile')
     @app.route('/auth/reset-password')
-    def serve_spa():
-        """Serve main HTML file for all SPA routes"""
+    def serve_auth_pages():
+        """Serve auth-related pages - redirect to app in testing mode"""
+        if app.config.get('TESTING_MODE'):
+            # In testing mode, redirect these pages to root
+            return redirect('/')
+        
         return send_from_directory('../frontend/public', 'index.html')
+    
+    @app.route('/temp-auth')
+    def serve_temp_auth():
+        """Serve temporary authentication page"""
+        if not app.config.get('TESTING_MODE'):
+            return redirect('/')
+        
+        # If already authenticated, redirect to app
+        if session.get('temp_authenticated'):
+            return redirect('/app')
+        
+        return send_from_directory('../frontend/pages/temp-auth', 'temp-auth.html')
 
     @app.route('/test-auth-fix')
     def serve_test_auth_fix():
@@ -40,6 +78,11 @@ def create_static_routes(app):
     def serve_pages(filename):
         """Serve files from frontend/pages"""
         return send_from_directory('../frontend/pages', filename)
+
+    @app.route('/pages/temp-auth/<path:filename>')
+    def serve_temp_auth_files(filename):
+        """Serve temp-auth page files"""
+        return send_from_directory('../frontend/pages/temp-auth', filename)
 
     @app.route('/public/<path:filename>')
     def serve_public(filename):

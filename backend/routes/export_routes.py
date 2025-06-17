@@ -1,14 +1,16 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, current_app
+import os
 from ..services.export_service import ExportService
+from ..routes.password_protection import require_temp_auth
 
 def create_export_routes(app, upload_folder, export_folder):
     """
-    Create export routes.
-    Preserves the exact logic from original server.py
+    Create export routes for audiobook creation.
     """
     export_service = ExportService(upload_folder, export_folder)
     
-    @app.route('/api/export', methods=['POST', 'OPTIONS'])
+    @app.route('/api/export', methods=['POST'])
+    @require_temp_auth
     def export_audiobook():
         """
         Handle audiobook export.
