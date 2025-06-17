@@ -400,9 +400,24 @@ class Router {
             }
             
             // Extract body content and inject it
-            appContainer.innerHTML = doc.body.innerHTML;
+            const bodyContent = doc.body.innerHTML;
+            console.log('🔧 Temp-auth body content length:', bodyContent.length);
+            console.log('🔧 First 200 chars of content:', bodyContent.substring(0, 200));
+            appContainer.innerHTML = bodyContent;
 
             document.body.className = 'temp-auth-body app-ready';
+            
+            // Ensure the loading screen is hidden and appContainer is visible
+            const loadingScreen = document.getElementById('appLoading');
+            if (loadingScreen) {
+                loadingScreen.style.display = 'none';
+            }
+            
+            // Make sure appContainer is visible
+            appContainer.style.display = 'block';
+            appContainer.style.opacity = '1';
+            
+            console.log('🔧 Loading screen hidden, temp-auth content should be visible');
 
             // Wait a moment for DOM to be ready, then load the script
             console.log('🔧 Loading temp-auth script...');
