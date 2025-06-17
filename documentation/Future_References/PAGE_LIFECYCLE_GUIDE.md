@@ -1,6 +1,6 @@
 # 📄 Page Lifecycle & Development Guide
 
-This document explains the page initialization and cleanup lifecycle, and provides a guide for adding new pages to the AudioBook Creator application.
+This document explains the page initialization and cleanup lifecycle, and provides a guide for adding new pages to the AudioBook Organizer application.
 
 ## Overview: The Init/Cleanup Lifecycle
 

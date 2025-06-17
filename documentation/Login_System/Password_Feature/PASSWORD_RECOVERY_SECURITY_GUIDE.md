@@ -16,7 +16,7 @@
 
 ## Overview
 
-AudioBook Creator implements a **comprehensive password recovery security system** that prevents session hijacking, cross-tab authentication exploits, Supabase popstate interference, and various other attack vectors. This system ensures users can safely reset their passwords without compromising application security.
+AudioBook Organizer implements a **comprehensive password recovery security system** that prevents session hijacking, cross-tab authentication exploits, Supabase popstate interference, and various other attack vectors. This system ensures users can safely reset their passwords without compromising application security.
 
 ### Key Features
 - ✅ **Cross-tab security synchronization**
@@ -704,7 +704,7 @@ window.resetRecoveryState = resetRecoveryState;
 
 ## Summary
 
-The enhanced AudioBook Creator password recovery system now provides comprehensive protection against:
+The enhanced AudioBook Organizer password recovery system now provides comprehensive protection against:
 
 🔒 **Multi-layered security architecture**  
 🔒 **Cross-tab synchronization and communication**  

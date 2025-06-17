@@ -2,7 +2,7 @@
 
 ## Overview
 
-This temporary authentication system allows you to deploy your AudioBook Creator to production with simple password protection while bypassing the full Supabase authentication system during testing.
+This temporary authentication system allows you to deploy your AudioBook Organizer to production with simple password protection while bypassing the full Supabase authentication system during testing.
 
 ## Setup Steps
 
@@ -42,7 +42,7 @@ When `TESTING_MODE=true`:
 2. Password entry page appears
 3. User enters the temporary password
 4. User gains access to the full app interface
-5. All AudioBook Creator features work normally
+5. All AudioBook Organizer features work normally
 6. No signup/login required
 
 ### 4. Security Features

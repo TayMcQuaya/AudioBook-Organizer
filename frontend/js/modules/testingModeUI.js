@@ -29,7 +29,7 @@ class TestingModeUI {
         document.body.classList.add('testing-mode');
         
         // Update page title to show testing mode
-        if (document.title.includes('AudioBook Creator')) {
+        if (document.title.includes('AudioBook Organizer ')) {
             document.title = '[TESTING] ' + document.title;
         }
     }

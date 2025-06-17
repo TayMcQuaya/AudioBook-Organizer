@@ -18,7 +18,7 @@
 
 ## Overview
 
-AudioBook Creator uses a sophisticated **dual-layer authentication system** combining **Supabase Auth** with a custom **Session Manager** for enhanced security, state management, and cross-tab synchronization. This architecture provides seamless user experience while maintaining enterprise-level security.
+AudioBook Organizer uses a sophisticated **dual-layer authentication system** combining **Supabase Auth** with a custom **Session Manager** for enhanced security, state management, and cross-tab synchronization. This architecture provides seamless user experience while maintaining enterprise-level security.
 
 ### Key Components
 - 🔐 **Supabase Authentication**: JWT-based auth with OAuth support
@@ -618,7 +618,7 @@ const routeConfig = {
     '/': { 
         component: 'landing', 
         requiresAuth: false,
-        title: 'AudioBook Creator'
+        title: 'AudioBook Organizer'
     },
     '/auth': { 
         component: 'auth', 
@@ -1362,7 +1362,7 @@ window.testCrossTabSync = testCrossTabSync;
 
 ## Summary
 
-The enhanced AudioBook Creator authentication system provides:
+The enhanced AudioBook Organizer authentication system provides:
 
 ### 🔐 **Enhanced Secure Foundation**
 - JWT-based authentication via Supabase

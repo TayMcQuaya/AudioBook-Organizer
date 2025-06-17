@@ -1,6 +1,6 @@
 # 🔐 Google Authentication Flow
 
-This document outlines the step-by-step process of how a user signs in using Google OAuth within the AudioBook Creator application.
+This document outlines the step-by-step process of how a user signs in using Google OAuth within the AudioBook Organizer application.
 
 ## Overview
 
