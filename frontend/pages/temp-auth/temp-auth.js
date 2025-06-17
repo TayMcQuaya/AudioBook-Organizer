@@ -148,7 +148,13 @@ class TempAuth {
         this.clearError();
         
         try {
-            const response = await fetch('/api/auth/temp-login', {
+            // Get backend URL from environment config
+            const backendUrl = window.ENVIRONMENT_CONFIG?.BACKEND_URL || window.BACKEND_URL || '';
+            const apiUrl = backendUrl ? `${backendUrl}/api/auth/temp-login` : '/api/auth/temp-login';
+            
+            console.log('🔧 Making API call to:', apiUrl);
+            
+            const response = await fetch(apiUrl, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
