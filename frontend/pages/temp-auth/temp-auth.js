@@ -19,44 +19,119 @@ class TempAuth {
         } else {
             this.setupForm();
         }
+        
+        // Also set up a MutationObserver as backup to detect when the form is added
+        this.setupMutationObserver();
+    }
+    
+    setupMutationObserver() {
+        // Use MutationObserver to detect when the form is added to the DOM
+        const observer = new MutationObserver((mutations) => {
+            mutations.forEach((mutation) => {
+                if (mutation.type === 'childList') {
+                    const tempForm = document.getElementById('tempAuthForm');
+                    if (tempForm && !this.form) {
+                        console.log('🔧 Temp auth form detected via MutationObserver');
+                        observer.disconnect();
+                        this.setupFormElements();
+                    }
+                }
+            });
+        });
+        
+        // Observe the entire document for changes
+        observer.observe(document.body, {
+            childList: true,
+            subtree: true
+        });
+        
+        // Clean up observer after 10 seconds to prevent memory leaks
+        setTimeout(() => {
+            observer.disconnect();
+        }, 10000);
+    }
+    
+    setupFormElements() {
+        // Separate method for setting up form elements once they're found
+        console.log('🔧 Attempting to find temp auth form elements...');
+        
+        // Debug: Check what's actually in the DOM
+        console.log('🔧 Current DOM state:');
+        console.log('  - Document ready state:', document.readyState);
+        console.log('  - appContainer exists:', !!document.getElementById('appContainer'));
+        console.log('  - appContainer innerHTML length:', document.getElementById('appContainer')?.innerHTML?.length || 0);
+        console.log('  - All forms in document:', document.querySelectorAll('form').length);
+        console.log('  - Form with tempAuthForm ID:', !!document.getElementById('tempAuthForm'));
+        
+        this.form = document.getElementById('tempAuthForm');
+        this.passwordInput = document.getElementById('password');
+        this.submitBtn = document.getElementById('submitBtn');
+        this.errorMessage = document.getElementById('errorMessage');
+        this.loadingIndicator = document.getElementById('loadingIndicator');
+        
+        if (this.form) {
+            console.log('✅ All temp auth form elements found successfully');
+            
+            // Add event listeners
+            this.form.addEventListener('submit', (e) => this.handleSubmit(e));
+            this.passwordInput.addEventListener('input', () => this.clearError());
+            this.passwordInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    this.handleSubmit(e);
+                }
+            });
+            
+            // Focus on password field
+            this.passwordInput.focus();
+            
+            console.log('✅ Temp auth form initialized successfully');
+            return true;
+        } else {
+            console.log('❌ Temp auth form not found. Elements found:');
+            console.log('  - form (tempAuthForm):', !!this.form);
+            console.log('  - passwordInput (password):', !!this.passwordInput);
+            console.log('  - submitBtn (submitBtn):', !!this.submitBtn);
+            console.log('  - errorMessage (errorMessage):', !!this.errorMessage);
+            console.log('  - loadingIndicator (loadingIndicator):', !!this.loadingIndicator);
+        }
+        return false;
     }
     
     setupForm() {
-        // Wait for elements to be available with retry logic
-        const waitForElements = () => {
-            this.form = document.getElementById('tempAuthForm');
-            this.passwordInput = document.getElementById('password');
-            this.submitBtn = document.getElementById('submitBtn');
-            this.errorMessage = document.getElementById('errorMessage');
-            this.loadingIndicator = document.getElementById('loadingIndicator');
-            
-            if (!this.form) {
-                console.log('🔧 Waiting for temp auth form to be available...');
-                // Retry after a short delay
-                setTimeout(() => this.setupForm(), 50);
-                return false;
-            }
-            return true;
-        };
-        
-        if (!waitForElements()) {
-            return;
+        // Try to set up form elements immediately
+        if (this.setupFormElements()) {
+            return; // Success, we're done
         }
         
-        // Add event listeners
-        this.form.addEventListener('submit', (e) => this.handleSubmit(e));
-        this.passwordInput.addEventListener('input', () => this.clearError());
-        this.passwordInput.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                this.handleSubmit(e);
+        // If immediate setup failed, use retry logic with retry limit
+        let retryCount = 0;
+        const maxRetries = 100; // Maximum 5 seconds of retrying (100 * 50ms)
+        
+        const waitForElements = () => {
+            if (this.setupFormElements()) {
+                return true; // Success
             }
-        });
+            
+            retryCount++;
+            console.log(`🔧 Waiting for temp auth form to be available... (attempt ${retryCount}/${maxRetries})`);
+            
+            if (retryCount >= maxRetries) {
+                console.error('❌ Failed to find temp auth form after maximum retries');
+                console.error('🔧 Debug info - DOM elements found:');
+                console.error('  - appContainer:', document.getElementById('appContainer'));
+                console.error('  - Document body innerHTML length:', document.body.innerHTML.length);
+                console.error('  - Available forms:', document.querySelectorAll('form'));
+                console.error('  - Elements with id containing "temp":', document.querySelectorAll('[id*="temp"]'));
+                return false;
+            }
+            
+            // Retry after a short delay
+            setTimeout(() => waitForElements(), 50);
+            return false;
+        };
         
-        // Focus on password field
-        this.passwordInput.focus();
-        
-        console.log('Temp auth form initialized');
+        waitForElements();
     }
     
     async handleSubmit(e) {

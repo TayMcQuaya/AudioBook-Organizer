@@ -405,6 +405,9 @@ class Router {
             console.log('🔧 First 200 chars of content:', bodyContent.substring(0, 200));
             appContainer.innerHTML = bodyContent;
 
+            // Force DOM to flush/render
+            appContainer.offsetHeight; // Trigger reflow
+            
             document.body.className = 'temp-auth-body app-ready';
             
             // Ensure the loading screen is hidden and appContainer is visible
@@ -417,11 +420,20 @@ class Router {
             appContainer.style.display = 'block';
             appContainer.style.opacity = '1';
             
+            // Force another reflow
+            appContainer.offsetHeight;
+            
             console.log('🔧 Loading screen hidden, temp-auth content should be visible');
 
             // Wait a moment for DOM to be ready, then load the script
             console.log('🔧 Loading temp-auth script...');
             await new Promise(resolve => setTimeout(resolve, 100)); // Small delay for DOM
+            
+            // Add debugging to verify DOM injection worked
+            const tempForm = document.getElementById('tempAuthForm');
+            console.log('🔧 DOM check after injection - tempAuthForm found:', !!tempForm);
+            console.log('🔧 appContainer innerHTML length:', appContainer.innerHTML.length);
+            console.log('🔧 appContainer content preview:', appContainer.innerHTML.substring(0, 200));
             
             try {
                 // Import the temp-auth module to ensure it initializes
