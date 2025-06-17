@@ -675,6 +675,32 @@ class Router {
             // Initialize app if not already initialized
             if (!window.isAppInitialized) {
                 try {
+                    // In testing mode, wait a moment to ensure auth status is properly set
+                    if (tempAuthManager.isTestingMode) {
+                        console.log('🧪 Testing mode: Waiting for auth status to be properly set...');
+                        
+                        // Wait for either auth success event or timeout
+                        await new Promise((resolve) => {
+                            const timeout = setTimeout(resolve, 500); // Max 500ms wait
+                            
+                            const handleAuthSuccess = () => {
+                                clearTimeout(timeout);
+                                window.removeEventListener('temp-auth-success', handleAuthSuccess);
+                                resolve();
+                            };
+                            
+                            // If already authenticated, resolve immediately
+                            if (tempAuthManager.isAuthenticated) {
+                                clearTimeout(timeout);
+                                resolve();
+                            } else {
+                                window.addEventListener('temp-auth-success', handleAuthSuccess);
+                            }
+                        });
+                        
+                        console.log('🧪 Testing mode: Auth status check complete, proceeding with app init');
+                    }
+                    
                     const { initialize, cleanup } = await import('/js/main.js');
                     await initialize();
                     window.cleanupApp = cleanup;

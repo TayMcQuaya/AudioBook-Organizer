@@ -93,6 +93,17 @@ class TempAuthManager {
         }
     }
     
+    // Method to update authentication status
+    setAuthenticated(isAuth) {
+        this.isAuthenticated = isAuth;
+        console.log(`🔧 TempAuth status updated to: ${isAuth}`);
+        
+        // Trigger any listeners that might be waiting for auth state changes
+        if (isAuth) {
+            window.dispatchEvent(new CustomEvent('temp-auth-success'));
+        }
+    }
+    
     // Check if we should bypass normal authentication
     shouldBypassAuth() {
         return this.isTestingMode && this.isAuthenticated;

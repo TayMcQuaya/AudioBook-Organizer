@@ -166,13 +166,15 @@ class TempAuth {
             const data = await response.json();
             
             if (data.success) {
-                // Success! Update authentication status
+                // Success! Update authentication status IMMEDIATELY
                 console.log('Temporary authentication successful');
                 
-                // Update tempAuthManager status
+                // Update tempAuthManager status first (before any navigation)
                 if (window.tempAuthManager) {
-                    window.tempAuthManager.isAuthenticated = true;
+                    window.tempAuthManager.setAuthenticated(true);
                     console.log('🔧 Updated tempAuthManager.isAuthenticated to true');
+                } else {
+                    console.warn('⚠️ tempAuthManager not available globally');
                 }
                 
                 this.showSuccess();
@@ -181,11 +183,13 @@ class TempAuth {
                 setTimeout(() => {
                     // Use router navigation instead of hard redirect to maintain SPA state
                     if (window.router) {
+                        console.log('🔧 Navigating to /app via router');
                         window.router.navigate('/app');
                     } else {
+                        console.log('🔧 Router not available, using hard redirect');
                         window.location.href = '/app';
                     }
-                }, 1000);
+                }, 500);
             } else {
                 this.showError(data.error || 'Authentication failed');
             }
