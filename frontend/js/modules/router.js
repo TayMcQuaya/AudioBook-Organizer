@@ -378,14 +378,42 @@ class Router {
             const html = await response.text();
             console.log('🔧 HTML fetched successfully');
 
-            // Extract body content and inject it
+            // Parse the HTML and extract both head and body content
             const parser = new DOMParser();
             const doc = parser.parseFromString(html, 'text/html');
+            
+            // Extract and inject the styles from the temp-auth page
+            const styles = doc.querySelector('style');
+            if (styles) {
+                // Remove any existing temp-auth styles first
+                const existingTempAuthStyles = document.querySelector('#temp-auth-styles');
+                if (existingTempAuthStyles) {
+                    existingTempAuthStyles.remove();
+                }
+                
+                // Create a new style element with ID for easy cleanup
+                const newStyleElement = document.createElement('style');
+                newStyleElement.id = 'temp-auth-styles';
+                newStyleElement.textContent = styles.textContent;
+                document.head.appendChild(newStyleElement);
+                console.log('🔧 Temp auth styles injected');
+            }
+            
+            // Extract body content and inject it
             appContainer.innerHTML = doc.body.innerHTML;
 
             document.body.className = 'temp-auth-body app-ready';
 
-            // The temp-auth.js script is already included in the HTML, so it will initialize automatically
+            // Manually load and execute the temp-auth.js script since innerHTML doesn't execute scripts
+            console.log('🔧 Loading temp-auth script...');
+            try {
+                // Import the temp-auth module to ensure it initializes
+                await import('/pages/temp-auth/temp-auth.js?t=' + Date.now());
+                console.log('🔧 Temp-auth script loaded');
+            } catch (scriptError) {
+                console.error('Error loading temp-auth script:', scriptError);
+            }
+
             console.log('✅ Temp auth page loaded successfully');
 
         } catch (error) {
@@ -656,6 +684,13 @@ class Router {
             case 'landing':
                 if (window.cleanupLandingPage) {
                     window.cleanupLandingPage();
+                }
+                break;
+            case 'temp-auth':
+                // Clean up temp-auth specific styles
+                const tempAuthStyles = document.querySelector('#temp-auth-styles');
+                if (tempAuthStyles) {
+                    tempAuthStyles.remove();
                 }
                 break;
             case 'app':
