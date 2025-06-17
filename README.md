@@ -1,6 +1,6 @@
 # 📚 AudioBook Organizer
 
-A powerful web application for organizing audiobooks by chapters and sections, with features for audio management, text highlighting, and export capabilities.
+Transform your text files into professional audiobooks with intelligent chapter organization, text-to-speech conversion, and powerful audio management tools.
 
 ## 🌟 Features
 
@@ -218,3 +218,5 @@ npm start
 
 OR BEST OPTION TO START:
 python app.py
+
+<!-- Deployment trigger: 2025-06-17 -->
