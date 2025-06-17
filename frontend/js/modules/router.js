@@ -358,15 +358,18 @@ class Router {
     // Load temp auth page
     async loadTempAuthPage() {
         try {
+            console.log('🔧 Loading temp auth page...');
             const appContainer = document.getElementById('appContainer');
             if (!appContainer) {
                 throw new Error('App container not found for router.');
             }
 
             // Load temp auth page HTML
+            console.log('🔧 Fetching temp-auth.html...');
             const response = await fetch('/pages/temp-auth/temp-auth.html');
             if (!response.ok) throw new Error(`Failed to fetch temp auth page: ${response.status}`);
             const html = await response.text();
+            console.log('🔧 HTML fetched successfully');
 
             // Extract body content and inject it
             const parser = new DOMParser();
@@ -376,11 +379,16 @@ class Router {
             document.body.className = 'temp-auth-body app-ready';
 
             // The temp-auth.js script is already included in the HTML, so it will initialize automatically
-            console.log('✅ Temp auth page loaded');
+            console.log('✅ Temp auth page loaded successfully');
 
         } catch (error) {
             console.error('Error loading temp auth page:', error);
-            showError('Failed to load temp auth page');
+            // Use console instead of showError in case it's not available
+            if (typeof showError === 'function') {
+                showError('Failed to load temp auth page');
+            } else {
+                console.error('Failed to load temp auth page - showError not available');
+            }
         }
     }
     
