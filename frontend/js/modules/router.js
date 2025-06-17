@@ -382,6 +382,10 @@ class Router {
             const parser = new DOMParser();
             const doc = parser.parseFromString(html, 'text/html');
             
+            // Debug: Check what document was parsed
+            console.log('🔧 Parsed document title:', doc.title);
+            console.log('🔧 Parsed document body content preview:', doc.body.innerHTML.substring(0, 200));
+            
             // Extract and inject the styles from the temp-auth page
             const styles = doc.querySelector('style');
             if (styles) {
@@ -403,6 +407,15 @@ class Router {
             const bodyContent = doc.body.innerHTML;
             console.log('🔧 Temp-auth body content length:', bodyContent.length);
             console.log('🔧 First 200 chars of content:', bodyContent.substring(0, 200));
+            
+            // Verify this is actually temp-auth content by checking for the temp-auth-container
+            if (!bodyContent.includes('temp-auth-container')) {
+                console.error('❌ ERROR: Extracted content does not contain temp-auth-container!');
+                console.error('🔧 This suggests wrong HTML file was parsed or extraction failed');
+                console.error('🔧 Raw fetched HTML preview:', html.substring(0, 300));
+                throw new Error('Wrong HTML content extracted - missing temp-auth-container');
+            }
+            
             appContainer.innerHTML = bodyContent;
 
             // Force DOM to flush/render
@@ -435,6 +448,20 @@ class Router {
             console.log('🔧 appContainer innerHTML length:', appContainer.innerHTML.length);
             console.log('🔧 appContainer content preview:', appContainer.innerHTML.substring(0, 200));
             
+            // Debug: Show more of the injected HTML content
+            console.log('🔧 Full injected HTML content (first 1000 chars):', appContainer.innerHTML.substring(0, 1000));
+            console.log('🔧 Searching for form elements in injected HTML...');
+            console.log('🔧 Forms found via querySelectorAll:', appContainer.querySelectorAll('form').length);
+            console.log('🔧 Elements with tempAuthForm ID:', appContainer.querySelectorAll('#tempAuthForm').length);
+            console.log('🔧 All elements with IDs containing "temp":', appContainer.querySelectorAll('[id*="temp"]').length);
+            
+            // Debug: Check if there are nested containers
+            const tempAuthContainer = appContainer.querySelector('.temp-auth-container');
+            console.log('🔧 temp-auth-container found:', !!tempAuthContainer);
+            if (tempAuthContainer) {
+                console.log('🔧 Forms inside temp-auth-container:', tempAuthContainer.querySelectorAll('form').length);
+            }
+            
             try {
                 // Import the temp-auth module to ensure it initializes
                 await import('/pages/temp-auth/temp-auth.js?t=' + Date.now());
@@ -447,11 +474,155 @@ class Router {
 
         } catch (error) {
             console.error('Error loading temp auth page:', error);
-            // Use console instead of showError in case it's not available
-            if (typeof showError === 'function') {
-                showError('Failed to load temp auth page');
-            } else {
-                console.error('Failed to load temp auth page - showError not available');
+            
+            // Fallback: Create the temp auth form programmatically
+            console.log('🔧 Attempting fallback: Creating temp auth form programmatically...');
+            
+            try {
+                const appContainer = document.getElementById('appContainer');
+                if (!appContainer) {
+                    throw new Error('App container not found for fallback.');
+                }
+                
+                // Create the temp auth form HTML directly
+                const tempAuthHTML = `
+                    <div class="temp-auth-container" style="
+                        background: rgba(255, 255, 255, 0.1);
+                        backdrop-filter: blur(10px);
+                        border-radius: 20px;
+                        padding: 3rem;
+                        max-width: 400px;
+                        width: 90%;
+                        margin: 2rem auto;
+                        text-align: center;
+                        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+                        border: 1px solid rgba(255, 255, 255, 0.2);
+                        color: white;
+                        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+                    ">
+                        <div class="logo" style="font-size: 3rem; margin-bottom: 1rem;">🎧</div>
+                        <h1 class="title" style="font-size: 2rem; font-weight: 700; margin-bottom: 0.5rem;">AudioBook Organizer</h1>
+                        <p class="subtitle" style="font-size: 1rem; opacity: 0.8; margin-bottom: 2rem;">Access Required</p>
+                        
+                        <div class="testing-badge" style="
+                            background: rgba(255, 193, 7, 0.2);
+                            color: #ffc107;
+                            padding: 0.5rem 1rem;
+                            border-radius: 20px;
+                            font-size: 0.9rem;
+                            margin-bottom: 2rem;
+                            border: 1px solid rgba(255, 193, 7, 0.3);
+                        ">
+                            ⚡ Early Access Mode
+                        </div>
+                        
+                        <div id="errorMessage" class="error-message" style="
+                            background: rgba(244, 67, 54, 0.2);
+                            border: 1px solid rgba(244, 67, 54, 0.5);
+                            color: #ff6b6b;
+                            padding: 1rem;
+                            border-radius: 10px;
+                            margin-bottom: 1rem;
+                            font-size: 0.9rem;
+                            display: none;
+                        "></div>
+                        
+                        <form id="tempAuthForm">
+                            <div class="form-group" style="margin-bottom: 1.5rem; text-align: left;">
+                                <label for="password" class="form-label" style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Enter Access Password</label>
+                                <input 
+                                    type="password" 
+                                    id="password" 
+                                    name="password" 
+                                    class="form-input" 
+                                    placeholder="Password"
+                                    required
+                                    autocomplete="current-password"
+                                    style="
+                                        width: 100%;
+                                        padding: 1rem;
+                                        border: 2px solid rgba(255, 255, 255, 0.2);
+                                        border-radius: 10px;
+                                        background: rgba(255, 255, 255, 0.1);
+                                        color: white;
+                                        font-size: 1rem;
+                                        transition: all 0.3s ease;
+                                        box-sizing: border-box;
+                                    "
+                                >
+                            </div>
+                            
+                            <button type="submit" class="submit-btn" id="submitBtn" style="
+                                width: 100%;
+                                padding: 1rem;
+                                background: rgba(255, 255, 255, 0.2);
+                                border: 2px solid rgba(255, 255, 255, 0.3);
+                                border-radius: 10px;
+                                color: white;
+                                font-size: 1rem;
+                                font-weight: 600;
+                                cursor: pointer;
+                                transition: all 0.3s ease;
+                            ">
+                                Access Application
+                            </button>
+                            
+                            <div id="loadingIndicator" class="loading-indicator" style="display: none; margin-top: 1rem;">
+                                <div class="loading-spinner" style="
+                                    width: 20px;
+                                    height: 20px;
+                                    border: 2px solid rgba(255, 255, 255, 0.3);
+                                    border-top: 2px solid white;
+                                    border-radius: 50%;
+                                    animation: spin 1s linear infinite;
+                                    margin: 0 auto;
+                                "></div>
+                            </div>
+                        </form>
+                        
+                        <p class="footer-note" style="margin-top: 2rem; font-size: 0.8rem; opacity: 0.6;">
+                            This is an early access method for testing purposes.
+                        </p>
+                    </div>
+                `;
+                
+                // Set body background and inject HTML
+                document.body.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+                document.body.style.minHeight = '100vh';
+                document.body.style.display = 'flex';
+                document.body.style.alignItems = 'center';
+                document.body.style.justifyContent = 'center';
+                document.body.className = 'temp-auth-body app-ready';
+                
+                appContainer.innerHTML = tempAuthHTML;
+                appContainer.style.display = 'block';
+                appContainer.style.opacity = '1';
+                
+                // Hide loading screen
+                const loadingScreen = document.getElementById('appLoading');
+                if (loadingScreen) {
+                    loadingScreen.style.display = 'none';
+                }
+                
+                console.log('✅ Fallback temp auth form created successfully');
+                
+                // Load the script
+                await new Promise(resolve => setTimeout(resolve, 100));
+                await import('/pages/temp-auth/temp-auth.js?t=' + Date.now());
+                
+                console.log('✅ Fallback temp auth page loaded successfully');
+                
+            } catch (fallbackError) {
+                console.error('Error in fallback temp auth creation:', fallbackError);
+                // Show a basic error message
+                if (document.getElementById('appContainer')) {
+                    document.getElementById('appContainer').innerHTML = `
+                        <div style="text-align: center; padding: 2rem; color: white;">
+                            <h1>Unable to load authentication page</h1>
+                            <p>Please refresh the page or contact support.</p>
+                        </div>
+                    `;
+                }
             }
         }
     }
