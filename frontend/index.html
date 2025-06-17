@@ -42,7 +42,9 @@
             // This will be dynamically set during deployment
             BACKEND_URL: window.location.hostname.includes('localhost') || 
                         window.location.hostname.includes('127.0.0.1') ? 
-                        '' : 'https://audiobook-organizer-test-vdhku.ondigitalocean.app'
+                        'http://localhost:5000' : 'https://audiobook-organizer-test-vdhku.ondigitalocean.app',
+            IS_TESTING_MODE: true, // Enable testing mode by default
+            TEMPORARY_PASSWORD: 'your-temp-password' // This should match your backend configuration
         };
         
         // Set global BACKEND_URL for api.js to use

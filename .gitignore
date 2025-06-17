@@ -89,3 +89,4 @@ prod-config/
 ExoWave/
 
 *.docx
+.vercel

@@ -1,19 +1,22 @@
 {
   "version": 2,
-  "buildCommand": null,
-  "devCommand": null,
-  "installCommand": null,
-  "framework": null,
-  "outputDirectory": ".",
-  "public": true,
-  "rewrites": [
+  "routes": [
+    { "handle": "filesystem" },
     {
-      "source": "/api/(.*)",
-      "destination": "https://audiobook-organizer-test-vdhku.ondigitalocean.app/api/$1"
+      "src": "/css/(.*)",
+      "dest": "/css/$1"
     },
     {
-      "source": "/(.*)",
-      "destination": "/index.html"
+      "src": "/js/(.*)",
+      "dest": "/js/$1"
+    },
+    {
+      "src": "/public/(.*)",
+      "dest": "/public/$1"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/index.html"
     }
   ]
 } 

@@ -78,4 +78,61 @@ export const checkApiHealth = async () => {
     console.error('API health check failed:', error);
     return { success: false, error: error.message };
   }
-}; 
+};
+
+// Get backend URL from global config
+const BACKEND_URL = window.BACKEND_URL;
+
+/**
+ * Enhanced fetch wrapper for API calls
+ * @param {string} endpoint - API endpoint (starting with /)
+ * @param {object} options - Fetch options
+ * @returns {Promise<Response>}
+ */
+export async function apiFetch(endpoint, options = {}) {
+    // Ensure endpoint starts with /
+    if (!endpoint.startsWith('/')) {
+        endpoint = '/' + endpoint;
+    }
+
+    // Remove double slashes in URL except after protocol
+    const url = `${BACKEND_URL}${endpoint}`.replace(/([^:]\/)\/+/g, '$1');
+
+    // Default options
+    const defaultOptions = {
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        credentials: 'include', // Include cookies for CORS
+    };
+
+    // Merge options
+    const finalOptions = {
+        ...defaultOptions,
+        ...options,
+        headers: {
+            ...defaultOptions.headers,
+            ...(options.headers || {}),
+        },
+    };
+
+    try {
+        const response = await fetch(url, finalOptions);
+        
+        // Log failed requests for debugging
+        if (!response.ok) {
+            console.error(`API Error (${response.status}):`, {
+                endpoint,
+                status: response.status,
+                statusText: response.statusText,
+            });
+        }
+        
+        return response;
+    } catch (error) {
+        console.error('API Request Failed:', error);
+        throw error;
+    }
+}
+
+// Export other API-related utilities here if needed 
