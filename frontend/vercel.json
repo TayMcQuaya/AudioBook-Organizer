@@ -5,14 +5,32 @@
     {
       "source": "/api/(.*)",
       "destination": "https://audiobook-organizer-test-vdhku.ondigitalocean.app/api/$1"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/css/(.*)",
+      "dest": "/css/$1"
     },
     {
-      "source": "/",
-      "destination": "/index.html"
+      "src": "/js/(.*)",
+      "dest": "/js/$1"
     },
     {
-      "source": "/(.*)",
-      "destination": "/index.html"
+      "src": "/public/(.*)",
+      "dest": "/public/$1"
+    },
+    {
+      "src": "/pages/(.*)",
+      "dest": "/pages/$1"
+    },
+    {
+      "src": "/(.*\\.(js|css|json|png|ico|svg|html)$)",
+      "dest": "/$1"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/index.html"
     }
   ],
   "headers": [
