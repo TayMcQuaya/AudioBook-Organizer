@@ -178,6 +178,7 @@ class Router {
                 // If not authenticated in testing mode, redirect to temp-auth page
                 if (!tempAuthManager.isAuthenticated && targetPath !== '/temp-auth') {
                     console.log('🧪 Testing mode: Redirecting to temp authentication');
+                    this.isLoading = false; // Reset loading state before redirect
                     await this.navigate('/temp-auth', true);
                     return;
                 }
@@ -185,6 +186,7 @@ class Router {
                 // Block access to normal auth pages in testing mode (redirect to temp-auth)
                 if ((targetPath === '/auth' || targetPath === '/auth/reset-password' || targetPath === '/profile') && tempAuthManager.shouldBlockAuthPages()) {
                     console.log('🧪 Testing mode: Blocking auth page access');
+                    this.isLoading = false; // Reset loading state before redirect
                     await this.navigate('/temp-auth', true);
                     return;
                 }
@@ -192,6 +194,7 @@ class Router {
                 // If authenticated and on temp-auth page, redirect to app
                 if (tempAuthManager.isAuthenticated && targetPath === '/temp-auth') {
                     console.log('🧪 Testing mode: Already authenticated, redirecting to app');
+                    this.isLoading = false; // Reset loading state before redirect
                     await this.navigate('/app', true);
                     return;
                 }
@@ -208,6 +211,7 @@ class Router {
             if (isPasswordRecovery && route.requiresAuth) {
                 console.log('In password recovery mode, blocking access to authenticated route:', targetPath);
                 showInfo('Please complete your password reset first, or exit recovery mode to access this page.');
+                this.isLoading = false; // Reset loading state before redirect
                 await this.navigate('/auth/reset-password', { pushState: false });
                 return;
             }
@@ -231,12 +235,14 @@ class Router {
                         // Continue to load the app
                     } else {
                         console.warn('⚠️ OAuth processing failed, redirecting to auth');
+                        this.isLoading = false; // Reset loading state before redirect
                         await this.navigate('/auth');
                         return;
                     }
                 } else {
                     console.warn(`🔒 Route ${targetPath} requires authentication. Redirecting to login.`);
                     showInfo('Please sign in to access this page');
+                    this.isLoading = false; // Reset loading state before redirect
                     await this.navigate('/auth');
                     return;
                 }
@@ -248,6 +254,7 @@ class Router {
                 const isGoogleCallback = fullPath.includes('from=google');
                 if (!isGoogleCallback) {
                     console.log('👤 User already authenticated, redirecting to app');
+                    this.isLoading = false; // Reset loading state before redirect
                     await this.navigate('/app');
                     return;
                 }
