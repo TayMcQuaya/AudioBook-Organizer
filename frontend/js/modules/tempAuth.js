@@ -26,11 +26,12 @@ class TempAuthManager {
                 
                 console.log(`Testing mode: ${this.isTestingMode}, Authenticated: ${this.isAuthenticated}`);
                 
-                // If in testing mode and not authenticated, redirect to password page
-                if (this.isTestingMode && !this.isAuthenticated) {
-                    window.location.href = '/';
-                    return false;
-                }
+                // If in testing mode and not authenticated, the router will handle showing the correct page.
+                // The hard redirect is removed to prevent the refresh loop.
+                // if (this.isTestingMode && !this.isAuthenticated) {
+                //     window.location.href = '/';
+                //     return false;
+                // }
                 
                 // Start periodic authentication check if in testing mode
                 if (this.isTestingMode) {
