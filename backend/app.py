@@ -36,17 +36,21 @@ def create_app(config_name=None):
     app.config['SESSION_COOKIE_HTTPONLY'] = app.config.get('SESSION_COOKIE_HTTPONLY', True)
     app.config['SESSION_COOKIE_SAMESITE'] = app.config.get('SESSION_COOKIE_SAMESITE', 'Lax')
     
-    # Define allowed origins for CORS
-    allowed_origins = [
-        "https://audio-book-organizer.vercel.app",  # Your Vercel deployment
-        "http://localhost:3000",                   # For local frontend development (e.g., using npx serve)
-        "http://127.0.0.1:3000",                   # Alternative for local development
-        "http://localhost:5000",                   # For local backend testing
-        "http://127.0.0.1:5000"                    # Alternative for local backend testing
-    ]
-    
-    # Enable CORS with specific origins and settings
-    CORS(app, supports_credentials=True, origins=allowed_origins)
+    # Define allowed origins for CORS using a regular expression
+    # This allows the main Vercel app URL and any of its preview deployments.
+    allowed_origins_regex = r"https://audio-book-organizer(-[a-z0-9]+)?\.vercel\.app"
+
+    CORS(
+        app,
+        origins=[
+            "http://localhost:3000",
+            "http://127.0.0.1:3000",
+            "http://localhost:5000",
+            "http://127.0.0.1:5000",
+            allowed_origins_regex  # Add the regex to the list of origins
+        ],
+        supports_credentials=True
+    )
     
     # Configure logging based on environment
     if config_name == 'production':
