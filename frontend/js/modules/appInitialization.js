@@ -8,7 +8,7 @@ import { initializeTextSelection } from './textSelection.js';
 import { initializeEditProtection } from './editMode.js';
 import { sessionManager } from './sessionManager.js';
 import appUI from './appUI.js';
-import { themeManager } from './themeManager.js';
+import themeManager from './themeManager.js';
 import { loadFromDatabase, startAutoSave, stopAutoSave } from './storage.js';
 import { initializeTableOfContents, cleanupTableOfContents } from './tableOfContents.js';
 import { tempAuthManager } from './tempAuth.js';

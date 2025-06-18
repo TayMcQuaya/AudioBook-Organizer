@@ -1,7 +1,7 @@
 // Testing Mode UI Manager
 // Handles UI modifications when in testing mode
 
-import tempAuthManager from './tempAuth.js';
+import { tempAuthManager } from './tempAuth.js';
 import { clearTestingModeData } from './storage.js';
 
 class TestingModeUI {
