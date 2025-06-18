@@ -20,12 +20,11 @@ class TempAuthManager {
      */
     async init() {
         if (this._isInitialized) {
-            return; // **FIX 1: Prevents re-initialization after login**
+            return true; // **FIX 1: Prevents re-initialization and returns true**
         }
-        this._isInitialized = true;
-
+        
         console.log('🔐 Initializing temporary authentication manager...');
-
+        
         try {
             const response = await apiFetch('/api/auth/temp-status');
 
@@ -33,17 +32,21 @@ class TempAuthManager {
                 const data = await response.json();
                 this._isTestingMode = data.testing_mode;
                 this._isAuthenticated = data.authenticated;
+                this._isInitialized = true; // Mark as initialized after successful check
 
                 console.log(`Initial auth state: Testing mode: ${this._isTestingMode}, Authenticated: ${this._isAuthenticated}`);
 
                 if (this._isTestingMode) {
                     this.startAuthCheck();
                 }
+                return true; // **FIX 2: Return true on success**
             }
+            return false; // Return false if response not OK
         } catch (error) {
             console.error('Error checking initial temp auth status. Assuming not in testing mode.', error);
             this._isTestingMode = false;
             this._isAuthenticated = false;
+            return false; // Return false on error
         }
     }
 
