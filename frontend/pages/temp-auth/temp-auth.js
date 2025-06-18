@@ -148,54 +148,50 @@ class TempAuth {
         this.clearError();
         
         try {
-            // Get backend URL from environment config
-            const backendUrl = window.ENVIRONMENT_CONFIG?.BACKEND_URL || window.BACKEND_URL || '';
-            const apiUrl = backendUrl ? `${backendUrl}/api/auth/temp-login` : '/api/auth/temp-login';
+            // Clean environment detection without hardcoded config
+            const hostname = window.location.hostname;
             
-            console.log('🔧 Making API call to:', apiUrl);
+            let apiUrl;
+            if (hostname === 'localhost' || hostname === '127.0.0.1') {
+                // Local development - use relative path to Flask backend
+                apiUrl = '/api/auth/temp-login';
+            } else {
+                // Production - use DigitalOcean backend
+                apiUrl = 'https://audiobook-organizer-test-vdhku.ondigitalocean.app/api/auth/temp-login';
+            }
             
             const response = await fetch(apiUrl, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                credentials: 'include', // Changed from 'same-origin' to 'include' for cross-origin
+                credentials: 'include',
                 body: JSON.stringify({ password })
             });
             
             const data = await response.json();
             
             if (data.success) {
-                // Success! Update authentication status IMMEDIATELY
-                console.log('Temporary authentication successful');
-                
                 // Store authentication token if provided (for cross-domain requests)
                 if (data.token) {
                     localStorage.setItem('temp_auth_token', data.token);
-                    console.log('🔧 Stored authentication token');
                 }
                 
-                // Update tempAuthManager status first (before any navigation)
+                // Update tempAuthManager status
                 if (window.tempAuthManager) {
                     window.tempAuthManager.setAuthenticated(true);
-                    console.log('🔧 Updated tempAuthManager.isAuthenticated to true');
-                } else {
-                    console.warn('⚠️ tempAuthManager not available globally');
                 }
                 
-                // Store auth status in localStorage as backup for cross-domain session issues
+                // Store auth status in localStorage as backup
                 localStorage.setItem('temp_auth_backup', 'true');
                 
                 this.showSuccess();
                 
-                // Small delay to show success, then navigate via router
+                // Navigate to app
                 setTimeout(() => {
-                    // Use router navigation instead of hard redirect to maintain SPA state
                     if (window.router) {
-                        console.log('🔧 Navigating to /app via router');
                         window.router.navigate('/app');
                     } else {
-                        console.log('🔧 Router not available, using hard redirect');
                         window.location.href = '/app';
                     }
                 }, 500);
@@ -203,7 +199,6 @@ class TempAuth {
                 this.showError(data.error || 'Authentication failed');
             }
         } catch (error) {
-            console.error('Authentication error:', error);
             this.showError('Connection error. Please try again.');
         } finally {
             this.setLoading(false);

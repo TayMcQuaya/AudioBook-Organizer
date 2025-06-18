@@ -4,24 +4,16 @@
  * In production, it points to the deployed backend on DigitalOcean.
  */
 const getApiBaseUrl = () => {
-  // Check if we're in local development
-  const isLocal = window.location.hostname === 'localhost' || 
-                  window.location.hostname === '127.0.0.1' ||
-                  window.location.hostname.includes('local');
+  // Detect environment based on hostname only
+  const hostname = window.location.hostname;
   
-  // Check for development environment
-  const isDevelopment = window.location.hostname.includes('localhost') ||
-                       window.location.hostname.includes('127.0.0.1') ||
-                       window.location.port !== '';
-  
-  if (isLocal || isDevelopment) {
-    // Local development - use relative paths
-    return '';
-  } else {
-    // Production environment - use environment variable or fallback
-    // This will be set during deployment
-    return window.ENVIRONMENT_CONFIG?.BACKEND_URL || window.BACKEND_URL || 'https://audiobook-organizer-test-vdhku.ondigitalocean.app';
+  // Local development detection
+  if (hostname === 'localhost' || hostname === '127.0.0.1') {
+    return ''; // Relative paths for local Flask backend
   }
+  
+  // Production: Use DigitalOcean backend
+  return 'https://audiobook-organizer-test-vdhku.ondigitalocean.app';
 };
 
 export const API_BASE_URL = getApiBaseUrl();
@@ -29,13 +21,13 @@ export const API_BASE_URL = getApiBaseUrl();
 // Use the same logic for the main BACKEND_URL variable
 const BACKEND_URL = getApiBaseUrl();
 
-console.log('🔧 API Configuration:', {
+// Only log in development environment
+if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+  console.log('🔧 Development API Configuration:', {
     hostname: window.location.hostname,
-    port: window.location.port,
-    isLocalDevelopment: window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1',
-    finalBackendUrl: BACKEND_URL || '(relative paths)',
-    environmentConfig: window.ENVIRONMENT_CONFIG?.BACKEND_URL
-});
+    backendUrl: BACKEND_URL || '(relative paths)'
+  });
+}
 
 /**
  * Enhanced fetch wrapper for API calls.
@@ -65,24 +57,17 @@ export async function apiFetch(endpoint, options = {}) {
         defaultHeaders['Authorization'] = `Bearer ${token}`;
     }
     
-    // Add temp auth token if in testing mode
-    if (window.ENVIRONMENT_CONFIG?.IS_TESTING_MODE) {
-        const tempToken = localStorage.getItem('temp_auth_token');
-        if (tempToken) {
-            // Use Authorization header for token-based auth (primary method)
-            defaultHeaders['Authorization'] = `Bearer ${tempToken}`;
-            // Also send as X-Temp-Auth header as backup
-            defaultHeaders['X-Temp-Auth'] = tempToken;
-        }
-        // Legacy fallback: check if authenticated via session
-        else if (window.tempAuthManager?.isAuthenticated) {
-            defaultHeaders['X-Temp-Auth'] = 'authenticated';
-        }
-        // Emergency fallback: check localStorage backup
-        else if (localStorage.getItem('temp_auth_backup') === 'true') {
-            defaultHeaders['X-Testing-Override'] = 'temp-auth-bypass';
-            console.log('🔧 Using localStorage backup for temp auth');
-        }
+    // Add temp auth token for testing mode (production uses server-side detection)
+    const tempToken = localStorage.getItem('temp_auth_token');
+    if (tempToken) {
+        // Use Authorization header for token-based auth (primary method)
+        defaultHeaders['Authorization'] = `Bearer ${tempToken}`;
+        // Also send as X-Temp-Auth header as backup
+        defaultHeaders['X-Temp-Auth'] = tempToken;
+    }
+    // Legacy fallback for session-based auth
+    else if (localStorage.getItem('temp_auth_backup') === 'true') {
+        defaultHeaders['X-Testing-Override'] = 'temp-auth-bypass';
     }
 
     // Modern browsers handle FormData Content-Type automatically,
@@ -104,22 +89,9 @@ export async function apiFetch(endpoint, options = {}) {
     try {
         const response = await fetch(url, finalOptions);
 
-        // Provide more detailed error logging for failed requests
-        if (!response.ok) {
-            console.error(`API Error (${response.status}):`, {
-                url: url,
-                status: response.status,
-                statusText: response.statusText,
-            });
-        }
-
+        // Silent error handling - no console logs in production
         return response;
     } catch (error) {
-        // Log network errors or other issues with the fetch call itself
-        console.error('API Request Failed:', {
-            url: url,
-            error: error,
-        });
         // Re-throw the error to be handled by the calling function
         throw error;
     }

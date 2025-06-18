@@ -16,19 +16,11 @@ def create_password_protection_routes(app):
     def temp_login():
         """Handle temporary password authentication"""
         try:
-            print(f"🔧 DEBUG: temp-login route called")
-            print(f"🔧 DEBUG: Request method: {request.method}")
-            print(f"🔧 DEBUG: TESTING_MODE config: {app.config.get('TESTING_MODE')}")
-            print(f"🔧 DEBUG: TEMPORARY_PASSWORD configured: {bool(app.config.get('TEMPORARY_PASSWORD'))}")
-            
             data = request.get_json()
-            
             password = data.get('password', '') if data else ''
-            print(f"🔧 DEBUG: Password received: {'***' if password else 'empty'}")
             
             # Check if we're in testing mode
             if not app.config.get('TESTING_MODE'):
-                print(f"🔧 DEBUG: Testing mode not enabled")
                 return jsonify({
                     'success': False,
                     'error': 'Testing mode not enabled'
@@ -36,19 +28,14 @@ def create_password_protection_routes(app):
             
             # Verify password
             correct_password = app.config.get('TEMPORARY_PASSWORD')
-            print(f"🔧 DEBUG: Correct password configured: {bool(correct_password)}")
             
             if not correct_password:
-                print(f"🔧 DEBUG: Temporary password not configured")
                 return jsonify({
                     'success': False,
                     'error': 'Temporary password not configured'
                 }), 500
             
-            password_match = password == correct_password
-            print(f"🔧 DEBUG: Password validation: {'success' if password_match else 'failed'}")
-            
-            if password_match:
+            if password == correct_password:
                 # Generate a temporary token for cross-domain authentication
                 token = secrets.token_urlsafe(32)
                 temp_auth_tokens[token] = {
@@ -61,27 +48,18 @@ def create_password_protection_routes(app):
                 session['temp_authenticated'] = True
                 session['temp_token'] = token
                 
-                print(f"🔧 DEBUG: Authentication successful, session and token set")
-                print(f"🔧 DEBUG: Token generated: {token[:8]}...")
-                print(f"🔧 DEBUG: Session permanent: {session.permanent}")
-                print(f"🔧 DEBUG: Session ID: {session.get('_id', 'None')}")
-                
                 return jsonify({
                     'success': True,
                     'message': 'Authentication successful',
                     'token': token
                 })
             else:
-                print(f"🔧 DEBUG: Password mismatch")
                 return jsonify({
                     'success': False,
                     'error': 'Invalid password'
                 }), 401
                 
         except Exception as e:
-            print(f"Error in temp login: {e}")
-            import traceback
-            print(f"🔧 DEBUG: Full traceback: {traceback.format_exc()}")
             return jsonify({
                 'success': False,
                 'error': 'Server error'
@@ -100,14 +78,6 @@ def create_password_protection_routes(app):
     def temp_status():
         """Check temporary authentication status"""
         is_authenticated = session.get('temp_authenticated', False)
-        
-        # Debug logging to understand session issues
-        print(f"🔧 DEBUG: temp-status check")
-        print(f"🔧 DEBUG: Session ID: {session.get('_id', 'None')}")
-        print(f"🔧 DEBUG: Session keys: {list(session.keys())}")
-        print(f"🔧 DEBUG: temp_authenticated: {session.get('temp_authenticated', 'NOT_SET')}")
-        print(f"🔧 DEBUG: Session permanent: {session.permanent}")
-        print(f"🔧 DEBUG: Request headers: {dict(request.headers)}")
         
         return jsonify({
             'authenticated': is_authenticated,
@@ -183,7 +153,6 @@ def require_temp_auth(f):
         # Method 1: Check session (for same-domain requests)
         if session.get('temp_authenticated', False):
             is_authenticated = True
-            print(f"🔧 DEBUG: Authenticated via session for {f.__name__}")
         
         # Method 2: Check token in Authorization header (for cross-domain requests)
         elif request.headers.get('Authorization'):
@@ -196,11 +165,9 @@ def require_temp_auth(f):
                     token_data = temp_auth_tokens[token]
                     if time.time() < token_data['expires_at']:
                         is_authenticated = True
-                        print(f"🔧 DEBUG: Authenticated via token for {f.__name__}")
                     else:
                         # Clean up expired token
                         del temp_auth_tokens[token]
-                        print(f"🔧 DEBUG: Token expired for {f.__name__}")
         
         # Method 3: Check token in X-Temp-Auth header (alternative method)
         elif request.headers.get('X-Temp-Auth'):
@@ -209,21 +176,15 @@ def require_temp_auth(f):
                 token_data = temp_auth_tokens[token]
                 if time.time() < token_data['expires_at']:
                     is_authenticated = True
-                    print(f"🔧 DEBUG: Authenticated via X-Temp-Auth header for {f.__name__}")
                 else:
                     # Clean up expired token
                     del temp_auth_tokens[token]
         
         # Emergency fallback: check for special testing override header (for development only)
         elif request.headers.get('X-Testing-Override') == 'temp-auth-bypass':
-            print(f"🔧 DEBUG: Using emergency testing override for {f.__name__}")
             is_authenticated = True
         
         if not is_authenticated:
-            print(f"🔧 DEBUG: Authentication failed for {f.__name__}")
-            print(f"🔧 DEBUG: Session authenticated: {session.get('temp_authenticated', False)}")
-            print(f"🔧 DEBUG: Authorization header: {request.headers.get('Authorization', 'None')}")
-            print(f"🔧 DEBUG: X-Temp-Auth header: {request.headers.get('X-Temp-Auth', 'None')}")
             return jsonify({
                 'success': False,
                 'error': 'Please authenticate with the temporary password first'

@@ -22,10 +22,8 @@ class TempAuthManager {
      */
     async init() {
         if (this._isInitialized) {
-            return true; // **FIX 1: Prevents re-initialization and returns true**
+            return true;
         }
-        
-        console.log('🔐 Initializing temporary authentication manager...');
         
         try {
             const response = await apiFetch('/api/auth/temp-status');
@@ -34,37 +32,40 @@ class TempAuthManager {
                 const data = await response.json();
                 this._isTestingMode = data.testing_mode;
                 this._isAuthenticated = data.authenticated;
-                this._isInitialized = true; // Mark as initialized after successful check
-
-                console.log(`Initial auth state: Testing mode: ${this._isTestingMode}, Authenticated: ${this._isAuthenticated}`);
+                this._isInitialized = true;
 
                 if (this._isTestingMode) {
                     this.startAuthCheck();
-                    // Setup activity tracking for session management
                     this.setupActivityTracking();
                 }
-                return true; // **FIX 2: Return true on success**
+                return true;
             }
-            return false; // Return false if response not OK
+            return false;
         } catch (error) {
-            console.error('Error checking initial temp auth status. Assuming not in testing mode.', error);
+            // For local development, assume testing mode if backend not available
+            const hostname = window.location.hostname;
+            if (hostname === 'localhost' || hostname === '127.0.0.1') {
+                this._isTestingMode = true;
+                this._isAuthenticated = false;
+                this._isInitialized = true;
+                return true;
+            }
+            
             this._isTestingMode = false;
             this._isAuthenticated = false;
-            return false; // Return false on error
+            this._isInitialized = true;
+            return false;
         }
     }
 
     /**
      * Periodically checks the session status with the server.
-     * This now includes a fix to prevent refresh loops.
      */
     startAuthCheck() {
         if (this.checkInterval) clearInterval(this.checkInterval);
 
         this.checkInterval = setInterval(async () => {
-            // Skip check if flag is set
             if (this._skipNextCheck) {
-                console.log('🔧 Skipping session check (critical operation in progress)');
                 this._skipNextCheck = false;
                 return;
             }
@@ -80,9 +81,8 @@ class TempAuthManager {
                         await apiFetch('/api/auth/temp-refresh', {
                             method: 'POST'
                         });
-                        console.log('🔄 Session refreshed due to recent activity');
                     } catch (refreshError) {
-                        console.log('Session refresh failed, will check status:', refreshError);
+                        // Silent error handling
                     }
                 }
 
@@ -92,22 +92,19 @@ class TempAuthManager {
                     const data = await response.json();
                     
                     if (this._isAuthenticated && !data.authenticated) {
-                        console.log('Server session expired. Forcing logout.');
                         this.setAuthenticated(false);
                         
-                        // **FIX 2: Only redirect if not already on the login page.**
                         if (window.location.pathname !== '/temp-auth') {
                             window.router.navigate('/temp-auth');
                         }
                     } else {
-                         // Sync local state with server state just in case
                         this._isAuthenticated = data.authenticated;
                     }
                 }
             } catch (error) {
-                console.error('Error during periodic temp auth check:', error);
+                // Silent error handling
             }
-        }, 300000); // Check every 5 minutes (300 seconds) - industry standard for demo mode
+        }, 300000); // Check every 5 minutes
     }
      
     /**
@@ -129,13 +126,12 @@ class TempAuthManager {
         try {
             await apiFetch('/api/auth/temp-logout', { method: 'POST' });
         } catch (error) {
-            console.error('Error on temp logout API call, logging out client-side anyway.', error);
+            // Silent error handling
         } finally {
             this.setAuthenticated(false);
             // Clean up all authentication data
             localStorage.removeItem('temp_auth_backup');
             localStorage.removeItem('temp_auth_token');
-            console.log('🔧 Cleaned up authentication tokens');
             window.router.navigateTo('/temp-auth');
         }
     }
@@ -156,7 +152,6 @@ class TempAuthManager {
         if (this._isAuthenticated === isAuth) return;
 
         this._isAuthenticated = isAuth;
-        console.log(`🔧 TempAuth status updated to: ${this._isAuthenticated}`);
         
         if (isAuth) {
             this.startAuthCheck();
@@ -182,7 +177,6 @@ class TempAuthManager {
      */
     pauseNextSessionCheck() {
         this._skipNextCheck = true;
-        console.log('🔧 Next session check will be skipped');
     }
 
     /**
