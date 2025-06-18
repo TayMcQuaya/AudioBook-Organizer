@@ -98,6 +98,27 @@ def create_password_protection_routes(app):
             'testing_mode': app.config.get('TESTING_MODE', False)
         })
 
+    @app.route('/api/auth/debug-session', methods=['GET'])
+    def debug_session():
+        """Detailed session debug information"""
+        import datetime
+        
+        session_data = {
+            'session_id': session.get('_id', 'None'),
+            'session_keys': list(session.keys()),
+            'temp_authenticated': session.get('temp_authenticated', 'NOT_SET'),
+            'session_permanent': session.permanent,
+            'testing_mode': app.config.get('TESTING_MODE', False),
+            'permanent_session_lifetime': str(app.config.get('PERMANENT_SESSION_LIFETIME', 'NOT_SET')),
+            'session_cookie_secure': app.config.get('SESSION_COOKIE_SECURE', 'NOT_SET'),
+            'session_cookie_samesite': app.config.get('SESSION_COOKIE_SAMESITE', 'NOT_SET'),
+            'request_headers': dict(request.headers),
+            'cookies_received': dict(request.cookies),
+            'server_time': datetime.datetime.utcnow().isoformat() + 'Z'
+        }
+        
+        return jsonify(session_data)
+
     @app.route('/api/auth/temp-refresh', methods=['POST'])
     def temp_refresh():
         """Refresh temporary session to extend its lifetime"""
