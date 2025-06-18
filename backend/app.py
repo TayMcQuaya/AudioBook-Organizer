@@ -3,6 +3,7 @@ from flask_cors import CORS
 import os
 import logging
 from datetime import datetime
+import re
 
 from .config import config
 from .utils.file_utils import ensure_directories_exist
@@ -36,9 +37,10 @@ def create_app(config_name=None):
     app.config['SESSION_COOKIE_HTTPONLY'] = app.config.get('SESSION_COOKIE_HTTPONLY', True)
     app.config['SESSION_COOKIE_SAMESITE'] = app.config.get('SESSION_COOKIE_SAMESITE', 'Lax')
     
-    # Define allowed origins for CORS using a regular expression
+    # Define allowed origins for CORS.
     # This allows the main Vercel app URL and any of its preview deployments.
-    allowed_origins_regex = r"https://audio-book-organizer(-[a-z0-9\-]+)?\.vercel\.app"
+    # We compile the regex for performance and correctness.
+    allowed_origins_regex = re.compile(r"https://audio-book-organizer(-[a-z0-9\-]+)?\.vercel\.app")
 
     CORS(
         app,
@@ -47,8 +49,8 @@ def create_app(config_name=None):
             "http://127.0.0.1:3000",
             "http://localhost:5000",
             "http://127.0.0.1:5000",
-            "https://audio-book-organizer-git-main-taymcquayas-projects.vercel.app",  # Add your specific URL
-            allowed_origins_regex  # Add the regex to the list of origins
+            "https://audio-book-organizer.vercel.app", # Explicitly add main production URL
+            allowed_origins_regex  # Add the compiled regex
         ],
         supports_credentials=True
     )
