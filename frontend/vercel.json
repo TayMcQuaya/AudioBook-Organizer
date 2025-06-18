@@ -28,13 +28,32 @@
       "dest": "/$1"
     },
     {
-      "src": "/pages/(.*)",
-      "headers": { "cache-control": "public, max-age=0, must-revalidate" },
-      "dest": "/pages/$1"
+      "src": "/pages/app/app.html",
+      "headers": { "cache-control": "no-cache, no-store, must-revalidate" },
+      "dest": "/pages/app/app.html"
+    },
+    {
+      "src": "/pages/auth/(.*\\.html)",
+      "headers": { "cache-control": "no-cache, no-store, must-revalidate" },
+      "dest": "/pages/auth/$1"
+    },
+    {
+      "src": "/pages/temp-auth/(.*\\.html)",
+      "headers": { "cache-control": "no-cache, no-store, must-revalidate" },
+      "dest": "/pages/temp-auth/$1"
+    },
+    {
+      "src": "/pages/landing/(.*\\.html)",
+      "headers": { "cache-control": "no-cache, no-store, must-revalidate" },
+      "dest": "/pages/landing/$1"
+    },
+    {
+      "src": "/(app|auth|temp-auth|profile|auth/reset-password)",
+      "dest": "/index.html"
     },
     {
       "src": "/(.*)",
-      "dest": "/index.html"
+      "dest": "/$1"
     }
   ]
 } 

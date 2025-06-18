@@ -55,6 +55,10 @@ const routeConfig = {
 // Router class
 class Router {
     constructor() {
+        if (Router.instance) {
+            return Router.instance;
+        }
+        
         this.currentRoute = '/';
         this.previousRoute = null;
         this.isInitialized = false;
@@ -64,6 +68,8 @@ class Router {
         this.navigate = this.navigate.bind(this);
         this.handlePopState = this.handlePopState.bind(this);
         this.handleLinkClick = this.handleLinkClick.bind(this);
+        
+        Router.instance = this;
     }
     
     async init() {
@@ -943,11 +949,8 @@ class Router {
     }
 }
 
-// Create router instance
+// Create singleton router instance
 const router = new Router();
-
-// Make router globally available for navigation functions
-window.router = router;
 
 // Export for module use
 export { router }; 

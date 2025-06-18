@@ -151,6 +151,7 @@
     <!-- Application Initialization Script -->
     <script type="module">
         import { router } from '/js/modules/router.js';
+        import { showError } from '/js/modules/notifications.js';
         
         // Global app state
         window.isAppInitialized = false;
@@ -163,8 +164,10 @@
                 // Initialize router (it will handle auth and session management)
                 await router.init();
                 
-                // Make router globally available
-                window.router = router;
+                // Make router globally available AFTER initialization
+                if (!window.router) {
+                    window.router = router;
+                }
                 
                 // Hide loading screen and show app
                 const loadingScreen = document.getElementById('appLoading');
@@ -180,10 +183,11 @@
                 document.body.classList.remove('app-loading-state');
                 document.body.classList.add('app-ready');
                 
-                console.log('✅ AudioBook Organizerinitialized successfully');
+                console.log('✅ AudioBook Organizer initialized successfully');
                 
             } catch (error) {
                 console.error('❌ Failed to initialize application:', error);
+                showError('Failed to initialize the application. Please try refreshing the page.');
                 
                 // Show error message
                 const loadingScreen = document.getElementById('appLoading');
@@ -200,9 +204,9 @@
                                 border: none;
                                 border-radius: 5px;
                                 cursor: pointer;
-                                margin-top: 20px;
-                            ">
-                                Reload Page
+                                font-weight: 500;
+                                margin-top: 20px;">
+                                Retry
                             </button>
                         </div>
                     `;
