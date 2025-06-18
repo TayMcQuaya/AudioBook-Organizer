@@ -20,14 +20,23 @@ const getApiBaseUrl = () => {
   } else {
     // Production environment - use environment variable or fallback
     // This will be set during deployment
-    return window.BACKEND_URL || 'https://your-backend-url.ondigitalocean.app';
+    return window.ENVIRONMENT_CONFIG?.BACKEND_URL || window.BACKEND_URL || 'https://audiobook-organizer-test-vdhku.ondigitalocean.app';
   }
 };
 
 export const API_BASE_URL = getApiBaseUrl();
 
-// Get backend URL from global config, defaulting for local development
-const BACKEND_URL = window.BACKEND_URL || '';
+// Get backend URL from global config, with proper fallbacks
+const BACKEND_URL = window.ENVIRONMENT_CONFIG?.BACKEND_URL || 
+                   window.BACKEND_URL || 
+                   'https://audiobook-organizer-test-vdhku.ondigitalocean.app';
+
+console.log('🔧 API Configuration:', {
+    environmentConfig: window.ENVIRONMENT_CONFIG,
+    windowBackendUrl: window.BACKEND_URL,
+    finalBackendUrl: BACKEND_URL,
+    hostname: window.location.hostname
+});
 
 /**
  * Enhanced fetch wrapper for API calls.
