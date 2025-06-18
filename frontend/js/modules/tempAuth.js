@@ -1,127 +1,144 @@
-// Temporary Authentication Module
-// Handles authentication state in testing mode
-
 import { apiFetch } from './api.js';
 
 class TempAuthManager {
     constructor() {
-        this.isTestingMode = false;
-        this.isAuthenticated = false;
+        if (TempAuthManager.instance) {
+            return TempAuthManager.instance;
+        }
+
+        this._isAuthenticated = false;
+        this._isTestingMode = false;
+        this._isInitialized = false;
         this.checkInterval = null;
+
+        TempAuthManager.instance = this;
     }
-    
+
+    /**
+     * Initializes the temporary authentication manager. Checks the initial status from the server.
+     * This function is now idempotent and will only run its main logic once.
+     */
     async init() {
+        if (this._isInitialized) {
+            return; // **FIX 1: Prevents re-initialization after login**
+        }
+        this._isInitialized = true;
+
         console.log('🔐 Initializing temporary authentication manager...');
-        
+
         try {
-            // Check server status to determine if we're in testing mode
-            const response = await apiFetch('/api/auth/temp-status', {
-                credentials: 'include'
-            });
-            
+            const response = await apiFetch('/api/auth/temp-status');
+
             if (response.ok) {
                 const data = await response.json();
-                this.isTestingMode = data.testing_mode;
-                this.isAuthenticated = data.authenticated;
-                
-                console.log(`Testing mode: ${this.isTestingMode}, Authenticated: ${this.isAuthenticated}`);
-                
-                // If in testing mode and not authenticated, the router will handle showing the correct page.
-                // The hard redirect is removed to prevent the refresh loop.
-                // if (this.isTestingMode && !this.isAuthenticated) {
-                //     window.location.href = '/';
-                //     return false;
-                // }
-                
-                // Start periodic authentication check if in testing mode
-                if (this.isTestingMode) {
+                this._isTestingMode = data.testing_mode;
+                this._isAuthenticated = data.authenticated;
+
+                console.log(`Initial auth state: Testing mode: ${this._isTestingMode}, Authenticated: ${this._isAuthenticated}`);
+
+                if (this._isTestingMode) {
                     this.startAuthCheck();
                 }
-                
-                return true;
             }
         } catch (error) {
-            console.error('Error checking temp auth status:', error);
+            console.error('Error checking initial temp auth status. Assuming not in testing mode.', error);
+            this._isTestingMode = false;
+            this._isAuthenticated = false;
         }
-        
-        return true; // Allow normal operation if check fails
     }
-    
+
+    /**
+     * Periodically checks the session status with the server.
+     * This now includes a fix to prevent refresh loops.
+     */
     startAuthCheck() {
-        // Check authentication status every 30 seconds
+        if (this.checkInterval) clearInterval(this.checkInterval);
+
         this.checkInterval = setInterval(async () => {
             try {
-                const response = await apiFetch('/api/auth/temp-status', {
-                    credentials: 'include'
-                });
+                const response = await apiFetch('/api/auth/temp-status');
                 
                 if (response.ok) {
                     const data = await response.json();
                     
-                    // If no longer authenticated, redirect to password page
-                    if (data.testing_mode && !data.authenticated) {
-                        this.cleanup();
-                        window.location.href = '/';
+                    if (this._isAuthenticated && !data.authenticated) {
+                        console.log('Server session expired. Forcing logout.');
+                        this.setAuthenticated(false);
+                        
+                        // **FIX 2: Only redirect if not already on the login page.**
+                        if (window.location.pathname !== '/temp-auth') {
+                            window.router.navigateTo('/temp-auth');
+                        }
+                    } else {
+                         // Sync local state with server state just in case
+                        this._isAuthenticated = data.authenticated;
                     }
                 }
             } catch (error) {
-                console.error('Error checking auth status:', error);
+                console.error('Error during periodic temp auth check:', error);
             }
-        }, 30000);
+        }, 30000); // Check every 30 seconds
     }
-    
+     
+    /**
+     * Stops the periodic check.
+     */
     cleanup() {
         if (this.checkInterval) {
             clearInterval(this.checkInterval);
             this.checkInterval = null;
         }
     }
-    
+     
+    /**
+     * Logs the user out of the temporary session.
+     */
     async logout() {
-        if (!this.isTestingMode) return;
-        
+        if (!this._isTestingMode) return;
+         
         try {
-            await apiFetch('/api/auth/temp-logout', {
-                method: 'POST',
-                credentials: 'same-origin'
-            });
-            
-            this.cleanup();
-            window.location.href = '/';
+            await apiFetch('/api/auth/temp-logout', { method: 'POST' });
         } catch (error) {
-            console.error('Error logging out:', error);
+            console.error('Error on temp logout API call, logging out client-side anyway.', error);
+        } finally {
+            this.setAuthenticated(false);
+            window.router.navigateTo('/temp-auth');
         }
     }
-    
-    // Method to update authentication status
+     
+    get isAuthenticated() {
+        return this._isAuthenticated;
+    }
+
+    get isTestingMode() {
+        return this._isTestingMode;
+    }
+
+    /**
+     * Manually sets the authentication status and manages the session check interval.
+     * @param {boolean} isAuth - The new authentication status.
+     */
     setAuthenticated(isAuth) {
-        this.isAuthenticated = isAuth;
-        console.log(`🔧 TempAuth status updated to: ${isAuth}`);
+        if (this._isAuthenticated === isAuth) return;
+
+        this._isAuthenticated = isAuth;
+        console.log(`🔧 TempAuth status updated to: ${this._isAuthenticated}`);
         
-        // Trigger any listeners that might be waiting for auth state changes
         if (isAuth) {
-            window.dispatchEvent(new CustomEvent('temp-auth-success'));
+            this.startAuthCheck();
+        } else {
+            this.cleanup();
         }
     }
-    
-    // Check if we should bypass normal authentication
+     
+    // These helpers are used by the router to make decisions
     shouldBypassAuth() {
-        return this.isTestingMode && this.isAuthenticated;
+        return this._isTestingMode && this._isAuthenticated;
     }
-    
-    // Check if landing page should be accessible
-    shouldBlockLandingPage() {
-        // Landing page is now always accessible - we redirect to temp-auth instead
-        return false;
-    }
-    
-    // Check if auth pages should be accessible
+     
     shouldBlockAuthPages() {
-        return this.isTestingMode;
+        return this._isTestingMode;
     }
 }
-
-// Create singleton instance
-const tempAuthManager = new TempAuthManager();
-
-export default tempAuthManager; 
+ 
+export const tempAuthManager = new TempAuthManager();
