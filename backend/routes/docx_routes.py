@@ -7,6 +7,7 @@ import tempfile
 import time
 from backend.services.docx_service import DocxService
 from backend.middleware.auth_middleware import require_auth
+from backend.routes.password_protection import require_temp_auth
 from backend.services.supabase_service import get_supabase_service
 
 # Create blueprint
@@ -33,8 +34,8 @@ def allowed_file(filename):
 
 
 @docx_bp.route('/api/upload/docx', methods=['POST'])
-@require_auth
-def upload_docx(current_user):
+@require_temp_auth
+def upload_docx():
     """
     Handle DOCX file upload with formatting extraction
     
@@ -149,28 +150,30 @@ def upload_docx(current_user):
                     supabase_service = get_supabase_service()
                     if supabase_service and supabase_service.is_configured():
                         try:
-                            # Deduct credits for DOCX processing
-                            credit_success = supabase_service.update_user_credits(current_user['id'], -5)
-                            if not credit_success:
-                                current_app.logger.warning('Failed to deduct credits for DOCX processing')
-                            
-                            # Log usage
-                            supabase_service.log_usage(
-                                current_user['id'],
-                                'docx_processed',
-                                credits_used=5,
-                                metadata={
-                                    'filename': filename,
-                                    'file_size': file_size,
-                                    'text_length': len(result['text']),
-                                    'formatting_ranges': len(result['formatting_ranges']),
-                                    'processing_time': processing_time
-                                }
-                            )
+                            # Get current user from auth middleware
+                            from flask import g
+                            user_id = getattr(g, 'user_id', None)
+                            if user_id:
+                                # Deduct credits for DOCX processing
+                                credit_success = supabase_service.update_user_credits(user_id, -5)
+                                if not credit_success:
+                                    current_app.logger.warning('Failed to deduct credits for DOCX processing')
+                                
+                                # Log usage
+                                supabase_service.log_usage(
+                                    user_id,
+                                    'docx_processed',
+                                    credits_used=5,
+                                    metadata={
+                                        'filename': filename,
+                                        'file_size': file_size,
+                                        'text_length': len(result['text']),
+                                        'formatting_ranges': len(result['formatting_ranges']),
+                                        'processing_time': processing_time
+                                    }
+                                )
                         except Exception as log_error:
                             current_app.logger.warning(f'Failed to log usage: {log_error}')
-                    else:
-                        current_app.logger.info('✅ Testing mode - Skipping credit deduction and usage logging')
                 else:
                     current_app.logger.info('✅ Testing mode - Skipping credit deduction and usage logging')
                 
@@ -226,8 +229,8 @@ def upload_docx(current_user):
 
 
 @docx_bp.route('/api/upload/docx/validate', methods=['POST'])
-@require_auth  
-def validate_docx(current_user):
+@require_temp_auth  
+def validate_docx():
     """
     Validate DOCX file without processing (for preview/estimation)
     

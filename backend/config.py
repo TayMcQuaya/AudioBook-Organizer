@@ -90,10 +90,10 @@ class ProductionConfig(Config):
     HOST = '0.0.0.0'
     PORT = int(os.environ.get('PORT', 8000))
     
-    # Enhanced security settings for production
+    # Enhanced security settings for production - configured for cross-domain
     SESSION_COOKIE_SECURE = True
     SESSION_COOKIE_HTTPONLY = True
-    SESSION_COOKIE_SAMESITE = 'Lax'
+    SESSION_COOKIE_SAMESITE = 'None'  # Required for cross-domain cookies
     
     # Production-specific rate limiting
     RATE_LIMITING = {

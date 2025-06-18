@@ -33,9 +33,10 @@ def create_app(config_name=None):
     app.config.from_object(config[config_name])
     
     # Configure session for temporary authentication
-    app.config['SESSION_COOKIE_SECURE'] = app.config.get('SESSION_COOKIE_SECURE', False)
+    app.config['SESSION_COOKIE_SECURE'] = app.config.get('SESSION_COOKIE_SECURE', True if config_name == 'production' else False)
     app.config['SESSION_COOKIE_HTTPONLY'] = app.config.get('SESSION_COOKIE_HTTPONLY', True)
-    app.config['SESSION_COOKIE_SAMESITE'] = app.config.get('SESSION_COOKIE_SAMESITE', 'Lax')
+    app.config['SESSION_COOKIE_SAMESITE'] = app.config.get('SESSION_COOKIE_SAMESITE', 'None' if config_name == 'production' else 'Lax')
+    app.config['SESSION_COOKIE_DOMAIN'] = app.config.get('SESSION_COOKIE_DOMAIN', None)  # Allow cross-domain cookies
     
     # Define allowed origins for CORS.
     # This allows the main Vercel app URL and any of its preview deployments.
