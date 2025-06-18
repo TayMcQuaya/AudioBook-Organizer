@@ -26,16 +26,15 @@ const getApiBaseUrl = () => {
 
 export const API_BASE_URL = getApiBaseUrl();
 
-// Get backend URL from global config, with proper fallbacks
-const BACKEND_URL = window.ENVIRONMENT_CONFIG?.BACKEND_URL || 
-                   window.BACKEND_URL || 
-                   'https://audiobook-organizer-test-vdhku.ondigitalocean.app';
+// Use the same logic for the main BACKEND_URL variable
+const BACKEND_URL = getApiBaseUrl();
 
 console.log('🔧 API Configuration:', {
-    environmentConfig: window.ENVIRONMENT_CONFIG,
-    windowBackendUrl: window.BACKEND_URL,
-    finalBackendUrl: BACKEND_URL,
-    hostname: window.location.hostname
+    hostname: window.location.hostname,
+    port: window.location.port,
+    isLocalDevelopment: window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1',
+    finalBackendUrl: BACKEND_URL || '(relative paths)',
+    environmentConfig: window.ENVIRONMENT_CONFIG?.BACKEND_URL
 });
 
 /**

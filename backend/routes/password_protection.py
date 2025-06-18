@@ -18,15 +18,13 @@ def create_password_protection_routes(app):
         try:
             print(f"🔧 DEBUG: temp-login route called")
             print(f"🔧 DEBUG: Request method: {request.method}")
-            print(f"🔧 DEBUG: Request content type: {request.content_type}")
             print(f"🔧 DEBUG: TESTING_MODE config: {app.config.get('TESTING_MODE')}")
-            print(f"🔧 DEBUG: TEMPORARY_PASSWORD config: {bool(app.config.get('TEMPORARY_PASSWORD'))}")
+            print(f"🔧 DEBUG: TEMPORARY_PASSWORD configured: {bool(app.config.get('TEMPORARY_PASSWORD'))}")
             
             data = request.get_json()
-            print(f"🔧 DEBUG: Request data: {data}")
             
             password = data.get('password', '') if data else ''
-            print(f"🔧 DEBUG: Password received (length): {len(password)}")
+            print(f"🔧 DEBUG: Password received: {'***' if password else 'empty'}")
             
             # Check if we're in testing mode
             if not app.config.get('TESTING_MODE'):
@@ -47,9 +45,10 @@ def create_password_protection_routes(app):
                     'error': 'Temporary password not configured'
                 }), 500
             
-            print(f"🔧 DEBUG: Password match: {password == correct_password}")
+            password_match = password == correct_password
+            print(f"🔧 DEBUG: Password validation: {'success' if password_match else 'failed'}")
             
-            if password == correct_password:
+            if password_match:
                 # Generate a temporary token for cross-domain authentication
                 token = secrets.token_urlsafe(32)
                 temp_auth_tokens[token] = {
@@ -120,17 +119,25 @@ def create_password_protection_routes(app):
         """Detailed session debug information"""
         import datetime
         
+        # Remove sensitive headers from debug output
+        safe_headers = {}
+        for key, value in request.headers.items():
+            if key.lower() in ['authorization', 'x-temp-auth', 'cookie']:
+                safe_headers[key] = '***hidden***'
+            else:
+                safe_headers[key] = value
+        
         session_data = {
             'session_id': session.get('_id', 'None'),
-            'session_keys': list(session.keys()),
+            'session_keys': [key for key in session.keys() if key != 'temp_token'],  # Hide token
             'temp_authenticated': session.get('temp_authenticated', 'NOT_SET'),
             'session_permanent': session.permanent,
             'testing_mode': app.config.get('TESTING_MODE', False),
             'permanent_session_lifetime': str(app.config.get('PERMANENT_SESSION_LIFETIME', 'NOT_SET')),
             'session_cookie_secure': app.config.get('SESSION_COOKIE_SECURE', 'NOT_SET'),
             'session_cookie_samesite': app.config.get('SESSION_COOKIE_SAMESITE', 'NOT_SET'),
-            'request_headers': dict(request.headers),
-            'cookies_received': dict(request.cookies),
+            'request_headers': safe_headers,
+            'cookies_received': '***hidden***',  # Hide all cookies
             'server_time': datetime.datetime.utcnow().isoformat() + 'Z'
         }
         

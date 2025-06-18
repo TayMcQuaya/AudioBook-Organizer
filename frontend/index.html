@@ -33,24 +33,6 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     
-    <!-- Configuration Script - Set before modules load -->
-    <script>
-        // Configuration for different environments
-        window.ENVIRONMENT_CONFIG = {
-            // This will be dynamically set during deployment
-            BACKEND_URL: window.location.hostname.includes('localhost') || 
-                        window.location.hostname.includes('127.0.0.1') ? 
-                        'http://localhost:5000' : 'https://audiobook-organizer-test-vdhku.ondigitalocean.app',
-            IS_TESTING_MODE: true, // Enable testing mode by default
-            TEMPORARY_PASSWORD: 'test123' // This should match your backend configuration
-        };
-        
-        // Set global BACKEND_URL for api.js to use
-        window.BACKEND_URL = window.ENVIRONMENT_CONFIG.BACKEND_URL;
-        
-        console.log('🔧 Environment config loaded:', JSON.stringify(window.ENVIRONMENT_CONFIG, null, 2));
-    </script>
-    
     <!-- Critical inline styles for initial load -->
     <style>
         /* Critical loading styles */
