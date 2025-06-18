@@ -4,7 +4,7 @@
  */
 
 import { showSuccess, showError, showInfo } from './notifications.js';
-import sessionManager from './sessionManager.js';
+import { sessionManager } from './sessionManager.js';
 
 class AppUIManager {
     constructor() {

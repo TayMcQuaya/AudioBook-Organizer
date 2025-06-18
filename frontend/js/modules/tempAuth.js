@@ -70,7 +70,7 @@ class TempAuthManager {
                         
                         // **FIX 2: Only redirect if not already on the login page.**
                         if (window.location.pathname !== '/temp-auth') {
-                            window.router.navigateTo('/temp-auth');
+                            window.router.navigate('/temp-auth');
                         }
                     } else {
                          // Sync local state with server state just in case
