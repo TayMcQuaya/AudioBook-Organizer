@@ -64,10 +64,25 @@ export async function apiFetch(endpoint, options = {}) {
         defaultHeaders['Authorization'] = `Bearer ${tempToken}`;
         // Also send as X-Temp-Auth header as backup
         defaultHeaders['X-Temp-Auth'] = tempToken;
+        
+        // Development logging only
+        if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+            console.log('🔧 Dev: Using temp auth token for request');
+        }
     }
     // Legacy fallback for session-based auth
     else if (localStorage.getItem('temp_auth_backup') === 'true') {
         defaultHeaders['X-Testing-Override'] = 'temp-auth-bypass';
+        
+        // Development logging only
+        if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+            console.log('🔧 Dev: Using legacy auth fallback');
+        }
+    } else {
+        // Development logging only
+        if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+            console.log('🔧 Dev: No auth token found');
+        }
     }
 
     // Modern browsers handle FormData Content-Type automatically,

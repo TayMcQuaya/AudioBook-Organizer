@@ -137,6 +137,20 @@ class TempAuthManager {
     }
      
     get isAuthenticated() {
+        // Temporary debugging for production issue
+        const hostname = window.location.hostname;
+        if (hostname !== 'localhost' && hostname !== '127.0.0.1') {
+            const hasToken = !!localStorage.getItem('temp_auth_token');
+            const hasBackup = localStorage.getItem('temp_auth_backup') === 'true';
+            
+            // If claiming authenticated but no tokens, this is the bug
+            if (this._isAuthenticated && !hasToken && !hasBackup) {
+                console.warn('🐛 Auth bug detected: authenticated=true but no tokens');
+                // Force reset to prevent infinite loops
+                this._isAuthenticated = false;
+            }
+        }
+        
         return this._isAuthenticated;
     }
 
