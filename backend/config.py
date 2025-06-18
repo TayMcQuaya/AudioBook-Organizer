@@ -1,4 +1,5 @@
 import os
+from datetime import timedelta
 from dotenv import load_dotenv
 
 # Load environment variables from .env file
@@ -28,10 +29,13 @@ class Config:
     TEMPORARY_PASSWORD = os.environ.get('TEMPORARY_PASSWORD')
     TESTING_MODE = os.environ.get('TESTING_MODE', 'false').lower() in ['true', '1', 'yes']
     
-    # Session configuration for temporary authentication
+    # Session configuration - industry standard for demo/testing environments
+    # Testing mode gets extended sessions for better UX, production gets shorter sessions for security
+    PERMANENT_SESSION_LIFETIME = timedelta(hours=24) if os.environ.get('TESTING_MODE', 'false').lower() in ['true', '1', 'yes'] else timedelta(hours=1)
     SESSION_COOKIE_SECURE = os.environ.get('SESSION_COOKIE_SECURE', 'false').lower() in ['true', '1', 'yes']
     SESSION_COOKIE_HTTPONLY = True
     SESSION_COOKIE_SAMESITE = 'Lax'
+    SESSION_REFRESH_EACH_REQUEST = True  # Refresh session timeout on each request
     
     # Supabase configuration
     SUPABASE_URL = os.environ.get('SUPABASE_URL')
@@ -80,6 +84,8 @@ class Config:
 class DevelopmentConfig(Config):
     """Development configuration"""
     DEBUG = True
+    # Local development gets generous session times
+    PERMANENT_SESSION_LIFETIME = timedelta(hours=8)
 
 class ProductionConfig(Config):
     """Production configuration"""
@@ -94,6 +100,11 @@ class ProductionConfig(Config):
     SESSION_COOKIE_SECURE = True
     SESSION_COOKIE_HTTPONLY = True
     SESSION_COOKIE_SAMESITE = 'None'  # Required for cross-domain cookies
+    
+    # Production session configuration - balanced between security and UX
+    # Testing mode: 24 hours for demo purposes, Normal mode: 4 hours for security
+    PERMANENT_SESSION_LIFETIME = timedelta(hours=24) if os.environ.get('TESTING_MODE', 'false').lower() in ['true', '1', 'yes'] else timedelta(hours=4)
+    SESSION_REFRESH_EACH_REQUEST = True  # Extend session on activity
     
     # Production-specific rate limiting
     RATE_LIMITING = {

@@ -11,6 +11,7 @@ class TempAuthManager {
         this._isInitialized = false;
         this.checkInterval = null;
         this._skipNextCheck = false; // Flag to skip session check temporarily
+        this.lastActivityTime = Date.now(); // Track last user activity
 
         TempAuthManager.instance = this;
     }
@@ -39,6 +40,8 @@ class TempAuthManager {
 
                 if (this._isTestingMode) {
                     this.startAuthCheck();
+                    // Setup activity tracking for session management
+                    this.setupActivityTracking();
                 }
                 return true; // **FIX 2: Return true on success**
             }
@@ -67,6 +70,22 @@ class TempAuthManager {
             }
             
             try {
+                // Check if user has been active in the last 10 minutes
+                const timeSinceActivity = Date.now() - this.lastActivityTime;
+                const isRecentlyActive = timeSinceActivity < 600000; // 10 minutes
+
+                // If user has been active, refresh the session first
+                if (this._isAuthenticated && isRecentlyActive) {
+                    try {
+                        await apiFetch('/api/auth/temp-refresh', {
+                            method: 'POST'
+                        });
+                        console.log('🔄 Session refreshed due to recent activity');
+                    } catch (refreshError) {
+                        console.log('Session refresh failed, will check status:', refreshError);
+                    }
+                }
+
                 const response = await apiFetch('/api/auth/temp-status');
                 
                 if (response.ok) {
@@ -88,7 +107,7 @@ class TempAuthManager {
             } catch (error) {
                 console.error('Error during periodic temp auth check:', error);
             }
-        }, 30000); // Check every 30 seconds
+        }, 300000); // Check every 5 minutes (300 seconds) - industry standard for demo mode
     }
      
     /**
@@ -159,6 +178,47 @@ class TempAuthManager {
     pauseNextSessionCheck() {
         this._skipNextCheck = true;
         console.log('🔧 Next session check will be skipped');
+    }
+
+    /**
+     * Record user activity to track when to refresh sessions
+     */
+    recordActivity() {
+        this.lastActivityTime = Date.now();
+    }
+
+    /**
+     * Setup activity listeners to track user engagement
+     */
+    setupActivityTracking() {
+        const events = ['click', 'keypress', 'scroll', 'mousemove'];
+        const throttledActivity = this.throttle(() => this.recordActivity(), 60000); // Max once per minute
+
+        events.forEach(event => {
+            document.addEventListener(event, throttledActivity, { passive: true });
+        });
+    }
+
+    /**
+     * Throttle function to limit the frequency of calls
+     */
+    throttle(func, delay) {
+        let timeoutId;
+        let lastExecTime = 0;
+        return function (...args) {
+            const currentTime = Date.now();
+            
+            if (currentTime - lastExecTime > delay) {
+                func.apply(this, args);
+                lastExecTime = currentTime;
+            } else {
+                clearTimeout(timeoutId);
+                timeoutId = setTimeout(() => {
+                    func.apply(this, args);
+                    lastExecTime = Date.now();
+                }, delay - (currentTime - lastExecTime));
+            }
+        };
     }
 }
  

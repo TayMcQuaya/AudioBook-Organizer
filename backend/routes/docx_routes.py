@@ -154,24 +154,24 @@ def upload_docx():
                             from flask import g
                             user_id = getattr(g, 'user_id', None)
                             if user_id:
-                                # Deduct credits for DOCX processing
+                            # Deduct credits for DOCX processing
                                 credit_success = supabase_service.update_user_credits(user_id, -5)
-                                if not credit_success:
-                                    current_app.logger.warning('Failed to deduct credits for DOCX processing')
-                                
-                                # Log usage
-                                supabase_service.log_usage(
+                            if not credit_success:
+                                current_app.logger.warning('Failed to deduct credits for DOCX processing')
+                            
+                            # Log usage
+                            supabase_service.log_usage(
                                     user_id,
-                                    'docx_processed',
-                                    credits_used=5,
-                                    metadata={
-                                        'filename': filename,
-                                        'file_size': file_size,
-                                        'text_length': len(result['text']),
-                                        'formatting_ranges': len(result['formatting_ranges']),
-                                        'processing_time': processing_time
-                                    }
-                                )
+                                'docx_processed',
+                                credits_used=5,
+                                metadata={
+                                    'filename': filename,
+                                    'file_size': file_size,
+                                    'text_length': len(result['text']),
+                                    'formatting_ranges': len(result['formatting_ranges']),
+                                    'processing_time': processing_time
+                                }
+                            )
                         except Exception as log_error:
                             current_app.logger.warning(f'Failed to log usage: {log_error}')
                 else:

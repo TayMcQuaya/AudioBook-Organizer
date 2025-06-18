@@ -18,8 +18,8 @@ def create_static_routes(app):
             else:
                 return send_from_directory('../frontend/pages/temp-auth', 'temp-auth.html')
         else:
-            # Normal mode - serve landing page
-            return send_from_directory('../frontend/public', 'index.html')
+            # Normal mode - serve main index page
+            return send_from_directory('../frontend', 'index.html')
     
     @app.route('/app')
     def serve_app():
@@ -29,7 +29,7 @@ def create_static_routes(app):
             if not session.get('temp_authenticated'):
                 return redirect('/')
         
-        return send_from_directory('../frontend/public', 'index.html')
+        return send_from_directory('../frontend/pages/app', 'app.html')
     
     @app.route('/auth')
     @app.route('/profile')
@@ -40,7 +40,7 @@ def create_static_routes(app):
             # In testing mode, redirect these pages to root
             return redirect('/')
         
-        return send_from_directory('../frontend/public', 'index.html')
+        return send_from_directory('../frontend', 'index.html')
     
     @app.route('/temp-auth')
     def serve_temp_auth():
@@ -62,7 +62,7 @@ def create_static_routes(app):
     @app.route('/favicon.ico')
     def serve_favicon():
         """Serve favicon"""
-        return send_from_directory('../frontend/public', 'favicon.ico')
+        return send_from_directory('../frontend/public/icons', 'favicon.ico')
 
     @app.route('/css/<path:filename>')
     def serve_css(filename):

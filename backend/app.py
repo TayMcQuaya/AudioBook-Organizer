@@ -32,13 +32,12 @@ def create_app(config_name=None):
     app = Flask(__name__, static_url_path='', static_folder='../frontend')
     app.config.from_object(config[config_name])
     
-    # Configure session for temporary authentication
-    app.config['SESSION_COOKIE_SECURE'] = app.config.get('SESSION_COOKIE_SECURE', True if config_name == 'production' else False)
-    app.config['SESSION_COOKIE_HTTPONLY'] = app.config.get('SESSION_COOKIE_HTTPONLY', True)
-    app.config['SESSION_COOKIE_SAMESITE'] = app.config.get('SESSION_COOKIE_SAMESITE', 'None' if config_name == 'production' else 'Lax')
-    app.config['SESSION_COOKIE_DOMAIN'] = app.config.get('SESSION_COOKIE_DOMAIN', None)  # Allow cross-domain cookies
-    app.config['PERMANENT_SESSION_LIFETIME'] = 3600  # 1 hour session lifetime
-    app.config['SESSION_COOKIE_MAX_AGE'] = 3600  # 1 hour max age
+    # Configure CORS for cross-domain support in production
+    # Session cookies are now properly configured via config.py - no override needed
+    app.logger.info(f"Session configuration: Lifetime={app.config['PERMANENT_SESSION_LIFETIME']}, "
+                   f"Secure={app.config['SESSION_COOKIE_SECURE']}, "
+                   f"SameSite={app.config['SESSION_COOKIE_SAMESITE']}, "
+                   f"Testing Mode={app.config.get('TESTING_MODE', False)}")
     
     # Define allowed origins for CORS.
     # This allows the main Vercel app URL and any of its preview deployments.
