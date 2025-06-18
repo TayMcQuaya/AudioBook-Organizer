@@ -5,8 +5,7 @@
 
 import { showError, showSuccess, showInfo } from './notifications.js';
 import { validatePassword, checkPasswordStrength } from './validators.js';
-import sessionManager from './sessionManager.js';
-import { router } from './router.js';
+import { sessionManager } from './sessionManager.js';
 import { showNotification } from './notifications.js';
 import { recaptcha } from './recaptcha.js';
 import { apiFetch } from './api.js';
@@ -342,7 +341,7 @@ class AuthModule {
         if (this.user?.id === session.user.id && 
             this.session?.access_token === session.access_token &&
             this.userInitialized && !isNewSession) {
-            console.log('🔄 Ignoring duplicate auth success for same user session');
+            console.log('�� Ignoring duplicate auth success for same user session');
             return;
         }
 
@@ -1197,7 +1196,9 @@ class AuthModule {
     }
 }
 
+// Create singleton instance
 const auth = new AuthModule();
 
-export default auth;
+// Export the instance
+export { auth };
 export { supabaseClient }; 

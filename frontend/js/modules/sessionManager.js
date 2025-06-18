@@ -634,10 +634,8 @@ class SessionManager {
     }
 }
 
-// Create and export singleton instance
+// Create singleton instance
 const sessionManager = new SessionManager();
 
-// Make it globally available
-window.sessionManager = sessionManager;
-
-export default sessionManager; 
+// Export the instance
+export { sessionManager }; 
