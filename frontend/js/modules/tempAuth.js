@@ -105,6 +105,7 @@ class TempAuthManager {
             console.error('Error on temp logout API call, logging out client-side anyway.', error);
         } finally {
             this.setAuthenticated(false);
+            localStorage.removeItem('temp_auth_backup'); // Clear backup
             window.router.navigateTo('/temp-auth');
         }
     }
@@ -131,6 +132,7 @@ class TempAuthManager {
             this.startAuthCheck();
         } else {
             this.cleanup();
+            localStorage.removeItem('temp_auth_backup'); // Clear backup on logout
         }
     }
      

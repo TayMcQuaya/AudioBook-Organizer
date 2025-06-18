@@ -37,6 +37,8 @@ def create_app(config_name=None):
     app.config['SESSION_COOKIE_HTTPONLY'] = app.config.get('SESSION_COOKIE_HTTPONLY', True)
     app.config['SESSION_COOKIE_SAMESITE'] = app.config.get('SESSION_COOKIE_SAMESITE', 'None' if config_name == 'production' else 'Lax')
     app.config['SESSION_COOKIE_DOMAIN'] = app.config.get('SESSION_COOKIE_DOMAIN', None)  # Allow cross-domain cookies
+    app.config['PERMANENT_SESSION_LIFETIME'] = 3600  # 1 hour session lifetime
+    app.config['SESSION_COOKIE_MAX_AGE'] = 3600  # 1 hour max age
     
     # Define allowed origins for CORS.
     # This allows the main Vercel app URL and any of its preview deployments.

@@ -56,6 +56,18 @@ export async function apiFetch(endpoint, options = {}) {
     if (token) {
         defaultHeaders['Authorization'] = `Bearer ${token}`;
     }
+    
+    // Add temp auth header if in testing mode
+    if (window.ENVIRONMENT_CONFIG?.IS_TESTING_MODE) {
+        if (window.tempAuthManager?.isAuthenticated) {
+            defaultHeaders['X-Temp-Auth'] = 'authenticated';
+        }
+        // Emergency fallback: check localStorage backup
+        else if (localStorage.getItem('temp_auth_backup') === 'true') {
+            defaultHeaders['X-Testing-Override'] = 'temp-auth-bypass';
+            console.log('🔧 Using localStorage backup for temp auth');
+        }
+    }
 
     // Modern browsers handle FormData Content-Type automatically,
     // so we remove our default to let the browser set it with the correct boundary.

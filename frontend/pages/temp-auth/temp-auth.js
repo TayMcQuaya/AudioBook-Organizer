@@ -177,6 +177,9 @@ class TempAuth {
                     console.warn('⚠️ tempAuthManager not available globally');
                 }
                 
+                // Store auth status in localStorage as backup for cross-domain session issues
+                localStorage.setItem('temp_auth_backup', 'true');
+                
                 this.showSuccess();
                 
                 // Small delay to show success, then navigate via router
