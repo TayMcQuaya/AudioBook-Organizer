@@ -1,5 +1,10 @@
 from flask import Blueprint, request, jsonify, session, send_from_directory
 import os
+import secrets
+import time
+
+# Simple in-memory token store for testing mode (not for production)
+temp_auth_tokens = {}
 
 def create_password_protection_routes(app):
     """
@@ -45,15 +50,27 @@ def create_password_protection_routes(app):
             print(f"🔧 DEBUG: Password match: {password == correct_password}")
             
             if password == correct_password:
-                # Set session flag for authenticated access
+                # Generate a temporary token for cross-domain authentication
+                token = secrets.token_urlsafe(32)
+                temp_auth_tokens[token] = {
+                    'created_at': time.time(),
+                    'expires_at': time.time() + (24 * 60 * 60)  # 24 hours
+                }
+                
+                # Also set session for backwards compatibility
                 session.permanent = True  # Make session persistent
                 session['temp_authenticated'] = True
-                print(f"🔧 DEBUG: Authentication successful, session set")
+                session['temp_token'] = token
+                
+                print(f"🔧 DEBUG: Authentication successful, session and token set")
+                print(f"🔧 DEBUG: Token generated: {token[:8]}...")
                 print(f"🔧 DEBUG: Session permanent: {session.permanent}")
                 print(f"🔧 DEBUG: Session ID: {session.get('_id', 'None')}")
+                
                 return jsonify({
                     'success': True,
-                    'message': 'Authentication successful'
+                    'message': 'Authentication successful',
+                    'token': token
                 })
             else:
                 print(f"🔧 DEBUG: Password mismatch")
@@ -154,15 +171,52 @@ def require_temp_auth(f):
         if not current_app.config.get('TESTING_MODE'):
             return f(*args, **kwargs)
         
-        # In testing mode, check for temp authentication
-        is_authenticated = session.get('temp_authenticated', False)
+        is_authenticated = False
+        
+        # Method 1: Check session (for same-domain requests)
+        if session.get('temp_authenticated', False):
+            is_authenticated = True
+            print(f"🔧 DEBUG: Authenticated via session for {f.__name__}")
+        
+        # Method 2: Check token in Authorization header (for cross-domain requests)
+        elif request.headers.get('Authorization'):
+            auth_header = request.headers.get('Authorization')
+            if auth_header.startswith('Bearer '):
+                token = auth_header[7:]  # Remove 'Bearer ' prefix
+                
+                # Check if token exists and is valid
+                if token in temp_auth_tokens:
+                    token_data = temp_auth_tokens[token]
+                    if time.time() < token_data['expires_at']:
+                        is_authenticated = True
+                        print(f"🔧 DEBUG: Authenticated via token for {f.__name__}")
+                    else:
+                        # Clean up expired token
+                        del temp_auth_tokens[token]
+                        print(f"🔧 DEBUG: Token expired for {f.__name__}")
+        
+        # Method 3: Check token in X-Temp-Auth header (alternative method)
+        elif request.headers.get('X-Temp-Auth'):
+            token = request.headers.get('X-Temp-Auth')
+            if token in temp_auth_tokens:
+                token_data = temp_auth_tokens[token]
+                if time.time() < token_data['expires_at']:
+                    is_authenticated = True
+                    print(f"🔧 DEBUG: Authenticated via X-Temp-Auth header for {f.__name__}")
+                else:
+                    # Clean up expired token
+                    del temp_auth_tokens[token]
         
         # Emergency fallback: check for special testing override header (for development only)
-        if not is_authenticated and request.headers.get('X-Testing-Override') == 'temp-auth-bypass':
+        elif request.headers.get('X-Testing-Override') == 'temp-auth-bypass':
             print(f"🔧 DEBUG: Using emergency testing override for {f.__name__}")
             is_authenticated = True
         
         if not is_authenticated:
+            print(f"🔧 DEBUG: Authentication failed for {f.__name__}")
+            print(f"🔧 DEBUG: Session authenticated: {session.get('temp_authenticated', False)}")
+            print(f"🔧 DEBUG: Authorization header: {request.headers.get('Authorization', 'None')}")
+            print(f"🔧 DEBUG: X-Temp-Auth header: {request.headers.get('X-Temp-Auth', 'None')}")
             return jsonify({
                 'success': False,
                 'error': 'Please authenticate with the temporary password first'

@@ -169,6 +169,12 @@ class TempAuth {
                 // Success! Update authentication status IMMEDIATELY
                 console.log('Temporary authentication successful');
                 
+                // Store authentication token if provided (for cross-domain requests)
+                if (data.token) {
+                    localStorage.setItem('temp_auth_token', data.token);
+                    console.log('🔧 Stored authentication token');
+                }
+                
                 // Update tempAuthManager status first (before any navigation)
                 if (window.tempAuthManager) {
                     window.tempAuthManager.setAuthenticated(true);

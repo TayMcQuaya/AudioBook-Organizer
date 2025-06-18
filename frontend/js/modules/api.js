@@ -66,9 +66,17 @@ export async function apiFetch(endpoint, options = {}) {
         defaultHeaders['Authorization'] = `Bearer ${token}`;
     }
     
-    // Add temp auth header if in testing mode
+    // Add temp auth token if in testing mode
     if (window.ENVIRONMENT_CONFIG?.IS_TESTING_MODE) {
-        if (window.tempAuthManager?.isAuthenticated) {
+        const tempToken = localStorage.getItem('temp_auth_token');
+        if (tempToken) {
+            // Use Authorization header for token-based auth (primary method)
+            defaultHeaders['Authorization'] = `Bearer ${tempToken}`;
+            // Also send as X-Temp-Auth header as backup
+            defaultHeaders['X-Temp-Auth'] = tempToken;
+        }
+        // Legacy fallback: check if authenticated via session
+        else if (window.tempAuthManager?.isAuthenticated) {
             defaultHeaders['X-Temp-Auth'] = 'authenticated';
         }
         // Emergency fallback: check localStorage backup
