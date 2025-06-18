@@ -2,8 +2,10 @@
 
 import { showError, showInfo } from './notifications.js';
 import auth from './auth.js';
-import sessionManager from './sessionManager.js';
-import tempAuthManager from './tempAuth.js';
+import { sessionManager } from './sessionManager.js';
+import { tempAuthManager } from './tempAuth.js';
+import { bookUploader } from './bookUpload.js';
+import { api } from './api.js';
 
 // Router state
 let currentRoute = '/';
