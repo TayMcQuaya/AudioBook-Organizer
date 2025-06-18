@@ -28,6 +28,11 @@
       "dest": "/$1"
     },
     {
+      "src": "/pages/(.*)",
+      "headers": { "cache-control": "public, max-age=0, must-revalidate" },
+      "dest": "/pages/$1"
+    },
+    {
       "src": "/(.*)",
       "dest": "/index.html"
     }
