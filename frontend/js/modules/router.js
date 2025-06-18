@@ -4,7 +4,7 @@ import { showError, showInfo } from './notifications.js';
 import auth from './auth.js';
 import { sessionManager } from './sessionManager.js';
 import { tempAuthManager } from './tempAuth.js';
-import { bookUploader } from './bookUpload.js';
+import { initializeBookUpload, uploadBook } from './bookUpload.js';
 import { apiFetch } from './api.js';
 
 // Router state
