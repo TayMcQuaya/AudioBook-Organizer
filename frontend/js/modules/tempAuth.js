@@ -10,6 +10,7 @@ class TempAuthManager {
         this._isTestingMode = false;
         this._isInitialized = false;
         this.checkInterval = null;
+        this._skipNextCheck = false; // Flag to skip session check temporarily
 
         TempAuthManager.instance = this;
     }
@@ -58,6 +59,13 @@ class TempAuthManager {
         if (this.checkInterval) clearInterval(this.checkInterval);
 
         this.checkInterval = setInterval(async () => {
+            // Skip check if flag is set
+            if (this._skipNextCheck) {
+                console.log('🔧 Skipping session check (critical operation in progress)');
+                this._skipNextCheck = false;
+                return;
+            }
+            
             try {
                 const response = await apiFetch('/api/auth/temp-status');
                 
@@ -143,6 +151,14 @@ class TempAuthManager {
      
     shouldBlockAuthPages() {
         return this._isTestingMode;
+    }
+    
+    /**
+     * Temporarily pause the next session check (useful during critical operations)
+     */
+    pauseNextSessionCheck() {
+        this._skipNextCheck = true;
+        console.log('🔧 Next session check will be skipped');
     }
 }
  

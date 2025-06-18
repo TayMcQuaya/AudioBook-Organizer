@@ -8,6 +8,10 @@ import { formatDuration, getAccentColor } from '../utils/helpers.js';
 // UI Updates - preserving exact logic from original
 export function updateChaptersList() {
     const sectionsList = document.getElementById('sectionsList');
+    if (!sectionsList) {
+        console.warn('⚠️ sectionsList element not found - skipping update');
+        return;
+    }
     sectionsList.innerHTML = chapters.map(chapter => `
         <div class="chapter-item" data-chapter-id="${chapter.id}">
             <div class="chapter-header" onclick="toggleChapter(${chapter.id})">

@@ -470,6 +470,11 @@ export async function uploadBook() {
         let text, formattingData = null, metadata = null;
         
         if (file.name.toLowerCase().endsWith('.docx')) {
+            // Pause session check during DOCX processing to prevent logout
+            if (window.tempAuthManager?.pauseNextSessionCheck) {
+                window.tempAuthManager.pauseNextSessionCheck();
+            }
+            
             // Process DOCX with enhanced hybrid approach
             console.log('📄 Processing DOCX file with hybrid approach:', file.name);
             const result = await processDocxFileHybrid(file);
