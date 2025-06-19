@@ -32,4 +32,9 @@ pytest==7.4.3
 pytest-flask==1.3.0
 
 # Production web server
-gunicorn==22.0.0 
+gunicorn==22.0.0
+
+# Optional: Additional security and monitoring (uncomment if needed)
+# flask-talisman==1.1.0  # Security headers
+# flask-limiter==3.5.0   # Rate limiting
+# psutil==5.9.6          # System monitoring 
