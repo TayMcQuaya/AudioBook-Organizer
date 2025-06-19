@@ -784,6 +784,9 @@ class Router {
 
             // Initialize app if not already initialized
             if (!window.isAppInitialized) {
+                console.log('🔧 App not initialized yet, starting initialization...');
+                console.log('🔍 Debug: window.isAppInitialized =', window.isAppInitialized);
+                console.log('🔍 Debug: window.isFrameworkInitialized =', window.isFrameworkInitialized);
                 try {
                     // In testing mode, wait a moment to ensure auth status is properly set
                     if (tempAuthManager.isTestingMode) {
@@ -902,6 +905,9 @@ class Router {
                     });
                     window.isAppInitialized = false;
                 }
+            } else {
+                console.log('✅ App already initialized, skipping initialization');
+                console.log('🔍 Debug: window.isAppInitialized =', window.isAppInitialized);
             }
             
             console.log('📱 App loaded successfully');

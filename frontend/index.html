@@ -138,7 +138,7 @@
         import appConfig from '/js/config/appConfig.js';
         
         // Global app state
-        window.isAppInitialized = false;
+        window.isFrameworkInitialized = false;
         
         // Initialize the application with deterministic behavior
         async function initializeApplication() {
@@ -180,7 +180,7 @@
                 await _completeUITransition();
                 
                 // Mark as initialized
-                window.isAppInitialized = true;
+                window.isFrameworkInitialized = true;
                 
                 const totalTime = Date.now() - startTime;
                 console.log(`✅ AudioBook Organizer initialized successfully in ${totalTime}ms`);
