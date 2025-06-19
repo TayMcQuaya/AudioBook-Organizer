@@ -103,13 +103,18 @@ class EnvironmentManager {
         
         console.warn('🔄 Using fallback environment configuration');
         
+        // TEMPORARY DEBUG: Force testing mode for production debugging
+        // TODO: Remove this override once environment variables are working
+        const isProduction = window.location.hostname.includes('ondigitalocean.app');
+        
         return {
-            testing_mode: false,
+            testing_mode: isProduction ? true : false, // Force testing mode on Digital Ocean
             environment: isDevelopment ? 'development' : 'production',
-            temporary_password_configured: false,
+            temporary_password_configured: true, // Assume password is configured
             server_type: isDevelopment ? 'flask-dev' : 'gunicorn-prod',
             timestamp: Date.now(),
-            fallback: true
+            fallback: true,
+            debug_override: isProduction ? 'FORCED_TESTING_MODE' : 'NORMAL_FALLBACK'
         };
     }
 

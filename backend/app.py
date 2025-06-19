@@ -67,6 +67,13 @@ def create_app(config_name=None):
         app.logger.setLevel(logging.DEBUG)
         app.logger.info(f"🔧 Starting AudioBook Organizer in DEVELOPMENT mode")
     
+    # DEBUG: Log critical environment variables at startup
+    app.logger.info(f"🔧 Environment Variables at Startup:")
+    app.logger.info(f"   - TESTING_MODE: {os.environ.get('TESTING_MODE', 'NOT_SET')} → Parsed: {app.config.get('TESTING_MODE', 'NOT_SET')}")
+    app.logger.info(f"   - TEMPORARY_PASSWORD: {'CONFIGURED' if os.environ.get('TEMPORARY_PASSWORD') else 'NOT_SET'}")
+    app.logger.info(f"   - FLASK_ENV: {os.environ.get('FLASK_ENV', 'NOT_SET')}")
+    app.logger.info(f"   - Config Class: {config_name} → {type(app.config).__name__}")
+    
     # Ensure directories exist - exact logic preserved
     ensure_directories_exist(app.config['UPLOAD_FOLDER'], app.config['EXPORT_FOLDER'])
     
@@ -120,6 +127,18 @@ def create_app(config_name=None):
         return jsonify({
             'success': True,
             'message': 'API is working'
+        })
+    
+    # Simple debug route for environment variables (no auth required)
+    @app.route('/api/debug-env', methods=['GET'])
+    def debug_env():
+        return jsonify({
+            'testing_mode_raw': os.environ.get('TESTING_MODE', 'NOT_SET'),
+            'testing_mode_parsed': app.config.get('TESTING_MODE', False),
+            'temporary_password_configured': bool(app.config.get('TEMPORARY_PASSWORD')),
+            'flask_env': os.environ.get('FLASK_ENV', 'NOT_SET'),
+            'config_class': type(app.config).__name__,
+            'timestamp': datetime.utcnow().isoformat() + 'Z'
         })
     
     # Debug endpoint for time checking
