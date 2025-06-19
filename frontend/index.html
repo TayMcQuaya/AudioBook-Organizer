@@ -177,7 +177,7 @@
                 
                 // STEP 7: Final UI transition
                 console.log('✨ Step 7: Completing UI transition...');
-                await this._completeUITransition();
+                await _completeUITransition();
                 
                 // Mark as initialized
                 window.isAppInitialized = true;
@@ -187,7 +187,7 @@
                 
             } catch (error) {
                 console.error('❌ Failed to initialize application:', error);
-                this._showErrorState(error);
+                _showErrorState(error);
             }
         }
         

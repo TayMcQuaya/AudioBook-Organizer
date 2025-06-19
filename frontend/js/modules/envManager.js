@@ -24,8 +24,8 @@ class EnvironmentManager {
      * Load configuration from backend with retry logic
      */
     async _loadConfiguration() {
-        const maxRetries = 3;
-        const retryDelay = 1000;
+        const maxRetries = 2; // Reduced from 3 for faster fallback
+        const retryDelay = 500; // Reduced from 1000ms
 
         for (let attempt = 1; attempt <= maxRetries; attempt++) {
             try {
@@ -33,10 +33,16 @@ class EnvironmentManager {
                 
                 const response = await fetch('/debug/config', {
                     method: 'GET',
-                    headers: { 'Content-Type': 'application/json' }
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include' // Include credentials for CORS
                 });
 
                 if (!response.ok) {
+                    // If it's a 404, the route doesn't exist - fail fast
+                    if (response.status === 404) {
+                        console.warn('⚠️ /debug/config route not available, using fallback immediately');
+                        break;
+                    }
                     throw new Error(`HTTP ${response.status}: ${response.statusText}`);
                 }
 
@@ -44,7 +50,7 @@ class EnvironmentManager {
                 
                 this.config = {
                     testing_mode: data.testing_mode || false,
-                    environment: data.environment || 'development',
+                    environment: data.environment || 'production',
                     temporary_password_configured: data.temporary_password_configured || false,
                     server_type: this._detectServerType(),
                     timestamp: Date.now()
@@ -55,19 +61,25 @@ class EnvironmentManager {
                 return this.config;
 
             } catch (error) {
-                console.warn(`⚠️ Environment config load attempt ${attempt} failed:`, error);
+                console.warn(`⚠️ Environment config load attempt ${attempt} failed:`, error.message || error);
                 
                 if (attempt === maxRetries) {
-                    console.error('❌ Failed to load environment config, using fallback');
+                    console.warn('❌ Failed to load environment config, using fallback');
                     this.config = this._getFallbackConfig();
                     this.isInitialized = true;
                     return this.config;
                 }
 
-                // Wait before retry
+                // Wait before retry (but shorter delay)
                 await new Promise(resolve => setTimeout(resolve, retryDelay));
             }
         }
+        
+        // If we reach here, use fallback
+        console.warn('🔄 Using fallback configuration due to repeated failures');
+        this.config = this._getFallbackConfig();
+        this.isInitialized = true;
+        return this.config;
     }
 
     /**
