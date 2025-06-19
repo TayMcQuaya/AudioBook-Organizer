@@ -27,13 +27,28 @@ class AudioService:
         file.save(temp_path)
         
         try:
+            import logging
+            logger = logging.getLogger(__name__)
+            
+            logger.info(f'Processing audio file: {original_filename}')
+            logger.info(f'Temp file path: {temp_path}')
+            logger.info(f'Upload folder: {self.upload_folder}')
+            
             # Process the audio file (convert if needed) - exact logic preserved
             filename, filepath = process_audio_file(
                 temp_path, original_filename, self.upload_folder, timestamp
             )
             
+            logger.info(f'Audio processed successfully: {filename}')
+            logger.info(f'Final file path: {filepath}')
+            
+            # Verify the file was created
+            if not os.path.exists(filepath):
+                raise FileNotFoundError(f'Processed audio file not found at: {filepath}')
+            
             # Create a URL-safe path for the frontend - exact logic preserved
             safe_path = create_url_safe_path(filename)
+            logger.info(f'Generated safe path: {safe_path}')
             
             return {
                 'success': True,
@@ -42,4 +57,17 @@ class AudioService:
             }
             
         except Exception as e:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f'Audio processing failed for {original_filename}: {str(e)}')
+            logger.error(f'Error type: {type(e).__name__}')
+            
+            # Clean up temp file if it still exists
+            if os.path.exists(temp_path):
+                try:
+                    os.remove(temp_path)
+                    logger.info(f'Cleaned up temp file: {temp_path}')
+                except Exception as cleanup_error:
+                    logger.error(f'Failed to clean up temp file: {cleanup_error}')
+            
             raise e 

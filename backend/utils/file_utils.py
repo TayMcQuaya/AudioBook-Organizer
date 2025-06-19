@@ -22,6 +22,14 @@ def ensure_directories_exist(upload_folder, export_folder):
 def create_url_safe_path(filename):
     """
     Create a URL-safe path for the frontend.
-    Preserves the exact logic from original server.py
+    For production, return full backend URL to handle cross-domain file access.
     """
-    return f"/uploads/{filename}" 
+    import os
+    
+    # In production, use full backend URL for cross-domain access
+    if os.environ.get('FLASK_ENV') == 'production':
+        backend_url = os.environ.get('BACKEND_URL', 'https://audiobook-organizer-test-vdhku.ondigitalocean.app')
+        return f"{backend_url}/uploads/{filename}"
+    else:
+        # For local development, use relative path
+        return f"/uploads/{filename}" 

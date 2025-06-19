@@ -1,5 +1,6 @@
 from flask import Blueprint, send_from_directory, send_file, session, redirect, current_app
 import os
+from flask import jsonify
 
 def create_static_routes(app):
     """
@@ -89,10 +90,49 @@ def create_static_routes(app):
         """Serve files from frontend/public"""
         return send_from_directory('../frontend/public', filename)
 
-    @app.route('/uploads/<filename>')
+    @app.route('/uploads/<filename>', methods=['GET', 'OPTIONS'])
     def serve_upload(filename):
-        """Serve uploaded files"""
-        return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
+        """Serve uploaded files with proper CORS headers"""
+        from flask import make_response, request
+        
+        # Handle CORS preflight request
+        if request.method == 'OPTIONS':
+            response = make_response()
+            response.headers['Access-Control-Allow-Origin'] = '*'
+            response.headers['Access-Control-Allow-Methods'] = 'GET, OPTIONS'
+            response.headers['Access-Control-Allow-Headers'] = 'Content-Type'
+            return response
+        
+        try:
+            response = make_response(send_from_directory(app.config['UPLOAD_FOLDER'], filename))
+            
+            # Add CORS headers for cross-domain audio file access
+            response.headers['Access-Control-Allow-Origin'] = '*'
+            response.headers['Access-Control-Allow-Methods'] = 'GET, OPTIONS'
+            response.headers['Access-Control-Allow-Headers'] = 'Content-Type'
+            
+            # Add caching headers for better performance
+            response.headers['Cache-Control'] = 'public, max-age=3600'
+            
+            # Ensure proper MIME type for audio files
+            if filename.lower().endswith(('.wav', '.mp3', '.m4a', '.ogg')):
+                if filename.lower().endswith('.wav'):
+                    response.headers['Content-Type'] = 'audio/wav'
+                elif filename.lower().endswith('.mp3'):
+                    response.headers['Content-Type'] = 'audio/mpeg'
+                elif filename.lower().endswith('.m4a'):
+                    response.headers['Content-Type'] = 'audio/mp4'
+                elif filename.lower().endswith('.ogg'):
+                    response.headers['Content-Type'] = 'audio/ogg'
+            
+            return response
+            
+        except FileNotFoundError:
+            app.logger.error(f'Audio file not found: {filename}')
+            return jsonify({'error': 'File not found'}), 404
+        except Exception as e:
+            app.logger.error(f'Error serving audio file {filename}: {str(e)}')
+            return jsonify({'error': 'Internal server error'}), 500
 
     @app.route('/exports/<export_id>/<filename>')
     def serve_export(export_id, filename):
