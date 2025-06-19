@@ -84,10 +84,38 @@
     --section-color-8: #1f202d;  /* Dark Indigo */
 }
 
-/* Dark theme book content override */
+/* Dark theme comprehensive overrides for app page */
 [data-theme="dark"] .book-content {
-    background: #2d3748 !important;
-    color: #ffffff !important;
+    background: var(--bg-primary) !important;
+    color: var(--text-primary) !important;
+}
+
+[data-theme="dark"] .app-nav {
+    background: var(--bg-primary);
+    border-bottom-color: var(--border-color);
+}
+
+[data-theme="dark"] .column {
+    background: var(--bg-primary);
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .column-header {
+    background: var(--bg-primary);
+    border-bottom-color: var(--border-color);
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .column-header h2 {
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .sections-list {
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .brand-link {
+    color: var(--text-primary) !important;
 }
 
 
@@ -114,6 +142,16 @@ body.app-body {
     overflow: hidden;
     height: 100vh;
     background: var(--app-bg);
+}
+
+/* Critical: Apply proper layout class immediately to prevent flash */
+body.app-body.layout-ready .main-container {
+    opacity: 1;
+    transition: opacity 0.3s ease;
+}
+
+body.app-body:not(.layout-ready) .main-container {
+    opacity: 0;
 }
 
 /* App Navigation */
@@ -207,6 +245,7 @@ body.app-body {
     }
 }
 
+/* Main container with responsive layout */
 .main-container {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -217,6 +256,37 @@ body.app-body {
     padding: var(--spacing-md);
     box-sizing: border-box;
     overflow: hidden;
+}
+
+/* Mobile-first responsive layout - sections below chapters */
+@media (max-width: 1200px) {
+    .main-container {
+        grid-template-columns: 1fr;
+        grid-template-rows: auto auto;
+        gap: var(--spacing-sm);
+    }
+    
+    .main-container .column:first-child {
+        grid-row: 1;
+    }
+    
+    .main-container .column:last-child {
+        grid-row: 2;
+    }
+}
+
+/* Force single column layout for mobile or when explicitly requested */
+body.mobile-layout .main-container {
+    grid-template-columns: 1fr !important;
+    grid-template-rows: auto auto !important;
+}
+
+body.mobile-layout .main-container .column:first-child {
+    grid-row: 1 !important;
+}
+
+body.mobile-layout .main-container .column:last-child {
+    grid-row: 2 !important;
 }
 
 .column {
@@ -281,6 +351,42 @@ body.app-body {
     gap: var(--spacing-md);
     padding: var(--spacing-md);
     min-height: 100%;
+}
+
+/* LAYOUT FIXES: Ensure chapter items are stacked vertically (override any grid layouts) */
+.sections-list .chapter-item {
+    display: flex !important;
+    flex-direction: column !important;
+    margin-bottom: var(--spacing-md);
+    width: 100% !important;
+}
+
+/* LAYOUT FIXES: Ensure chapter sections appear below the chapter header (not beside) */
+.sections-list .chapter-sections {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: var(--spacing-sm);
+    margin-top: var(--spacing-sm);
+    width: 100% !important;
+    grid-column: span 1 !important; /* Prevent grid from making this span multiple columns */
+    clear: both !important; /* Clear any floats */
+    float: none !important; /* Prevent floating */
+}
+
+/* Force all section items to stack vertically */
+.sections-list .chapter-sections .section-item {
+    display: block !important;
+    width: 100% !important;
+    float: none !important;
+    clear: both !important;
+}
+
+/* LAYOUT FIXES: Ensure section items are properly contained vertically */
+.sections-list .section-item {
+    display: flex !important;
+    flex-direction: column !important;
+    width: 100% !important;
+    margin-bottom: var(--spacing-sm);
 }
 
 /* Animations */
@@ -1047,10 +1153,57 @@ body.app-body {
     }
 }
 
-/* Testing Mode Styles */
+/* Testing Mode Styles - Apply immediately to prevent loading delays */
 body.testing-mode .back-arrow.landing-nav-link,
 body.testing-mode .auth-nav-link {
     display: none !important;
+}
+
+/* TOC Button - Show immediately with proper styling */
+.toc-toggle-btn {
+    opacity: 1 !important;
+    visibility: visible !important;
+    display: flex !important;
+    background: var(--primary-color) !important;
+    color: white !important;
+    border: none !important;
+    border-radius: var(--radius-sm) !important;
+    padding: 0.5rem 0.75rem !important;
+    font-size: 0.85rem !important;
+    font-weight: 500 !important;
+    cursor: pointer !important;
+    transition: all 0.2s ease !important;
+    align-items: center !important;
+    gap: 0.5rem !important;
+    margin-left: auto !important;
+}
+
+.toc-toggle-btn:hover {
+    background: var(--primary-hover) !important;
+    color: white !important;
+    transform: translateY(-1px) !important;
+    box-shadow: var(--shadow-md) !important;
+}
+
+/* Exit Button - Show immediately in testing mode */
+body.testing-mode .exit-testing-btn {
+    opacity: 1 !important;
+    visibility: visible !important;
+    display: inline-flex !important;
+    background: rgba(220, 53, 69, 0.1) !important;
+    border: 2px solid #dc3545 !important;
+    color: #dc3545 !important;
+    font-weight: bold !important;
+    padding: 0.6rem 1.2rem !important;
+    font-size: 1rem !important;
+    border-radius: 8px !important;
+    transition: all 0.3s ease !important;
+    cursor: pointer;
+}
+
+body.testing-mode .exit-testing-btn:hover {
+    background: #dc3545 !important;
+    color: white !important;
 }
 
 /* Keep brand text visible but make it non-clickable */
@@ -1266,4 +1419,23 @@ body.testing-mode .exit-testing-btn:hover {
         width: 100%;
         min-width: auto;
     }
+}
+
+/* Header styles */
+header {
+    background-color: var(--background-color-light);
+    color: var(--text-color);
+    padding: 10px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--border-color);
+    position: sticky;
+    top: 0;
+    z-index: 1001; /* Ensure header is above content but below modals/sidebars */
+}
+
+/* Main content styles */
+main {
+    padding: 20px;
 }

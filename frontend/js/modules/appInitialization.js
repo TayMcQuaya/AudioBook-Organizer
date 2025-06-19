@@ -260,7 +260,16 @@ export async function initApp() {
         await restoreLatestProject();
         
         // Initialize Table of Contents
-        initializeTableOfContents();
+        console.log('📋 Initializing Table of Contents...');
+        try {
+            // Small delay to ensure DOM is fully stable
+            await new Promise(resolve => setTimeout(resolve, 100));
+            initializeTableOfContents();
+            console.log('✅ Table of Contents initialized successfully');
+        } catch (error) {
+            console.error('❌ Table of Contents initialization failed:', error);
+            // Don't fail the entire app if TOC fails
+        }
         
         // Start auto-save functionality
         startAutoSave();

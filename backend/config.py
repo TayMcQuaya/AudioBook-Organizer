@@ -86,6 +86,11 @@ class DevelopmentConfig(Config):
     DEBUG = True
     # Local development gets generous session times
     PERMANENT_SESSION_LIFETIME = timedelta(hours=8)
+    
+    # Use same cookie settings as production for consistency
+    SESSION_COOKIE_SECURE = os.environ.get('SESSION_COOKIE_SECURE', 'false').lower() in ['true', '1', 'yes']
+    SESSION_COOKIE_HTTPONLY = True
+    SESSION_COOKIE_SAMESITE = 'Lax'  # Lax for development, None for production
 
 class ProductionConfig(Config):
     """Production configuration"""

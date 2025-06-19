@@ -491,7 +491,7 @@ export async function attachAudio(chapterId, sectionId, input) {
     }
 
     const formData = new FormData();
-    formData.append('file', file);
+    formData.append('audio', file);
     formData.append('chapterId', chapterId);
     formData.append('sectionId', sectionId);
 
@@ -517,7 +517,7 @@ export async function attachAudio(chapterId, sectionId, input) {
         if (chapter) {
             const section = chapter.sections.find(s => s.id === sectionId);
             if (section) {
-                section.audioPath = data.filePath;
+                section.audioPath = data.path;
                 section.status = 'processed';
                 // Update player in state
                 if (chapterPlayers[chapter.id]) {

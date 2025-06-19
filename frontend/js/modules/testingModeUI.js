@@ -3,25 +3,94 @@
 
 import { tempAuthManager } from './tempAuth.js';
 import { clearTestingModeData } from './storage.js';
+import envManager from './envManager.js';
+import appConfig from '../config/appConfig.js';
 
 class TestingModeUI {
     constructor() {
         this.isInitialized = false;
+        this.uiElementsApplied = false;
+        this.retryCount = 0;
+        this.maxRetries = 5;
     }
     
     async init() {
         if (this.isInitialized) return;
         
-        // Wait for temp auth manager to be ready
-        if (tempAuthManager.isTestingMode) {
-            this.applyTestingModeStyles();
-            this.addLogoutButton();
-            this.disableNavigationLinks();
-            
-            console.log('🧪 Testing mode UI applied');
-        }
+        console.log('🧪 Initializing testing mode UI...');
+        const startTime = Date.now();
         
-        this.isInitialized = true;
+        try {
+            // Wait for environment manager to be ready
+            await envManager.waitForReady();
+            
+            const envConfig = envManager.getConfig();
+            
+            if (envConfig.testing_mode) {
+                console.log('🧪 Testing mode detected, applying UI changes...');
+                
+                // Apply changes with retry logic for robustness
+                await this._applyTestingModeWithRetry();
+                
+                appConfig.logTiming('Testing mode UI initialization', startTime);
+                console.log('✅ Testing mode UI applied successfully');
+            } else {
+                console.log('ℹ️ Not in testing mode, skipping UI changes');
+            }
+            
+            this.isInitialized = true;
+            
+        } catch (error) {
+            console.error('❌ Testing mode UI initialization failed:', error);
+            this.isInitialized = true; // Don't block app initialization
+        }
+    }
+    
+    /**
+     * Apply testing mode UI with retry logic
+     */
+    async _applyTestingModeWithRetry() {
+        for (let attempt = 1; attempt <= this.maxRetries; attempt++) {
+            try {
+                console.log(`🧪 Applying testing mode UI (attempt ${attempt}/${this.maxRetries})`);
+                
+                // Wait for DOM to be stable
+                await appConfig.delay('domReadyDelay');
+                
+                // Apply testing mode body class immediately
+                document.body.classList.add('testing-mode');
+                
+                // Apply testing mode styles
+                await this.applyTestingModeStyles();
+                
+                // Wait for CSS to be applied
+                await appConfig.delay('cssApplicationDelay');
+                
+                // Add logout button
+                await this.addLogoutButton();
+                
+                // Disable navigation links
+                await this.disableNavigationLinks();
+                
+                // Wait for UI stabilization
+                await appConfig.delay('testingModeDelay');
+                
+                this.uiElementsApplied = true;
+                console.log(`✅ Testing mode UI applied successfully on attempt ${attempt}`);
+                break;
+                
+            } catch (error) {
+                console.warn(`⚠️ Testing mode UI attempt ${attempt} failed:`, error);
+                
+                if (attempt === this.maxRetries) {
+                    console.error('❌ All testing mode UI attempts failed');
+                    throw error;
+                }
+                
+                // Wait before retry
+                await appConfig.delay('moduleRetryDelay');
+            }
+        }
     }
     
     applyTestingModeStyles() {
@@ -34,30 +103,39 @@ class TestingModeUI {
         }
     }
     
-    addLogoutButton() {
-        // Find the nav-links container
-        const navLinks = document.querySelector('.nav-links');
-        if (!navLinks) return;
+    async addLogoutButton() {
+        console.log('🧪 Adding testing mode logout button...');
         
-        // Create logout button
-        const logoutBtn = document.createElement('button');
-        logoutBtn.className = 'btn exit-testing-btn';
-        logoutBtn.innerHTML = 'Exit';
-        logoutBtn.title = 'Exit Early Access Mode';
-        logoutBtn.style.marginLeft = '10px';
-        
-        // Add click handler with custom modal
-        logoutBtn.addEventListener('click', async () => {
-            this.showExitConfirmationModal();
-        });
-        
-        // Remove existing auth button and add logout button
-        const authBtn = navLinks.querySelector('.auth-nav-link');
-        if (authBtn) {
-            authBtn.remove();
+        // Wait for navigation to be ready with retry logic
+        const navLinks = await this._waitForElement('.nav-links', 5000);
+        if (!navLinks) {
+            console.warn('⚠️ Navigation container not found, cannot add logout button');
+            return;
         }
         
-        navLinks.appendChild(logoutBtn);
+        // Find the existing exit button (should already be in HTML)
+        const logoutBtn = navLinks.querySelector('.exit-testing-btn');
+        
+        if (logoutBtn) {
+            // Show the button (it's hidden by default)
+            logoutBtn.style.display = 'inline-flex';
+            
+            // Add click handler (replace any existing handler)
+            logoutBtn.onclick = () => {
+                this.showExitConfirmationModal();
+            };
+        } else {
+            console.warn('⚠️ Exit button not found in HTML structure');
+        }
+        
+        // Remove existing auth buttons (sign in, back arrow, etc.)
+        const authElements = navLinks.querySelectorAll('.auth-nav-link, .auth-btn, .back-arrow, a[href="/auth"]');
+        authElements.forEach(element => {
+            element.style.display = 'none';
+            console.log(`🧪 Hidden auth element: ${element.className || element.tagName}`);
+        });
+        
+        console.log('✅ Testing mode logout button added successfully');
     }
     
     disableNavigationLinks() {
@@ -160,11 +238,27 @@ class TestingModeUI {
         confirmBtn.addEventListener('click', async () => {
             closeModal();
             
-            // Clear testing mode data from localStorage for security
-            clearTestingModeData();
-            
-            // Logout from testing mode
-            await tempAuthManager.logout();
+            try {
+                // Clear testing mode data from localStorage for security
+                clearTestingModeData();
+                
+                // Logout from testing mode with error handling
+                if (tempAuthManager && typeof tempAuthManager.logout === 'function') {
+                    await tempAuthManager.logout();
+                } else {
+                    console.error('❌ tempAuthManager not available or logout method missing');
+                    // Fallback navigation if tempAuthManager fails
+                    if (window.router && typeof window.router.navigate === 'function') {
+                        window.router.navigate('/temp-auth');
+                    } else {
+                        window.location.href = '/temp-auth';
+                    }
+                }
+            } catch (error) {
+                console.error('❌ Error during logout process:', error);
+                // Emergency fallback navigation
+                window.location.href = '/temp-auth';
+            }
         });
         
         // Close on overlay click
@@ -187,6 +281,26 @@ class TestingModeUI {
         setTimeout(() => {
             confirmBtn.focus();
         }, 100);
+    }
+    
+    /**
+     * Wait for a DOM element to appear with timeout
+     */
+    async _waitForElement(selector, timeout = 5000) {
+        const startTime = Date.now();
+        
+        while (Date.now() - startTime < timeout) {
+            const element = document.querySelector(selector);
+            if (element) {
+                return element;
+            }
+            
+            // Wait 100ms before checking again
+            await new Promise(resolve => setTimeout(resolve, 100));
+        }
+        
+        console.warn(`⚠️ Element ${selector} not found within ${timeout}ms`);
+        return null;
     }
     
     cleanup() {

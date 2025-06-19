@@ -95,7 +95,7 @@ class TempAuthManager {
                         this.setAuthenticated(false);
                         
                         if (window.location.pathname !== '/temp-auth') {
-                            window.router.navigate('/temp-auth');
+                            this._safeNavigate('/temp-auth');
                         }
                     } else {
                         this._isAuthenticated = data.authenticated;
@@ -132,7 +132,22 @@ class TempAuthManager {
             // Clean up all authentication data
             localStorage.removeItem('temp_auth_backup');
             localStorage.removeItem('temp_auth_token');
-            window.router.navigate('/temp-auth');
+            
+            // Safe navigation - check if router is available
+            this._safeNavigate('/temp-auth');
+        }
+    }
+    
+    /**
+     * Safely navigate using router if available, fallback to location.href
+     */
+    _safeNavigate(path) {
+        if (window.router && typeof window.router.navigate === 'function') {
+            window.router.navigate(path);
+        } else {
+            // Fallback for when router is not yet initialized
+            console.warn('Router not available, using fallback navigation');
+            window.location.href = path;
         }
     }
      

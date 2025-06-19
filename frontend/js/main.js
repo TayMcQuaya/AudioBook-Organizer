@@ -96,6 +96,10 @@ import {
     initializeCommentsSystem
 } from './modules/commentsSystem.js';
 
+import { 
+    toggleTableOfContents 
+} from './modules/tableOfContents.js';
+
 import testingModeUI from './modules/testingModeUI.js';
 
 // Make functions globally available for HTML onclick handlers
@@ -128,6 +132,7 @@ window.toggleEditMode = toggleEditMode;
 window.refreshEditModeState = refreshEditModeState;
 window.getEditMode = getEditMode;
 window.cleanupTextSelection = cleanupTextSelection;
+window.toggleTableOfContents = toggleTableOfContents;
 
 // Enhanced showExportModal that initializes preview
 window.showExportModal = function() {
@@ -232,22 +237,30 @@ function resetSmartSelectPosition() {
 async function initialize() {
     console.log('🚀 Initializing AudioBook Organizer...');
     
-    if (window.authModule) {
-        await initApp(window.authModule);
-        
-        // Initialize formatting system
-        initializeFormattingShortcuts();
-        initializeSelectionTracking();
-        initializeToolbarPositioning();
-        initializeCommentsSystem();
-        
-        // Initialize testing mode UI if needed
-        await testingModeUI.init();
-        
-        console.log('✨ Formatting system initialized');
+    // Check if we're in testing mode or normal mode
+    let authModuleToUse = null;
+    
+    if (window.tempAuthManager && window.tempAuthManager.isTestingMode) {
+        console.log('🧪 Testing mode detected - using temp auth manager');
+        authModuleToUse = window.tempAuthManager;
+    } else if (window.authModule) {
+        console.log('🔑 Normal mode detected - using Supabase auth module');
+        authModuleToUse = window.authModule;
     } else {
-        console.error('❌ Auth module not found, cannot initialize app');
+        console.warn('⚠️ No auth module found - proceeding with limited functionality');
+        // In case no auth is available, we can still initialize the app
+        authModuleToUse = { isAuthenticated: () => true }; // Mock auth for fallback
     }
+    
+    await initApp(authModuleToUse);
+    
+    // Initialize formatting system
+    initializeFormattingShortcuts();
+    initializeSelectionTracking();
+    initializeToolbarPositioning();
+    initializeCommentsSystem();
+    
+    console.log('✨ AudioBook Organizer main app initialized successfully');
 }
 
 function cleanup() {

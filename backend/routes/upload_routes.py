@@ -10,19 +10,13 @@ def create_upload_routes(app, upload_folder):
     """
     audio_service = AudioService(upload_folder)
     
-    @app.route('/api/upload', methods=['POST', 'OPTIONS'])
+    @app.route('/api/upload', methods=['POST'])
     @require_temp_auth
     def upload_audio():
         """
         Handle audio file upload.
         Preserves the exact logic from original server.py upload_audio() function
         """
-        if request.method == 'OPTIONS':
-            response = app.make_default_options_response()
-            response.headers['Access-Control-Allow-Methods'] = 'POST, OPTIONS'
-            response.headers['Access-Control-Allow-Headers'] = 'Content-Type'
-            return response
-
         app.logger.debug('Upload request received')
         app.logger.debug(f'Files in request: {request.files}')
         app.logger.debug(f'Request headers: {request.headers}')

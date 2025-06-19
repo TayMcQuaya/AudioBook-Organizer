@@ -6,6 +6,8 @@ import { sessionManager } from './sessionManager.js';
 import { tempAuthManager } from './tempAuth.js';
 import { initializeBookUpload, uploadBook } from './bookUpload.js';
 import { apiFetch } from './api.js';
+import envManager from './envManager.js';
+import appConfig from '../config/appConfig.js';
 
 // Router state
 let currentRoute = '/';
@@ -75,43 +77,125 @@ class Router {
     async init() {
         if (this.isInitialized) return;
         
-        // Initialize temporary authentication manager first
-        const tempAuthResult = await tempAuthManager.init();
-        if (!tempAuthResult) {
-            // Temp auth redirected us, don't continue with router init
-            return;
-        }
+        console.log('🌐 Starting router initialization...');
+        const startTime = Date.now();
         
-        // Initialize auth module only if not in testing mode
-        if (!tempAuthManager.shouldBypassAuth()) {
+        try {
+            // STEP 1: Initialize environment manager (critical first step)
+            await envManager.init();
+            
+            // STEP 2: Initialize app configuration based on environment
+            const envConfig = envManager.getConfig();
+            appConfig.init(envConfig.server_type, envConfig.testing_mode);
+            
+            console.log('✅ Environment and configuration initialized');
+            
+            // STEP 3: Apply environment settings immediately
+            envManager.applyEnvironmentSettings();
+            
+            // STEP 4: Wait for DOM to be stable
+            await appConfig.delay('domReadyDelay');
+            
+            // STEP 5: Initialize authentication based on environment
+            await this._initializeAuthentication(envConfig);
+            
+            // STEP 6: Apply layout and CSS fixes
+            await this._ensureLayoutStability();
+            
+            // STEP 7: Set up event listeners
+            this._setupEventListeners();
+            
+            // STEP 8: Wait for auth state to be ready
+            if (!envConfig.testing_mode || !tempAuthManager.shouldBypassAuth()) {
+                await this.waitForAuthReady();
+            }
+            
+            // STEP 9: Apply final initialization delay
+            await appConfig.delay('initializationDelay');
+            
+            // STEP 10: Handle initial route
+            await this.handleRoute(window.location.pathname + window.location.search);
+            
+            this.isInitialized = true;
+            appConfig.logTiming('Router initialization', startTime);
+            console.log('✅ Router initialization complete');
+            
+        } catch (error) {
+            console.error('❌ Router initialization failed:', error);
+            throw error;
+        }
+    }
+    
+    /**
+     * Initialize authentication based on environment
+     */
+    async _initializeAuthentication(envConfig) {
+        console.log('🔐 Initializing authentication...');
+        
+        // Initialize temp auth manager first (always needed for testing mode detection)
+        const tempAuthResult = await tempAuthManager.init();
+        
+        if (envConfig.testing_mode) {
+            console.log('🧪 Testing mode: Using temporary authentication');
+            
+            if (!tempAuthResult) {
+                // Temp auth redirected us, don't continue with router init
+                console.log('🔄 Temp auth redirect detected, stopping router init');
+                return false;
+            }
+            
+            // Make tempAuthManager globally available
+            window.tempAuthManager = tempAuthManager;
+            
+        } else {
+            console.log('🔑 Normal mode: Using Supabase authentication');
+            
+            // Initialize full auth stack
             await auth.init();
             await sessionManager.init();
-        } else {
-            console.log('🧪 Testing mode: Bypassing normal authentication');
+            
+            // Make auth module globally available
+            window.authModule = auth;
+            window.tempAuthManager = tempAuthManager;
         }
         
-        // Make auth module globally available
-        window.authModule = auth;
+        return true;
+    }
+    
+    /**
+     * Ensure layout stability across environments
+     */
+    async _ensureLayoutStability() {
+        console.log('🎨 Ensuring layout stability...');
         
-        // Make tempAuthManager globally available
-        window.tempAuthManager = tempAuthManager;
+        // Apply layout class immediately
+        document.body.classList.add('layout-ready');
         
+        // Force single column layout if on localhost (to match production)
+        const envConfig = envManager.getConfig();
+        if (envConfig.server_type === 'flask-dev') {
+            document.body.classList.add('single-column-layout');
+            console.log('🔧 Applied single-column layout for local development');
+        }
+        
+        // Wait for CSS to be applied
+        await appConfig.delay('cssApplicationDelay');
+        
+        // Ensure layout stabilization
+        await appConfig.delay('layoutStabilizationDelay');
+    }
+    
+    /**
+     * Set up event listeners
+     */
+    _setupEventListeners() {
         // Listen for browser back/forward
         window.addEventListener('popstate', this.handlePopState);
         
         // Handle internal link clicks
         document.addEventListener('click', this.handleLinkClick);
         
-        // Wait for auth state to be ready before handling initial route
-        if (!tempAuthManager.shouldBypassAuth()) {
-            await this.waitForAuthReady();
-        }
-        
-        // Initialize current route with full path including query parameters
-        await this.handleRoute(window.location.pathname + window.location.search);
-        
-        this.isInitialized = true;
-        console.log('📍 Router initialized with authentication');
+        console.log('📡 Event listeners set up');
     }
     
     /**
