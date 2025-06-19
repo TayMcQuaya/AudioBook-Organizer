@@ -53,71 +53,110 @@
     --animation-ease: cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* Dark Theme Variables */
-[data-theme="dark"] {
+/* Dark Theme Variables - ENHANCED with higher specificity */
+html[data-theme="dark"] {
     /* Text colors - Dark Mode */
-    --text-primary: #e2e8f0;
-    --text-secondary: #cbd5e0;
-    --text-muted: #a0aec0;
-    --text-light: rgba(255, 255, 255, 0.9);
+    --text-primary: #e2e8f0 !important;
+    --text-secondary: #cbd5e0 !important;
+    --text-muted: #a0aec0 !important;
+    --text-light: rgba(255, 255, 255, 0.9) !important;
     
     /* Background colors - Dark Mode */
-    --bg-primary: #1a202c;
-    --bg-secondary: #2d3748;
-    --background-light: #2d3748;
-    --app-bg: linear-gradient(135deg, #1a202c 0%, #2d3748 100%);
+    --bg-primary: #1a202c !important;
+    --bg-secondary: #2d3748 !important;
+    --background-light: #2d3748 !important;
+    --app-bg: linear-gradient(135deg, #1a202c 0%, #2d3748 100%) !important;
     
     /* UI elements - Dark Mode */
-    --border-color: #4a5568;
-    --shadow-color: rgba(0, 0, 0, 0.3);
-    --shadow-sm: 0 2px 4px var(--shadow-color);
-    --shadow-md: 0 4px 6px var(--shadow-color);
+    --border-color: #4a5568 !important;
+    --shadow-color: rgba(0, 0, 0, 0.3) !important;
+    --shadow-sm: 0 2px 4px var(--shadow-color) !important;
+    --shadow-md: 0 4px 6px var(--shadow-color) !important;
     
     /* Section Colors - Dark Mode */
-    --section-color-1: #2d1810;  /* Dark Orange */
-    --section-color-2: #1a2e1a;  /* Dark Green */
-    --section-color-3: #1a2533;  /* Dark Blue */
-    --section-color-4: #2d1a25;  /* Dark Pink */
-    --section-color-5: #2d2521;  /* Dark Brown */
-    --section-color-6: #1a2d2e;  /* Dark Cyan */
-    --section-color-7: #2a1a2d;  /* Dark Purple */
-    --section-color-8: #1f202d;  /* Dark Indigo */
+    --section-color-1: #2d1810 !important;  /* Dark Orange */
+    --section-color-2: #1a2e1a !important;  /* Dark Green */
+    --section-color-3: #1a2533 !important;  /* Dark Blue */
+    --section-color-4: #2d1a25 !important;  /* Dark Pink */
+    --section-color-5: #2d2521 !important;  /* Dark Brown */
+    --section-color-6: #1a2d2e !important;  /* Dark Cyan */
+    --section-color-7: #2a1a2d !important;  /* Dark Purple */
+    --section-color-8: #1f202d !important;  /* Dark Indigo */
+}
+
+/* Force text colors for all common elements in dark mode */
+html[data-theme="dark"] body,
+html[data-theme="dark"] .app-body,
+html[data-theme="dark"] h1,
+html[data-theme="dark"] h2,
+html[data-theme="dark"] h3,
+html[data-theme="dark"] h4,
+html[data-theme="dark"] h5,
+html[data-theme="dark"] h6,
+html[data-theme="dark"] p,
+html[data-theme="dark"] span,
+html[data-theme="dark"] div {
+    color: var(--text-primary) !important;
 }
 
 /* Dark theme comprehensive overrides for app page */
-[data-theme="dark"] .book-content {
+html[data-theme="dark"] .book-content {
     background: var(--bg-primary) !important;
     color: var(--text-primary) !important;
 }
 
-[data-theme="dark"] .app-nav {
-    background: var(--bg-primary);
-    border-bottom-color: var(--border-color);
+html[data-theme="dark"] .app-nav {
+    background: var(--bg-primary) !important;
+    border-bottom-color: var(--border-color) !important;
 }
 
-[data-theme="dark"] .column {
-    background: var(--bg-primary);
-    color: var(--text-primary);
-}
-
-[data-theme="dark"] .column-header {
-    background: var(--bg-primary);
-    border-bottom-color: var(--border-color);
-    color: var(--text-primary);
-}
-
-[data-theme="dark"] .column-header h2 {
-    color: var(--text-primary);
-}
-
-[data-theme="dark"] .sections-list {
-    color: var(--text-primary);
-}
-
-[data-theme="dark"] .brand-link {
+html[data-theme="dark"] .column {
+    background: var(--bg-primary) !important;
     color: var(--text-primary) !important;
 }
 
+html[data-theme="dark"] .column-header {
+    background: var(--bg-primary) !important;
+    border-bottom-color: var(--border-color) !important;
+    color: var(--text-primary) !important;
+}
+
+html[data-theme="dark"] .column-header h2 {
+    color: var(--text-primary) !important;
+}
+
+html[data-theme="dark"] .sections-list {
+    color: var(--text-primary) !important;
+}
+
+html[data-theme="dark"] .brand-link {
+    color: var(--text-primary) !important;
+}
+
+/* Fix chapter item hover in dark mode */
+html[data-theme="dark"] .chapter-item:hover,
+html[data-theme="dark"] .chapter-header:hover {
+    background: var(--bg-secondary) !important;
+    color: var(--text-primary) !important;
+}
+
+/* Fix save changes modal dark mode */
+html[data-theme="dark"] .confirmation-dialog {
+    background: var(--bg-primary) !important;
+    border: 1px solid var(--border-color) !important;
+}
+
+html[data-theme="dark"] .dialog-header h3 {
+    color: var(--text-primary) !important;
+}
+
+html[data-theme="dark"] .dialog-content p {
+    color: var(--text-secondary) !important;
+}
+
+html[data-theme="dark"] .confirmation-dialog-overlay {
+    background: rgba(0, 0, 0, 0.8) !important;
+}
 
 * {
     box-sizing: border-box;
@@ -339,10 +378,6 @@ body.mobile-layout .main-container .column:last-child {
     min-height: 100%;
     transition: background 0.3s ease, color 0.3s ease;
 }
-
-
-
-
 
 /* Sections Panel Specific Styles */
 .sections-list {

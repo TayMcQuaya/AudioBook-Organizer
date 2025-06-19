@@ -349,6 +349,60 @@ window.testFormattingStyles = function() {
     console.log('🧪 Formatting test complete');
 };
 
+// DEBUGGING: Check dark mode CSS
+window.debugDarkMode = function() {
+    console.log('🌙 DARK MODE DEBUG:');
+    
+    const html = document.documentElement;
+    const hasDataTheme = html.getAttribute('data-theme');
+    const currentTheme = window.themeManager?.getCurrentTheme();
+    
+    console.log('   - HTML data-theme attribute:', hasDataTheme);
+    console.log('   - Theme manager current theme:', currentTheme);
+    
+    // Check CSS variables
+    const computedStyle = window.getComputedStyle(html);
+    const textPrimary = computedStyle.getPropertyValue('--text-primary');
+    const bgPrimary = computedStyle.getPropertyValue('--bg-primary');
+    
+    console.log('   - --text-primary:', textPrimary);
+    console.log('   - --bg-primary:', bgPrimary);
+    
+    // Test a specific element
+    const bookContent = document.getElementById('bookContent');
+    if (bookContent) {
+        const bookStyles = window.getComputedStyle(bookContent);
+        console.log('   - Book content color:', bookStyles.color);
+        console.log('   - Book content background:', bookStyles.backgroundColor);
+    }
+    
+    // Check if CSS is loaded
+    const darkModeRules = Array.from(document.styleSheets)
+        .flatMap(sheet => {
+            try {
+                return Array.from(sheet.cssRules || []);
+            } catch (e) {
+                return [];
+            }
+        })
+        .filter(rule => rule.selectorText && rule.selectorText.includes('[data-theme="dark"]'));
+    
+    console.log('   - Dark mode CSS rules found:', darkModeRules.length);
+    
+    if (darkModeRules.length > 0) {
+        console.log('   - Sample dark mode rule:', darkModeRules[0].selectorText);
+    }
+};
+
+// DEBUGGING: Quick dark mode toggle
+window.testDarkMode = function() {
+    console.log('🧪 Testing dark mode toggle...');
+    window.themeManager?.toggleTheme();
+    setTimeout(() => {
+        window.debugDarkMode();
+    }, 100);
+};
+
 // Export the functions for the router to use
 export { initialize, cleanup };
 
