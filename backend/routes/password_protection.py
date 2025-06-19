@@ -191,7 +191,7 @@ def require_temp_auth(f):
         current_app.logger.debug(f"   - Authorization header: {'Present' if request.headers.get('Authorization') else 'Missing'}")
         current_app.logger.debug(f"   - X-Temp-Auth header: {'Present' if request.headers.get('X-Temp-Auth') else 'Missing'}")
         
-        # PRIMARY METHOD: Check session first (most reliable for cross-deployment requests)
+        # PRIMARY METHOD: Check session first (most reliable for cross-deployment requests) - this is the only method that works for cross-domain requests
         if session.get('temp_authenticated', False):
             # Additional session validation
             auth_time = session.get('auth_time', 0)
