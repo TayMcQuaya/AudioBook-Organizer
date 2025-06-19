@@ -51,15 +51,18 @@ export async function apiFetch(endpoint, options = {}) {
         'Content-Type': 'application/json',
     };
 
-    // **FIX**: Enhanced token handling for production cross-domain requests
-    // Priority order: temp_auth_token > sb-access-token > legacy fallback
+    // Add Supabase authorization header if a token exists
+    const token = localStorage.getItem('sb-access-token');
+    if (token) {
+        defaultHeaders['Authorization'] = `Bearer ${token}`;
+    }
     
-    // 1. Check for temp auth token first (testing mode)
+    // Add temp auth token for testing mode (production uses server-side detection)
     const tempToken = localStorage.getItem('temp_auth_token');
     if (tempToken) {
-        // Use Authorization header as primary method (most reliable for cross-domain)
+        // Use Authorization header for token-based auth (primary method)
         defaultHeaders['Authorization'] = `Bearer ${tempToken}`;
-        // Also send as X-Temp-Auth header as backup method
+        // Also send as X-Temp-Auth header as backup
         defaultHeaders['X-Temp-Auth'] = tempToken;
         
         // Development logging only
@@ -67,25 +70,18 @@ export async function apiFetch(endpoint, options = {}) {
             console.log('🔧 Dev: Using temp auth token for request');
         }
     }
-    // 2. Fallback to Supabase token if no temp token
-    else {
-        const supabaseToken = localStorage.getItem('sb-access-token');
-        if (supabaseToken) {
-            defaultHeaders['Authorization'] = `Bearer ${supabaseToken}`;
+    // Legacy fallback for session-based auth
+    else if (localStorage.getItem('temp_auth_backup') === 'true') {
+        defaultHeaders['X-Testing-Override'] = 'temp-auth-bypass';
+        
+        // Development logging only
+        if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+            console.log('🔧 Dev: Using legacy auth fallback');
         }
-        // 3. Legacy fallback for session-based auth
-        else if (localStorage.getItem('temp_auth_backup') === 'true') {
-            defaultHeaders['X-Testing-Override'] = 'temp-auth-bypass';
-            
-            // Development logging only
-            if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-                console.log('🔧 Dev: Using legacy auth fallback');
-            }
-        } else {
-            // Development logging only
-            if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-                console.log('🔧 Dev: No auth token found');
-            }
+    } else {
+        // Development logging only
+        if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+            console.log('🔧 Dev: No auth token found');
         }
     }
 

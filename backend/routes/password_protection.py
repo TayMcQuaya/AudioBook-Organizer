@@ -184,14 +184,12 @@ def require_temp_auth(f):
         is_authenticated = False
         auth_method = None
         
-        # Debug logging for authentication attempts (enhanced for production debugging)
-        current_app.logger.info(f"🔐 Auth check for {request.endpoint}")
-        current_app.logger.info(f"   - Testing mode: {current_app.config.get('TESTING_MODE')}")
-        current_app.logger.info(f"   - Session temp_authenticated: {session.get('temp_authenticated', False)}")
-        current_app.logger.info(f"   - Authorization header: {'Present' if request.headers.get('Authorization') else 'Missing'}")
-        current_app.logger.info(f"   - X-Temp-Auth header: {'Present' if request.headers.get('X-Temp-Auth') else 'Missing'}")
-        current_app.logger.info(f"   - Session keys: {list(session.keys())}")
-        current_app.logger.info(f"   - Token store size: {len(temp_auth_tokens)}")
+        # Debug logging for authentication attempts
+        current_app.logger.debug(f"🔐 Auth check for {request.endpoint}")
+        current_app.logger.debug(f"   - Testing mode: {current_app.config.get('TESTING_MODE')}")
+        current_app.logger.debug(f"   - Session temp_authenticated: {session.get('temp_authenticated', False)}")
+        current_app.logger.debug(f"   - Authorization header: {'Present' if request.headers.get('Authorization') else 'Missing'}")
+        current_app.logger.debug(f"   - X-Temp-Auth header: {'Present' if request.headers.get('X-Temp-Auth') else 'Missing'}")
         
         # PRIMARY METHOD: Check session first (most reliable for cross-deployment requests) - this is the only method that works for cross-domain requests
         if session.get('temp_authenticated', False):
@@ -216,7 +214,6 @@ def require_temp_auth(f):
             auth_header = request.headers.get('Authorization')
             if auth_header.startswith('Bearer '):
                 token = auth_header[7:]  # Remove 'Bearer ' prefix
-                current_app.logger.info(f"🔍 Checking bearer token: {token[:20]}...")
                 
                 # Clean up expired tokens first
                 current_time = time.time()
@@ -225,35 +222,21 @@ def require_temp_auth(f):
                 for expired_token in expired_tokens:
                     del temp_auth_tokens[expired_token]
                 
-                current_app.logger.info(f"🔍 Token store contents: {list(temp_auth_tokens.keys())[:3]}..." if temp_auth_tokens else "Token store is empty")
-                
                 # Check if token exists and is valid
                 if token in temp_auth_tokens:
                     token_data = temp_auth_tokens[token]
                     if current_time < token_data['expires_at']:
                         is_authenticated = True
                         auth_method = "bearer_token"
-                        current_app.logger.info(f"✅ Valid bearer token found")
-                        
-                        # **WORKAROUND**: Set session for this request to maintain auth state
-                        session['temp_authenticated'] = True
-                        session['auth_time'] = current_time
-                        session['temp_token'] = token
-                        session.permanent = True
-                        current_app.logger.info(f"✅ Session established from valid token")
-                        
+                        current_app.logger.debug(f"✅ Valid bearer token found")
                     else:
-                        current_app.logger.info(f"❌ Bearer token expired")
-                        # Clean up expired token
-                        del temp_auth_tokens[token]
+                        current_app.logger.debug(f"❌ Bearer token expired")
                 else:
-                    current_app.logger.warning(f"❌ Bearer token not found in store (store size: {len(temp_auth_tokens)})")
-                    current_app.logger.warning(f"❌ Available tokens: {list(temp_auth_tokens.keys())[:3]}...")
+                    current_app.logger.debug(f"❌ Bearer token not found in store (store size: {len(temp_auth_tokens)})")
         
         # TERTIARY METHOD: Check token in X-Temp-Auth header (alternative method)
         elif request.headers.get('X-Temp-Auth'):
             token = request.headers.get('X-Temp-Auth')
-            current_app.logger.info(f"🔍 Checking X-Temp-Auth token: {token[:20]}...")
             
             # Clean up expired tokens first
             current_time = time.time()
@@ -267,21 +250,11 @@ def require_temp_auth(f):
                 if current_time < token_data['expires_at']:
                     is_authenticated = True
                     auth_method = "x_temp_auth"
-                    current_app.logger.info(f"✅ Valid X-Temp-Auth token found")
-                    
-                    # **WORKAROUND**: Set session for this request to maintain auth state
-                    session['temp_authenticated'] = True
-                    session['auth_time'] = current_time
-                    session['temp_token'] = token
-                    session.permanent = True
-                    current_app.logger.info(f"✅ Session established from valid X-Temp-Auth token")
-                    
+                    current_app.logger.debug(f"✅ Valid X-Temp-Auth token found")
                 else:
-                    current_app.logger.info(f"❌ X-Temp-Auth token expired")
-                    # Clean up expired token
-                    del temp_auth_tokens[token]
+                    current_app.logger.debug(f"❌ X-Temp-Auth token expired")
             else:
-                current_app.logger.warning(f"❌ X-Temp-Auth token not found in store (store size: {len(temp_auth_tokens)})")
+                current_app.logger.debug(f"❌ X-Temp-Auth token not found in store (store size: {len(temp_auth_tokens)})")
         
         # EMERGENCY FALLBACK: Special testing override header (development only)
         elif request.headers.get('X-Testing-Override') == 'temp-auth-bypass':

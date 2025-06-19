@@ -1,4 +1,4 @@
-from flask import Blueprint, request, jsonify, current_app, session
+from flask import Blueprint, request, jsonify, current_app
 import os
 from ..services.audio_service import AudioService
 from ..routes.password_protection import require_temp_auth
@@ -33,15 +33,6 @@ def create_upload_routes(app, upload_folder):
             app.logger.debug(f'Files in request: {request.files}')
             app.logger.debug(f'Request headers: {request.headers}')
             
-            # Enhanced debugging for production authentication issues
-            app.logger.info(f'🔐 UPLOAD AUTH DEBUG:')
-            app.logger.info(f'   - Testing mode: {current_app.config.get("TESTING_MODE", False)}')
-            app.logger.info(f'   - Session temp_authenticated: {session.get("temp_authenticated", False)}')
-            app.logger.info(f'   - Authorization header present: {"Authorization" in request.headers}')
-            app.logger.info(f'   - X-Temp-Auth header present: {"X-Temp-Auth" in request.headers}')
-            app.logger.info(f'   - Request origin: {request.headers.get("Origin", "Not set")}')
-            app.logger.info(f'   - Request method: {request.method}')
-            
             try:
                 if 'audio' not in request.files:
                     app.logger.error('No audio file in request')
@@ -58,11 +49,7 @@ def create_upload_routes(app, upload_folder):
                 result = audio_service.upload_audio_file(file)
                 app.logger.debug('File processed successfully')
                 
-                # Add authentication status to response for debugging
-                response = jsonify(result)
-                response.headers['X-Auth-Status'] = 'authenticated'
-                response.headers['X-Session-Status'] = str(session.get('temp_authenticated', False))
-                return response
+                return jsonify(result)
 
             except Exception as e:
                 app.logger.error(f'Upload error: {str(e)}')
