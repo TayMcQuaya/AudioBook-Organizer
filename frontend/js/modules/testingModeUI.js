@@ -6,19 +6,6 @@ import { clearTestingModeData } from './storage.js';
 import envManager from './envManager.js';
 import appConfig from '../config/appConfig.js';
 
-// Clear testing mode data from localStorage (security measure)
-function clearTestingModeData() {
-    localStorage.removeItem('temp_auth_backup');
-    localStorage.removeItem('temp_auth_token');
-    localStorage.removeItem('temp_project_data');
-    // Clear any other testing-specific data
-    Object.keys(localStorage).forEach(key => {
-        if (key.startsWith('temp_') || key.startsWith('testing_')) {
-            localStorage.removeItem(key);
-        }
-    });
-}
-
 class TestingModeUI {
     constructor() {
         this.isInitialized = false;

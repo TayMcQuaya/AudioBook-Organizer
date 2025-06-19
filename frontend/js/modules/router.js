@@ -832,87 +832,19 @@ class Router {
                     }
                     
                     console.log('🔧 Starting dynamic import of main.js...');
-                    let initialize, cleanup;
                     
-                    try {
-                        // Try primary import path
-                        const module = await import('/js/main.js');
-                        initialize = module.initialize;
-                        cleanup = module.cleanup;
-                        console.log('✅ Dynamic import successful via /js/main.js');
-                    } catch (importError) {
-                        console.warn('⚠️ Primary import failed, trying alternative paths...', importError.message);
-                        
-                        try {
-                            // Try alternative path for production environments
-                            const module = await import('./main.js');
-                            initialize = module.initialize;
-                            cleanup = module.cleanup;
-                            console.log('✅ Dynamic import successful via ./main.js');
-                        } catch (altError) {
-                            console.warn('⚠️ Alternative import also failed, trying relative import...', altError.message);
-                            
-                            try {
-                                // Try relative import
-                                const module = await import('../main.js');
-                                initialize = module.initialize;
-                                cleanup = module.cleanup;
-                                console.log('✅ Dynamic import successful via ../main.js');
-                            } catch (relError) {
-                                console.error('❌ All import attempts failed:', {
-                                    primary: importError.message,
-                                    alternative: altError.message,
-                                    relative: relError.message
-                                });
-                                
-                                console.log('🔧 Attempting fallback: loading main.js as script tag...');
-                                
-                                // Final fallback: load main.js as a script tag
-                                const existingScript = document.querySelector('script[src="/js/main.js"]');
-                                if (existingScript) {
-                                    existingScript.remove();
-                                }
-                                
-                                const script = document.createElement('script');
-                                script.src = '/js/main.js';
-                                script.type = 'module';
-                                script.onload = () => {
-                                    console.log('✅ main.js loaded via script tag');
-                                    // Check if functions are available globally
-                                    if (window.initialize && window.cleanup) {
-                                        console.log('✅ Found global initialize/cleanup functions');
-                                        window.initialize().then(() => {
-                                            window.cleanupApp = window.cleanup;
-                                            window.isAppInitialized = true;
-                                            console.log('✅ App initialization complete via script fallback');
-                                        }).catch(err => {
-                                            console.error('❌ Script fallback initialization failed:', err);
-                                        });
-                                    } else {
-                                        console.error('❌ Global functions not found after script load');
-                                    }
-                                };
-                                script.onerror = (err) => {
-                                    console.error('❌ Script tag fallback also failed:', err);
-                                };
-                                document.head.appendChild(script);
-                                
-                                // Don't throw error, let the script attempt continue
-                                return;
-                            }
-                        }
-                    }
+                    // Use the new robust module loader
+                    const { moduleLoader } = await import('./moduleLoader.js');
+                    const appModule = await moduleLoader.loadMainApp();
                     
-                    console.log('✅ Module imported, calling initialize...');
-                    try {
-                        await initialize();
-                        window.cleanupApp = cleanup;
-                        window.isAppInitialized = true;
-                        console.log('✅ App initialization complete');
-                    } catch (initError) {
-                        console.error('❌ Initialize function failed:', initError);
-                        throw initError; // Re-throw to be caught by outer catch
-                    }
+                    console.log(`✅ App module loaded via ${appModule.loadMethod}`);
+                    console.log('📊 Module loader stats:', moduleLoader.getStats());
+                    
+                    // Initialize the app
+                    await appModule.initialize();
+                    window.cleanupApp = appModule.cleanup;
+                    window.isAppInitialized = true;
+                    console.log('✅ App initialization complete');
                 } catch (error) {
                     console.error('❌ Error initializing app:', error);
                     console.error('❌ Error details:', {

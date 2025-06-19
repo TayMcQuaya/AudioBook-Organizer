@@ -140,6 +140,18 @@
         // Global app state
         window.isFrameworkInitialized = false;
         
+        // Enhanced error handling for module loading issues
+        window.addEventListener('error', (event) => {
+            if (event.error && event.error.message && event.error.message.includes('clearTestingModeData')) {
+                console.warn('🔧 Detected duplicate function declaration, attempting recovery...');
+                // Reload the page to clear the module cache
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1000);
+                return;
+            }
+        });
+        
         // Initialize the application with deterministic behavior
         async function initializeApplication() {
             const startTime = Date.now();
@@ -171,85 +183,61 @@
                 console.log('🎨 Step 5: Waiting for DOM stability...');
                 await appConfig.delay('cssLoadWaitTime');
                 
-                // STEP 6: Initialize router with all dependencies ready
+                // STEP 6: Initialize router system
                 console.log('🌐 Step 6: Initializing router...');
                 await router.init();
                 
-                // STEP 7: Final UI transition
+                // STEP 7: Complete UI transition
                 console.log('✨ Step 7: Completing UI transition...');
-                await _completeUITransition();
                 
-                // Mark as initialized
-                window.isFrameworkInitialized = true;
+                // Remove loading screen and show app
+                const loadingScreen = document.getElementById('appLoading');
+                const appContainer = document.getElementById('appContainer');
+                
+                if (loadingScreen && appContainer) {
+                    loadingScreen.style.opacity = '0';
+                    appContainer.style.opacity = '1';
+                    
+                    setTimeout(() => {
+                        loadingScreen.style.display = 'none';
+                        document.body.classList.add('app-ready');
+                    }, 500);
+                }
                 
                 const totalTime = Date.now() - startTime;
                 console.log(`✅ AudioBook Organizer initialized successfully in ${totalTime}ms`);
+                window.isFrameworkInitialized = true;
                 
             } catch (error) {
-                console.error('❌ Failed to initialize application:', error);
-                _showErrorState(error);
-            }
-        }
-        
-        // Complete UI transition
-        async function _completeUITransition() {
-            const loadingScreen = document.getElementById('appLoading');
-            const appContainer = document.getElementById('appContainer');
-            
-            if (loadingScreen && appContainer) {
-                // Fade out loading screen
-                loadingScreen.style.transition = 'opacity 0.5s ease';
-                loadingScreen.style.opacity = '0';
+                console.error('❌ Application initialization failed:', error);
                 
-                // Wait for fade out
-                await new Promise(resolve => setTimeout(resolve, 500));
+                // Try to show a user-friendly error
+                try {
+                    showError('Failed to initialize application. Please refresh the page.');
+                } catch (notificationError) {
+                    // Fallback error display
+                    const appContainer = document.getElementById('appContainer');
+                    if (appContainer) {
+                        appContainer.innerHTML = `
+                            <div style="text-align: center; padding: 2rem; color: #ff6b6b;">
+                                <h1>🚨 Application Error</h1>
+                                <p>Failed to initialize the application.</p>
+                                <p>Please refresh the page or contact support.</p>
+                                <button onclick="window.location.reload()" style="padding: 10px 20px; margin-top: 20px; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer;">
+                                    Refresh Page
+                                </button>
+                            </div>
+                        `;
+                    }
+                }
                 
-                // Hide loading and show app
-                loadingScreen.style.display = 'none';
-                appContainer.style.display = 'block';
-                appContainer.style.opacity = '1';
+                // Also remove loading screen to show error
+                const loadingScreen = document.getElementById('appLoading');
+                if (loadingScreen) {
+                    loadingScreen.style.display = 'none';
+                }
             }
-            
-            // Update body classes
-            document.body.classList.remove('app-loading-state');
-            document.body.classList.add('app-ready');
         }
-        
-        // Show error state
-        function _showErrorState(error) {
-            const loadingScreen = document.getElementById('appLoading');
-            if (loadingScreen) {
-                loadingScreen.innerHTML = `
-                    <div class="loading-content">
-                        <div class="loading-icon">⚠️</div>
-                        <h1 class="loading-title">Initialization Error</h1>
-                        <p class="loading-subtitle">Failed to start the application.</p>
-                        <div style="margin: 20px 0; font-size: 0.9rem; opacity: 0.8;">
-                            ${error.message || 'Unknown error occurred'}
-                        </div>
-                        <button onclick="location.reload()" style="
-                            padding: 12px 24px;
-                            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                            color: white;
-                            border: none;
-                            border-radius: 8px;
-                            cursor: pointer;
-                            font-weight: 600;
-                            font-size: 1rem;
-                            margin-top: 20px;
-                            transition: transform 0.2s ease;">
-                            Retry Initialization
-                        </button>
-                    </div>
-                `;
-            }
-            
-            showError('Application initialization failed. Please refresh the page to try again.');
-        }
-        
-        // Bind functions to window for access
-        window._completeUITransition = _completeUITransition;
-        window._showErrorState = _showErrorState;
         
         // Start initialization when DOM is ready
         if (document.readyState === 'loading') {
@@ -257,6 +245,13 @@
         } else {
             initializeApplication();
         }
+        
+        // Handle browser navigation
+        window.addEventListener('popstate', (event) => {
+            if (window.router && window.isFrameworkInitialized) {
+                router.handleRoute(null, { isPopState: true });
+            }
+        });
     </script>
     
     <!-- Fallback for browsers without module support -->
