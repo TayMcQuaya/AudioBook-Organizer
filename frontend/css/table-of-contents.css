@@ -12,7 +12,7 @@
     bottom: 0;
     width: 320px;
     height: calc(100vh - 60px);
-    z-index: 10000; /* Very high z-index to ensure visibility */
+    z-index: 1001; /* Match old working version */
     transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     box-shadow: 2px 0 10px rgba(0, 0, 0, 0.2);
     background: var(--bg-primary);

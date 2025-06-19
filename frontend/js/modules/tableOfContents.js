@@ -83,65 +83,67 @@ function initializeTableOfContentsCore() {
  * Create TOC DOM elements and add to layout
  */
 function createTOCElements() {
-    // Find existing TOC elements (they should already be in the HTML)
-    const tocSidebar = document.getElementById('tocSidebar');
-    const tocList = document.getElementById('tocList');
-    const tocCount = document.getElementById('tocCount');
-    const tocToggle = document.querySelector('.toc-toggle-btn');
-    
-    if (!tocSidebar) {
-        console.error('❌ TOC sidebar not found in HTML structure - creating fallback');
-        // Fallback: create the sidebar if not found
-        const newTocSidebar = document.createElement('div');
-        newTocSidebar.id = 'tocSidebar';
-        newTocSidebar.className = 'toc-sidebar';
-        newTocSidebar.setAttribute('aria-hidden', 'true');
-        newTocSidebar.innerHTML = `
-            <div class="toc-header">
-                <h3>📋 Table of Contents</h3>
-                <button class="toc-close-btn" title="Close Table of Contents" aria-label="Close Table of Contents">×</button>
-            </div>
-            <div class="toc-content">
-                <div id="tocList" class="toc-list">
-                    <div class="toc-empty">
-                        <div class="toc-empty-icon">📄</div>
-                        <div class="toc-empty-text">
-                            No headers found in document.<br>
-                            Try uploading a document with formatted headings.
-                        </div>
+    // Remove any existing TOC elements first
+    const existingTOC = document.getElementById('tocSidebar');
+    if (existingTOC) {
+        existingTOC.remove();
+    }
+    const existingToggle = document.getElementById('tocToggleBtn');
+    if (existingToggle) {
+        existingToggle.remove();
+    }
+
+    // Create TOC sidebar (like the old working version)
+    const tocSidebar = document.createElement('div');
+    tocSidebar.id = 'tocSidebar';
+    tocSidebar.className = 'toc-sidebar';
+    tocSidebar.innerHTML = `
+        <div class="toc-header">
+            <h3>📋 Table of Contents</h3>
+            <button class="toc-close-btn" title="Close Table of Contents" aria-label="Close Table of Contents">×</button>
+        </div>
+        <div class="toc-content">
+            <div id="tocList" class="toc-list">
+                <div class="toc-empty">
+                    <div class="toc-empty-icon">📄</div>
+                    <div class="toc-empty-text">
+                        No headers found in document.<br>
+                        Try uploading a document with formatted headings.
                     </div>
                 </div>
             </div>
-            <div class="toc-footer">
-                <div class="toc-count" id="tocCount">0 items</div>
-            </div>
-        `;
-        document.body.appendChild(newTocSidebar);
+        </div>
+        <div class="toc-footer">
+            <div class="toc-count" id="tocCount">0 items</div>
+        </div>
+    `;
+    
+    // Append to body (as overlay) - like the old working version
+    document.body.appendChild(tocSidebar);
+    
+    // Create toggle button and add to book content header
+    const bookContentHeader = document.querySelector('.column:first-child .column-header .column-title-container');
+    if (bookContentHeader) {
+        const toggleButton = document.createElement('button');
+        toggleButton.className = 'toc-toggle-btn';
+        toggleButton.id = 'tocToggleBtn';
+        toggleButton.innerHTML = '<i>📋</i> <span class="toc-toggle-text">Table of Contents</span>';
+        toggleButton.title = 'Toggle Table of Contents';
+        toggleButton.setAttribute('aria-label', 'Toggle Table of Contents');
+        
+        // Add to the end of the title container
+        bookContentHeader.appendChild(toggleButton);
     }
     
-    if (!tocToggle) {
-        console.error('❌ TOC toggle button not found in HTML structure - creating fallback');
-        // Fallback: create the button if not found
-        const bookContentHeader = document.querySelector('.column:first-child .column-header .column-title-container');
-        if (bookContentHeader) {
-            const toggleButton = document.createElement('button');
-            toggleButton.className = 'toc-toggle-btn';
-            toggleButton.innerHTML = '<i>📋</i> <span class="toc-toggle-text">Table of Contents</span>';
-            toggleButton.title = 'Toggle Table of Contents';
-            toggleButton.setAttribute('aria-label', 'Toggle Table of Contents');
-            bookContentHeader.appendChild(toggleButton);
-        }
-    }
-    
-    // Store element references (refetch after potential creation)
+    // Store element references
     tocState.elements = {
-        sidebar: document.getElementById('tocSidebar'),
+        sidebar: tocSidebar,
         list: document.getElementById('tocList'),
         count: document.getElementById('tocCount'),
-        toggle: document.querySelector('.toc-toggle-btn')
+        toggle: document.getElementById('tocToggleBtn')
     };
     
-    console.log('✅ TOC elements initialized:', {
+    console.log('✅ TOC elements created dynamically:', {
         sidebar: !!tocState.elements.sidebar,
         list: !!tocState.elements.list,
         count: !!tocState.elements.count,
@@ -214,6 +216,12 @@ function handleOutsideClick(event) {
 export function toggleTableOfContents() {
     try {
         console.log('🔧 toggleTableOfContents called, current state:', tocState.isVisible);
+        console.log('🔧 TOC elements check:', {
+            sidebar: !!tocState.elements.sidebar,
+            toggle: !!tocState.elements.toggle,
+            sidebarId: tocState.elements.sidebar?.id,
+            sidebarClasses: tocState.elements.sidebar?.className
+        });
         
         // Safety check - ensure elements exist
         if (!tocState.elements.sidebar) {
@@ -234,6 +242,15 @@ export function toggleTableOfContents() {
         if (tocState.elements.sidebar) {
             tocState.elements.sidebar.classList.toggle('toc-open', tocState.isVisible);
             console.log('✅ TOC sidebar class updated:', tocState.elements.sidebar.classList.contains('toc-open'));
+            
+            // Force debug check
+            const rect = tocState.elements.sidebar.getBoundingClientRect();
+            console.log('🔧 TOC Sidebar position after toggle:', {
+                left: rect.left,
+                width: rect.width,
+                visible: rect.left >= -50, // Visible if left position is near 0
+                hasOpenClass: tocState.elements.sidebar.classList.contains('toc-open')
+            });
         }
         
         // Update toggle button state if available
