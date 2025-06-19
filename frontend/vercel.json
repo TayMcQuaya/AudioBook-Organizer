@@ -9,12 +9,18 @@
   "routes": [
     {
       "src": "/css/(.*)",
-      "headers": { "cache-control": "public, max-age=31536000, immutable" },
+      "headers": { 
+        "cache-control": "public, max-age=3600, stale-while-revalidate=86400",
+        "vary": "Accept-Encoding"
+      },
       "dest": "/css/$1"
     },
     {
       "src": "/js/(.*)",
-      "headers": { "cache-control": "public, max-age=31536000, immutable" },
+      "headers": { 
+        "cache-control": "public, max-age=3600, stale-while-revalidate=86400",
+        "vary": "Accept-Encoding"
+      },
       "dest": "/js/$1"
     },
     {
@@ -23,8 +29,16 @@
       "dest": "/public/$1"
     },
     {
-      "src": "/(.*\\.(ico|png|jpg|jpeg|svg|css|js))",
+      "src": "/(.*\\.(ico|png|jpg|jpeg|svg))",
       "headers": { "cache-control": "public, max-age=31536000, immutable" },
+      "dest": "/$1"
+    },
+    {
+      "src": "/(.*\\.(css|js))",
+      "headers": { 
+        "cache-control": "public, max-age=3600, stale-while-revalidate=86400",
+        "vary": "Accept-Encoding"
+      },
       "dest": "/$1"
     },
     {
