@@ -132,8 +132,8 @@ class Router {
     async _initializeAuthentication(envConfig) {
         console.log('🔐 Initializing authentication...');
         
-        // Initialize temp auth manager first (always needed for testing mode detection)
-        const tempAuthResult = await tempAuthManager.init();
+        // Initialize temp auth manager first with environment config
+        const tempAuthResult = await tempAuthManager.init(envConfig);
         
         if (envConfig.testing_mode) {
             console.log('🧪 Testing mode: Using temporary authentication');
@@ -269,6 +269,9 @@ class Router {
             }
             
             // **TESTING MODE CHECKS**
+            const envConfig = envManager.getConfig();
+            console.log('🔍 Debug: envConfig.testing_mode =', envConfig.testing_mode, 'tempAuthManager.isTestingMode =', tempAuthManager.isTestingMode);
+            
             if (tempAuthManager.isTestingMode) {
                 // If not authenticated in testing mode, redirect to temp-auth page
                 if (!tempAuthManager.isAuthenticated && targetPath !== '/temp-auth') {
