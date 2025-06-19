@@ -753,10 +753,12 @@ class Router {
 
             // Only load app HTML if not already loaded
             if (!appContainer.querySelector('.main-container')) {
+                console.log('🔧 Loading app HTML structure...');
                 // Fetch and inject the actual app UI
                 const response = await fetch('/pages/app/app.html');
                 if (!response.ok) throw new Error(`Failed to fetch app page: ${response.status}`);
                 const appHtml = await response.text();
+                console.log('✅ App HTML fetched successfully, length:', appHtml.length);
                 
                 // Parse the HTML and extract only the body content
                 const parser = new DOMParser();
@@ -765,6 +767,19 @@ class Router {
                 
                 // Inject only the body content, not the full HTML
                 appContainer.innerHTML = bodyContent;
+                console.log('✅ App HTML injected, container now has content length:', appContainer.innerHTML.length);
+                
+                // Verify main elements exist
+                const mainContainer = appContainer.querySelector('.main-container');
+                const bookContent = appContainer.querySelector('#bookContent');
+                console.log('🔍 DOM verification:', {
+                    mainContainer: !!mainContainer,
+                    bookContent: !!bookContent,
+                    containerClasses: appContainer.className,
+                    bodyClasses: document.body.className
+                });
+            } else {
+                console.log('✅ App HTML already loaded, skipping injection');
             }
 
             // Initialize app if not already initialized
@@ -796,12 +811,95 @@ class Router {
                         console.log('🧪 Testing mode: Auth status check complete, proceeding with app init');
                     }
                     
-                    const { initialize, cleanup } = await import('/js/main.js');
-                    await initialize();
-                    window.cleanupApp = cleanup;
-                    window.isAppInitialized = true;
+                    console.log('🔧 Starting dynamic import of main.js...');
+                    let initialize, cleanup;
+                    
+                    try {
+                        // Try primary import path
+                        const module = await import('/js/main.js');
+                        initialize = module.initialize;
+                        cleanup = module.cleanup;
+                        console.log('✅ Dynamic import successful via /js/main.js');
+                    } catch (importError) {
+                        console.warn('⚠️ Primary import failed, trying alternative paths...', importError.message);
+                        
+                        try {
+                            // Try alternative path for production environments
+                            const module = await import('./main.js');
+                            initialize = module.initialize;
+                            cleanup = module.cleanup;
+                            console.log('✅ Dynamic import successful via ./main.js');
+                        } catch (altError) {
+                            console.warn('⚠️ Alternative import also failed, trying relative import...', altError.message);
+                            
+                            try {
+                                // Try relative import
+                                const module = await import('../main.js');
+                                initialize = module.initialize;
+                                cleanup = module.cleanup;
+                                console.log('✅ Dynamic import successful via ../main.js');
+                            } catch (relError) {
+                                console.error('❌ All import attempts failed:', {
+                                    primary: importError.message,
+                                    alternative: altError.message,
+                                    relative: relError.message
+                                });
+                                
+                                console.log('🔧 Attempting fallback: loading main.js as script tag...');
+                                
+                                // Final fallback: load main.js as a script tag
+                                const existingScript = document.querySelector('script[src="/js/main.js"]');
+                                if (existingScript) {
+                                    existingScript.remove();
+                                }
+                                
+                                const script = document.createElement('script');
+                                script.src = '/js/main.js';
+                                script.type = 'module';
+                                script.onload = () => {
+                                    console.log('✅ main.js loaded via script tag');
+                                    // Check if functions are available globally
+                                    if (window.initialize && window.cleanup) {
+                                        console.log('✅ Found global initialize/cleanup functions');
+                                        window.initialize().then(() => {
+                                            window.cleanupApp = window.cleanup;
+                                            window.isAppInitialized = true;
+                                            console.log('✅ App initialization complete via script fallback');
+                                        }).catch(err => {
+                                            console.error('❌ Script fallback initialization failed:', err);
+                                        });
+                                    } else {
+                                        console.error('❌ Global functions not found after script load');
+                                    }
+                                };
+                                script.onerror = (err) => {
+                                    console.error('❌ Script tag fallback also failed:', err);
+                                };
+                                document.head.appendChild(script);
+                                
+                                // Don't throw error, let the script attempt continue
+                                return;
+                            }
+                        }
+                    }
+                    
+                    console.log('✅ Module imported, calling initialize...');
+                    try {
+                        await initialize();
+                        window.cleanupApp = cleanup;
+                        window.isAppInitialized = true;
+                        console.log('✅ App initialization complete');
+                    } catch (initError) {
+                        console.error('❌ Initialize function failed:', initError);
+                        throw initError; // Re-throw to be caught by outer catch
+                    }
                 } catch (error) {
-                    console.error('Error initializing app:', error);
+                    console.error('❌ Error initializing app:', error);
+                    console.error('❌ Error details:', {
+                        message: error.message,
+                        stack: error.stack,
+                        name: error.name
+                    });
                     window.isAppInitialized = false;
                 }
             }

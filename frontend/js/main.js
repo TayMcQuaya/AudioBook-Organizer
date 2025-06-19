@@ -406,6 +406,10 @@ window.testDarkMode = function() {
 // Export the functions for the router to use
 export { initialize, cleanup };
 
+// Also make them available globally for fallback loading
+window.initialize = initialize;
+window.cleanup = cleanup;
+
 
 
 
