@@ -10,16 +10,18 @@
     {
       "src": "/css/(.*)",
       "headers": { 
-        "cache-control": "public, max-age=3600, stale-while-revalidate=86400",
-        "vary": "Accept-Encoding"
+        "cache-control": "no-cache, no-store, must-revalidate",
+        "pragma": "no-cache",
+        "expires": "0"
       },
       "dest": "/css/$1"
     },
     {
       "src": "/js/(.*)",
       "headers": { 
-        "cache-control": "public, max-age=3600, stale-while-revalidate=86400",
-        "vary": "Accept-Encoding"
+        "cache-control": "no-cache, no-store, must-revalidate",
+        "pragma": "no-cache",
+        "expires": "0"
       },
       "dest": "/js/$1"
     },
@@ -36,8 +38,9 @@
     {
       "src": "/(.*\\.(css|js))",
       "headers": { 
-        "cache-control": "public, max-age=3600, stale-while-revalidate=86400",
-        "vary": "Accept-Encoding"
+        "cache-control": "no-cache, no-store, must-revalidate",
+        "pragma": "no-cache",
+        "expires": "0"
       },
       "dest": "/$1"
     },
