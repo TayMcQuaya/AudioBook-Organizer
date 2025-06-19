@@ -242,111 +242,133 @@ async function processDocxFileFrontend(file, docxProcessor, htmlToFormattingConv
 function mergeDocxResults(backendResult, frontendResult) {
     console.log('🔄 Merging backend and frontend DOCX results...');
     
-    // Use backend text as base (more reliable for text extraction)
-    const baseText = backendResult.text || '';
+    // Smart base text selection - prefer the successful result with content
+    const backendText = backendResult.text || '';
     const frontendText = frontendResult.text || '';
     
-    console.log(`📊 Text lengths - Backend: ${baseText.length}, Frontend: ${frontendText.length}`);
+    console.log(`📊 Text lengths - Backend: ${backendText.length}, Frontend: ${frontendText.length}`);
+    
+    // Determine which processing was successful
+    const backendSuccess = backendResult.success && backendText.length > 0;
+    const frontendSuccess = frontendResult.success && frontendText.length > 0;
+    
+    console.log(`📊 Processing success - Backend: ${backendSuccess}, Frontend: ${frontendSuccess}`);
+    
+    // Choose the best text source
+    let baseText, baseRanges, fallbackRanges;
+    
+    if (backendSuccess && frontendSuccess) {
+        // Both succeeded - prefer backend for consistency but validate
+        if (backendText.length >= frontendText.length * 0.8) {
+            // Backend text is reasonable - use it
+            baseText = backendText;
+            baseRanges = backendResult.formatting_data?.ranges || [];
+            fallbackRanges = frontendResult.formatting_data?.ranges || [];
+            console.log('✅ Using backend as primary (both successful, backend text substantial)');
+        } else {
+            // Backend text seems incomplete - use frontend
+            baseText = frontendText;
+            baseRanges = frontendResult.formatting_data?.ranges || [];
+            fallbackRanges = backendResult.formatting_data?.ranges || [];
+            console.log('✅ Using frontend as primary (backend text incomplete)');
+        }
+    } else if (frontendSuccess) {
+        // Only frontend succeeded
+        baseText = frontendText;
+        baseRanges = frontendResult.formatting_data?.ranges || [];
+        fallbackRanges = backendResult.formatting_data?.ranges || [];
+        console.log('✅ Using frontend as primary (backend failed)');
+    } else if (backendSuccess) {
+        // Only backend succeeded
+        baseText = backendText;
+        baseRanges = backendResult.formatting_data?.ranges || [];
+        fallbackRanges = frontendResult.formatting_data?.ranges || [];
+        console.log('✅ Using backend as primary (frontend failed)');
+    } else {
+        // Both failed - return empty result
+        console.log('❌ Both processing methods failed');
+        return {
+            success: false,
+            text: '',
+            formatting_data: { ranges: [] },
+            metadata: { processing_method: 'both_failed' }
+        };
+    }
     
     // Combine formatting ranges from both sources
-    const backendRanges = backendResult.formatting_data?.ranges || [];
-    const frontendRanges = frontendResult.formatting_data?.ranges || [];
+    let mergedRanges = [...baseRanges];
     
-    let mergedRanges = [];
+    console.log(`🔍 Range counts - Base: ${baseRanges.length}, Fallback: ${fallbackRanges.length}`);
     
-    console.log(`🔍 Merge conditions - Frontend success: ${frontendResult.success}, Frontend ranges: ${frontendRanges.length}, Backend ranges: ${backendRanges.length}`);
-    
-    // If texts match perfectly, use frontend ranges directly
-    if (baseText === frontendText && frontendResult.success && frontendRanges.length > 0) {
-        console.log('✅ Perfect text match - using frontend ranges directly');
-        mergedRanges = frontendRanges.map(range => ({
-            ...range,
-            source: 'frontend_mammoth_perfect'
-        }));
-    } 
-    // If texts are similar but not identical, try to align ranges
-    else if (frontendResult.success && frontendRanges.length > 0) {
-        console.log('🔧 Text mismatch detected - attempting range alignment');
+    // If we have both ranges and they're for different text lengths, try alignment
+    if (fallbackRanges.length > 0 && baseText !== (backendSuccess && frontendSuccess ? 
+        (baseText === backendText ? frontendText : backendText) : '')) {
         
-        // Calculate character offset between texts
-        const textDiff = baseText.length - frontendText.length;
+        console.log('🔧 Attempting range alignment from fallback source...');
+        
+        const fallbackText = baseText === backendText ? frontendText : backendText;
+        const textDiff = baseText.length - fallbackText.length;
         console.log(`📊 Character difference: ${textDiff}`);
         
         // For small differences (< 50 chars), use intelligent alignment
         if (Math.abs(textDiff) < 50) {
             console.log('🎯 Small text difference - using intelligent alignment');
             
-            // Use intelligent text-based alignment
-            console.log(`🔧 Attempting intelligent text alignment for ${frontendRanges.length} ranges`);
-            
-            mergedRanges = frontendRanges
+            const alignedRanges = fallbackRanges
                 .map((range, index) => {
                     // Get the text content that this range should format
-                    const rangeText = frontendText.substring(range.start, range.end);
+                    const rangeText = fallbackText.substring(range.start, range.end);
                     
-                    // Find this text in the backend text
-                    const backendIndex = baseText.indexOf(rangeText);
+                    // Find this text in the base text
+                    const baseIndex = baseText.indexOf(rangeText);
                     
-                    if (backendIndex !== -1) {
-                        // Found exact match - use backend positions
-                        const adjustedRange = {
+                    if (baseIndex !== -1) {
+                        // Found exact match - use base positions
+                        return {
                             ...range,
-                            start: backendIndex,
-                            end: backendIndex + rangeText.length,
-                            source: 'frontend_mammoth_text_matched'
+                            start: baseIndex,
+                            end: baseIndex + rangeText.length,
+                            source: 'aligned_exact'
                         };
-                        
-                        console.log(`✅ Text match for range ${index}: "${rangeText.substring(0, 20)}..." -> ${adjustedRange.start}-${adjustedRange.end}`);
-                        return adjustedRange;
                     } else {
-                        // No exact match - try fuzzy alignment
-                        const positionOffset = baseText.length - frontendText.length;
-                        const progressRatio = range.start / frontendText.length;
-                        const offsetToApply = Math.floor(progressRatio * positionOffset);
+                        // No exact match - try proportional alignment
+                        const progressRatio = range.start / fallbackText.length;
+                        const newStart = Math.floor(progressRatio * baseText.length);
+                        const rangeLength = range.end - range.start;
                         
                         const adjustedRange = {
                             ...range,
-                            start: Math.max(0, Math.min(range.start + offsetToApply, baseText.length)),
-                            end: Math.max(0, Math.min(range.end + offsetToApply, baseText.length)),
-                            source: 'frontend_mammoth_fuzzy_aligned'
+                            start: Math.max(0, Math.min(newStart, baseText.length - rangeLength)),
+                            end: Math.max(0, Math.min(newStart + rangeLength, baseText.length)),
+                            source: 'aligned_proportional'
                         };
                         
                         // Skip invalid ranges
                         if (adjustedRange.start >= adjustedRange.end) {
-                            console.log(`⚠️ Skipping invalid fuzzy range ${index}: ${range.start}-${range.end}`);
                             return null;
                         }
                         
-                        console.log(`🔧 Fuzzy alignment for range ${index}: "${rangeText.substring(0, 20)}..." -> ${adjustedRange.start}-${adjustedRange.end}`);
                         return adjustedRange;
                     }
                 })
                 .filter(range => range !== null);
             
-            console.log(`📊 Aligned ${mergedRanges.length}/${frontendRanges.length} frontend ranges`);
-        } else {
-            console.log('⚠️ Large text difference - falling back to backend ranges');
-        }
-    } else {
-        console.log('⚠️ Frontend processing failed or no ranges - using backend ranges only');
-    }
-    
-    // Add backend ranges that don't conflict (as fallback)
-    backendRanges.forEach(backendRange => {
-        // Check if there's a conflicting frontend range
-        const hasConflict = mergedRanges.some(frontendRange => 
-            frontendRange.start <= backendRange.start && 
-            frontendRange.end >= backendRange.end &&
-            frontendRange.type === backendRange.type
-        );
-        
-        if (!hasConflict) {
-            mergedRanges.push({
-                ...backendRange,
-                source: 'backend_fallback'
+            // Add non-conflicting aligned ranges
+            alignedRanges.forEach(alignedRange => {
+                const hasConflict = mergedRanges.some(baseRange => 
+                    baseRange.start <= alignedRange.start && 
+                    baseRange.end >= alignedRange.end &&
+                    baseRange.type === alignedRange.type
+                );
+                
+                if (!hasConflict) {
+                    mergedRanges.push(alignedRange);
+                }
             });
+            
+            console.log(`📊 Added ${alignedRanges.length} aligned ranges from fallback`);
         }
-    });
+    }
     
     // Sort ranges by position and validate
     mergedRanges.sort((a, b) => a.start - b.start);
@@ -362,21 +384,21 @@ function mergeDocxResults(backendResult, frontendResult) {
     
     return {
         success: true,
-        text: baseText, // Always use backend text as source of truth
+        text: baseText,
         formatting_data: {
             ranges: mergedRanges,
             version: '2.0',
             source: 'hybrid_processing'
         },
         metadata: {
-            ...backendResult.metadata,
             processing_method: 'hybrid',
-            frontend_success: frontendResult.success,
-            frontend_features: frontendResult.metadata?.features || {},
-            backend_ranges: backendRanges.length,
-            frontend_ranges: frontendRanges.length,
+            primary_source: baseText === backendText ? 'backend' : 'frontend',
+            backend_success: backendSuccess,
+            frontend_success: frontendSuccess,
+            backend_ranges: (backendResult.formatting_data?.ranges || []).length,
+            frontend_ranges: (frontendResult.formatting_data?.ranges || []).length,
             merged_ranges: mergedRanges.length,
-            text_alignment: baseText === frontendText ? 'perfect' : 'adjusted'
+            text_length: baseText.length
         }
     };
 }
