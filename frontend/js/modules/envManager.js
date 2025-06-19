@@ -1,6 +1,8 @@
 // AudioBook Organizer - Environment Manager
 // Centralizes environment detection and configuration for consistent behavior
 
+import { apiFetch } from './api.js';
+
 class EnvironmentManager {
     constructor() {
         this.config = null;
@@ -31,10 +33,9 @@ class EnvironmentManager {
             try {
                 console.log(`🔧 Loading environment configuration (attempt ${attempt}/${maxRetries})...`);
                 
-                const response = await fetch('/debug/config', {
+                const response = await apiFetch('/debug/config', {
                     method: 'GET',
-                    headers: { 'Content-Type': 'application/json' },
-                    credentials: 'include' // Include credentials for CORS
+                    headers: { 'Content-Type': 'application/json' }
                 });
 
                 if (!response.ok) {
@@ -105,16 +106,29 @@ class EnvironmentManager {
         
         // TEMPORARY DEBUG: Force testing mode for production debugging
         // TODO: Remove this override once environment variables are working
-        const isProduction = window.location.hostname.includes('ondigitalocean.app');
+        const currentHostname = window.location.hostname;
+        console.log('🔍 DEBUG: Current hostname:', currentHostname);
+        
+        const isProduction = currentHostname.includes('ondigitalocean.app');
+        console.log('🔍 DEBUG: Is production (ondigitalocean.app)?', isProduction);
+        
+        // Check for vercel as well since that might be where we're running
+        const isVercel = currentHostname.includes('vercel.app');
+        console.log('🔍 DEBUG: Is Vercel?', isVercel);
+        
+        // Force testing mode for both production environments
+        const shouldUseTesting = isProduction || isVercel;
+        console.log('🔍 DEBUG: Should use testing mode?', shouldUseTesting);
         
         return {
-            testing_mode: isProduction ? true : false, // Force testing mode on Digital Ocean
+            testing_mode: shouldUseTesting, // Force testing mode on Digital Ocean OR Vercel
             environment: isDevelopment ? 'development' : 'production',
             temporary_password_configured: true, // Assume password is configured
             server_type: isDevelopment ? 'flask-dev' : 'gunicorn-prod',
             timestamp: Date.now(),
             fallback: true,
-            debug_override: isProduction ? 'FORCED_TESTING_MODE' : 'NORMAL_FALLBACK'
+            debug_override: shouldUseTesting ? 'FORCED_TESTING_MODE' : 'NORMAL_FALLBACK',
+            detected_hostname: currentHostname
         };
     }
 
