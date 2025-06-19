@@ -243,6 +243,14 @@ async function initialize() {
     if (window.tempAuthManager && window.tempAuthManager.isTestingMode) {
         console.log('🧪 Testing mode detected - using temp auth manager');
         authModuleToUse = window.tempAuthManager;
+        
+        // Initialize testing mode UI
+        try {
+            await testingModeUI.init();
+            console.log('✅ Testing mode UI initialized');
+        } catch (error) {
+            console.error('❌ Failed to initialize testing mode UI:', error);
+        }
     } else if (window.authModule) {
         console.log('🔑 Normal mode detected - using Supabase auth module');
         authModuleToUse = window.authModule;

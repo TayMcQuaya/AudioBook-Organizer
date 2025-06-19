@@ -21,19 +21,28 @@ def create_password_protection_routes(app):
             
             # Check if we're in testing mode
             if not app.config.get('TESTING_MODE'):
+                app.logger.warning(f"🚫 Temp login attempted but TESTING_MODE is disabled: {app.config.get('TESTING_MODE')}")
                 return jsonify({
                     'success': False,
                     'error': 'Testing mode not enabled'
                 }), 400
             
+            # Debug logging for production
+            app.logger.info(f"🔐 Temp login attempt in testing mode")
+            app.logger.info(f"   - TESTING_MODE config: {app.config.get('TESTING_MODE')}")
+            app.logger.info(f"   - Password received: {'***' if password else 'EMPTY'}")
+            
             # Verify password
             correct_password = app.config.get('TEMPORARY_PASSWORD')
             
             if not correct_password:
+                app.logger.error(f"❌ TEMPORARY_PASSWORD not configured in environment")
                 return jsonify({
                     'success': False,
                     'error': 'Temporary password not configured'
                 }), 500
+            
+            app.logger.info(f"   - Configured password: {'***' if correct_password else 'NOT_SET'}")
             
             if password == correct_password:
                 # Generate a temporary token for cross-domain authentication
@@ -48,18 +57,22 @@ def create_password_protection_routes(app):
                 session['temp_authenticated'] = True
                 session['temp_token'] = token
                 
+                app.logger.info(f"✅ Temp authentication successful, token generated")
+                
                 return jsonify({
                     'success': True,
                     'message': 'Authentication successful',
                     'token': token
                 })
             else:
+                app.logger.warning(f"❌ Invalid password provided for temp authentication")
                 return jsonify({
                     'success': False,
                     'error': 'Invalid password'
                 }), 401
                 
         except Exception as e:
+            app.logger.error(f"❌ Temp login error: {str(e)}")
             return jsonify({
                 'success': False,
                 'error': 'Server error'
@@ -149,10 +162,19 @@ def require_temp_auth(f):
             return f(*args, **kwargs)
         
         is_authenticated = False
+        auth_method = None
+        
+        # Debug logging for authentication attempts
+        current_app.logger.debug(f"🔐 Auth check for {request.endpoint}")
+        current_app.logger.debug(f"   - Testing mode: {current_app.config.get('TESTING_MODE')}")
+        current_app.logger.debug(f"   - Session temp_authenticated: {session.get('temp_authenticated', False)}")
+        current_app.logger.debug(f"   - Authorization header: {'Present' if request.headers.get('Authorization') else 'Missing'}")
+        current_app.logger.debug(f"   - X-Temp-Auth header: {'Present' if request.headers.get('X-Temp-Auth') else 'Missing'}")
         
         # Method 1: Check session (for same-domain requests)
         if session.get('temp_authenticated', False):
             is_authenticated = True
+            auth_method = "session"
         
         # Method 2: Check token in Authorization header (for cross-domain requests)
         elif request.headers.get('Authorization'):
@@ -165,9 +187,14 @@ def require_temp_auth(f):
                     token_data = temp_auth_tokens[token]
                     if time.time() < token_data['expires_at']:
                         is_authenticated = True
+                        auth_method = "bearer_token"
+                        current_app.logger.debug(f"✅ Valid bearer token found")
                     else:
                         # Clean up expired token
                         del temp_auth_tokens[token]
+                        current_app.logger.debug(f"❌ Bearer token expired")
+                else:
+                    current_app.logger.debug(f"❌ Bearer token not found in store")
         
         # Method 3: Check token in X-Temp-Auth header (alternative method)
         elif request.headers.get('X-Temp-Auth'):
@@ -176,15 +203,28 @@ def require_temp_auth(f):
                 token_data = temp_auth_tokens[token]
                 if time.time() < token_data['expires_at']:
                     is_authenticated = True
+                    auth_method = "x_temp_auth"
+                    current_app.logger.debug(f"✅ Valid X-Temp-Auth token found")
                 else:
                     # Clean up expired token
                     del temp_auth_tokens[token]
+                    current_app.logger.debug(f"❌ X-Temp-Auth token expired")
+            else:
+                current_app.logger.debug(f"❌ X-Temp-Auth token not found in store")
         
         # Emergency fallback: check for special testing override header (for development only)
         elif request.headers.get('X-Testing-Override') == 'temp-auth-bypass':
             is_authenticated = True
+            auth_method = "testing_override"
+            current_app.logger.debug(f"⚠️ Using testing override for authentication")
+        
+        # Final authentication result logging
+        current_app.logger.info(f"🔐 Auth result for {request.endpoint}: {'✅ AUTHENTICATED' if is_authenticated else '❌ REJECTED'} (method: {auth_method or 'none'})")
         
         if not is_authenticated:
+            current_app.logger.warning(f"❌ Authentication failed for {request.endpoint}")
+            current_app.logger.warning(f"   - Token store size: {len(temp_auth_tokens)}")
+            current_app.logger.warning(f"   - Session keys: {list(session.keys())}")
             return jsonify({
                 'success': False,
                 'error': 'Please authenticate with the temporary password first'

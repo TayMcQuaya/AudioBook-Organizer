@@ -44,6 +44,12 @@ def create_app(config_name=None):
     # We compile the regex for performance and correctness.
     allowed_origins_regex = re.compile(r"https://audio-book-organizer(-[a-z0-9\-]+)?\.vercel\.app")
 
+    # Add debug logging for CORS configuration
+    app.logger.info(f"�� CORS Configuration:")
+    app.logger.info(f"   - Main Vercel URL: https://audio-book-organizer.vercel.app")
+    app.logger.info(f"   - Regex pattern: {allowed_origins_regex.pattern}")
+    app.logger.info(f"   - Testing mode: {app.config.get('TESTING_MODE', False)}")
+
     CORS(
         app,
         origins=[
@@ -52,6 +58,7 @@ def create_app(config_name=None):
             "http://localhost:5000",
             "http://127.0.0.1:5000",
             "https://audio-book-organizer.vercel.app", # Explicitly add main production URL
+            r"https://audio-book-organizer.*\.vercel\.app", # More permissive regex for preview branches
             allowed_origins_regex  # Add the compiled regex
         ],
         supports_credentials=True,

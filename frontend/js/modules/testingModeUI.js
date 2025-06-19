@@ -6,12 +6,26 @@ import { clearTestingModeData } from './storage.js';
 import envManager from './envManager.js';
 import appConfig from '../config/appConfig.js';
 
+// Clear testing mode data from localStorage (security measure)
+function clearTestingModeData() {
+    localStorage.removeItem('temp_auth_backup');
+    localStorage.removeItem('temp_auth_token');
+    localStorage.removeItem('temp_project_data');
+    // Clear any other testing-specific data
+    Object.keys(localStorage).forEach(key => {
+        if (key.startsWith('temp_') || key.startsWith('testing_')) {
+            localStorage.removeItem(key);
+        }
+    });
+}
+
 class TestingModeUI {
     constructor() {
         this.isInitialized = false;
         this.uiElementsApplied = false;
         this.retryCount = 0;
         this.maxRetries = 5;
+        this.tempAuthManager = null;
     }
     
     async init() {
@@ -28,6 +42,11 @@ class TestingModeUI {
             
             if (envConfig.testing_mode) {
                 console.log('🧪 Testing mode detected, applying UI changes...');
+                
+                // Import tempAuthManager dynamically to ensure it's available
+                const { tempAuthManager } = await import('./tempAuth.js');
+                this.tempAuthManager = tempAuthManager;
+                window.tempAuthManager = tempAuthManager; // Make globally available
                 
                 // Apply changes with retry logic for robustness
                 await this._applyTestingModeWithRetry();
@@ -243,8 +262,8 @@ class TestingModeUI {
                 clearTestingModeData();
                 
                 // Logout from testing mode with error handling
-                if (tempAuthManager && typeof tempAuthManager.logout === 'function') {
-                    await tempAuthManager.logout();
+                if (this.tempAuthManager && typeof this.tempAuthManager.logout === 'function') {
+                    await this.tempAuthManager.logout();
                 } else {
                     console.error('❌ tempAuthManager not available or logout method missing');
                     // Fallback navigation if tempAuthManager fails
