@@ -45,7 +45,7 @@ def create_app(config_name=None):
     allowed_origins_regex = re.compile(r"https://audio-book-organizer(-[a-z0-9\-]+)?\.vercel\.app")
 
     # Add debug logging for CORS configuration
-    app.logger.info(f"�� CORS Configuration:")
+    app.logger.info(f"🌐 CORS Configuration:")
     app.logger.info(f"   - Main Vercel URL: https://audio-book-organizer.vercel.app")
     app.logger.info(f"   - Regex pattern: {allowed_origins_regex.pattern}")
     app.logger.info(f"   - Testing mode: {app.config.get('TESTING_MODE', False)}")
@@ -63,7 +63,8 @@ def create_app(config_name=None):
         ],
         supports_credentials=True,
         methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-        allow_headers=["Content-Type", "Authorization", "X-Requested-With", "X-CSRF-Token", "X-Temp-Auth"]
+        allow_headers=["Content-Type", "Authorization", "X-Requested-With", "X-CSRF-Token", "X-Temp-Auth"],
+        expose_headers=["Content-Disposition", "X-Auth-Status", "X-Session-Status"]  # Add debugging headers
     )
     
     # Configure logging based on environment
