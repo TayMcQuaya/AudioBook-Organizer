@@ -2,7 +2,7 @@ from flask import Flask, jsonify, send_from_directory, request
 from flask_cors import CORS
 import os
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta
 import re
 
 from .config import config
@@ -44,6 +44,12 @@ def create_app(config_name=None):
     # We compile the regex for performance and correctness.
     allowed_origins_regex = re.compile(r"https://audio-book-organizer(-[a-z0-9\-]+)?\.vercel\.app")
 
+    # Add debug logging for CORS configuration
+    app.logger.info(f"🌐 CORS Configuration:")
+    app.logger.info(f"   - Main Vercel URL: https://audio-book-organizer.vercel.app")
+    app.logger.info(f"   - Regex pattern: {allowed_origins_regex.pattern}")
+    app.logger.info(f"   - Testing mode: {app.config.get('TESTING_MODE', False)}")
+
     CORS(
         app,
         origins=[
@@ -52,9 +58,13 @@ def create_app(config_name=None):
             "http://localhost:5000",
             "http://127.0.0.1:5000",
             "https://audio-book-organizer.vercel.app", # Explicitly add main production URL
+            r"https://audio-book-organizer.*\.vercel\.app", # More permissive regex for preview branches
             allowed_origins_regex  # Add the compiled regex
         ],
-        supports_credentials=True
+        supports_credentials=True,
+        methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+        allow_headers=["Content-Type", "Authorization", "X-Requested-With", "X-CSRF-Token", "X-Temp-Auth"],
+        expose_headers=["Content-Disposition", "X-Auth-Status", "X-Session-Status"]  # Add debugging headers
     )
     
     # Configure logging based on environment
@@ -64,6 +74,13 @@ def create_app(config_name=None):
     else:
         app.logger.setLevel(logging.DEBUG)
         app.logger.info(f"🔧 Starting AudioBook Organizer in DEVELOPMENT mode")
+    
+    # DEBUG: Log critical environment variables at startup
+    app.logger.info(f"🔧 Environment Variables at Startup:")
+    app.logger.info(f"   - TESTING_MODE: {os.environ.get('TESTING_MODE', 'NOT_SET')} → Parsed: {app.config.get('TESTING_MODE', 'NOT_SET')}")
+    app.logger.info(f"   - TEMPORARY_PASSWORD: {'CONFIGURED' if os.environ.get('TEMPORARY_PASSWORD') else 'NOT_SET'}")
+    app.logger.info(f"   - FLASK_ENV: {os.environ.get('FLASK_ENV', 'NOT_SET')}")
+    app.logger.info(f"   - Config Class: {config_name} → {type(app.config).__name__}")
     
     # Ensure directories exist - exact logic preserved
     ensure_directories_exist(app.config['UPLOAD_FOLDER'], app.config['EXPORT_FOLDER'])
@@ -120,6 +137,18 @@ def create_app(config_name=None):
             'message': 'API is working'
         })
     
+    # Simple debug route for environment variables (no auth required)
+    @app.route('/api/debug-env', methods=['GET'])
+    def debug_env():
+        return jsonify({
+            'testing_mode_raw': os.environ.get('TESTING_MODE', 'NOT_SET'),
+            'testing_mode_parsed': app.config.get('TESTING_MODE', False),
+            'temporary_password_configured': bool(app.config.get('TEMPORARY_PASSWORD')),
+            'flask_env': os.environ.get('FLASK_ENV', 'NOT_SET'),
+            'config_class': type(app.config).__name__,
+            'timestamp': datetime.utcnow().isoformat() + 'Z'
+        })
+    
     # Debug endpoint for time checking
     @app.route('/debug/time', methods=['GET'])
     def debug_time():
@@ -133,16 +162,36 @@ def create_app(config_name=None):
     # Debug endpoint for testing mode configuration
     @app.route('/debug/config', methods=['GET'])
     def debug_config():
-        """Debug endpoint to check testing mode configuration"""
+        """Enhanced debug endpoint for environment configuration"""
+        
+        # Detect server type
+        server_name = request.environ.get('SERVER_SOFTWARE', 'unknown')
+        is_gunicorn = 'gunicorn' in server_name.lower()
+        is_flask_dev = 'werkzeug' in server_name.lower() or not is_gunicorn
+        
+        server_type = 'gunicorn-prod' if is_gunicorn else 'flask-dev'
+        
         return jsonify({
             'testing_mode': app.config.get('TESTING_MODE', False),
             'temporary_password_configured': bool(app.config.get('TEMPORARY_PASSWORD')),
-            'temporary_password_value': app.config.get('TEMPORARY_PASSWORD', 'NOT_SET'),
-            'environment': os.environ.get('FLASK_ENV', 'unknown'),
+            'environment': os.environ.get('FLASK_ENV', 'development'),
+            'server_type': server_type,
+            'server_software': server_name,
+            'debug_mode': app.config.get('DEBUG', False),
+            'host': app.config.get('HOST', 'unknown'),
+            'port': app.config.get('PORT', 'unknown'),
+            'config_class': type(app.config).__name__ if hasattr(app.config, '__class__') else 'unknown',
+            'session_config': {
+                'lifetime_hours': app.config.get('PERMANENT_SESSION_LIFETIME', timedelta(hours=1)).total_seconds() / 3600,
+                'cookie_secure': app.config.get('SESSION_COOKIE_SECURE', False),
+                'cookie_samesite': app.config.get('SESSION_COOKIE_SAMESITE', 'Lax')
+            },
+            'timestamp': datetime.utcnow().isoformat() + 'Z',
             'available_env_vars': {
                 'TESTING_MODE': os.environ.get('TESTING_MODE', 'NOT_SET'),
-                'TEMPORARY_PASSWORD': os.environ.get('TEMPORARY_PASSWORD', 'NOT_SET'),
-                'FLASK_ENV': os.environ.get('FLASK_ENV', 'NOT_SET')
+                'TEMPORARY_PASSWORD': 'CONFIGURED' if os.environ.get('TEMPORARY_PASSWORD') else 'NOT_SET',
+                'FLASK_ENV': os.environ.get('FLASK_ENV', 'NOT_SET'),
+                'SESSION_COOKIE_SECURE': os.environ.get('SESSION_COOKIE_SECURE', 'NOT_SET')
             }
         })
     

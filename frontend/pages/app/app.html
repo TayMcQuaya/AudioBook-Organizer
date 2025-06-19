@@ -17,6 +17,7 @@
     <link rel="stylesheet" href="/css/main.css">
     <link rel="stylesheet" href="/css/components.css">
     <link rel="stylesheet" href="/css/themes.css">
+    <link rel="stylesheet" href="/css/table-of-contents.css">
     <link rel="stylesheet" href="/css/landing.css">
     <link rel="stylesheet" href="/css/formatting.css">
 </head>
@@ -35,6 +36,8 @@
                 <button class="theme-toggle-btn" onclick="toggleTheme()" title="Toggle Dark/Light Mode">
                     <span class="theme-icon">🌙</span>
                 </button>
+                <!-- Exit button for testing mode (hidden by default) -->
+                <button class="btn exit-testing-btn" style="display: none; margin-left: 10px;" title="Exit Early Access Mode">Exit</button>
                 <!-- User navigation will be inserted here by appUI.js -->
                 <a href="/auth" class="btn btn-primary auth-btn auth-nav-link">Sign In</a>
             </div>
@@ -241,7 +244,113 @@
         <span id="charCount">0</span> characters
     </div>
 
-    <!-- JavaScript Files -->
-    <script type="module" src="/js/main.js"></script>
+    <!-- Application Initialization Script -->
+    <script type="module">
+        import { showError } from '/js/modules/notifications.js';
+        import envManager from '/js/modules/envManager.js';
+        import appConfig from '/js/config/appConfig.js';
+        import testingModeUI from '/js/modules/testingModeUI.js';
+        
+        // Initialize the app page with deterministic behavior
+        async function initializeAppPage() {
+            const startTime = Date.now();
+            
+            try {
+                console.log('🚀 Starting app page initialization...');
+                
+                // STEP 1: Initialize environment manager first
+                console.log('🔧 Step 1: Initializing environment manager...');
+                await envManager.init();
+                
+                // STEP 2: Initialize app configuration based on environment
+                console.log('📋 Step 2: Initializing app configuration...');
+                const envConfig = envManager.getConfig();
+                appConfig.init(envConfig.server_type, envConfig.testing_mode);
+                
+                // STEP 3: Apply environment settings immediately
+                console.log('🎯 Step 3: Applying environment settings...');
+                envManager.applyEnvironmentSettings();
+                
+                // STEP 4: Wait for DOM and CSS stability
+                console.log('🎨 Step 4: Waiting for DOM stability...');
+                await appConfig.delay('cssLoadWaitTime');
+                
+                // STEP 5: Apply layout consistency fixes
+                console.log('📐 Step 5: Applying layout fixes...');
+                await applyLayoutFixes(envConfig);
+                
+                // STEP 6: Initialize testing mode UI if needed
+                if (envConfig.testing_mode) {
+                    console.log('🧪 Step 6: Initializing testing mode UI...');
+                    await testingModeUI.init();
+                }
+                
+                // STEP 7: Wait for additional stability
+                await appConfig.delay('domReadyDelay');
+                
+                // STEP 8: Initialize the main app
+                console.log('🎯 Step 8: Initializing main application...');
+                const { initialize } = await import('/js/main.js');
+                await initialize();
+                
+                // STEP 9: Mark as ready and complete transition
+                document.body.classList.add('layout-ready', 'app-ready');
+                
+                const totalTime = Date.now() - startTime;
+                console.log(`✅ App page initialized successfully in ${totalTime}ms`);
+                
+            } catch (error) {
+                console.error('❌ Failed to initialize app page:', error);
+                showError('Failed to initialize the application. Please refresh the page.');
+            }
+        }
+        
+        // Apply layout consistency fixes
+        async function applyLayoutFixes(envConfig) {
+            // Apply layout class immediately
+            document.body.classList.add('layout-ready');
+            
+            // Ensure proper column ordering regardless of environment
+            ensureProperColumnOrder();
+            
+            // Wait for CSS to be applied
+            await appConfig.delay('cssApplicationDelay');
+            
+            // Ensure layout stabilization
+            await appConfig.delay('layoutStabilizationDelay');
+            
+            console.log('🔧 Layout fixes applied - maintaining two-column layout');
+        }
+        
+        // Ensure proper column order: Book Content (left), Book Sections (right)
+        function ensureProperColumnOrder() {
+            const mainContainer = document.querySelector('.main-container');
+            if (!mainContainer) return;
+            
+            const columns = mainContainer.querySelectorAll('.column');
+            if (columns.length !== 2) return;
+            
+            const bookContentColumn = Array.from(columns).find(col => 
+                col.querySelector('#bookContent') || col.textContent.includes('Book Content')
+            );
+            const sectionsColumn = Array.from(columns).find(col => 
+                col.querySelector('#sectionsList') || col.textContent.includes('Book Sections')
+            );
+            
+            if (bookContentColumn && sectionsColumn) {
+                // Ensure book content is first (left), sections is second (right)
+                mainContainer.appendChild(bookContentColumn);
+                mainContainer.appendChild(sectionsColumn);
+                console.log('📐 Column order verified: Book Content (left), Sections (right)');
+            }
+        }
+        
+        // Start initialization when DOM is ready
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initializeAppPage);
+        } else {
+            initializeAppPage();
+        }
+    </script>
 </body>
 </html> 

@@ -819,13 +819,13 @@
     span[data-formatting-id].fmt-section,
     span[data-formatting-id].fmt-subsection {
         break-after: avoid;
-        color: #000 !important;
+        color: #000 !important; /* Only for print - doesn't affect screen display */
     }
     
     .fmt-quote {
         break-inside: avoid;
-        background: #f9f9f9 !important;
-        border-left: 4px solid #333 !important;
+        background: #f9f9f9 !important; /* Only for print */
+        border-left: 4px solid #333 !important; /* Only for print */
     }
 }
 

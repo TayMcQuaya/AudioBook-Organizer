@@ -258,7 +258,7 @@ export function showInfo(message, duration = 4000) {
     showNotification(message, 'info', duration);
 }
 
-export function showSuccess(message, duration = 4000) {
+export function showSuccess(message, duration = 5000) {
     showNotification(message, 'success', duration);
 }
 

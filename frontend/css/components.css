@@ -628,13 +628,14 @@ button[disabled] {
     border-top: 1px solid var(--border-color);
 }
 
-/* Chapter Styles */
+/* Chapter Styles - Base styles only (layout handled in main.css) */
 .chapter-item {
-    background: white;
+    background: var(--bg-primary);
     border: 1px solid var(--border-color);
     border-radius: var(--radius-sm);
     margin-bottom: var(--spacing-md);
     overflow: hidden;
+    transition: background 0.3s ease, border-color 0.3s ease;
 }
 
 .chapter-header {

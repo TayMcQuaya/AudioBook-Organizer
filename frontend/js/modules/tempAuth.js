@@ -19,13 +19,42 @@ class TempAuthManager {
     /**
      * Initializes the temporary authentication manager. Checks the initial status from the server.
      * This function is now idempotent and will only run its main logic once.
+     * @param {Object} envConfig - Environment configuration from environment manager
      */
-    async init() {
+    async init(envConfig = null) {
         if (this._isInitialized) {
             return true;
         }
         
         try {
+            // Use environment config to determine testing mode if provided
+            if (envConfig && envConfig.hasOwnProperty('testing_mode')) {
+                console.log('🔧 TempAuth: Using environment config for testing mode:', envConfig.testing_mode);
+                this._isTestingMode = envConfig.testing_mode;
+                
+                if (this._isTestingMode) {
+                    // Only check server status if we're actually in testing mode
+                    const response = await apiFetch('/api/auth/temp-status');
+                    if (response.ok) {
+                        const data = await response.json();
+                        this._isAuthenticated = data.authenticated;
+                    } else {
+                        this._isAuthenticated = false;
+                    }
+                    
+                    this.startAuthCheck();
+                    this.setupActivityTracking();
+                } else {
+                    // In production mode, temp auth is not used
+                    this._isAuthenticated = false;
+                }
+                
+                this._isInitialized = true;
+                return true;
+            }
+            
+            // Fallback: Check server for testing mode (old behavior)
+            console.log('🔧 TempAuth: No env config provided, checking server for testing mode');
             const response = await apiFetch('/api/auth/temp-status');
 
             if (response.ok) {
@@ -40,8 +69,12 @@ class TempAuthManager {
                 }
                 return true;
             }
+            
+            // Server error fallback
             return false;
         } catch (error) {
+            console.warn('🔧 TempAuth: Server unavailable, using fallback detection');
+            
             // For local development, assume testing mode if backend not available
             const hostname = window.location.hostname;
             if (hostname === 'localhost' || hostname === '127.0.0.1') {
@@ -95,7 +128,7 @@ class TempAuthManager {
                         this.setAuthenticated(false);
                         
                         if (window.location.pathname !== '/temp-auth') {
-                            window.router.navigate('/temp-auth');
+                            this._safeNavigate('/temp-auth');
                         }
                     } else {
                         this._isAuthenticated = data.authenticated;
@@ -132,7 +165,22 @@ class TempAuthManager {
             // Clean up all authentication data
             localStorage.removeItem('temp_auth_backup');
             localStorage.removeItem('temp_auth_token');
-            window.router.navigate('/temp-auth');
+            
+            // Safe navigation - check if router is available
+            this._safeNavigate('/temp-auth');
+        }
+    }
+    
+    /**
+     * Safely navigate using router if available, fallback to location.href
+     */
+    _safeNavigate(path) {
+        if (window.router && typeof window.router.navigate === 'function') {
+            window.router.navigate(path);
+        } else {
+            // Fallback for when router is not yet initialized
+            console.warn('Router not available, using fallback navigation');
+            window.location.href = path;
         }
     }
      

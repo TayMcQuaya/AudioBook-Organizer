@@ -33,12 +33,14 @@ export function initializeTableOfContents() {
     try {
         console.log('🔍 Initializing Table of Contents...');
         
-        createTOCElements();
-        setupEventListeners();
-        extractAndDisplayHeaders();
-        setupScrollObserver();
-        
-        console.log('✅ Table of Contents initialized successfully');
+        // Wait for DOM to be fully ready before initializing
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', () => {
+                initializeTableOfContentsCore();
+            });
+        } else {
+            initializeTableOfContentsCore();
+        }
         
     } catch (error) {
         console.error('❌ Failed to initialize Table of Contents:', error);
@@ -47,10 +49,51 @@ export function initializeTableOfContents() {
 }
 
 /**
+ * Core TOC initialization logic
+ */
+function initializeTableOfContentsCore() {
+    try {
+        console.log('🔍 Starting core TOC initialization...');
+        
+        createTOCElements();
+        setupEventListeners();
+        extractAndDisplayHeaders();
+        setupScrollObserver();
+        
+        // Make toggle function globally available for HTML onclick
+        window.toggleTableOfContents = toggleTableOfContents;
+        
+        // Additional safety check - ensure elements are properly set up
+        const tocSidebar = document.getElementById('tocSidebar');
+        const tocToggle = document.querySelector('.toc-toggle-btn');
+        
+        console.log('✅ TOC Core initialization complete:', {
+            sidebarFound: !!tocSidebar,
+            toggleButtonFound: !!tocToggle,
+            toggleFunctionGlobal: typeof window.toggleTableOfContents === 'function'
+        });
+        
+    } catch (error) {
+        console.error('❌ Failed core TOC initialization:', error);
+        showError('Failed to initialize Table of Contents core functionality');
+    }
+}
+
+/**
  * Create TOC DOM elements and add to layout
  */
 function createTOCElements() {
-    // Create TOC sidebar
+    // Remove any existing TOC elements first
+    const existingTOC = document.getElementById('tocSidebar');
+    if (existingTOC) {
+        existingTOC.remove();
+    }
+    const existingToggle = document.getElementById('tocToggleBtn');
+    if (existingToggle) {
+        existingToggle.remove();
+    }
+
+    // Create TOC sidebar (like the old working version)
     const tocSidebar = document.createElement('div');
     tocSidebar.id = 'tocSidebar';
     tocSidebar.className = 'toc-sidebar';
@@ -61,32 +104,35 @@ function createTOCElements() {
         </div>
         <div class="toc-content">
             <div id="tocList" class="toc-list">
-                <div class="toc-loading">
-                    <div class="toc-loading-spinner"></div>
-                    <div>Scanning document...</div>
+                <div class="toc-empty">
+                    <div class="toc-empty-icon">📄</div>
+                    <div class="toc-empty-text">
+                        No headers found in document.<br>
+                        Try uploading a document with formatted headings.
+                    </div>
                 </div>
             </div>
         </div>
         <div class="toc-footer">
-            <small class="toc-count" id="tocCount">Scanning headers...</small>
+            <div class="toc-count" id="tocCount">0 items</div>
         </div>
     `;
     
-    // Append to body (as overlay)
+    // Append to body (as overlay) - like the old working version
     document.body.appendChild(tocSidebar);
     
     // Create toggle button and add to book content header
-    const bookContentHeader = document.querySelector('.column:first-child .column-header .header-controls');
+    const bookContentHeader = document.querySelector('.column:first-child .column-header .column-title-container');
     if (bookContentHeader) {
         const toggleButton = document.createElement('button');
         toggleButton.className = 'toc-toggle-btn';
         toggleButton.id = 'tocToggleBtn';
-        toggleButton.innerHTML = '<i>📋</i> <span class="toc-toggle-text">TOC</span>';
+        toggleButton.innerHTML = '<i>📋</i> <span class="toc-toggle-text">Table of Contents</span>';
         toggleButton.title = 'Toggle Table of Contents';
         toggleButton.setAttribute('aria-label', 'Toggle Table of Contents');
         
-        // Insert at beginning of controls
-        bookContentHeader.insertBefore(toggleButton, bookContentHeader.firstChild);
+        // Add to the end of the title container
+        bookContentHeader.appendChild(toggleButton);
     }
     
     // Store element references
@@ -96,6 +142,13 @@ function createTOCElements() {
         count: document.getElementById('tocCount'),
         toggle: document.getElementById('tocToggleBtn')
     };
+    
+    console.log('✅ TOC elements created dynamically:', {
+        sidebar: !!tocState.elements.sidebar,
+        list: !!tocState.elements.list,
+        count: !!tocState.elements.count,
+        toggle: !!tocState.elements.toggle
+    });
 }
 
 /**
@@ -161,33 +214,65 @@ function handleOutsideClick(event) {
  * Toggle Table of Contents visibility
  */
 export function toggleTableOfContents() {
-    const wasVisible = tocState.isVisible;
-    tocState.isVisible = !wasVisible;
-    
-    // Update sidebar
-    if (tocState.elements.sidebar) {
-        tocState.elements.sidebar.classList.toggle('toc-open', tocState.isVisible);
-    }
-    
-    // Update toggle button state
-    if (tocState.elements.toggle) {
-        tocState.elements.toggle.classList.toggle('active', tocState.isVisible);
-        tocState.elements.toggle.setAttribute('aria-pressed', tocState.isVisible.toString());
-    }
-    
-    // Accessibility
-    if (tocState.isVisible) {
-        tocState.elements.sidebar?.setAttribute('aria-hidden', 'false');
-        // Focus the first header item for keyboard navigation
-        const firstHeader = tocState.elements.list?.querySelector('.toc-item');
-        if (firstHeader) {
-            setTimeout(() => firstHeader.focus(), 100);
+    try {
+        console.log('🔧 toggleTableOfContents called, current state:', tocState.isVisible);
+        console.log('🔧 TOC elements check:', {
+            sidebar: !!tocState.elements.sidebar,
+            toggle: !!tocState.elements.toggle,
+            sidebarId: tocState.elements.sidebar?.id,
+            sidebarClasses: tocState.elements.sidebar?.className
+        });
+        
+        // Safety check - ensure elements exist
+        if (!tocState.elements.sidebar) {
+            console.error('❌ TOC sidebar element not found, attempting to recreate...');
+            createTOCElements();
+            if (!tocState.elements.sidebar) {
+                console.error('❌ Failed to create TOC sidebar element');
+                return;
+            }
         }
-    } else {
-        tocState.elements.sidebar?.setAttribute('aria-hidden', 'true');
+        
+        const wasVisible = tocState.isVisible;
+        tocState.isVisible = !wasVisible;
+        
+        console.log('🔧 TOC state change:', { from: wasVisible, to: tocState.isVisible });
+        
+        // Update sidebar with simple class toggle
+        if (tocState.elements.sidebar) {
+            tocState.elements.sidebar.classList.toggle('toc-open', tocState.isVisible);
+            console.log('✅ TOC sidebar class updated:', tocState.elements.sidebar.classList.contains('toc-open'));
+            
+            // Force debug check
+            const rect = tocState.elements.sidebar.getBoundingClientRect();
+            console.log('🔧 TOC Sidebar position after toggle:', {
+                left: rect.left,
+                width: rect.width,
+                visible: rect.left >= -50, // Visible if left position is near 0
+                hasOpenClass: tocState.elements.sidebar.classList.contains('toc-open')
+            });
+        }
+        
+        // Update toggle button state if available
+        if (tocState.elements.toggle) {
+            tocState.elements.toggle.classList.toggle('active', tocState.isVisible);
+            const toggleText = tocState.elements.toggle.querySelector('.toc-toggle-text');
+            if (toggleText) {
+                toggleText.textContent = tocState.isVisible ? 'Close TOC' : 'Table of Contents';
+            }
+        }
+        
+        // Update aria-hidden for accessibility
+        if (tocState.elements.sidebar) {
+            tocState.elements.sidebar.setAttribute('aria-hidden', !tocState.isVisible);
+        }
+        
+        console.log('✅ TOC toggle completed successfully');
+        
+    } catch (error) {
+        console.error('❌ Error in toggleTableOfContents:', error);
+        showError('Failed to toggle Table of Contents');
     }
-    
-    console.log(`📋 TOC ${tocState.isVisible ? 'opened' : 'closed'}`);
 }
 
 /**
@@ -329,13 +414,27 @@ function displayHeaders(headers) {
         `;
         
         // Add click handler
-        item.addEventListener('click', () => navigateToHeader(header.id));
+        item.addEventListener('click', () => {
+            navigateToHeader(header.id);
+            // Auto-close TOC after navigation for better UX
+            setTimeout(() => {
+                if (tocState.isVisible) {
+                    toggleTableOfContents();
+                }
+            }, 300);
+        });
         
         // Add keyboard handler
         item.addEventListener('keydown', (event) => {
             if (event.key === 'Enter' || event.key === ' ') {
                 event.preventDefault();
                 navigateToHeader(header.id);
+                // Auto-close TOC after keyboard navigation
+                setTimeout(() => {
+                    if (tocState.isVisible) {
+                        toggleTableOfContents();
+                    }
+                }, 300);
             }
         });
         

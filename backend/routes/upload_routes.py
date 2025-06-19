@@ -1,4 +1,4 @@
-from flask import Blueprint, request, jsonify, current_app
+from flask import Blueprint, request, jsonify, current_app, session
 import os
 from ..services.audio_service import AudioService
 from ..routes.password_protection import require_temp_auth
@@ -11,43 +11,65 @@ def create_upload_routes(app, upload_folder):
     audio_service = AudioService(upload_folder)
     
     @app.route('/api/upload', methods=['POST', 'OPTIONS'])
-    @require_temp_auth
     def upload_audio():
         """
         Handle audio file upload.
         Preserves the exact logic from original server.py upload_audio() function
         """
+        # Handle CORS preflight request BEFORE authentication
         if request.method == 'OPTIONS':
-            response = app.make_default_options_response()
-            response.headers['Access-Control-Allow-Methods'] = 'POST, OPTIONS'
-            response.headers['Access-Control-Allow-Headers'] = 'Content-Type'
+            response = current_app.make_default_options_response()
+            headers = response.headers
+            headers['Access-Control-Allow-Origin'] = request.headers.get('Origin', '*')
+            headers['Access-Control-Allow-Methods'] = 'POST, OPTIONS'
+            headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, X-Requested-With, X-CSRF-Token, X-Temp-Auth'
+            headers['Access-Control-Allow-Credentials'] = 'true'
             return response
-
-        app.logger.debug('Upload request received')
-        app.logger.debug(f'Files in request: {request.files}')
-        app.logger.debug(f'Request headers: {request.headers}')
         
-        try:
-            if 'audio' not in request.files:
-                app.logger.error('No audio file in request')
-                return jsonify({'success': False, 'error': 'No audio file provided'}), 400
-
-            file = request.files['audio']
-            app.logger.debug(f'Received file: {file.filename}')
+        # Apply authentication check only for POST requests
+        @require_temp_auth
+        def authenticated_upload():
+            app.logger.debug('Upload request received')
+            app.logger.debug(f'Files in request: {request.files}')
+            app.logger.debug(f'Request headers: {request.headers}')
             
-            if file.filename == '':
-                app.logger.error('Empty filename')
-                return jsonify({'success': False, 'error': 'No selected file'}), 400
-
-            # Use audio service to handle upload - preserves exact logic
-            result = audio_service.upload_audio_file(file)
-            app.logger.debug('File processed successfully')
+            # Enhanced debugging for production authentication issues
+            app.logger.info(f'🔐 UPLOAD AUTH DEBUG:')
+            app.logger.info(f'   - Testing mode: {current_app.config.get("TESTING_MODE", False)}')
+            app.logger.info(f'   - Session temp_authenticated: {session.get("temp_authenticated", False)}')
+            app.logger.info(f'   - Authorization header present: {"Authorization" in request.headers}')
+            app.logger.info(f'   - X-Temp-Auth header present: {"X-Temp-Auth" in request.headers}')
+            app.logger.info(f'   - Request origin: {request.headers.get("Origin", "Not set")}')
+            app.logger.info(f'   - Request method: {request.method}')
             
-            return jsonify(result)
+            try:
+                if 'audio' not in request.files:
+                    app.logger.error('No audio file in request')
+                    return jsonify({'success': False, 'error': 'No audio file provided'}), 400
 
-        except Exception as e:
-            app.logger.error(f'Upload error: {str(e)}')
-            return jsonify({
-                'success': False,
-                'error': str(e)
-            }), 500 
+                file = request.files['audio']
+                app.logger.debug(f'Received file: {file.filename}')
+                
+                if file.filename == '':
+                    app.logger.error('Empty filename')
+                    return jsonify({'success': False, 'error': 'No selected file'}), 400
+
+                # Use audio service to handle upload - preserves exact logic
+                result = audio_service.upload_audio_file(file)
+                app.logger.debug('File processed successfully')
+                
+                # Add authentication status to response for debugging
+                response = jsonify(result)
+                response.headers['X-Auth-Status'] = 'authenticated'
+                response.headers['X-Session-Status'] = str(session.get('temp_authenticated', False))
+                return response
+
+            except Exception as e:
+                app.logger.error(f'Upload error: {str(e)}')
+                return jsonify({
+                    'success': False,
+                    'error': str(e)
+                }), 500
+        
+        # Call the authenticated function for POST requests
+        return authenticated_upload() 

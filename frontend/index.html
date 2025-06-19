@@ -134,64 +134,107 @@
     <script type="module">
         import { router } from '/js/modules/router.js';
         import { showError } from '/js/modules/notifications.js';
+        import envManager from '/js/modules/envManager.js';
+        import appConfig from '/js/config/appConfig.js';
         
         // Global app state
-        window.isAppInitialized = false;
+        window.isFrameworkInitialized = false;
         
-        // Initialize the application
+        // Enhanced error handling for module loading issues
+        window.addEventListener('error', (event) => {
+            if (event.error && event.error.message && event.error.message.includes('clearTestingModeData')) {
+                console.warn('🔧 Detected duplicate function declaration, attempting recovery...');
+                // Reload the page to clear the module cache
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1000);
+                return;
+            }
+        });
+        
+        // Initialize the application with deterministic behavior
         async function initializeApplication() {
+            const startTime = Date.now();
+            
             try {
-                console.log('🚀 Initializing AudioBook Organizer...');
+                console.log('🚀 Starting AudioBook Organizer initialization...');
                 
-                // Initialize router (it will handle auth and session management)
-                await router.init();
+                // STEP 1: Initialize environment manager first (critical)
+                console.log('🔧 Step 1: Initializing environment manager...');
+                await envManager.init();
                 
-                // Make router globally available AFTER initialization
+                // STEP 2: Initialize app configuration based on environment
+                console.log('📋 Step 2: Initializing app configuration...');
+                const envConfig = envManager.getConfig();
+                appConfig.init(envConfig.server_type, envConfig.testing_mode);
+                
+                // STEP 3: Apply environment settings immediately
+                console.log('🎯 Step 3: Applying environment settings...');
+                envManager.applyEnvironmentSettings();
+                
+                // STEP 4: Make router available EARLY before other modules need it
+                console.log('🌐 Step 4: Setting up router availability...');
                 if (!window.router) {
                     window.router = router;
+                    console.log('✅ Router made globally available early');
                 }
                 
-                // Hide loading screen and show app
+                // STEP 5: Wait for critical CSS and DOM stability
+                console.log('🎨 Step 5: Waiting for DOM stability...');
+                await appConfig.delay('cssLoadWaitTime');
+                
+                // STEP 6: Initialize router system
+                console.log('🌐 Step 6: Initializing router...');
+                await router.init();
+                
+                // STEP 7: Complete UI transition
+                console.log('✨ Step 7: Completing UI transition...');
+                
+                // Remove loading screen and show app
                 const loadingScreen = document.getElementById('appLoading');
                 const appContainer = document.getElementById('appContainer');
                 
                 if (loadingScreen && appContainer) {
-                    loadingScreen.style.display = 'none';
-                    appContainer.style.display = 'block';
+                    loadingScreen.style.opacity = '0';
                     appContainer.style.opacity = '1';
+                    
+                    setTimeout(() => {
+                        loadingScreen.style.display = 'none';
+                        document.body.classList.add('app-ready');
+                    }, 500);
                 }
                 
-                // Remove loading class from body
-                document.body.classList.remove('app-loading-state');
-                document.body.classList.add('app-ready');
-                
-                console.log('✅ AudioBook Organizer initialized successfully');
+                const totalTime = Date.now() - startTime;
+                console.log(`✅ AudioBook Organizer initialized successfully in ${totalTime}ms`);
+                window.isFrameworkInitialized = true;
                 
             } catch (error) {
-                console.error('❌ Failed to initialize application:', error);
-                showError('Failed to initialize the application. Please try refreshing the page.');
+                console.error('❌ Application initialization failed:', error);
                 
-                // Show error message
+                // Try to show a user-friendly error
+                try {
+                    showError('Failed to initialize application. Please refresh the page.');
+                } catch (notificationError) {
+                    // Fallback error display
+                    const appContainer = document.getElementById('appContainer');
+                    if (appContainer) {
+                        appContainer.innerHTML = `
+                            <div style="text-align: center; padding: 2rem; color: #ff6b6b;">
+                                <h1>🚨 Application Error</h1>
+                                <p>Failed to initialize the application.</p>
+                                <p>Please refresh the page or contact support.</p>
+                                <button onclick="window.location.reload()" style="padding: 10px 20px; margin-top: 20px; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer;">
+                                    Refresh Page
+                                </button>
+                            </div>
+                        `;
+                    }
+                }
+                
+                // Also remove loading screen to show error
                 const loadingScreen = document.getElementById('appLoading');
                 if (loadingScreen) {
-                    loadingScreen.innerHTML = `
-                        <div class="loading-content">
-                            <div class="loading-icon">⚠️</div>
-                            <h1 class="loading-title">Loading Error</h1>
-                            <p class="loading-subtitle">Failed to initialize the application.</p>
-                            <button onclick="location.reload()" style="
-                                padding: 10px 20px;
-                                background: white;
-                                color: #333;
-                                border: none;
-                                border-radius: 5px;
-                                cursor: pointer;
-                                font-weight: 500;
-                                margin-top: 20px;">
-                                Retry
-                            </button>
-                        </div>
-                    `;
+                    loadingScreen.style.display = 'none';
                 }
             }
         }
@@ -202,6 +245,13 @@
         } else {
             initializeApplication();
         }
+        
+        // Handle browser navigation
+        window.addEventListener('popstate', (event) => {
+            if (window.router && window.isFrameworkInitialized) {
+                router.handleRoute(null, { isPopState: true });
+            }
+        });
     </script>
     
     <!-- Fallback for browsers without module support -->
