@@ -117,17 +117,7 @@ def create_app(config_name=None):
     # Register password protection routes
     create_password_protection_routes(app)
     
-    # Debug route to check all registered routes - exact functionality preserved
-    @app.route('/debug/routes', methods=['GET'])
-    def list_routes():
-        routes = []
-        for rule in app.url_map.iter_rules():
-            routes.append({
-                'endpoint': rule.endpoint,
-                'methods': list(rule.methods),
-                'path': str(rule)
-            })
-        return jsonify(routes)
+
     
     # Test API route - exact functionality preserved
     @app.route('/api/test', methods=['GET'])
@@ -137,86 +127,7 @@ def create_app(config_name=None):
             'message': 'API is working'
         })
     
-    # Auth test endpoint (requires authentication)
-    @app.route('/api/test-auth', methods=['GET', 'POST'])
-    def test_auth():
-        from .routes.password_protection import require_temp_auth
-        
-        @require_temp_auth
-        def authenticated_test():
-            return jsonify({
-                'success': True,
-                'message': 'Authentication working correctly',
-                'session_auth': session.get('temp_authenticated', False),
-                'testing_mode': app.config.get('TESTING_MODE', False),
-                'timestamp': datetime.utcnow().isoformat() + 'Z'
-            })
-        
-        return authenticated_test()
-    
-    # Simple debug route for environment variables (no auth required)
-    @app.route('/api/debug-env', methods=['GET'])
-    def debug_env():
-        return jsonify({
-            'testing_mode_raw': os.environ.get('TESTING_MODE', 'NOT_SET'),
-            'testing_mode_parsed': app.config.get('TESTING_MODE', False),
-            'temporary_password_configured': bool(app.config.get('TEMPORARY_PASSWORD')),
-            'flask_env': os.environ.get('FLASK_ENV', 'NOT_SET'),
-            'backend_url_raw': os.environ.get('BACKEND_URL', 'NOT_SET'),
-            'config_class': type(app.config).__name__,
-            'session_config': {
-                'secure': app.config.get('SESSION_COOKIE_SECURE', 'NOT_SET'),
-                'samesite': app.config.get('SESSION_COOKIE_SAMESITE', 'NOT_SET'),
-                'httponly': app.config.get('SESSION_COOKIE_HTTPONLY', 'NOT_SET')
-            },
-            'timestamp': datetime.utcnow().isoformat() + 'Z'
-        })
-    
-    # Debug endpoint for time checking
-    @app.route('/debug/time', methods=['GET'])
-    def debug_time():
-        current_timestamp = datetime.utcnow().timestamp()
-        return jsonify({
-            'server_timestamp': current_timestamp,
-            'server_time_readable': datetime.utcnow().isoformat() + 'Z',
-            'server_timezone': str(datetime.now().astimezone().tzinfo)
-        })
-    
-    # Debug endpoint for testing mode configuration
-    @app.route('/debug/config', methods=['GET'])
-    def debug_config():
-        """Enhanced debug endpoint for environment configuration"""
-        
-        # Detect server type
-        server_name = request.environ.get('SERVER_SOFTWARE', 'unknown')
-        is_gunicorn = 'gunicorn' in server_name.lower()
-        is_flask_dev = 'werkzeug' in server_name.lower() or not is_gunicorn
-        
-        server_type = 'gunicorn-prod' if is_gunicorn else 'flask-dev'
-        
-        return jsonify({
-            'testing_mode': app.config.get('TESTING_MODE', False),
-            'temporary_password_configured': bool(app.config.get('TEMPORARY_PASSWORD')),
-            'environment': os.environ.get('FLASK_ENV', 'development'),
-            'server_type': server_type,
-            'server_software': server_name,
-            'debug_mode': app.config.get('DEBUG', False),
-            'host': app.config.get('HOST', 'unknown'),
-            'port': app.config.get('PORT', 'unknown'),
-            'config_class': type(app.config).__name__ if hasattr(app.config, '__class__') else 'unknown',
-            'session_config': {
-                'lifetime_hours': app.config.get('PERMANENT_SESSION_LIFETIME', timedelta(hours=1)).total_seconds() / 3600,
-                'cookie_secure': app.config.get('SESSION_COOKIE_SECURE', False),
-                'cookie_samesite': app.config.get('SESSION_COOKIE_SAMESITE', 'Lax')
-            },
-            'timestamp': datetime.utcnow().isoformat() + 'Z',
-            'available_env_vars': {
-                'TESTING_MODE': os.environ.get('TESTING_MODE', 'NOT_SET'),
-                'TEMPORARY_PASSWORD': 'CONFIGURED' if os.environ.get('TEMPORARY_PASSWORD') else 'NOT_SET',
-                'FLASK_ENV': os.environ.get('FLASK_ENV', 'NOT_SET'),
-                'SESSION_COOKIE_SECURE': os.environ.get('SESSION_COOKIE_SECURE', 'NOT_SET')
-            }
-        })
+
     
     return app
 

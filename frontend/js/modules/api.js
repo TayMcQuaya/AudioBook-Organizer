@@ -21,13 +21,7 @@ export const API_BASE_URL = getApiBaseUrl();
 // Use the same logic for the main BACKEND_URL variable
 const BACKEND_URL = getApiBaseUrl();
 
-// Only log in development environment
-if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-  console.log('🔧 Development API Configuration:', {
-    hostname: window.location.hostname,
-    backendUrl: BACKEND_URL || '(relative paths)'
-  });
-}
+// API configuration loaded
 
 /**
  * Enhanced fetch wrapper for API calls.
@@ -61,11 +55,6 @@ export async function apiFetch(endpoint, options = {}) {
         defaultHeaders['Authorization'] = `Bearer ${tempToken}`;
         // Also send as X-Temp-Auth header as backup method
         defaultHeaders['X-Temp-Auth'] = tempToken;
-        
-        // Development logging only
-        if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-            console.log('🔧 Dev: Using temp auth token for request');
-        }
     }
     // 2. Fallback to Supabase token if no temp token
     else {
@@ -76,16 +65,6 @@ export async function apiFetch(endpoint, options = {}) {
         // 3. Legacy fallback for session-based auth
         else if (localStorage.getItem('temp_auth_backup') === 'true') {
             defaultHeaders['X-Testing-Override'] = 'temp-auth-bypass';
-            
-            // Development logging only
-            if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-                console.log('🔧 Dev: Using legacy auth fallback');
-            }
-        } else {
-            // Development logging only
-            if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-                console.log('🔧 Dev: No auth token found');
-            }
         }
     }
 

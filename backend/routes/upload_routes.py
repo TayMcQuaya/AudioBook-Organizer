@@ -33,25 +33,12 @@ def create_upload_routes(app, upload_folder):
             app.logger.debug(f'Files in request: {request.files}')
             app.logger.debug(f'Request headers: {request.headers}')
             
-            # Enhanced debugging for production authentication issues
-            app.logger.info(f'🔐 UPLOAD AUTH DEBUG:')
-            app.logger.info(f'   - Testing mode: {current_app.config.get("TESTING_MODE", False)}')
-            app.logger.info(f'   - Session temp_authenticated: {session.get("temp_authenticated", False)}')
-            app.logger.info(f'   - Session keys: {list(session.keys())}')
-            app.logger.info(f'   - Authorization header: {"Present" if request.headers.get("Authorization") else "Missing"}')
-            app.logger.info(f'   - X-Temp-Auth header: {"Present" if request.headers.get("X-Temp-Auth") else "Missing"}')
-            app.logger.info(f'   - Request origin: {request.headers.get("Origin", "Not set")}')
-            app.logger.info(f'   - Request method: {request.method}')
-            app.logger.info(f'   - Content-Type: {request.headers.get("Content-Type", "Not set")}')
-            app.logger.info(f'   - User-Agent: {request.headers.get("User-Agent", "Not set")[:100]}...')
+            # Production authentication check
+            app.logger.debug(f'Processing upload request for {request.method} {request.endpoint}')
             
-            # Log auth headers for debugging (first 20 chars only for security)
-            if request.headers.get("Authorization"):
-                auth_header = request.headers.get("Authorization")
-                app.logger.info(f'   - Auth header preview: {auth_header[:30]}...')
-            if request.headers.get("X-Temp-Auth"):
-                temp_auth = request.headers.get("X-Temp-Auth")
-                app.logger.info(f'   - X-Temp-Auth preview: {temp_auth[:20]}...')
+            # Security: Only log essential info for debugging, no sensitive data
+            app.logger.debug(f'Testing mode: {current_app.config.get("TESTING_MODE", False)}')
+            app.logger.debug(f'Auth status: {"Authenticated" if session.get("temp_authenticated", False) else "Not authenticated"}')
             
             try:
                 if 'audio' not in request.files:
