@@ -747,8 +747,8 @@ class Router {
                     landingScript.remove();
                 }
                 
-                // Set the correct body class
-                document.body.className = 'app-body';
+                // Set the correct body class while preserving important classes
+                document.body.className = 'app-body layout-ready';
             }
 
             // Only load app HTML if not already loaded
@@ -769,6 +769,13 @@ class Router {
                 appContainer.innerHTML = bodyContent;
                 console.log('✅ App HTML injected, container now has content length:', appContainer.innerHTML.length);
                 
+                // Ensure critical layout classes are applied
+                document.body.classList.add('layout-ready');
+                if (tempAuthManager.isTestingMode) {
+                    document.body.classList.add('testing-mode');
+                }
+                console.log('✅ Layout classes applied:', document.body.className);
+                
                 // Verify main elements exist
                 const mainContainer = appContainer.querySelector('.main-container');
                 const bookContent = appContainer.querySelector('#bookContent');
@@ -778,6 +785,16 @@ class Router {
                     containerClasses: appContainer.className,
                     bodyClasses: document.body.className
                 });
+                
+                // Debug: Check main container visibility
+                if (mainContainer) {
+                    const styles = window.getComputedStyle(mainContainer);
+                    console.log('🔍 Main container styles:', {
+                        opacity: styles.opacity,
+                        display: styles.display,
+                        visibility: styles.visibility
+                    });
+                }
             } else {
                 console.log('✅ App HTML already loaded, skipping injection');
             }
