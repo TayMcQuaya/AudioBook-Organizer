@@ -37,10 +37,21 @@ def create_upload_routes(app, upload_folder):
             app.logger.info(f'🔐 UPLOAD AUTH DEBUG:')
             app.logger.info(f'   - Testing mode: {current_app.config.get("TESTING_MODE", False)}')
             app.logger.info(f'   - Session temp_authenticated: {session.get("temp_authenticated", False)}')
-            app.logger.info(f'   - Authorization header present: {"Authorization" in request.headers}')
-            app.logger.info(f'   - X-Temp-Auth header present: {"X-Temp-Auth" in request.headers}')
+            app.logger.info(f'   - Session keys: {list(session.keys())}')
+            app.logger.info(f'   - Authorization header: {"Present" if request.headers.get("Authorization") else "Missing"}')
+            app.logger.info(f'   - X-Temp-Auth header: {"Present" if request.headers.get("X-Temp-Auth") else "Missing"}')
             app.logger.info(f'   - Request origin: {request.headers.get("Origin", "Not set")}')
             app.logger.info(f'   - Request method: {request.method}')
+            app.logger.info(f'   - Content-Type: {request.headers.get("Content-Type", "Not set")}')
+            app.logger.info(f'   - User-Agent: {request.headers.get("User-Agent", "Not set")[:100]}...')
+            
+            # Log auth headers for debugging (first 20 chars only for security)
+            if request.headers.get("Authorization"):
+                auth_header = request.headers.get("Authorization")
+                app.logger.info(f'   - Auth header preview: {auth_header[:30]}...')
+            if request.headers.get("X-Temp-Auth"):
+                temp_auth = request.headers.get("X-Temp-Auth")
+                app.logger.info(f'   - X-Temp-Auth preview: {temp_auth[:20]}...')
             
             try:
                 if 'audio' not in request.files:

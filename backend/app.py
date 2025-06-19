@@ -1,4 +1,4 @@
-from flask import Flask, jsonify, send_from_directory, request
+from flask import Flask, jsonify, send_from_directory, request, session
 from flask_cors import CORS
 import os
 import logging
@@ -137,6 +137,23 @@ def create_app(config_name=None):
             'message': 'API is working'
         })
     
+    # Auth test endpoint (requires authentication)
+    @app.route('/api/test-auth', methods=['GET', 'POST'])
+    def test_auth():
+        from .routes.password_protection import require_temp_auth
+        
+        @require_temp_auth
+        def authenticated_test():
+            return jsonify({
+                'success': True,
+                'message': 'Authentication working correctly',
+                'session_auth': session.get('temp_authenticated', False),
+                'testing_mode': app.config.get('TESTING_MODE', False),
+                'timestamp': datetime.utcnow().isoformat() + 'Z'
+            })
+        
+        return authenticated_test()
+    
     # Simple debug route for environment variables (no auth required)
     @app.route('/api/debug-env', methods=['GET'])
     def debug_env():
@@ -145,7 +162,13 @@ def create_app(config_name=None):
             'testing_mode_parsed': app.config.get('TESTING_MODE', False),
             'temporary_password_configured': bool(app.config.get('TEMPORARY_PASSWORD')),
             'flask_env': os.environ.get('FLASK_ENV', 'NOT_SET'),
+            'backend_url_raw': os.environ.get('BACKEND_URL', 'NOT_SET'),
             'config_class': type(app.config).__name__,
+            'session_config': {
+                'secure': app.config.get('SESSION_COOKIE_SECURE', 'NOT_SET'),
+                'samesite': app.config.get('SESSION_COOKIE_SAMESITE', 'NOT_SET'),
+                'httponly': app.config.get('SESSION_COOKIE_HTTPONLY', 'NOT_SET')
+            },
             'timestamp': datetime.utcnow().isoformat() + 'Z'
         })
     

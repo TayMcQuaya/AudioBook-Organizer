@@ -25,11 +25,18 @@ def create_url_safe_path(filename):
     For production, return full backend URL to handle cross-domain file access.
     """
     import os
+    import logging
+    
+    logger = logging.getLogger(__name__)
     
     # In production, use full backend URL for cross-domain access
     if os.environ.get('FLASK_ENV') == 'production':
         backend_url = os.environ.get('BACKEND_URL', 'https://audiobook-organizer-test-vdhku.ondigitalocean.app')
-        return f"{backend_url}/uploads/{filename}"
+        full_url = f"{backend_url}/uploads/{filename}"
+        logger.info(f"🔗 Generated cross-domain file URL: {full_url}")
+        return full_url
     else:
         # For local development, use relative path
-        return f"/uploads/{filename}" 
+        relative_path = f"/uploads/{filename}"
+        logger.debug(f"🔗 Generated local file path: {relative_path}")
+        return relative_path 
