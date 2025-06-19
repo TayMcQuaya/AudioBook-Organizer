@@ -490,6 +490,16 @@ export async function attachAudio(chapterId, sectionId, input) {
         return;
     }
 
+    // Create loading indicator like in the original
+    const audioControls = input.parentElement;
+    const loadingSpan = document.createElement('span');
+    loadingSpan.className = 'upload-loading-indicator';
+    loadingSpan.style.cssText = 'margin-left: 10px; color: #007bff; font-style: italic;';
+    loadingSpan.textContent = file.name.toLowerCase().endsWith('.mp3') ? 
+        'Converting and uploading...' : 'Uploading...';
+    audioControls.appendChild(loadingSpan);
+    input.disabled = true;
+
     const formData = new FormData();
     formData.append('audio', file);
     formData.append('chapterId', chapterId);
@@ -531,6 +541,13 @@ export async function attachAudio(chapterId, sectionId, input) {
     } catch (error) {
         console.error('Audio upload failed:', error);
         showError(`Audio upload failed: ${error.message}`);
+    } finally {
+        // Clean up loading indicator and re-enable input
+        if (loadingSpan && loadingSpan.parentNode) {
+            loadingSpan.parentNode.removeChild(loadingSpan);
+        }
+        input.disabled = false;
+        input.value = ''; // Clear the file input for next upload
     }
 }
 
