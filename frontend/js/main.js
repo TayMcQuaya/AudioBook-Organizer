@@ -102,8 +102,6 @@ import {
 
 import testingModeUI from './modules/testingModeUI.js';
 
-import { moduleLoader, versionResources } from './modules/moduleLoader.js';
-
 // Make functions globally available for HTML onclick handlers
 window.createNewChapter = createNewChapter;
 window.updateChapterName = updateChapterName;
@@ -236,30 +234,41 @@ function resetSmartSelectPosition() {
     showSuccess('Smart selection position reset to the beginning!');
 }
 
-// Apply versioning to all resources as early as possible
-versionResources();
-
-// Your existing initialization code here
-async function initializeApp() {
-    console.log('🚀 Starting AudioBook Organizer initialization...');
+async function initialize() {
+    console.log('🚀 Initializing AudioBook Organizer...');
     
-    try {
-        // Load and initialize core modules
-        const envManager = await moduleLoader.loadModule('/js/modules/envManager.js');
-        const appConfig = await moduleLoader.loadModule('/js/config/appConfig.js');
+    // Check if we're in testing mode or normal mode
+    let authModuleToUse = null;
+    
+    if (window.tempAuthManager && window.tempAuthManager.isTestingMode) {
+        console.log('🧪 Testing mode detected - using temp auth manager');
+        authModuleToUse = window.tempAuthManager;
         
-        // Continue with your existing initialization...
-        
-    } catch (error) {
-        console.error('❌ Application initialization failed:', error);
+        // Initialize testing mode UI
+        try {
+            await testingModeUI.init();
+            console.log('✅ Testing mode UI initialized');
+        } catch (error) {
+            console.error('❌ Failed to initialize testing mode UI:', error);
+        }
+    } else if (window.authModule) {
+        console.log('🔑 Normal mode detected - using Supabase auth module');
+        authModuleToUse = window.authModule;
+    } else {
+        console.warn('⚠️ No auth module found - proceeding with limited functionality');
+        // In case no auth is available, we can still initialize the app
+        authModuleToUse = { isAuthenticated: () => true }; // Mock auth for fallback
     }
-}
-
-// Initialize when DOM is ready
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initializeApp);
-} else {
-    initializeApp();
+    
+    await initApp(authModuleToUse);
+    
+    // Initialize formatting system
+    initializeFormattingShortcuts();
+    initializeSelectionTracking();
+    initializeToolbarPositioning();
+    initializeCommentsSystem();
+    
+    console.log('✨ AudioBook Organizer main app initialized successfully');
 }
 
 function cleanup() {

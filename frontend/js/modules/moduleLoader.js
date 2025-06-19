@@ -3,14 +3,6 @@
  * Handles dynamic imports consistently across Flask (local) and Gunicorn (production)
  */
 
-const VERSION = Date.now();
-
-function addVersionToUrl(url) {
-    if (!url) return url;
-    const separator = url.includes('?') ? '&' : '?';
-    return `${url}${separator}v=${VERSION}`;
-}
-
 class ModuleLoader {
     constructor() {
         this.baseUrl = this._detectBaseUrl();
@@ -60,20 +52,18 @@ class ModuleLoader {
             retries = 3
         } = options;
 
-        const versionedPath = addVersionToUrl(modulePath);
-
         // Check cache first
-        if (cache && this.loadedModules.has(versionedPath)) {
-            return this.loadedModules.get(versionedPath);
+        if (cache && this.loadedModules.has(modulePath)) {
+            return this.loadedModules.get(modulePath);
         }
 
         // Check if we've failed too many times
-        const failures = this.failedAttempts.get(versionedPath) || 0;
+        const failures = this.failedAttempts.get(modulePath) || 0;
         if (failures >= retries) {
-            throw new Error(`Module ${versionedPath} failed to load after ${retries} attempts`);
+            throw new Error(`Module ${modulePath} failed to load after ${retries} attempts`);
         }
 
-        const paths = this._buildModulePaths(versionedPath);
+        const paths = this._buildModulePaths(modulePath);
         let lastError = null;
 
         for (const path of paths) {
@@ -84,11 +74,11 @@ class ModuleLoader {
                 
                 // Cache successful load
                 if (cache) {
-                    this.loadedModules.set(versionedPath, module);
+                    this.loadedModules.set(modulePath, module);
                 }
                 
                 // Reset failure count on success
-                this.failedAttempts.delete(versionedPath);
+                this.failedAttempts.delete(modulePath);
                 
                 console.log(`✅ Successfully loaded module: ${path}`);
                 return module;
@@ -101,9 +91,9 @@ class ModuleLoader {
         }
 
         // All paths failed, increment failure count
-        this.failedAttempts.set(versionedPath, failures + 1);
+        this.failedAttempts.set(modulePath, failures + 1);
         
-        throw new Error(`Failed to load module ${versionedPath} from any path. Last error: ${lastError?.message}`);
+        throw new Error(`Failed to load module ${modulePath} from any path. Last error: ${lastError?.message}`);
     }
 
     /**
@@ -128,21 +118,19 @@ class ModuleLoader {
             globalCheck = null
         } = options;
 
-        const versionedPath = addVersionToUrl(modulePath);
-
         return new Promise((resolve, reject) => {
             const script = document.createElement('script');
             script.type = type;
             
             // Remove existing script with same src
-            const existing = document.querySelector(`script[src="${versionedPath}"]`);
+            const existing = document.querySelector(`script[src="${modulePath}"]`);
             if (existing) {
                 existing.remove();
             }
 
             const timer = setTimeout(() => {
                 script.remove();
-                reject(new Error(`Script load timeout: ${versionedPath}`));
+                reject(new Error(`Script load timeout: ${modulePath}`));
             }, timeout);
 
             script.onload = () => {
@@ -153,7 +141,7 @@ class ModuleLoader {
                     if (globalCheck()) {
                         resolve(script);
                     } else {
-                        reject(new Error(`Global functions not available after loading ${versionedPath}`));
+                        reject(new Error(`Global functions not available after loading ${modulePath}`));
                     }
                 } else {
                     resolve(script);
@@ -163,10 +151,10 @@ class ModuleLoader {
             script.onerror = () => {
                 clearTimeout(timer);
                 script.remove();
-                reject(new Error(`Script load failed: ${versionedPath}`));
+                reject(new Error(`Script load failed: ${modulePath}`));
             };
 
-            script.src = this._buildModulePaths(versionedPath)[0]; // Use first path for script loading
+            script.src = this._buildModulePaths(modulePath)[0]; // Use first path for script loading
             document.head.appendChild(script);
         });
     }
@@ -232,24 +220,4 @@ class ModuleLoader {
 
 // Export singleton instance
 export const moduleLoader = new ModuleLoader();
-export default moduleLoader;
-
-// Function to version all resources
-export function versionResources() {
-    // Version CSS files
-    document.querySelectorAll('link[rel="stylesheet"]').forEach(link => {
-        if (link.href && !link.href.includes('v=')) {
-            link.href = addVersionToUrl(link.href);
-        }
-    });
-
-    // Version JS files
-    document.querySelectorAll('script[src]').forEach(script => {
-        if (script.src && !script.src.includes('v=')) {
-            script.src = addVersionToUrl(script.src);
-        }
-    });
-}
-
-// Export version for other modules
-export const currentVersion = VERSION; 
+export default moduleLoader; 
