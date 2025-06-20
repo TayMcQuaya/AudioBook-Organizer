@@ -30,5 +30,5 @@ EXPOSE 8000
 ENV FLASK_ENV=production
 ENV FLASK_DEBUG=False
 
-# Run app.py when the container launches
-CMD ["gunicorn", "--bind", "0.0.0.0:8000", "--workers", "2", "--timeout", "120", "backend.app:create_app()"] 
+# Run app.py when the container launches with optimized settings for concurrency
+CMD ["gunicorn", "--bind", "0.0.0.0:8000", "--workers", "3", "--threads", "2", "--worker-class", "gthread", "--timeout", "120", "--max-requests", "1000", "--max-requests-jitter", "100", "backend.app:create_app()"] 

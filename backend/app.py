@@ -7,6 +7,7 @@ import re
 
 from .config import config
 from .utils.file_utils import ensure_directories_exist
+from .utils.file_cleanup import cleanup_old_files, cleanup_temp_files
 from .routes.static_routes import create_static_routes
 from .routes.upload_routes import create_upload_routes
 from .routes.export_routes import create_export_routes
@@ -84,6 +85,11 @@ def create_app(config_name=None):
     
     # Ensure directories exist - exact logic preserved
     ensure_directories_exist(app.config['UPLOAD_FOLDER'], app.config['EXPORT_FOLDER'])
+    
+    # Clean up old files on startup for better resource management
+    if config_name == 'production':
+        cleanup_old_files(app.config['UPLOAD_FOLDER'])
+        cleanup_temp_files(app.config['UPLOAD_FOLDER'])
     
     # Initialize Supabase service
     if app.config.get('SUPABASE_URL') and app.config.get('SUPABASE_KEY'):

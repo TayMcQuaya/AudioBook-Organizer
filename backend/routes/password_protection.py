@@ -15,13 +15,26 @@ def create_password_protection_routes(app):
     
     # Create a cleanup function for expired tokens
     def cleanup_expired_tokens():
-        """Remove expired tokens from memory"""
+        """Remove expired tokens from memory with size limits"""
         current_time = time.time()
+        
+        # Remove expired tokens
         expired_tokens = [token for token, data in temp_auth_tokens.items() 
                          if current_time >= data['expires_at']]
         for token in expired_tokens:
             del temp_auth_tokens[token]
-        app.logger.debug(f"🧹 Cleaned up {len(expired_tokens)} expired tokens")
+        
+        # Limit total tokens to prevent memory bloat (LRU cleanup)
+        max_tokens = 200  # Reasonable limit for 50 users
+        if len(temp_auth_tokens) > max_tokens:
+            # Remove oldest tokens (by creation time)
+            sorted_tokens = sorted(temp_auth_tokens.items(), 
+                                 key=lambda x: x[1]['created_at'])
+            tokens_to_remove = sorted_tokens[:len(temp_auth_tokens) - max_tokens]
+            for token, _ in tokens_to_remove:
+                del temp_auth_tokens[token]
+        
+        app.logger.debug(f"Token cleanup: {len(expired_tokens)} expired, {len(temp_auth_tokens)} active")
     
     @app.route('/api/auth/temp-login', methods=['POST'])
     def temp_login():
