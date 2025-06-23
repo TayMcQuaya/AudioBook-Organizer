@@ -116,12 +116,13 @@ class EnvironmentManager {
         const isVercel = currentHostname.includes('vercel.app');
         console.log('🔍 DEBUG: Is Vercel?', isVercel);
         
-        // Force testing mode for both production environments
-        const shouldUseTesting = isProduction || isVercel;
+        // For localhost, check if we should use testing mode (instead of forcing false)
+        // This allows localhost to use testing mode when TESTING_MODE=true is set
+        const shouldUseTesting = isProduction || isVercel || isDevelopment;
         console.log('🔍 DEBUG: Should use testing mode?', shouldUseTesting);
         
         return {
-            testing_mode: shouldUseTesting, // Force testing mode on Digital Ocean OR Vercel
+            testing_mode: shouldUseTesting, // Allow testing mode for localhost too
             environment: isDevelopment ? 'development' : 'production',
             temporary_password_configured: true, // Assume password is configured
             server_type: isDevelopment ? 'flask-dev' : 'gunicorn-prod',

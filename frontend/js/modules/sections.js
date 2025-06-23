@@ -3,11 +3,15 @@
 import { chapters, findChapter, currentColorIndex, chapterPlayers } from './state.js';
 import { createNewChapter } from './chapters.js';
 import { updateChaptersList, updateSelectionColor } from './ui.js';
+import { consumeTestCredits } from './appUI.js';
 import { showWarning, showError, showSuccess } from './notifications.js';
 import { apiFetch } from './api.js';
 
 // Section Management - preserving exact logic from original
-export function createSection() {
+export async function createSection() {
+    // Consume credits for section creation
+    await consumeTestCredits(3, 'section creation');
+    
     // Check if we have smart selection data first
     let text = '';
     let selectionRange = null;
@@ -42,7 +46,7 @@ export function createSection() {
 
     // If no chapters exist, create one
     if (chapters.length === 0) {
-        createNewChapter();
+        await createNewChapter();
     }
     const colorIndex = currentColorIndex;
     
@@ -511,6 +515,10 @@ export async function attachAudio(chapterId, sectionId, input) {
         if (!data.success) {
             throw new Error(data.message || 'Failed to upload audio');
         }
+
+        // Consume credits for audio upload
+        const { consumeTestCredits } = await import('./appUI.js');
+        consumeTestCredits(2, 'audio upload');
 
         // Update section state with audio path
         const chapter = findChapter(chapterId);

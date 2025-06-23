@@ -96,6 +96,124 @@ export function updateSelectionColor() {
     }
 }
 
+// Credit Display Functions
+export function updateCreditsDisplay(credits) {
+    const creditsDisplay = document.getElementById('creditsDisplay');
+    const creditsValue = document.getElementById('creditsValue');
+    
+    if (creditsDisplay && creditsValue) {
+        creditsValue.textContent = credits;
+        
+        // Add warning class for low credits
+        if (credits < 20) {
+            creditsDisplay.classList.add('low-credits');
+        } else {
+            creditsDisplay.classList.remove('low-credits');
+        }
+    }
+}
+
+export function createCreditsDisplay() {
+    // Check if credits display already exists
+    if (document.getElementById('creditsDisplay')) {
+        console.log('💎 Credits display already exists');
+        return;
+    }
+    
+    console.log('💎 Creating credits display...');
+    
+    // Find a suitable location in the header
+    const navLinks = document.querySelector('.nav-links');
+    const header = navLinks || document.querySelector('header') || document.querySelector('.header') || document.querySelector('.nav-bar') || document.querySelector('.app-nav');
+    
+    if (header) {
+        const creditsHTML = `
+            <div id="creditsDisplay" class="credits-display">
+                <span class="credits-icon">💎</span>
+                <span id="creditsValue">--</span>
+                <span class="credits-label">credits</span>
+            </div>
+        `;
+        
+        // Insert into nav-links before the auth button, or at the end of header
+        if (navLinks) {
+            const authButton = navLinks.querySelector('.auth-btn');
+            if (authButton) {
+                authButton.insertAdjacentHTML('beforebegin', creditsHTML);
+            } else {
+                navLinks.insertAdjacentHTML('beforeend', creditsHTML);
+            }
+        } else {
+            header.insertAdjacentHTML('beforeend', creditsHTML);
+        }
+        
+        console.log('💎 Credits HTML inserted into DOM');
+        
+        // Add click handler for future credit purchase modal
+        const creditsDisplay = document.getElementById('creditsDisplay');
+        if (creditsDisplay) {
+            creditsDisplay.addEventListener('click', () => {
+                showLowCreditsModal();
+            });
+            console.log('💎 Credits display created and click handler added');
+        } else {
+            console.error('💎 Failed to find credits display after creation');
+        }
+    }
+}
+
+export function showLowCreditsModal() {
+    // Create modal if it doesn't exist
+    let modal = document.getElementById('lowCreditsModal');
+    if (!modal) {
+        const modalHTML = `
+            <div id="lowCreditsModal" class="modal" style="display: none;">
+                <div class="modal-content">
+                    <span class="close" onclick="hideLowCreditsModal()">&times;</span>
+                    <h2>Need More Credits?</h2>
+                    <p>You're running low on credits. Credits are used for:</p>
+                    <ul>
+                        <li>📄 DOCX processing (10 credits)</li>
+                        <li>🎵 Audio processing (2 credits per minute)</li>
+                        <li>🗣️ Text-to-speech (50 credits per 10k characters)</li>
+                        <li>📚 Premium exports (20 credits)</li>
+                    </ul>
+                    <div class="credits-purchase-preview">
+                        <h3>Credit Packages (Coming Soon)</h3>
+                        <div class="credit-package">
+                            <strong>Starter Pack:</strong> 500 credits - $4.99
+                        </div>
+                        <div class="credit-package">
+                            <strong>Creator Pack:</strong> 1,500 credits - $14.99
+                        </div>
+                        <div class="credit-package">
+                            <strong>Professional Pack:</strong> 3,500 credits - $29.99
+                        </div>
+                    </div>
+                    <p><em>Credit purchasing will be available soon. For now, contact support for additional credits.</em></p>
+                    <button onclick="hideLowCreditsModal()" class="btn btn-primary">Got it</button>
+                </div>
+            </div>
+        `;
+        document.body.insertAdjacentHTML('beforeend', modalHTML);
+        modal = document.getElementById('lowCreditsModal');
+    }
+    
+    modal.style.display = 'block';
+    document.body.style.overflow = 'hidden';
+}
+
+export function hideLowCreditsModal() {
+    const modal = document.getElementById('lowCreditsModal');
+    if (modal) {
+        modal.style.display = 'none';
+        document.body.style.overflow = '';
+    }
+}
+
+// Make functions globally available
+window.hideLowCreditsModal = hideLowCreditsModal;
+
 // Modal functions - preserving exact logic from original
 export function showExportModal() {
     document.getElementById('exportModal').style.display = 'block';
@@ -127,6 +245,16 @@ export function initializeModalHandlers() {
         reorderModal.addEventListener('click', function(e) {
             if (e.target === this) {
                 window.hideReorderModal();
+            }
+        });
+    }
+    
+    // Close low credits modal when clicking outside
+    const lowCreditsModal = document.getElementById('lowCreditsModal');
+    if (lowCreditsModal) {
+        lowCreditsModal.addEventListener('click', function(e) {
+            if (e.target === this) {
+                hideLowCreditsModal();
             }
         });
     }

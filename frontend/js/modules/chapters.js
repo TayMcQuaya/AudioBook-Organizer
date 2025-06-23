@@ -5,9 +5,13 @@ import { formatDuration, getAccentColor } from '../utils/helpers.js';
 import { updateChaptersList } from './ui.js';
 import { showConfirm } from './notifications.js';
 import { removeHighlightFromText } from './sections.js';
+import { consumeTestCredits } from './appUI.js';
 
 // Chapter Management - preserving exact logic from original
-export function createNewChapter() {
+export async function createNewChapter() {
+    // Consume credits for chapter creation
+    await consumeTestCredits(5, 'chapter creation');
+    
     // Get current user info for attribution
     const currentUser = window.authModule?.getCurrentUser();
     const userId = currentUser?.id || 'anonymous';

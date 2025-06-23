@@ -42,6 +42,18 @@ function updateExportPreview() {
         return;
     }
     
+    // Calculate credit cost
+    let creditCost = 0;
+    let exportType = "basic export";
+    
+    if ((exportAudio || mergeAudio) && chaptersWithAudio > 0) {
+        creditCost = 15; // Premium audio export (computational work)
+        exportType = "premium audio export";
+    } else {
+        creditCost = 0;  // Data exports are free (same as project save)
+        exportType = "free data export";
+    }
+    
     // Check for single file downloads (no ZIP needed)
     const isSingleFile = (
         (selectedItems.length === 1 && mergeAudio && !exportMetadata && !exportAudio && !exportBookContent) ||
@@ -54,13 +66,16 @@ function updateExportPreview() {
             // Only merged audio selected - direct download
             const extension = audioFormat === 'mp3' ? 'mp3' : 'wav';
             const chapterText = chaptersWithAudio === 1 ? '1 chapter' : `${chaptersWithAudio} chapters`;
-            previewContent.innerHTML = `Will download <strong>"merged_audiobook.${extension} (${chapterText})"</strong> (single file)`;
+            const costDisplay = creditCost > 0 ? `💎 <strong>Cost: ${creditCost} credits</strong> (${exportType})` : `✅ <strong>FREE</strong> (${exportType})`;
+            previewContent.innerHTML = `Will download <strong>"merged_audiobook.${extension} (${chapterText})"</strong> (single file)<br><br>${costDisplay}`;
         } else if (exportMetadata) {
             // Only metadata selected
-            previewContent.innerHTML = `Will download <strong>"metadata.json"</strong> (single file)`;
+            const costDisplay = creditCost > 0 ? `💎 <strong>Cost: ${creditCost} credits</strong> (${exportType})` : `✅ <strong>FREE</strong> (${exportType})`;
+            previewContent.innerHTML = `Will download <strong>"metadata.json"</strong> (single file)<br><br>${costDisplay}`;
         } else if (exportBookContent) {
             // Only book content selected
-            previewContent.innerHTML = `Will download <strong>"book_content.json"</strong> (single file)`;
+            const costDisplay = creditCost > 0 ? `💎 <strong>Cost: ${creditCost} credits</strong> (${exportType})` : `✅ <strong>FREE</strong> (${exportType})`;
+            previewContent.innerHTML = `Will download <strong>"book_content.json"</strong> (single file)<br><br>${costDisplay}`;
         }
     } else {
         // Multiple items - ZIP download
@@ -79,7 +94,8 @@ function updateExportPreview() {
             files.push(`• merged_audiobook.${extension} (${chapterText})`);
         }
         
-        previewContent.innerHTML = `Will download <strong>"audiobook_export.zip"</strong> containing:<br>${files.join('<br>')}`;
+        const costDisplay = creditCost > 0 ? `💎 <strong>Cost: ${creditCost} credits</strong> (${exportType})` : `✅ <strong>FREE</strong> (${exportType})`;
+        previewContent.innerHTML = `Will download <strong>"audiobook_export.zip"</strong> containing:<br>${files.join('<br>')}<br><br>${costDisplay}`;
     }
 }
 
@@ -184,6 +200,23 @@ export async function startExport() {
         const result = await response.json();
         
         if (result.success) {
+            // Consume credits for export
+            const { consumeTestCredits } = await import('./appUI.js');
+            
+            // Calculate credit cost based on export options
+            let creditCost = 0;
+            let exportType = "basic export";
+            
+            if (exportAudio || mergeAudio) {
+                creditCost = 15; // Premium audio export (computational work)
+                exportType = "premium audio export";
+            } else {
+                creditCost = 0;  // Data exports are free (same as project save)
+                exportType = "free data export";
+            }
+            
+            consumeTestCredits(creditCost, exportType);
+            
             status.className = 'status success';
             status.textContent = 'Export completed successfully!';
             

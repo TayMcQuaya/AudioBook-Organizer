@@ -103,13 +103,29 @@ import {
 import testingModeUI from './modules/testingModeUI.js';
 
 // Make functions globally available for HTML onclick handlers
-window.createNewChapter = createNewChapter;
+// Async wrapper functions for onclick handlers
+window.createNewChapter = async function() {
+    try {
+        await createNewChapter();
+    } catch (error) {
+        console.error('Error creating chapter:', error);
+    }
+};
+
+window.createSection = async function() {
+    try {
+        await createSection();
+    } catch (error) {
+        console.error('Error creating section:', error);
+    }
+};
+
+// Regular functions that don't need async wrappers
 window.updateChapterName = updateChapterName;
 window.toggleChapter = toggleChapter;
 window.deleteChapter = deleteChapter;
 window.toggleChapterPlayback = toggleChapterPlayback;
 window.seekChapterAudio = seekChapterAudio;
-window.createSection = createSection;
 window.updateSectionName = updateSectionName;
 window.deleteSection = deleteSection;
 window.navigateToSection = navigateToSection;

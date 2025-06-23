@@ -12,6 +12,7 @@ import themeManager from './themeManager.js';
 import { loadFromDatabase, startAutoSave, stopAutoSave } from './storage.js';
 import { initializeTableOfContents, cleanupTableOfContents } from './tableOfContents.js';
 import { tempAuthManager } from './tempAuth.js';
+import { initializeCreditsDisplay, updateUserCredits } from './appUI.js';
 
 let isInitialized = false;
 
@@ -232,6 +233,29 @@ async function initializeModules() {
     
     // Initialize edit mode protection
     initializeEditProtection();
+    
+    // Initialize credit system after authentication is ready
+    console.log('🔄 Initializing credit system...');
+    try {
+        const { initializeCreditsDisplay, updateUserCredits } = await import('./appUI.js');
+        
+        // Always show credit display (in testing mode or when authenticated)
+        initializeCreditsDisplay();
+        
+        if (window.authModule && window.authModule.isAuthenticated()) {
+            await updateUserCredits();
+            console.log('✅ Credit system initialized with real user data');
+        } else if (tempAuthManager.isTestingMode) {
+            // In testing mode, show demo credits
+            const { updateCreditsDisplay } = await import('./ui.js');
+            updateCreditsDisplay(100); // Show 100 demo credits
+            console.log('✅ Credit system initialized with demo data (testing mode)');
+        } else {
+            console.log('✅ Credit system UI initialized (no auth)');
+        }
+    } catch (error) {
+        console.error('❌ Credit system initialization failed:', error);
+    }
     
     console.log('All modules initialized');
 }

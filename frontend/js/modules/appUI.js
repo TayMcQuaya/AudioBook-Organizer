@@ -5,6 +5,7 @@
 
 import { showSuccess, showError, showInfo } from './notifications.js';
 import { sessionManager } from './sessionManager.js';
+import { createCreditsDisplay, updateCreditsDisplay } from './ui.js';
 
 class AppUIManager {
     constructor() {
@@ -273,4 +274,111 @@ const appUI = new AppUIManager();
 // Make it globally available
 window.appUI = appUI;
 
-export default appUI; 
+export default appUI;
+
+/**
+ * Initialize credits display in the header
+ */
+export function initializeCreditsDisplay() {
+    createCreditsDisplay();
+    
+    // Update credits immediately if user is authenticated
+    if (window.authModule && window.authModule.isAuthenticated()) {
+        updateUserCredits();
+    }
+}
+
+/**
+ * Update user credits display
+ */
+export async function updateUserCredits() {
+    try {
+        // Check if we're in testing mode first
+        const envManager = await import('./envManager.js');
+        const config = envManager.default.getConfig();
+        
+        if (config.testing_mode) {
+            // In testing mode, simulate credit consumption
+            const currentTestCredits = parseInt(localStorage.getItem('testModeCredits') || '100');
+            updateCreditsDisplay(currentTestCredits);
+            console.log(`💎 Testing mode - Credits display updated: ${currentTestCredits}`);
+            return;
+        }
+        
+        // Normal mode - use auth module
+        if (window.authModule && window.authModule.isAuthenticated()) {
+            const credits = await window.authModule.getUserCredits();
+            updateCreditsDisplay(credits);
+            
+            // Show warning if credits are low
+            if (credits < 20) {
+                console.warn(`⚠️ Low credits: ${credits} remaining`);
+                // Could show a subtle notification here
+            }
+        } else {
+            updateCreditsDisplay(0);
+        }
+    } catch (error) {
+        console.error('Error updating credits display:', error);
+        updateCreditsDisplay(0);
+    }
+}
+
+/**
+ * Consume credits in testing mode (simulate credit usage)
+ */
+export async function consumeTestCredits(amount, action) {
+    try {
+        const envManager = await import('./envManager.js');
+        const config = envManager.default.getConfig();
+        
+        if (!config.testing_mode) return;
+        
+        const currentCredits = parseInt(localStorage.getItem('testModeCredits') || '100');
+        const newCredits = Math.max(0, currentCredits - amount);
+        
+        localStorage.setItem('testModeCredits', newCredits.toString());
+        updateCreditsDisplay(newCredits);
+        
+        console.log(`💎 Testing mode - Consumed ${amount} credits for ${action}: ${currentCredits} → ${newCredits}`);
+        
+        // Show low credits warning
+        if (newCredits < 20 && currentCredits >= 20) {
+            const { showLowCreditsModal } = await import('./ui.js');
+            showLowCreditsModal();
+        }
+        
+    } catch (error) {
+        console.error('Error consuming test credits:', error);
+    }
+}
+
+/**
+ * Check if user has sufficient credits for an action
+ */
+export function checkCreditsForAction(requiredCredits, actionName) {
+    return new Promise(async (resolve) => {
+        try {
+            if (window.authModule && window.authModule.isAuthenticated()) {
+                const currentCredits = await window.authModule.getUserCredits();
+                
+                if (currentCredits < requiredCredits) {
+                    const { showLowCreditsModal } = await import('./ui.js');
+                    showLowCreditsModal();
+                    resolve(false);
+                    return;
+                }
+                
+                resolve(true);
+            } else {
+                // Not authenticated - allow in testing mode, deny in production
+                const envManager = await import('./envManager.js');
+                const config = envManager.default.getConfig();
+                resolve(config.testing_mode);
+            }
+        } catch (error) {
+            console.error('Error checking credits:', error);
+            resolve(false);
+        }
+    });
+} 

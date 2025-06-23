@@ -257,6 +257,13 @@ def consume_credits(credits_to_consume: int, action: str):
             
             if is_successful and hasattr(g, 'user_id'):
                 try:
+                    from flask import current_app
+                    
+                    # In testing mode, don't actually consume credits
+                    if current_app.config.get('TESTING_MODE'):
+                        logger.info(f"✅ Testing mode - Simulated consumption of {credits_to_consume} credits for {action}")
+                        return result
+                    
                     # Get Supabase service
                     supabase_service = get_supabase_service()
                     

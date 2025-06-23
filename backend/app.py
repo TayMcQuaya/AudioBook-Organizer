@@ -123,8 +123,6 @@ def create_app(config_name=None):
     # Register password protection routes
     create_password_protection_routes(app)
     
-
-    
     # Test API route - exact functionality preserved
     @app.route('/api/test', methods=['GET'])
     def test_api():
@@ -133,7 +131,17 @@ def create_app(config_name=None):
             'message': 'API is working'
         })
     
-
+    # Debug configuration endpoint for frontend
+    @app.route('/debug/config', methods=['GET'])
+    def debug_config():
+        """Provide configuration information for frontend environment detection"""
+        return jsonify({
+            'testing_mode': app.config.get('TESTING_MODE', False),
+            'environment': 'development' if app.config.get('DEBUG') else 'production',
+            'temporary_password_configured': bool(app.config.get('TEMPORARY_PASSWORD')),
+            'server_type': 'flask-dev' if app.config.get('DEBUG') else 'gunicorn-prod',
+            'timestamp': datetime.now().isoformat()
+        })
     
     return app
 

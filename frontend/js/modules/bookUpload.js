@@ -6,6 +6,7 @@ import { initializeSmartSelect } from './smartSelect.js';
 import { showError } from './notifications.js';
 import { clearFormatting } from './formattingState.js';
 import { apiFetch } from './api.js';
+import { checkCreditsForAction, updateUserCredits, consumeTestCredits } from './appUI.js';
 
 // File validation constants
 const MAX_FILE_SIZE_TXT = 10 * 1024 * 1024; // 10MB for TXT
@@ -69,7 +70,7 @@ function hideLoading() {
 }
 
 // Process successful file upload
-function handleUploadSuccess(text, formattingData = null, metadata = null) {
+async function handleUploadSuccess(text, formattingData = null, metadata = null) {
     const bookContent = document.getElementById('bookContent');
     
     // Update application state
@@ -162,6 +163,13 @@ function handleUploadSuccess(text, formattingData = null, metadata = null) {
         setTimeout(() => {
             window.refreshEditModeState();
         }, 100);
+    }
+
+    // Update credits display after successful upload
+    if (formattingData && formattingData.ranges && formattingData.ranges.length > 0) {
+        // Consume credits for DOCX processing (10 credits in testing mode)
+        await consumeTestCredits(10, 'DOCX processing');
+        updateUserCredits().catch(err => console.warn('Failed to update credits:', err));
     }
 }
 
@@ -491,6 +499,14 @@ export async function uploadBook() {
     try {
         let text, formattingData = null, metadata = null;
         
+        // Check credits before processing DOCX
+        if (file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
+            const hasCredits = await checkCreditsForAction(10, 'DOCX Processing');
+            if (!hasCredits) {
+                return;
+            }
+        }
+        
         if (file.name.toLowerCase().endsWith('.docx')) {
             // Pause session check during DOCX processing to prevent logout
             if (window.tempAuthManager?.pauseNextSessionCheck) {
@@ -511,7 +527,7 @@ export async function uploadBook() {
             text = await readFileAsText(file);
         }
         
-        handleUploadSuccess(text, formattingData, metadata);
+        await handleUploadSuccess(text, formattingData, metadata);
         
     } catch (error) {
         handleUploadError(error);
