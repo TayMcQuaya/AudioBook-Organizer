@@ -14,10 +14,8 @@ This document outlines a comprehensive credit-based monetization strategy for th
 - ✅ All core features consuming appropriate credits
 
 **Working Credit Costs:**
-- DOCX Processing: 10 credits
+- DOCX Processing: 5 credits
 - Audio Upload: 2 credits per file  
-- Chapter Creation: 5 credits
-- Section Creation: 3 credits
 - Audio Export: 15 credits
 - Data Export: FREE (same as project saves)
 
@@ -29,14 +27,14 @@ This document outlines a comprehensive credit-based monetization strategy for th
 - **Database:** Complete credit system with `user_credits`, `credit_transactions`, and `usage_logs` tables
 - **Default Credits:** 100 credits for new users
 - **Max Credits:** 10,000 per user
-- **Current Credit Consumption:** 10 credits for DOCX processing (updated)
+- **Current Credit Consumption:** 5 credits for DOCX processing (updated)
 
 ### Current Features (As Implemented)
-1. **DOCX Document Processing** (10 credits) - ✅ Implemented
+1. **DOCX Document Processing** (5 credits) - ✅ Implemented
 2. **Text/TXT Document Upload** - ✅ Free (basic app functionality)
 3. **Audio File Upload (MP3/WAV)** (2 credits) - ✅ Implemented
-4. **Chapter Creation** (5 credits) - ✅ Implemented
-5. **Section Creation** (3 credits) - ✅ Implemented
+4. **Chapter Creation** - ✅ Free (basic app functionality)
+5. **Section Creation** - ✅ Free (basic app functionality)
 6. **Project Saving/Loading** - ✅ Free (basic app functionality)
 7. **Data Export (JSON/Metadata)** - ✅ Free (same as project save)
 8. **Audio Export with Processing** (15 credits) - ✅ Implemented
@@ -72,10 +70,8 @@ This document outlines a comprehensive credit-based monetization strategy for th
   - Basic export (PDF only)
 
 #### Credit Consumption Rates (Implemented System)
-- **DOCX Processing:** 10 credits ✅ 
+- **DOCX Processing:** 5 credits ✅ 
 - **Audio File Upload:** 2 credits per file ✅
-- **Chapter Creation:** 5 credits ✅
-- **Section Creation:** 3 credits ✅
 - **Audio Export with Processing:** 15 credits ✅
 - **Data Export (JSON/Metadata):** FREE ✅ (same as project save)
 - **Text-to-Speech Conversion:** 50 credits per 10,000 characters (planned)
@@ -178,10 +174,9 @@ This document outlines a comprehensive credit-based monetization strategy for th
 #### Phase 1: Credit System Refinement (Month 1) ✅ COMPLETED
 1. ✅ Updated credit consumption rates in existing middleware
 2. ✅ Implemented credit consumption for core features:
-   - DOCX processing: 10 credits
+   - DOCX processing: 5 credits
    - Audio upload: 2 credits  
-   - Chapter creation: 5 credits
-   - Section creation: 3 credits
+
    - Audio export: 15 credits
    - Data export: FREE
 3. 🔄 Add credit purchase functionality (TODO)
@@ -352,7 +347,7 @@ credit_success = supabase_service.update_user_credits(user_id, -5)
 - Up to 3 chapters per project
 
 ### **What Costs Credits:**
-- **DOCX upload with formatting:** 10 credits
+- **DOCX upload with formatting:** 5 credits
 - **Convert text to speech:** 50 credits per 10,000 characters
 - **Premium exports (EPUB, audio):** 20 credits
 - **Audio file processing:** 2 credits per minute
@@ -370,7 +365,7 @@ credit_success = supabase_service.update_user_credits(user_id, -5)
 
 ### **Real Example:**
 A user uploads a 100-page book (200,000 characters):
-- DOCX processing: 10 credits
+- DOCX processing: 5 credits
 - Convert to speech: 1,000 credits (20 × 50)
 - Export as audiobook: 20 credits
 - **Total: 1,030 credits = about $15 cost to user**

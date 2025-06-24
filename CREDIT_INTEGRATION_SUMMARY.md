@@ -15,7 +15,7 @@ The credit system has been successfully integrated into normal mode without affe
 | Premium Export (Audio) | **15 credits** | Audio merging and audiobook creation |
 | Data Export (Metadata/Text) | **0 credits** | JSON/text exports (FREE) |
 | Project Save/Load | **0 credits** | Basic project persistence (FREE) |
-| Section Creation | **3 credits** | Frontend only (handled by existing system) |
+| Chapter/Section Creation | **0 credits** | Basic app functionality (FREE) |
 
 ---
 

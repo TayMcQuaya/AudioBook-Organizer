@@ -186,8 +186,6 @@ export function showLowCreditsModal() {
                     <p>You're running low on credits. Credits are used for:</p>
                     <ul>
                         <li>📄 DOCX processing (5 credits per document)</li>
-                        <li>📚 Chapter creation (5 credits per chapter)</li>
-                        <li>📝 Section creation (3 credits per section)</li>
                         <li>🎵 Audio file upload (2 credits per file)</li>
                         <li>🗣️ Text-to-speech (50 credits per 10k characters)</li>
                         <li>📤 Premium exports (20 credits per export)</li>
