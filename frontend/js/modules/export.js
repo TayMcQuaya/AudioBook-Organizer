@@ -143,6 +143,41 @@ export async function startExport() {
     const status = document.getElementById('status');
     status.style.display = 'block';
     status.className = 'status';
+    status.textContent = 'Checking credits...';
+    
+    // Get export options first to calculate credit cost
+    let exportMetadata = document.getElementById('exportMetadata').checked;
+    let exportAudio = document.getElementById('exportAudio').checked;
+    let exportBookContent = document.getElementById('exportBookContent').checked;
+    let mergeAudio = document.getElementById('mergeAudio').checked;
+    
+    // Calculate credit cost before starting export
+    let creditCost = 0;
+    let exportType = "basic export";
+    
+    if (exportAudio || mergeAudio) {
+        creditCost = 15; // Premium audio export
+        exportType = "premium audio export";
+    } else {
+        creditCost = 0;  // Data exports are free
+        exportType = "free data export";
+    }
+    
+    // Check credits before processing (only for paid features)
+    if (creditCost > 0) {
+        const { checkCreditsForAction } = await import('./appUI.js');
+        const hasCredits = await checkCreditsForAction(creditCost, exportType);
+        
+        if (!hasCredits) {
+            status.className = 'status error';
+            status.textContent = `Insufficient credits for ${exportType}. Required: ${creditCost} credits.`;
+            setTimeout(() => {
+                status.style.display = 'none';
+            }, 3000);
+            return;
+        }
+    }
+    
     status.textContent = 'Exporting...';
     
     // Collect highlight information
@@ -153,10 +188,7 @@ export async function startExport() {
         className: highlight.className
     }));
     
-    const exportMetadata = document.getElementById('exportMetadata').checked;
-    const exportAudio = document.getElementById('exportAudio').checked;
-    const exportBookContent = document.getElementById('exportBookContent').checked;
-    const mergeAudio = document.getElementById('mergeAudio').checked;
+    // Variables already declared above for credit checking
     
     // Smart ZIP detection - automatically create ZIP for multiple selections
     const selectedCount = [exportMetadata, exportAudio, exportBookContent, mergeAudio].filter(Boolean).length;
@@ -200,22 +232,12 @@ export async function startExport() {
         const result = await response.json();
         
         if (result.success) {
-            // Consume credits for export
-            const { consumeTestCredits } = await import('./appUI.js');
-            
-            // Calculate credit cost based on export options
-            let creditCost = 0;
-            let exportType = "basic export";
-            
+            // Update credit display after successful export
             if (exportAudio || mergeAudio) {
-                creditCost = 15; // Premium audio export (computational work)
-                exportType = "premium audio export";
-            } else {
-                creditCost = 0;  // Data exports are free (same as project save)
-                exportType = "free data export";
+                // Only refresh credits if this was a paid export
+                const { updateUserCredits } = await import('./appUI.js');
+                updateUserCredits(); // Refresh credit display to show consumption
             }
-            
-            consumeTestCredits(creditCost, exportType);
             
             status.className = 'status success';
             status.textContent = 'Export completed successfully!';

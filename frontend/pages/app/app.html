@@ -279,21 +279,32 @@
                 console.log('📐 Step 5: Applying layout fixes...');
                 await applyLayoutFixes(envConfig);
                 
-                // STEP 6: Initialize testing mode UI if needed
+                // STEP 6: Start authentication in parallel with other tasks for performance
+                console.log('🔐 Step 6: Starting authentication initialization...');
+                const authPromise = ensureAuthenticationReady(envConfig);
+                
+                // STEP 7: Initialize testing mode UI if needed (in parallel)
+                let testingUIPromise = Promise.resolve();
                 if (envConfig.testing_mode) {
-                    console.log('🧪 Step 6: Initializing testing mode UI...');
-                    await testingModeUI.init();
+                    console.log('🧪 Step 7: Initializing testing mode UI...');
+                    testingUIPromise = testingModeUI.init();
                 }
                 
-                // STEP 7: Wait for additional stability
-                await appConfig.delay('domReadyDelay');
+                // STEP 8: Wait for stability and parallel tasks
+                await Promise.all([
+                    appConfig.delay('domReadyDelay'),
+                    authPromise,
+                    testingUIPromise
+                ]);
                 
-                // STEP 8: Initialize the main app
-                console.log('🎯 Step 8: Initializing main application...');
+                console.log('✅ Parallel initialization complete');
+                
+                // STEP 9: Initialize the main app
+                console.log('🎯 Step 9: Initializing main application...');
                 const { initialize } = await import('/js/main.js');
                 await initialize();
                 
-                // STEP 9: Mark as ready and complete transition
+                // STEP 10: Mark as ready and complete transition
                 document.body.classList.add('layout-ready', 'app-ready');
                 
                 const totalTime = Date.now() - startTime;
@@ -302,6 +313,65 @@
             } catch (error) {
                 console.error('❌ Failed to initialize app page:', error);
                 showError('Failed to initialize the application. Please refresh the page.');
+            }
+        }
+        
+        // Ensure authentication module is available
+        async function ensureAuthenticationReady(envConfig) {
+            const startAuthTime = Date.now();
+            
+            try {
+                // Check if auth module is already available
+                if (window.authModule && window.authModule.isAuthenticated) {
+                    console.log('✅ Auth module already available');
+                    return;
+                }
+                
+                // Check if we're in testing mode
+                if (envConfig.testing_mode) {
+                    console.log('🧪 Testing mode - using temp auth manager');
+                    
+                    // Initialize temp auth if needed
+                    if (!window.tempAuthManager) {
+                        const { tempAuthManager } = await import('/js/modules/tempAuth.js');
+                        window.tempAuthManager = tempAuthManager;
+                        await tempAuthManager.init();
+                    }
+                    return;
+                }
+                
+                // Normal mode - initialize Supabase authentication
+                console.log('🔑 Normal mode - initializing Supabase authentication...');
+                
+                // Initialize auth module
+                const { AuthModule } = await import('/js/modules/auth.js');
+                window.authModule = new AuthModule();
+                await window.authModule.init();
+                
+                // Initialize session manager
+                if (!window.sessionManager) {
+                    const { sessionManager } = await import('/js/modules/sessionManager.js');
+                    window.sessionManager = sessionManager;
+                    await sessionManager.init();
+                }
+                
+                // Set up auth state synchronization
+                if (window.authModule && window.sessionManager) {
+                    // Add auth state change listener
+                    window.authModule.addAuthListener((event, session) => {
+                        window.sessionManager.handleAuthStateChange(event, session);
+                    });
+                    
+                    console.log('🔗 Auth state synchronization established');
+                }
+                
+                const authTime = Date.now() - startAuthTime;
+                console.log(`✅ Authentication ready in ${authTime}ms`);
+                
+            } catch (error) {
+                console.error('❌ Failed to initialize authentication:', error);
+                // Don't fail the whole app, just log the error
+                console.warn('⚠️ Continuing with limited functionality');
             }
         }
         

@@ -19,14 +19,12 @@ let isInitialized = false;
 /**
  * Cleanup function for the application
  */
-export function cleanupApp() {
+export function cleanupApp(fullCleanup = false) {
     if (!isInitialized) return;
-    console.log('🧹 Cleaning up application resources...');
+    console.log('🧹 Cleaning up application resources...', fullCleanup ? '(full cleanup)' : '(minimal cleanup)');
 
-    // Stop auto-save functionality
+    // Always stop auto-save functionality and clean up listeners
     stopAutoSave();
-
-    // Clean up Table of Contents
     cleanupTableOfContents();
 
     // Clean up text selection listeners
@@ -35,17 +33,21 @@ export function cleanupApp() {
         console.log('...text selection cleaned up.');
     }
 
-    // Clean up UI elements like user navigation
-    if (window.appUI) {
-        window.appUI.removeUserNavigation();
-        console.log('...user navigation removed.');
+    if (fullCleanup) {
+        // Full cleanup - completely destroy app state (only for permanent exits)
+        if (window.appUI) {
+            window.appUI.removeUserNavigation();
+            console.log('...user navigation removed.');
+        }
+        
+        isInitialized = false;
+        window.isAppInitialized = false;
+        console.log('✅ Application full cleanup complete.');
+    } else {
+        // Minimal cleanup - preserve app state and initialization flags for quick re-initialization
+        // DON'T reset isInitialized or window.isAppInitialized - this allows fast navigation
+        console.log('✅ Application minimal cleanup complete - app state preserved.');
     }
-    
-    // You could add more cleanup here, e.g., removing other listeners
-    
-    isInitialized = false;
-    window.isAppInitialized = false;
-    console.log('✅ Application cleanup complete.');
 }
 
 // Show selection guide overlay for first-time users

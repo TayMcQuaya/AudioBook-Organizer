@@ -167,8 +167,7 @@ async function handleUploadSuccess(text, formattingData = null, metadata = null)
 
     // Update credits display after successful upload
     if (formattingData && formattingData.ranges && formattingData.ranges.length > 0) {
-        // Consume credits for DOCX processing (10 credits in testing mode)
-        await consumeTestCredits(10, 'DOCX processing');
+        // Refresh credit display after DOCX processing
         updateUserCredits().catch(err => console.warn('Failed to update credits:', err));
     }
 }

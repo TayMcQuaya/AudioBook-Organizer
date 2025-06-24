@@ -20,18 +20,44 @@ class AppUIManager {
      * Initialize UI manager
      */
     async init() {
-        if (this.isInitialized) return;
-        
         console.log('🎨 Initializing UI manager...');
         
-        // Listen for auth state changes
-        sessionManager.addListener(this.handleAuthStateChange.bind(this));
+        // Always refresh auth state on init, even if already initialized
+        if (this.isInitialized) {
+            console.log('🔄 UI manager already initialized, refreshing auth state...');
+        } else {
+            // Listen for auth state changes (only on first init)
+            sessionManager.addListener(this.handleAuthStateChange.bind(this));
+        }
         
-        // Initial UI update
-        this.updateUI(sessionManager.getAuthState());
+        // Get comprehensive auth state from multiple sources
+        const authState = this.getComprehensiveAuthState();
+        
+        // Always update UI with current auth state
+        this.updateUI(authState);
         
         this.isInitialized = true;
         console.log('✅ UI manager initialized');
+    }
+    
+    /**
+     * Get comprehensive authentication state from all available sources
+     */
+    getComprehensiveAuthState() {
+        // Check session manager
+        const sessionState = sessionManager.getAuthState();
+        
+        // Check auth module
+        const authModuleAuth = window.authModule?.isAuthenticated?.();
+        const authModuleUser = window.authModule?.getCurrentUser?.();
+        
+        // Combine the states, preferring the most complete one
+        const isAuthenticated = sessionState.isAuthenticated || authModuleAuth;
+        const user = sessionState.user || authModuleUser;
+        
+        console.log(`🔍 UI: Comprehensive auth state - Session: ${sessionState.isAuthenticated}, AuthModule: ${authModuleAuth}, User: ${!!user}`);
+        
+        return { isAuthenticated, user };
     }
 
     /**
@@ -94,6 +120,12 @@ class AppUIManager {
     createUserNavigation(user) {
         if (this.creatingNavigation) return;
         this.creatingNavigation = true;
+        
+        // If no user provided, try to get from available sources
+        if (!user) {
+            user = window.sessionManager?.user || window.authModule?.getCurrentUser?.();
+            console.log(`🔍 UI: No user provided to createUserNavigation, found: ${!!user}`);
+        }
         
         const createNav = () => {
             const navLinks = document.querySelector('.nav-links');

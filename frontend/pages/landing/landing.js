@@ -26,6 +26,7 @@ function init() {
     setupFormValidation();
     setupScrollEffects();
     setupAppWindowTilt();
+    setupBrandNavigation();
     
     // Initialize appUI manager
     if (window.appUI) {
@@ -64,16 +65,33 @@ function cleanup() {
  * Check authentication state and update navigation accordingly
  */
 function checkAuthenticationState() {
-    // Rely on the session manager as the single source of truth
-    const isAuthenticated = window.sessionManager?.isAuthenticated;
-    const user = window.sessionManager?.user;
+    // Check both session manager and auth module for authentication state
+    const sessionAuth = window.sessionManager?.isAuthenticated;
+    const authModuleAuth = window.authModule?.isAuthenticated?.();
+    const isAuthenticated = sessionAuth || authModuleAuth;
     
-    console.log(`Initial auth check on landing page. Authenticated: ${isAuthenticated}`);
+    const user = window.sessionManager?.user || window.authModule?.getCurrentUser?.();
+    
+    console.log(`Initial auth check on landing page. SessionManager: ${sessionAuth}, AuthModule: ${authModuleAuth}, Final: ${isAuthenticated}`);
 
     if (isAuthenticated && user) {
         updateLandingPageForAuthenticatedUser(user);
     } else {
-        updateLandingPageForUnauthenticatedUser();
+        // Try to refresh auth state from stored tokens
+        if (window.authModule?.checkAuthStatus) {
+            window.authModule.checkAuthStatus().then(authStatus => {
+                if (authStatus.authenticated) {
+                    console.log('✅ Auth state recovered from stored tokens');
+                    updateLandingPageForAuthenticatedUser(authStatus.user);
+                } else {
+                    updateLandingPageForUnauthenticatedUser();
+                }
+            }).catch(() => {
+                updateLandingPageForUnauthenticatedUser();
+            });
+        } else {
+            updateLandingPageForUnauthenticatedUser();
+        }
     }
 }
 
@@ -99,6 +117,14 @@ function updateLandingPageForAuthenticatedUser(user) {
     // Create user navigation dropdown
     if (window.appUI && user) {
         window.appUI.createUserNavigation(user);
+        
+        // Initialize and display credits for authenticated users
+        import('../../js/modules/appUI.js').then(module => {
+            module.initializeCreditsDisplay();
+            console.log('💎 Credit display initialized for authenticated user on landing page');
+        }).catch(error => {
+            console.error('Failed to initialize credit display:', error);
+        });
     } else if (!window.appUI) {
         console.warn('⚠️ appUI not available, cannot create user navigation');
     }
@@ -106,8 +132,14 @@ function updateLandingPageForAuthenticatedUser(user) {
     // Convert all primary action buttons to "Open App"
     const getStartedButtons = document.querySelectorAll('a[href="/auth?mode=signup"], .btn-primary.get-started');
     getStartedButtons.forEach(btn => {
-        btn.href = '/app';
+        // Remove href to prevent direct navigation and use click handler instead
+        btn.removeAttribute('href');
         btn.innerHTML = '<span class="btn-icon">🚀</span>Open App';
+        btn.style.cursor = 'pointer';
+        btn.addEventListener('click', (e) => {
+            e.preventDefault();
+            navigateToApp();
+        });
         // Ensure it doesn't get hidden by other rules
         btn.style.display = 'inline-flex'; 
     });
@@ -136,6 +168,13 @@ function updateLandingPageForUnauthenticatedUser() {
     // Remove user navigation dropdown
     if (window.appUI) {
         window.appUI.removeUserNavigation();
+    }
+    
+    // Remove credit display for unauthenticated users
+    const creditsDisplay = document.getElementById('creditsDisplay');
+    if (creditsDisplay) {
+        creditsDisplay.remove();
+        console.log('💎 Credit display removed for unauthenticated user');
     }
     
     // Restore primary action buttons to "Get Started"
@@ -193,50 +232,112 @@ function contactSales() {
 }
 
 // Navigation to app (for demo/try buttons)
-function navigateToApp() {
-    // Check if user is already authenticated
-    if (window.sessionManager && window.sessionManager.isAuthenticated) {
-        // User is authenticated, navigate to app
-        if (window.router) {
-            window.router.navigate('/app');
-        } else {
-            window.location.href = '/app';
+async function navigateToApp() {
+    try {
+        // Ensure router is available before navigation
+        if (!window.router) {
+            console.log('🔧 Router not found, initializing...');
+            const { router } = await import('/js/modules/router.js');
+            window.router = router;
+            await router.init();
         }
-    } else {
-        // Redirect to auth page
-        const returnUrl = encodeURIComponent(window.location.pathname + window.location.search);
-        if (window.router) {
-            window.router.navigate(`/auth?return=${returnUrl}&mode=login`);
+        
+        // Check if user is already authenticated (check both sessionManager and authModule)
+        const sessionAuth = window.sessionManager?.isAuthenticated;
+        const authModuleAuth = window.authModule?.isAuthenticated?.();
+        const isAuthenticated = sessionAuth || authModuleAuth;
+        
+        console.log(`🔍 Navigation auth check: SessionManager: ${sessionAuth}, AuthModule: ${authModuleAuth}, Final: ${isAuthenticated}`);
+        
+        if (isAuthenticated) {
+            // User is authenticated, navigate to app via router
+            console.log('🚀 Navigating authenticated user to app via router...');
+            await window.router.navigate('/app');
         } else {
+            // Redirect to auth page
+            const returnUrl = encodeURIComponent(window.location.pathname + window.location.search);
+            console.log('🔐 Redirecting to auth page...');
+            await window.router.navigate(`/auth?return=${returnUrl}&mode=login`);
+        }
+    } catch (error) {
+        console.error('❌ Navigation failed, using fallback:', error);
+        // Only fall back to window.location as last resort
+        const fallbackSessionAuth = window.sessionManager?.isAuthenticated;
+        const fallbackAuthModuleAuth = window.authModule?.isAuthenticated?.();
+        const fallbackIsAuthenticated = fallbackSessionAuth || fallbackAuthModuleAuth;
+        
+        if (fallbackIsAuthenticated) {
+            window.location.href = '/app';
+        } else {
+            const returnUrl = encodeURIComponent(window.location.pathname + window.location.search);
             window.location.href = `/auth?return=${returnUrl}&mode=login`;
         }
     }
 }
 
-function tryAppDemo() {
-    // Check if user is authenticated
-    if (window.sessionManager && window.sessionManager.isAuthenticated) {
-        // User is authenticated, navigate to app
-        if (window.router) {
-            window.router.navigate('/app');
-        } else {
-            // Fallback: direct navigation
-            window.location.href = '/app';
+async function tryAppDemo() {
+    try {
+        // Ensure router is available before navigation
+        if (!window.router) {
+            console.log('🔧 Router not found, initializing...');
+            const { router } = await import('/js/modules/router.js');
+            window.router = router;
+            await router.init();
         }
-        console.log('🚀 Navigating to authenticated app...');
-    } else {
-        // Redirect to auth page with return URL for better UX
-        const returnUrl = encodeURIComponent(window.location.pathname + window.location.search);
-        if (window.router) {
-            window.router.navigate(`/auth?return=${returnUrl}&mode=signup`);
+        
+        // Check if user is authenticated (check both sessionManager and authModule)
+        const sessionAuth = window.sessionManager?.isAuthenticated;
+        const authModuleAuth = window.authModule?.isAuthenticated?.();
+        const isAuthenticated = sessionAuth || authModuleAuth;
+        
+        console.log(`🔍 Demo auth check: SessionManager: ${sessionAuth}, AuthModule: ${authModuleAuth}, Final: ${isAuthenticated}`);
+        
+        if (isAuthenticated) {
+            // User is authenticated, navigate to app
+            console.log('🚀 Navigating authenticated user to app via router...');
+            await window.router.navigate('/app');
         } else {
+            // Redirect to auth page with return URL for better UX
+            const returnUrl = encodeURIComponent(window.location.pathname + window.location.search);
+            console.log('🔐 Redirecting to auth page for demo access...');
+            await window.router.navigate(`/auth?return=${returnUrl}&mode=signup`);
+        }
+    } catch (error) {
+        console.error('❌ Demo navigation failed, using fallback:', error);
+        // Only fall back to window.location as last resort
+        const fallbackSessionAuth = window.sessionManager?.isAuthenticated;
+        const fallbackAuthModuleAuth = window.authModule?.isAuthenticated?.();
+        const fallbackIsAuthenticated = fallbackSessionAuth || fallbackAuthModuleAuth;
+        
+        if (fallbackIsAuthenticated) {
+            window.location.href = '/app';
+        } else {
+            const returnUrl = encodeURIComponent(window.location.pathname + window.location.search);
             window.location.href = `/auth?return=${returnUrl}&mode=signup`;
         }
-        console.log('🔐 Redirecting to auth page for demo access...');
     }
 }
 
 // Setup Functions
+function setupBrandNavigation() {
+    // Add click handler to brand/logo for authenticated users
+    const brandElement = document.querySelector('.nav-brand, .footer-brand');
+    if (brandElement) {
+        brandElement.style.cursor = 'pointer';
+        brandElement.addEventListener('click', async (e) => {
+            e.preventDefault();
+            // Only navigate to app if user is authenticated
+            if (window.sessionManager?.isAuthenticated || window.authModule?.isAuthenticated?.()) {
+                console.log('🏠 Brand clicked - navigating to app...');
+                await navigateToApp();
+            } else {
+                console.log('🏠 Brand clicked - redirecting to home page...');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+        });
+    }
+}
+
 function setupScrollAnimations() {
     const observerOptions = {
         threshold: 0.1,

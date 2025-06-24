@@ -2,7 +2,7 @@ from flask import Blueprint, request, jsonify, current_app, session
 import os
 from ..services.audio_service import AudioService
 from ..routes.password_protection import require_temp_auth
-from ..middleware.auth_middleware import require_credits, consume_credits
+from ..middleware.auth_middleware import require_auth, require_credits, consume_credits
 
 def create_upload_routes(app, upload_folder):
     """
@@ -12,11 +12,10 @@ def create_upload_routes(app, upload_folder):
     audio_service = AudioService(upload_folder)
     
     @app.route('/api/upload', methods=['POST', 'OPTIONS'])
-    @require_temp_auth
     def upload_audio():
         """
-        Handle audio file upload.
-        Preserves the exact logic from original server.py upload_audio() function
+        Handle audio file upload with proper auth and credit management.
+        Preserves exact logic but adds proper authentication and credit enforcement.
         """
         # Handle CORS preflight request BEFORE authentication
         if request.method == 'OPTIONS':
@@ -28,6 +27,51 @@ def create_upload_routes(app, upload_folder):
             headers['Access-Control-Allow-Credentials'] = 'true'
             return response
         
+        # Check mode and apply appropriate authentication
+        if current_app.config.get('TESTING_MODE'):
+            # Testing mode: check temp authentication
+            if not session.get('temp_authenticated'):
+                return jsonify({
+                    'error': 'Authentication required',
+                    'message': 'Please authenticate with the temporary password first'
+                }), 401
+        else:
+            # Normal mode: use proper auth + credits decorators
+            from flask import g
+            from ..middleware.auth_middleware import extract_token_from_header
+            from ..services.supabase_service import get_supabase_service
+            
+            # Extract and verify token
+            token = extract_token_from_header()
+            if not token:
+                return jsonify({
+                    'error': 'Authentication required',
+                    'message': 'Authorization header with Bearer token is required'
+                }), 401
+            
+            supabase_service = get_supabase_service()
+            user = supabase_service.get_user_from_token(token)
+            if not user:
+                return jsonify({
+                    'error': 'Invalid token',
+                    'message': 'The provided token is invalid or expired'
+                }), 401
+            
+            # Store user in context
+            g.current_user = user
+            g.user_id = user['id']
+            g.user_email = user['email']
+            
+            # Check credits (2 credits required for audio upload)
+            current_credits = supabase_service.get_user_credits(user['id'])
+            if current_credits < 2:
+                return jsonify({
+                    'error': 'Insufficient credits',
+                    'message': f'This action requires 2 credits. You have {current_credits} credits.',
+                    'current_credits': current_credits,
+                    'required_credits': 2
+                }), 402
+        
         app.logger.debug('Upload request received')
         app.logger.debug(f'Files in request: {request.files}')
         app.logger.debug(f'Request headers: {request.headers}')
@@ -37,15 +81,13 @@ def create_upload_routes(app, upload_folder):
         
         # Security: Only log essential info for debugging, no sensitive data
         app.logger.debug(f'Testing mode: {current_app.config.get("TESTING_MODE", False)}')
-        app.logger.debug(f'Auth status: {"Authenticated" if session.get("temp_authenticated", False) else "Not authenticated"}')
         
-        # Handle credit checking and consumption for testing mode
         if current_app.config.get('TESTING_MODE'):
-            app.logger.info("✅ Testing mode - Simulated consumption of 2 credits for audio_processing")
+            app.logger.debug(f'Auth status: {"Authenticated" if session.get("temp_authenticated", False) else "Not authenticated"}')
+            app.logger.info("✅ Testing mode - Credit simulation handled by auth middleware")
         else:
-            # In production mode, we would need proper credit verification here
-            # For now, we'll skip credit checks in production
-            app.logger.info("Production mode - Credit checks would be implemented here")
+            # Normal mode - credits handled by decorators
+            app.logger.info("✅ Normal mode - Credits enforced by decorators")
         
         try:
             if 'audio' not in request.files:
@@ -63,10 +105,29 @@ def create_upload_routes(app, upload_folder):
             result = audio_service.upload_audio_file(file)
             app.logger.debug('File processed successfully')
             
+            # Consume credits after successful upload (normal mode only)
+            if not current_app.config.get('TESTING_MODE'):
+                from flask import g
+                from ..services.supabase_service import get_supabase_service
+                
+                supabase_service = get_supabase_service()
+                success = supabase_service.update_user_credits(g.user_id, -2)
+                if success:
+                    supabase_service.log_usage(
+                        g.user_id, 
+                        'audio_upload', 
+                        2,
+                        {'endpoint': request.endpoint, 'method': request.method, 'filename': file.filename}
+                    )
+                    app.logger.info(f"✅ Consumed 2 credits for audio_upload by user {g.user_id}")
+                else:
+                    app.logger.warning(f"⚠️ Failed to consume credits for user {g.user_id}")
+            
             # Add authentication status to response for debugging
             response = jsonify(result)
             response.headers['X-Auth-Status'] = 'authenticated'
-            response.headers['X-Session-Status'] = str(session.get('temp_authenticated', False))
+            if current_app.config.get('TESTING_MODE'):
+                response.headers['X-Session-Status'] = str(session.get('temp_authenticated', False))
             return response
 
         except Exception as e:

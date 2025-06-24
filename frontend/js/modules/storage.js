@@ -531,8 +531,8 @@ export async function saveToDatabase() {
             return false;
         }
         
-        // Make API call to save project
-        const response = await apiFetch('/api/projects/save', {
+        // Make API call to save project using authenticated request
+        const response = await window.authModule.apiRequest('/api/projects/save', {
             method: 'POST',
             body: JSON.stringify(projectData)
         });
@@ -605,8 +605,8 @@ export async function loadFromDatabase() {
             return false;
         }
         
-        // Make API call to get latest project
-        const response = await apiFetch('/api/projects/latest', {
+        // Make API call to get latest project using authenticated request
+        const response = await window.authModule.apiRequest('/api/projects/latest', {
             method: 'GET'
         });
         

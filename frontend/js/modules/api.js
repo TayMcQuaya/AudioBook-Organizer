@@ -58,7 +58,10 @@ export async function apiFetch(endpoint, options = {}) {
     }
     // 2. Fallback to Supabase token if no temp token
     else {
-        const supabaseToken = localStorage.getItem('sb-access-token');
+        // Check multiple possible token storage keys
+        const supabaseToken = localStorage.getItem('sb-access-token') || 
+                             localStorage.getItem('auth_token') ||
+                             localStorage.getItem('supabase.auth.token');
         if (supabaseToken) {
             defaultHeaders['Authorization'] = `Bearer ${supabaseToken}`;
         }

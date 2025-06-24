@@ -586,7 +586,7 @@ class AuthModule {
         }
 
         try {
-            const response = await apiFetch('/api/auth/init-user', {
+            const response = await this.apiRequest('/api/auth/init-user', {
                 method: 'POST',
                 body: JSON.stringify({})
             });
@@ -861,7 +861,7 @@ class AuthModule {
         }
 
         try {
-            const response = await apiFetch('/api/auth/credits');
+            const response = await this.apiRequest('/api/auth/credits');
 
             const data = await response.json();
             
@@ -931,9 +931,13 @@ class AuthModule {
         };
 
         // Get the latest auth token from Supabase
-        const session = await this.getSession();
-        if (session && session.access_token) {
-            defaultOptions.headers['Authorization'] = `Bearer ${session.access_token}`;
+        try {
+            const { data: { session } } = await supabaseClient.auth.getSession();
+            if (session && session.access_token) {
+                defaultOptions.headers['Authorization'] = `Bearer ${session.access_token}`;
+            }
+        } catch (error) {
+            console.warn('Failed to get session for API request:', error);
         }
 
         const mergedOptions = {

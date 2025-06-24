@@ -494,6 +494,16 @@ export async function attachAudio(chapterId, sectionId, input) {
         return;
     }
 
+    // Check credits before uploading audio file
+    const { checkCreditsForAction } = await import('./appUI.js');
+    const hasCredits = await checkCreditsForAction(2, 'Audio upload');
+    
+    if (!hasCredits) {
+        // Reset the file input
+        input.value = '';
+        return;
+    }
+
     const formData = new FormData();
     formData.append('audio', file);
     formData.append('chapterId', chapterId);
@@ -516,9 +526,9 @@ export async function attachAudio(chapterId, sectionId, input) {
             throw new Error(data.message || 'Failed to upload audio');
         }
 
-        // Consume credits for audio upload
-        const { consumeTestCredits } = await import('./appUI.js');
-        consumeTestCredits(2, 'audio upload');
+        // Update credit display after successful upload
+        const { updateUserCredits } = await import('./appUI.js');
+        updateUserCredits(); // Refresh credit display to show consumption
 
         // Update section state with audio path
         const chapter = findChapter(chapterId);

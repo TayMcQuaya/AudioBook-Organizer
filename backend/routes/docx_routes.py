@@ -34,10 +34,9 @@ def allowed_file(filename):
 
 
 @docx_bp.route('/api/upload/docx', methods=['POST'])
-@require_temp_auth
 def upload_docx():
     """
-    Handle DOCX file upload with formatting extraction
+    Handle DOCX file upload with formatting extraction and proper auth/credit management
     
     Returns:
         JSON response with text and formatting data
@@ -45,6 +44,51 @@ def upload_docx():
     start_time = time.time()
     
     try:
+        # Check mode and apply appropriate authentication
+        if current_app.config.get('TESTING_MODE'):
+            # Testing mode: check temp authentication
+            from flask import session
+            if not session.get('temp_authenticated'):
+                return jsonify({
+                    'error': 'Authentication required',
+                    'message': 'Please authenticate with the temporary password first'
+                }), 401
+        else:
+            # Normal mode: use proper auth + credits
+            from flask import g
+            from backend.middleware.auth_middleware import extract_token_from_header
+            from backend.services.supabase_service import get_supabase_service
+            
+            # Extract and verify token
+            token = extract_token_from_header()
+            if not token:
+                return jsonify({
+                    'error': 'Authentication required',
+                    'message': 'Authorization header with Bearer token is required'
+                }), 401
+            
+            supabase_service = get_supabase_service()
+            user = supabase_service.get_user_from_token(token)
+            if not user:
+                return jsonify({
+                    'error': 'Invalid token',
+                    'message': 'The provided token is invalid or expired'
+                }), 401
+            
+            # Store user in context
+            g.current_user = user
+            g.user_id = user['id']
+            g.user_email = user['email']
+            
+            # Check credits (5 credits required for DOCX processing)
+            current_credits = supabase_service.get_user_credits(user['id'])
+            if current_credits < 5:
+                return jsonify({
+                    'error': 'Insufficient credits',
+                    'message': f'This action requires 5 credits. You have {current_credits} credits.',
+                    'current_credits': current_credits,
+                    'required_credits': 5
+                }), 402
         # Validate request
         if 'file' not in request.files:
             return jsonify({
@@ -229,7 +273,6 @@ def upload_docx():
 
 
 @docx_bp.route('/api/upload/docx/validate', methods=['POST'])
-@require_temp_auth  
 def validate_docx():
     """
     Validate DOCX file without processing (for preview/estimation)

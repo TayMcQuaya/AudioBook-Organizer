@@ -418,14 +418,13 @@ class Router {
 
             // Clean up app-specific resources
             if (window.isAppInitialized) {
-                // Clean up app-specific event listeners
+                // Only do minimal cleanup for landing page - keep app state intact
                 if (window.cleanupTextSelection) {
                     window.cleanupTextSelection();
                 }
                 
-                const mainScript = document.querySelector('script[src="/js/main.js"]');
-                if (mainScript) mainScript.remove();
-                window.isAppInitialized = false;
+                // DON'T reset isAppInitialized - this allows faster navigation back to app
+                console.log('🔧 App resources cleaned for landing page, but keeping app initialized');
             }
 
             // Ensure landing page CSS is loaded and app CSS is removed
@@ -799,11 +798,46 @@ class Router {
                 console.log('✅ App HTML already loaded, skipping injection');
             }
 
+            // Ensure auth module is available before app initialization
+            if (!window.authModule && !tempAuthManager.isTestingMode) {
+                console.log('🔧 Auth module not found, initializing authentication...');
+                await this._initializeAuthentication(this.envConfig);
+            }
+
+            // Check if app is already properly initialized and user is still authenticated
+            if (window.isAppInitialized && (window.authModule?.isAuthenticated?.() || window.sessionManager?.isAuthenticated)) {
+                console.log('✅ App already initialized and user authenticated, reusing existing app state');
+                
+                try {
+                    // Ensure the UI is properly updated for the current user
+                    if (window.appUI && window.appUI.getComprehensiveAuthState) {
+                        const authState = window.appUI.getComprehensiveAuthState();
+                        if (authState.isAuthenticated && authState.user) {
+                            console.log('🔄 Refreshing UI with current auth state');
+                            window.appUI.updateUI(authState);
+                        }
+                    }
+                    
+                    // Initialize/refresh essential features that might have been cleaned up
+                    await this.refreshEssentialFeatures();
+                    
+                    console.log('📱 App reused successfully - skipping full initialization');
+                    return;
+                    
+                } catch (error) {
+                    console.error('❌ Error refreshing app features:', error);
+                    // Fall back to full initialization if refresh fails
+                    window.isAppInitialized = false;
+                    console.log('🔄 Falling back to full initialization due to refresh error');
+                }
+            }
+            
             // Initialize app if not already initialized
             if (!window.isAppInitialized) {
                 console.log('🔧 App not initialized yet, starting initialization...');
                 console.log('🔍 Debug: window.isAppInitialized =', window.isAppInitialized);
                 console.log('🔍 Debug: window.isFrameworkInitialized =', window.isFrameworkInitialized);
+                console.log('🔍 Debug: window.authModule available =', !!window.authModule);
                 try {
                     // In testing mode, wait a moment to ensure auth status is properly set
                     if (tempAuthManager.isTestingMode) {
@@ -875,17 +909,16 @@ class Router {
                 throw new Error('App container not found for router.');
             }
 
-            // Clean up app-specific resources
+            // Clean up app-specific resources only if actually leaving the app context
             if (window.isAppInitialized) {
-                // Clean up app-specific event listeners
+                // Only do minimal cleanup for auth page - don't fully destroy app
                 if (window.cleanupTextSelection) {
                     window.cleanupTextSelection();
                 }
                 
-                const mainScript = document.querySelector('script[src="/js/main.js"]');
-                if (mainScript) mainScript.remove();
-                window.isAppInitialized = false;
-                window.isAppInitializing = false;
+                // DON'T reset isAppInitialized - this causes unnecessary reinitializations
+                // when navigating back to app. The app can be reused.
+                console.log('🔧 App resources cleaned for auth page, but keeping app initialized');
             }
 
             // Clean up any existing auth scripts
@@ -1004,6 +1037,68 @@ class Router {
         } catch (error) {
             console.error('Error loading profile page:', error);
             showError('Failed to load profile page');
+        }
+    }
+    
+    // Refresh essential features for fast app reuse
+    async refreshEssentialFeatures() {
+        console.log('🔄 Refreshing essential app features...');
+        
+        try {
+            // 1. Refresh credit system
+            console.log('💎 Refreshing credit display...');
+            const { initializeCreditsDisplay, updateUserCredits } = await import('/js/modules/appUI.js');
+            
+            // Always ensure credit display exists
+            initializeCreditsDisplay();
+            
+            // Update credits if user is authenticated
+            if (window.authModule && window.authModule.isAuthenticated()) {
+                await updateUserCredits();
+                console.log('✅ Credits refreshed');
+            }
+            
+            // 2. Check if project needs restoration (only if content is missing)
+            console.log('📂 Checking project restoration needs...');
+            const bookContent = document.getElementById('bookContent');
+            const hasContent = bookContent && bookContent.textContent.trim().length > 0;
+            
+            if (!hasContent && (window.authModule?.isAuthenticated?.() || window.sessionManager?.isAuthenticated)) {
+                console.log('📂 No content detected, attempting project restoration...');
+                const { loadFromDatabase } = await import('/js/modules/storage.js');
+                const restored = await loadFromDatabase();
+                if (restored) {
+                    console.log('✅ Project restored during fast navigation');
+                } else {
+                    console.log('📭 No project to restore');
+                }
+            } else if (hasContent) {
+                console.log('📝 Content already present, skipping project restoration');
+            } else {
+                console.log('👤 User not authenticated, skipping project restoration');
+            }
+            
+            // 3. Restart auto-save if it was stopped
+            console.log('💾 Ensuring auto-save is active...');
+            const { startAutoSave } = await import('/js/modules/storage.js');
+            startAutoSave();
+            
+            // 4. Reinitialize Table of Contents if content was restored
+            console.log('📋 Ensuring Table of Contents is properly initialized...');
+            if (window.initializeTableOfContents && typeof window.initializeTableOfContents === 'function') {
+                try {
+                    window.initializeTableOfContents();
+                    console.log('✅ Table of Contents reinitialized');
+                } catch (error) {
+                    console.warn('⚠️ Table of Contents initialization failed:', error);
+                }
+            }
+            
+            console.log('✅ Essential features refreshed successfully');
+            
+        } catch (error) {
+            console.error('❌ Error refreshing essential features:', error);
+            throw error; // Re-throw to trigger fallback to full initialization
         }
     }
     
