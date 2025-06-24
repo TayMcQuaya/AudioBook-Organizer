@@ -415,7 +415,11 @@ class AuthModule {
             
             // Navigate after successful authentication
             if (authEvent === 'SIGNED_IN') {
-                // For Google OAuth callback, navigate directly to app
+                // **FIX: Detect page refresh scenarios to prevent unwanted navigation**
+                const isPageRefresh = !document.referrer || document.referrer === window.location.href;
+                const currentPath = window.location.pathname;
+                
+                // For Google OAuth callback, always navigate to app
                 if (window.location.search.includes('from=google')) {
                     console.log('🔄 Google OAuth completed, navigating to app page');
                     if (window.router) {
@@ -423,18 +427,29 @@ class AuthModule {
                     } else {
                         window.location.href = '/app';
                     }
+                } else if (isPageRefresh && currentPath === '/') {
+                    // **CRITICAL FIX: Don't navigate away from landing page during refresh**
+                    console.log('🚫 Preventing navigation from landing page during refresh/session restoration');
+                    console.log('✅ User chose to be on landing page, respecting their choice');
                 } else {
-                    // For regular login, use return URL
-                    console.log('🔄 Navigating to app page after login');
-                    if (window.router) {
-                        await window.router.navigate(returnUrl);
+                    // **FIX: Only navigate if not already on the target page**
+                    if (currentPath !== returnUrl) {
+                        console.log(`🔄 Navigating from ${currentPath} to ${returnUrl} after login`);
+                        if (window.router) {
+                            await window.router.navigate(returnUrl);
+                        } else {
+                            window.location.href = returnUrl;
+                        }
                     } else {
-                        window.location.href = returnUrl;
+                        console.log(`✅ Already on target page ${returnUrl}, skipping navigation`);
                     }
                 }
             } else if (authEvent === 'INITIAL_SESSION') {
+                // **FIX: Respect user's current page during session restoration**
+                const currentPath = window.location.pathname;
+                
                 // For Google OAuth on auth page, navigate to app
-                if (window.location.search.includes('from=google') && window.location.pathname === '/auth') {
+                if (window.location.search.includes('from=google') && currentPath === '/auth') {
                     console.log('🔄 Google OAuth session restored, navigating to app page');
                     if (window.router) {
                         await window.router.navigate('/app');
@@ -442,7 +457,17 @@ class AuthModule {
                         window.location.href = '/app';
                     }
                 } else {
-                    console.log('🔄 Session restored, staying on current page');
+                    console.log(`🔄 Session restored on ${currentPath}, staying on current page`);
+                    // **IMPORTANT: Never automatically navigate during session restoration**
+                    // Users should stay on whatever page they refreshed (landing, app, etc.)
+                    // This prevents unwanted redirects during page refresh
+                    if (currentPath === '/') {
+                        console.log('✅ Staying on landing page during session restore');
+                    } else if (currentPath === '/app') {
+                        console.log('✅ Staying on app page during session restore');
+                    } else {
+                        console.log(`✅ Staying on ${currentPath} during session restore`);
+                    }
                 }
             }
             
@@ -827,7 +852,129 @@ class AuthModule {
      * Check if user is authenticated
      */
     isAuthenticated() {
-        return !!currentUser;
+        // Quick check for in-memory user
+        if (currentUser && this.user) {
+            return true;
+        }
+        
+        // **ENHANCED: For page refresh scenarios, check multiple sources**
+        if (supabaseClient && !this.isLoading) {
+            try {
+                // First try to get session synchronously from Supabase storage
+                const storedSession = supabaseClient.auth._getSessionFromStorage?.() || 
+                                    this.getStoredSupabaseSession();
+                
+                if (storedSession && storedSession.access_token && storedSession.user) {
+                    // Found a valid stored session, update our state immediately
+                    currentUser = storedSession.user;
+                    this.user = storedSession.user;
+                    authToken = storedSession.access_token;
+                    this.session = storedSession;
+                    
+                    // Store token for API calls
+                    localStorage.setItem('auth_token', authToken);
+                    
+                    console.log('✅ Auth state recovered from Supabase storage');
+                    
+                    // **NEW: Notify session manager for UI updates**
+                    if (window.sessionManager && !window.sessionManager.isAuthenticated) {
+                        setTimeout(() => {
+                            window.sessionManager.handleAuthStateChange(true, this.user, storedSession);
+                        }, 0);
+                    }
+                    
+                    return true;
+                }
+            } catch (error) {
+                console.warn('Error checking stored Supabase session:', error);
+            }
+        }
+        
+        // **NEW: Check if session manager has auth state but we don't**
+        if (window.sessionManager?.isAuthenticated && window.sessionManager.user && !currentUser) {
+            console.log('🔄 Session manager has auth state, syncing to auth module');
+            currentUser = window.sessionManager.user;
+            this.user = window.sessionManager.user;
+            
+            // Try to get token
+            const token = localStorage.getItem('auth_token');
+            if (token) {
+                authToken = token;
+            }
+            
+            return true;
+        }
+        
+        // **NEW: Final check - do we have a valid stored token but no user?**
+        const storedToken = localStorage.getItem('auth_token');
+        if (storedToken && this.isValidJWT(storedToken) && !currentUser) {
+            console.log('🔄 Found valid token but no user, triggering async verification');
+            
+            // Trigger async verification (don't wait for it)
+            this.verifyStoredToken(storedToken).catch(error => {
+                console.warn('Async token verification failed:', error);
+            });
+        }
+        
+        return false;
+    }
+    
+    /**
+     * NEW: Async method to verify stored token and restore session
+     */
+    async verifyStoredToken(token) {
+        try {
+            const { data: { session }, error } = await supabaseClient.auth.getSession();
+            
+            if (session && session.access_token && !error) {
+                console.log('✅ Async session verification successful');
+                await this.handleAuthSuccess(session, false, 'TOKEN_VERIFICATION');
+                return true;
+            }
+        } catch (error) {
+            console.warn('Async token verification failed:', error);
+        }
+        return false;
+    }
+    
+    /**
+     * Get stored Supabase session from localStorage/sessionStorage
+     */
+    getStoredSupabaseSession() {
+        try {
+            // Check localStorage for Supabase session
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key && key.includes('supabase.auth.token')) {
+                    const value = localStorage.getItem(key);
+                    if (value) {
+                        const parsed = JSON.parse(value);
+                        if (parsed && parsed.access_token && parsed.user) {
+                            return parsed;
+                        }
+                    }
+                }
+            }
+            
+            // Check sessionStorage as fallback
+            for (let i = 0; i < sessionStorage.length; i++) {
+                const key = sessionStorage.key(i);
+                if (key && key.includes('supabase.auth.token')) {
+                    const value = sessionStorage.getItem(key);
+                    if (value) {
+                        const parsed = JSON.parse(value);
+                        if (parsed && parsed.access_token && parsed.user) {
+                            return parsed;
+                        }
+                    }
+                }
+            }
+            
+            return null;
+        } catch (error) {
+            console.warn('Error parsing stored Supabase session:', error);
+            return null;
+        }
     }
 
     /**

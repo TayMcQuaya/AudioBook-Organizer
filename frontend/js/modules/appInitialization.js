@@ -221,8 +221,15 @@ async function initializeModules() {
     // Initialize theme manager
     themeManager.init();
     
-    // Initialize session management
-    await sessionManager.init();
+    // Session manager is already initialized by the router - don't re-initialize
+    // This prevents race conditions and double initialization issues
+    if (!window.sessionManager) {
+        console.warn('⚠️ Session manager not found - router initialization may have failed');
+        // Only initialize if router hasn't done it yet (fallback)
+        await sessionManager.init();
+    } else {
+        console.log('✅ Using session manager initialized by router');
+    }
     
     // Initialize UI manager after session manager
     await appUI.init();
@@ -282,8 +289,11 @@ export async function initApp() {
         // Initialize all modules
         await initializeModules();
         
-        // Try to restore latest project from database
-        await restoreLatestProject();
+        // **PERFORMANCE: Start project restoration in background (non-blocking)**
+        // This allows the app to be usable while large projects are being restored
+        restoreLatestProject().catch(error => {
+            console.error('❌ Background project restoration failed:', error);
+        });
         
         // Initialize Table of Contents
         console.log('📋 Initializing Table of Contents...');

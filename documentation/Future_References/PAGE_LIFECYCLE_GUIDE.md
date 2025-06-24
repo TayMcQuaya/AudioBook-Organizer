@@ -157,6 +157,133 @@ async function ensureAuthenticationReady() {
 }
 ```
 
+### Problem 5: Navigation Container Mismatch (SOLVED)
+**Issue**: Navigation from app page to other pages failed with "Error: App container not found for router."
+
+**Root Cause**: 
+- App page (`/app`) has its own DOM structure with `.main-container` 
+- Other pages (landing, auth, temp-auth) expect an `appContainer` element
+- When navigating from app → other pages, the expected container didn't exist
+- Router's page loader methods threw errors when `document.getElementById('appContainer')` returned null
+
+**Files Changed**: 
+- `frontend/js/modules/router.js` - All page loader methods
+
+**Solution Applied**:
+```javascript
+// **BEFORE:** All page loaders had this problematic pattern
+async loadLandingPage() {
+    try {
+        const appContainer = document.getElementById('appContainer');
+        if (!appContainer) {
+            throw new Error('App container not found for router.'); // ❌ FAILED HERE
+        }
+        // ... rest of loading
+    }
+}
+
+// **AFTER:** Dynamic container creation with smooth transitions
+async loadLandingPage() {
+    try {
+        // **FIX: Ensure appContainer exists or create it for page transitions**
+        let appContainer = document.getElementById('appContainer');
+        if (!appContainer) {
+            console.log('🔧 Creating appContainer for page transition');
+            appContainer = document.createElement('div');
+            appContainer.id = 'appContainer';
+            appContainer.style.opacity = '0';
+            appContainer.style.transition = 'opacity 0.5s ease-in-out';
+            
+            // Replace the current page content with the container
+            document.body.innerHTML = '';
+            document.body.appendChild(appContainer);
+            
+            // Restore necessary CSS links that might have been removed
+            if (!document.querySelector('link[href="/css/main.css"]')) {
+                const mainCSS = document.createElement('link');
+                mainCSS.rel = 'stylesheet';
+                mainCSS.href = '/css/main.css';
+                document.head.appendChild(mainCSS);
+            }
+        }
+        
+        // ... rest of loading logic ...
+        
+        // **PERFORMANCE: Make appContainer visible with smooth transition**
+        setTimeout(() => {
+            appContainer.style.opacity = '1';
+        }, 100);
+    }
+}
+```
+
+**Methods Fixed**:
+- `loadLandingPage()` - Landing page navigation
+- `loadTempAuthPage()` - Testing mode navigation  
+- `loadAuthPage()` - Authentication page navigation
+- `loadResetPasswordPage()` - Password reset navigation
+- Temp auth fallback method - Edge case handling
+
+**Prevention for Future Pages**:
+All new page loader methods MUST include the container detection pattern shown above.
+
+### Problem 6: Landing Page Refresh Auto-Redirect (SOLVED)
+**Issue**: Refreshing the landing page while authenticated automatically redirected users to the app page, breaking user's intended page choice and causing authentication confusion.
+
+**Root Cause**: 
+- Auth module's `handleAuthSuccess()` method had aggressive navigation logic
+- Both `SIGNED_IN` and `INITIAL_SESSION` events could trigger unwanted navigation during session restoration
+- No distinction between actual user login vs session restoration during page refresh
+- Landing page user choice wasn't respected during authentication recovery
+
+**Files Changed**: 
+- `frontend/js/modules/auth.js` - Enhanced navigation logic in `handleAuthSuccess()`
+
+**Solution Applied**:
+```javascript
+// **BEFORE:** Aggressive navigation during session restoration
+if (authEvent === 'SIGNED_IN') {
+    // Navigate to returnUrl or /app by default
+    await window.router.navigate(returnUrl);
+}
+
+// **AFTER:** Smart detection of page refresh vs actual login
+if (authEvent === 'SIGNED_IN') {
+    const isPageRefresh = !document.referrer || document.referrer === window.location.href;
+    const currentPath = window.location.pathname;
+    
+    if (isPageRefresh && currentPath === '/') {
+        // CRITICAL FIX: Don't navigate away from landing page during refresh
+        console.log('🚫 Preventing navigation from landing page during refresh');
+        console.log('✅ User chose to be on landing page, respecting their choice');
+    } else {
+        // Normal navigation logic for actual logins
+        await window.router.navigate(returnUrl);
+    }
+}
+
+// Enhanced INITIAL_SESSION handling
+} else if (authEvent === 'INITIAL_SESSION') {
+    const currentPath = window.location.pathname;
+    console.log(`🔄 Session restored on ${currentPath}, staying on current page`);
+    
+    // Users should stay on whatever page they refreshed
+    if (currentPath === '/') {
+        console.log('✅ Staying on landing page during session restore');
+    } else if (currentPath === '/app') {
+        console.log('✅ Staying on app page during session restore');
+    }
+}
+```
+
+**Behavior Changes**:
+- **Before**: Landing page refresh → automatic redirect to app page
+- **After**: Landing page refresh → stays on landing page as intended
+- **Preserved**: Google OAuth flows, normal login navigation, app page functionality
+
+**Prevention for Future Authentication Logic**:
+Always distinguish between active user navigation vs passive session restoration when implementing authentication flows.
+
 ## How It Works
 
 1.  **Navigation**: A user clicks a link, calling `router.navigate('/new-page')`.
@@ -169,6 +296,39 @@ async function ensureAuthenticationReady() {
 ## 🛡️ Authentication Best Practices for New Pages
 
 When creating new pages, follow these practices to avoid authentication issues:
+
+### ⚠️ **CRITICAL: Avoid Duplicate Authentication Initialization**
+
+**❌ WRONG APPROACH:**
+```javascript
+// DON'T DO THIS - App page trying to initialize auth directly
+async function ensureAuthenticationReady() {
+    const { AuthModule } = await import('/js/modules/auth.js');
+    window.authModule = new AuthModule(); // ❌ This will fail!
+    await window.authModule.init();
+}
+```
+
+**✅ CORRECT APPROACH:**
+```javascript
+// DO THIS - Check if router has already initialized auth
+async function ensureAuthenticationReady() {
+    // Router handles all auth initialization
+    if (window.authModule && window.sessionManager) {
+        console.log('✅ Auth modules available via router');
+        return;
+    }
+    
+    // Wait for router to complete auth initialization
+    let attempts = 0;
+    while (!window.authModule && attempts < 10) {
+        await new Promise(resolve => setTimeout(resolve, 200));
+        attempts++;
+    }
+}
+```
+
+**Key Principle:** **Single Responsibility** - Only the router should initialize authentication. Pages should only verify availability.
 
 ### 1. Always Check Multiple Auth Sources
 ```javascript
@@ -365,9 +525,32 @@ class Router {
                 await import('/js/modules/auth.js');
             }
             
+            // ✅ CRITICAL: Dynamic appContainer detection and creation
+            // **MUST INCLUDE THIS PATTERN** to prevent navigation errors
+            let appContainer = document.getElementById('appContainer');
+            if (!appContainer) {
+                console.log('🔧 Creating appContainer for dashboard page transition');
+                appContainer = document.createElement('div');
+                appContainer.id = 'appContainer';
+                appContainer.style.opacity = '0';
+                appContainer.style.transition = 'opacity 0.5s ease-in-out';
+                
+                // Replace the current page content with the container
+                document.body.innerHTML = '';
+                document.body.appendChild(appContainer);
+                
+                // Restore necessary CSS links that might have been removed
+                if (!document.querySelector('link[href="/css/main.css"]')) {
+                    const mainCSS = document.createElement('link');
+                    mainCSS.rel = 'stylesheet';
+                    mainCSS.href = '/css/main.css';
+                    document.head.appendChild(mainCSS);
+                }
+            }
+            
             // A. Load HTML
-            const appContainer = document.getElementById('appContainer');
             const response = await fetch('/pages/dashboard/dashboard.html');
+            if (!response.ok) throw new Error(`Failed to fetch dashboard page: ${response.status}`);
             appContainer.innerHTML = await response.text();
 
             // B. Set body class for styling
@@ -378,8 +561,14 @@ class Router {
             initDashboardPage();
             window.cleanupDashboardPage = cleanupDashboardPage; // Make cleanup available for next navigation
 
+            // ✅ PERFORMANCE: Make appContainer visible with smooth transition
+            setTimeout(() => {
+                appContainer.style.opacity = '1';
+            }, 100);
+
         } catch (error) {
             console.error('Error loading dashboard page:', error);
+            showError('Failed to load dashboard page');
         }
     }
 
@@ -431,6 +620,69 @@ function cleanupApp(fullCleanup = false) {
 3. **Import auth module** in your page loader
 4. **Implement auth recovery** for edge cases
 5. **Follow the init/cleanup pattern** exactly as shown
+6. **🚨 CRITICAL: Include container detection pattern** to prevent navigation errors
+
+## 🚨 **MANDATORY: Container Pattern for All New Pages**
+
+**Every new page loader method MUST include this exact pattern** to prevent "App container not found" errors:
+
+```javascript
+async loadYourNewPage() {
+    try {
+        // **STEP 1: MANDATORY Container Detection & Creation**
+        let appContainer = document.getElementById('appContainer');
+        if (!appContainer) {
+            console.log('🔧 Creating appContainer for [page-name] transition');
+            appContainer = document.createElement('div');
+            appContainer.id = 'appContainer';
+            appContainer.style.opacity = '0';
+            appContainer.style.transition = 'opacity 0.5s ease-in-out';
+            
+            // Replace current page content with container
+            document.body.innerHTML = '';
+            document.body.appendChild(appContainer);
+            
+            // Restore essential CSS
+            if (!document.querySelector('link[href="/css/main.css"]')) {
+                const mainCSS = document.createElement('link');
+                mainCSS.rel = 'stylesheet';
+                mainCSS.href = '/css/main.css';
+                document.head.appendChild(mainCSS);
+            }
+        }
+        
+        // **STEP 2: Continue with normal page loading**
+        const response = await fetch('/pages/your-page/your-page.html');
+        if (!response.ok) throw new Error(`Failed to fetch page: ${response.status}`);
+        appContainer.innerHTML = await response.text();
+        
+        // **STEP 3: Page-specific setup**
+        document.body.className = 'your-page-body app-ready';
+        
+        // **STEP 4: Initialize page logic**
+        const { initYourPage, cleanupYourPage } = await import('/pages/your-page/main.js');
+        initYourPage();
+        window.cleanupYourPage = cleanupYourPage;
+        
+        // **STEP 5: MANDATORY Smooth visibility transition**
+        setTimeout(() => {
+            appContainer.style.opacity = '1';
+        }, 100);
+        
+    } catch (error) {
+        console.error('Error loading your page:', error);
+        showError('Failed to load page');
+    }
+}
+```
+
+**Why This Pattern is Required**:
+- App page (`/app`) uses `.main-container`, not `appContainer`
+- Other pages expect `appContainer` to exist
+- Without this pattern, navigation from app → other pages fails
+- Pattern provides smooth transitions and preserves CSS
+
+**⚠️ Failure to include this pattern will cause navigation errors!**
 
 **Files That Handle Auth Automatically**:
 - `frontend/js/modules/auth.js` - Main authentication logic
@@ -439,4 +691,43 @@ function cleanupApp(fullCleanup = false) {
 - `frontend/js/modules/appUI.js` - User interface updates
 
 Following this guide ensures your new pages will have seamless authentication, fast navigation (1-2 seconds instead of 4+ seconds), and no session loss during page transitions.
+
+---
+
+## 📋 **RECENT UPDATES & CRITICAL FIXES**
+
+### ✅ **Landing Page Refresh Auto-Redirect Fix (Latest)**
+**Issue Resolved**: Landing page refresh automatically redirected authenticated users to app page.
+
+**What Changed**:
+- Enhanced auth module's `handleAuthSuccess()` method with page refresh detection
+- Added distinction between actual login vs session restoration scenarios  
+- Implemented page choice preservation during authentication recovery
+- Improved `SIGNED_IN` and `INITIAL_SESSION` event handling
+
+**Action Required**: 
+- ✅ **All existing authentication flows are fixed**
+- 🚨 **New authentication logic should distinguish between login vs refresh**
+- 📋 Test page refresh behavior on all pages to ensure user choice is respected
+
+**Files Modified**: `frontend/js/modules/auth.js` (handleAuthSuccess method)
+
+This fix ensures users stay on their chosen page during refresh while preserving all normal authentication functionality.
+
+### ✅ **Navigation Container Fix**
+**Issue Resolved**: "App container not found for router" error during page navigation.
+
+**What Changed**:
+- All page loader methods in `router.js` now include dynamic container creation
+- Added smooth opacity transitions for better user experience
+- Implemented CSS preservation during page transitions
+
+**Action Required**: 
+- ✅ **All existing page loaders are fixed** 
+- 🚨 **New pages MUST include the mandatory container pattern** shown above
+- 📋 Review the "MANDATORY: Container Pattern" section before creating new pages
+
+**Files Modified**: `frontend/js/modules/router.js` (5 methods updated)
+
+This fix ensures seamless navigation between all page types and prevents container-related errors that were blocking page transitions from the app page to other pages.
 

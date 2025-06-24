@@ -167,17 +167,18 @@ class SessionManager {
     }
 
     /**
-     * Check current authentication status
+     * Check authentication status and restore from stored session if available
      */
     async checkAuthStatus() {
+        // Prevent concurrent auth checks
         if (this.isCheckingAuth) {
-            console.log('⏳ Auth check in progress, skipping');
+            console.log('⏳ Auth check already in progress, skipping...');
             return;
         }
         
         const now = Date.now();
         if (now - this.lastAuthCheck < this.MIN_AUTH_CHECK_INTERVAL) {
-            console.log('⏳ Auth check too frequent, skipping');
+            console.log('⏳ Auth check too recent, skipping...');
             return;
         }
         
@@ -185,47 +186,118 @@ class SessionManager {
         this.lastAuthCheck = now;
         
         try {
-            // First check auth module
-            if (window.authModule?.isAuthenticated()) {
-                this.user = window.authModule.getCurrentUser();
-                this.isAuthenticated = true;
-                return;
-            }
-
-            // Then check token
-                const authToken = localStorage.getItem('auth_token');
-            if (!authToken || !this.isValidJWT(authToken)) {
-                this.setUnauthenticated();
-                return;
-            }
-
-            // Verify with backend
-                            const response = await apiFetch('/api/auth/status', {
-                                headers: { 
-                                    'Authorization': `Bearer ${authToken}`,
-                                    'Content-Type': 'application/json'
-                                }
-                            });
-                            
-                            if (response.ok) {
-                                const data = await response.json();
-                                if (data.authenticated && data.user) {
-                                    this.user = data.user;
-                                    this.isAuthenticated = true;
-                } else {
-                    this.setUnauthenticated();
+            console.log('🔍 Session Manager: Checking authentication status...');
+            
+            // **ENHANCED: First check if auth module already has valid session**
+            if (window.authModule) {
+                try {
+                    const authModuleAuth = window.authModule.isAuthenticated();
+                    const authModuleUser = window.authModule.getCurrentUser();
+                    
+                    if (authModuleAuth && authModuleUser) {
+                        console.log('✅ Auth module already has valid session, syncing with session manager');
+                        this.user = authModuleUser;
+                        this.isAuthenticated = true;
+                        
+                        // Ensure token is stored
+                        const token = window.authModule.getAuthToken();
+                        if (token) {
+                            localStorage.setItem('auth_token', token);
+                        }
+                        
+                        // Notify other components
+                        this.notifyStateChange();
+                        return;
+                    }
+                } catch (error) {
+                    console.warn('Error checking auth module state:', error);
                 }
-            } else {
-                this.setUnauthenticated();
             }
+            
+            // Check local token first (fastest check)
+            const storedToken = localStorage.getItem('auth_token');
+            if (storedToken && this.isValidJWT(storedToken)) {
+                console.log('🔍 Found stored JWT token, attempting verification...');
+                
+                try {
+                    // Try to verify with backend if available
+                    const response = await apiFetch('/api/auth/verify', {
+                        method: 'POST',
+                        headers: { 'Authorization': `Bearer ${storedToken}` },
+                        body: JSON.stringify({ token: storedToken })
+                    });
+                    
+                    if (response.ok) {
+                        const data = await response.json();
+                        if (data.success && data.user) {
+                            console.log('✅ Token verified with backend, restoring session');
+                            this.user = data.user;
+                            this.isAuthenticated = true;
+                            
+                            // **NEW: Also update auth module state for consistency**
+                            if (window.authModule && !window.authModule.isAuthenticated()) {
+                                window.authModule.user = data.user;
+                                window.authModule.session = { access_token: storedToken };
+                                console.log('✅ Auth module state synchronized with verified session');
+                            }
+                            
+                            this.notifyStateChange();
+                            return;
+                        }
+                    }
+                } catch (error) {
+                    console.warn('Backend token verification failed:', error);
+                }
+            }
+            
+            // Check if Supabase has a session (for page refresh scenarios)
+            if (window.authModule?.supabaseClient) {
+                try {
+                    const { data: { session }, error } = await window.authModule.supabaseClient.auth.getSession();
+                    if (session && session.access_token && !error) {
+                        console.log('✅ Found Supabase session on refresh, triggering auth recovery');
+                        
+                        // **ENHANCED: Properly synchronize all auth state**
+                        this.user = session.user;
+                        this.isAuthenticated = true;
+                        
+                        // Update auth module state
+                        if (window.authModule) {
+                            window.authModule.user = session.user;
+                            window.authModule.session = session;
+                            console.log('✅ Auth module state updated from Supabase session');
+                        }
+                        
+                        // Store the token for consistency
+                        localStorage.setItem('auth_token', session.access_token);
+                        
+                        // Notify other components with comprehensive state
+                        window.dispatchEvent(new CustomEvent('auth-state-changed', {
+                            detail: {
+                                isAuthenticated: true,
+                                user: session.user,
+                                session: session,
+                                event: 'RECOVERED_SESSION'
+                            }
+                        }));
+                        
+                        // Force UI update
+                        this.notifyStateChange();
+                        return;
+                    }
+                } catch (error) {
+                    console.warn('Error checking Supabase session:', error);
+                }
+            }
+            
+            // No valid authentication found
+            this.setUnauthenticated();
+            
         } catch (error) {
-            console.error('❌ Auth check error:', error);
-            // Don't clear token on network errors
-            this.isAuthenticated = false;
-            this.user = null;
+            console.error('Error checking auth status:', error);
+            this.setUnauthenticated();
         } finally {
             this.isCheckingAuth = false;
-            this.notifyStateChange();
         }
     }
 

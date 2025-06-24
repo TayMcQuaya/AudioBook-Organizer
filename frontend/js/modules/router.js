@@ -93,24 +93,24 @@ class Router {
             // STEP 3: Apply environment settings immediately
             envManager.applyEnvironmentSettings();
             
-            // STEP 4: Wait for DOM to be stable
-            await appConfig.delay('domReadyDelay');
+            // **PERFORMANCE: Run authentication, layout, and DOM stability in parallel**
+            console.log('🚀 Running parallel initialization tasks...');
             
-            // STEP 5: Initialize authentication based on environment
-            await this._initializeAuthentication(envConfig);
+            await Promise.all([
+                appConfig.delay('domReadyDelay'),
+                this._initializeAuthentication(envConfig),
+                this._ensureLayoutStability()
+            ]);
             
-            // STEP 6: Apply layout and CSS fixes
-            await this._ensureLayoutStability();
-            
-            // STEP 7: Set up event listeners
+            // Set up event listeners (synchronous)
             this._setupEventListeners();
             
-            // STEP 8: Wait for auth state to be ready
+            // Wait for auth state to be ready (only if needed)
             if (!envConfig.testing_mode || !tempAuthManager.shouldBypassAuth()) {
                 await this.waitForAuthReady();
             }
             
-            // STEP 9: Apply final initialization delay
+            // **PERFORMANCE: Reduce final initialization delay**
             await appConfig.delay('initializationDelay');
             
             // STEP 10: Handle initial route
@@ -150,16 +150,162 @@ class Router {
         } else {
             console.log('🔑 Normal mode: Using Supabase authentication');
             
-            // Initialize full auth stack
+            // Initialize auth module first
+            console.log('🔧 Initializing auth module...');
             await auth.init();
-            await sessionManager.init();
-            
-            // Make auth module globally available
             window.authModule = auth;
+            console.log('✅ Auth module initialized and available globally');
+            
+            // Initialize session manager after auth module
+            console.log('🔧 Initializing session manager...');
+            await sessionManager.init();
+            window.sessionManager = sessionManager;
+            console.log('✅ Session manager initialized and available globally');
+            
+            // Attempt session recovery if we have stored auth but no current session
+            if (!sessionManager.isAuthenticated && this.hasAnyStoredAuth()) {
+                console.log('🔄 Attempting session recovery for page refresh...');
+                const recoverySuccess = await this.attemptSessionRecovery();
+                
+                if (recoverySuccess) {
+                    console.log('✅ Session recovery completed successfully');
+                } else {
+                    console.log('⚠️ Session recovery failed, proceeding as unauthenticated');
+                }
+            } else if (sessionManager.isAuthenticated) {
+                console.log('✅ User already authenticated');
+            } else {
+                console.log('ℹ️ No stored auth found, proceeding as unauthenticated');
+            }
+            
+            // Make temp auth manager available for compatibility
             window.tempAuthManager = tempAuthManager;
         }
         
         return true;
+    }
+    
+    /**
+     * Attempt to recover session state on page refresh
+     */
+    async attemptSessionRecovery() {
+        try {
+            console.log('🔄 Starting session recovery attempt...');
+            
+            // Check if we have any stored authentication data
+            if (this.hasAnyStoredAuth()) {
+                console.log('🔍 Found stored auth data, attempting recovery...');
+                
+                // Give Supabase a moment to initialize if needed
+                await new Promise(resolve => setTimeout(resolve, 100));
+                
+                // **ENHANCED: Try multiple recovery approaches**
+                
+                // 1. Try session manager's auth check first (most comprehensive)
+                if (window.sessionManager && typeof window.sessionManager.checkAuthStatus === 'function') {
+                    console.log('🔄 Using session manager for recovery...');
+                    await window.sessionManager.checkAuthStatus();
+                    
+                    if (window.sessionManager.isAuthenticated) {
+                        console.log('✅ Session manager recovery successful');
+                        return true;
+                    }
+                }
+                
+                // 2. Try to get current session from Supabase directly
+                if (window.authModule?.supabaseClient) {
+                    console.log('🔄 Checking Supabase session directly...');
+                    
+                    const { data: { session }, error } = await window.authModule.supabaseClient.auth.getSession();
+                    
+                    if (session && !error) {
+                        console.log('✅ Found valid Supabase session, updating state...');
+                        
+                        // **ENHANCED: Update both auth module and session manager**
+                        if (window.authModule) {
+                            window.authModule.user = session.user;
+                            window.authModule.session = session;
+                            console.log('✅ Auth module state updated');
+                        }
+                        
+                        // Update session manager state
+                        if (!sessionManager.isAuthenticated) {
+                            sessionManager.handleAuthStateChange(true, session.user, session);
+                            console.log('✅ Session manager state updated');
+                        }
+                        
+                        console.log('✅ Session recovery completed successfully');
+                        return true;
+                    } else {
+                        console.log('🚫 No valid Supabase session found:', error?.message || 'Unknown error');
+                    }
+                }
+                
+                // 3. Final attempt: Check stored JWT token
+                const storedToken = localStorage.getItem('auth_token');
+                if (storedToken && window.authModule?.isValidJWT(storedToken)) {
+                    console.log('🔄 Attempting recovery with stored JWT token...');
+                    
+                    try {
+                        // Try to verify token with backend
+                        const response = await fetch('/api/auth/verify', {
+                            method: 'POST',
+                            headers: { 
+                                'Authorization': `Bearer ${storedToken}`,
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({ token: storedToken })
+                        });
+                        
+                        if (response.ok) {
+                            const data = await response.json();
+                            if (data.success && data.user) {
+                                console.log('✅ Token verification successful, restoring session');
+                                
+                                // Create session object
+                                const mockSession = {
+                                    access_token: storedToken,
+                                    user: data.user
+                                };
+                                
+                                // Update both auth systems
+                                if (window.authModule) {
+                                    window.authModule.user = data.user;
+                                    window.authModule.session = mockSession;
+                                }
+                                
+                                sessionManager.handleAuthStateChange(true, data.user, mockSession);
+                                
+                                console.log('✅ Token-based session recovery completed');
+                                return true;
+                            }
+                        }
+                    } catch (error) {
+                        console.warn('Token verification failed:', error);
+                    }
+                }
+                
+                // Fallback: trigger session manager to check auth status
+                console.log('🔄 Triggering session manager auth check...');
+                await sessionManager.checkAuthStatus();
+                
+                // Final check to see if recovery succeeded
+                if (sessionManager.isAuthenticated || window.authModule?.isAuthenticated?.()) {
+                    console.log('✅ Session recovery successful via session manager');
+                    return true;
+                } else {
+                    console.log('⚠️ Session recovery failed - stored auth may be expired');
+                    return false;
+                }
+            } else {
+                console.log('ℹ️ No stored auth data found, proceeding as unauthenticated');
+                return false;
+            }
+        } catch (error) {
+            console.warn('⚠️ Session recovery attempt failed:', error);
+            // Continue anyway - the app should work without session recovery
+            return false;
+        }
     }
     
     /**
@@ -203,28 +349,82 @@ class Router {
      */
     async waitForAuthReady() {
         return new Promise((resolve) => {
-            // If auth is already ready or there's no token, resolve immediately
-            if (sessionManager.isAuthenticated || !localStorage.getItem('auth_token')) {
+            console.log('⏳ Waiting for auth state to be ready...');
+            
+            // Check multiple sources for stored auth tokens
+            const hasAuthToken = localStorage.getItem('auth_token');
+            const hasSupabaseSession = localStorage.getItem('sb-') || // Supabase session storage prefix
+                                     sessionStorage.getItem('sb-') ||
+                                     this.checkSupabaseLocalStorageKeys();
+            
+            // If there's no evidence of any stored authentication, resolve immediately
+            if (!hasAuthToken && !hasSupabaseSession) {
+                console.log('✅ No stored auth found, proceeding...');
                 resolve();
                 return;
             }
             
+            // If already authenticated, resolve immediately
+            if (sessionManager.isAuthenticated || window.authModule?.isAuthenticated?.()) {
+                console.log('✅ Already authenticated, proceeding...');
+                resolve();
+                return;
+            }
+            
+            console.log('🔍 Found stored auth, waiting for session recovery...');
+            
             // Listen for auth state changes
-            const checkAuthReady = () => {
-                if (sessionManager.isAuthenticated || !localStorage.getItem('auth_token')) {
+            const checkAuthReady = (event) => {
+                const isAuth = sessionManager.isAuthenticated || window.authModule?.isAuthenticated?.();
+                console.log('🔄 Auth state change detected:', event.detail?.event, 'isAuth:', isAuth);
+                
+                if (isAuth || !this.hasAnyStoredAuth()) {
                     window.removeEventListener('auth-state-changed', checkAuthReady);
+                    console.log('✅ Auth state ready, proceeding...');
                     resolve();
                 }
             };
             
             window.addEventListener('auth-state-changed', checkAuthReady);
             
-            // Timeout after 3 seconds to prevent hanging
+            // Give Supabase time to process INITIAL_SESSION event
+            // Longer timeout for page refresh scenarios
             setTimeout(() => {
                 window.removeEventListener('auth-state-changed', checkAuthReady);
+                console.log('⏰ Auth wait timeout, proceeding anyway...');
                 resolve();
-            }, 3000);
+            }, 5000); // Increased from 3 to 5 seconds for reliable session recovery
         });
+    }
+    
+    /**
+     * Check for Supabase session keys in localStorage
+     */
+    checkSupabaseLocalStorageKeys() {
+        try {
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key && key.includes('supabase') || key && key.startsWith('sb-')) {
+                    const value = localStorage.getItem(key);
+                    if (value && value.includes('access_token')) {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        } catch (error) {
+            console.warn('Error checking Supabase localStorage keys:', error);
+            return false;
+        }
+    }
+    
+    /**
+     * Check if there's any stored authentication data
+     */
+    hasAnyStoredAuth() {
+        return localStorage.getItem('auth_token') || 
+               sessionStorage.getItem('auth_token') ||
+               this.checkSupabaseLocalStorageKeys();
     }
     
     // Navigate to a route
@@ -411,9 +611,27 @@ class Router {
     // Load landing page
     async loadLandingPage() {
         try {
-            const appContainer = document.getElementById('appContainer');
+            // **FIX: Ensure appContainer exists or create it for page transitions**
+            let appContainer = document.getElementById('appContainer');
             if (!appContainer) {
-                throw new Error('App container not found for router.');
+                // If no appContainer exists (e.g., we're coming from app page), create one
+                console.log('🔧 Creating appContainer for page transition');
+                appContainer = document.createElement('div');
+                appContainer.id = 'appContainer';
+                appContainer.style.opacity = '0';
+                appContainer.style.transition = 'opacity 0.5s ease-in-out';
+                
+                // Replace the current page content with the container
+                document.body.innerHTML = '';
+                document.body.appendChild(appContainer);
+                
+                // Restore necessary CSS links that might have been removed
+                if (!document.querySelector('link[href="/css/main.css"]')) {
+                    const mainCSS = document.createElement('link');
+                    mainCSS.rel = 'stylesheet';
+                    mainCSS.href = '/css/main.css';
+                    document.head.appendChild(mainCSS);
+                }
             }
 
             // Clean up app-specific resources
@@ -453,6 +671,11 @@ class Router {
             initLandingPage();
             window.cleanupLandingPage = cleanupLandingPage; // Make cleanup available to the router
 
+            // **PERFORMANCE: Make appContainer visible with smooth transition**
+            setTimeout(() => {
+                appContainer.style.opacity = '1';
+            }, 100);
+
         } catch (error) {
             console.error('Error loading landing page:', error);
             showError('Failed to load landing page');
@@ -463,9 +686,26 @@ class Router {
     async loadTempAuthPage() {
         try {
             console.log('🔧 Loading temp auth page...');
-            const appContainer = document.getElementById('appContainer');
+            // **FIX: Ensure appContainer exists or create it for page transitions**
+            let appContainer = document.getElementById('appContainer');
             if (!appContainer) {
-                throw new Error('App container not found for router.');
+                console.log('🔧 Creating appContainer for temp auth page transition');
+                appContainer = document.createElement('div');
+                appContainer.id = 'appContainer';
+                appContainer.style.opacity = '0';
+                appContainer.style.transition = 'opacity 0.5s ease-in-out';
+                
+                // Replace the current page content with the container
+                document.body.innerHTML = '';
+                document.body.appendChild(appContainer);
+                
+                // Restore necessary CSS links
+                if (!document.querySelector('link[href="/css/main.css"]')) {
+                    const mainCSS = document.createElement('link');
+                    mainCSS.rel = 'stylesheet';
+                    mainCSS.href = '/css/main.css';
+                    document.head.appendChild(mainCSS);
+                }
             }
 
             // Load temp auth page HTML
@@ -576,9 +816,18 @@ class Router {
             console.log('🔧 Attempting fallback: Creating temp auth form programmatically...');
             
             try {
-                const appContainer = document.getElementById('appContainer');
+                // **FIX: Ensure appContainer exists even for fallback**
+                let appContainer = document.getElementById('appContainer');
                 if (!appContainer) {
-                    throw new Error('App container not found for fallback.');
+                    console.log('🔧 Creating appContainer for temp auth fallback');
+                    appContainer = document.createElement('div');
+                    appContainer.id = 'appContainer';
+                    appContainer.style.opacity = '0';
+                    appContainer.style.transition = 'opacity 0.5s ease-in-out';
+                    
+                    // Replace the current page content with the container
+                    document.body.innerHTML = '';
+                    document.body.appendChild(appContainer);
                 }
                 
                 // Create the temp auth form HTML directly
@@ -724,22 +973,34 @@ class Router {
         }
     }
     
-    // Load app
+    // Load main app
     async loadApp() {
         try {
+            console.log('📱 Loading main application...');
+            
+            // **FIX: Handle case where we're already on app page (no appContainer needed)**
             const appContainer = document.getElementById('appContainer');
-            if (!appContainer) {
+            const isAlreadyOnAppPage = document.body.classList.contains('app-body') && 
+                                      document.querySelector('.main-container');
+            
+            if (!appContainer && !isAlreadyOnAppPage) {
                 throw new Error('App container not found for router.');
             }
+            
+            if (isAlreadyOnAppPage) {
+                console.log('✅ Already on app page, skipping HTML injection');
+                // If we're already on the app page, we don't need to load HTML
+                // Just ensure auth and initialize
+            }
 
-            // Check if we need to load the app HTML shell first
-            if (!document.body.classList.contains('app-body')) {
+            // Check if we need to load the app HTML shell first (only if not already on app page)
+            if (!isAlreadyOnAppPage && !document.body.classList.contains('app-body')) {
                 // Remove landing CSS to prevent conflicts
                 const landingCSS = document.querySelector('link[href="/css/landing.css"]');
                 if (landingCSS) {
                     landingCSS.remove();
                 }
-                
+
                 // Clean up any landing page scripts/event listeners
                 const landingScript = document.getElementById('landing-page-script');
                 if (landingScript) {
@@ -750,8 +1011,8 @@ class Router {
                 document.body.className = 'app-body layout-ready';
             }
 
-            // Only load app HTML if not already loaded
-            if (!appContainer.querySelector('.main-container')) {
+            // Only load app HTML if not already loaded (and we have an appContainer)
+            if (appContainer && !appContainer.querySelector('.main-container')) {
                 console.log('🔧 Loading app HTML structure...');
                 // Fetch and inject the actual app UI
                 const response = await fetch('/pages/app/app.html');
@@ -797,15 +1058,44 @@ class Router {
             } else {
                 console.log('✅ App HTML already loaded, skipping injection');
             }
-
+            
             // Ensure auth module is available before app initialization
             if (!window.authModule && !tempAuthManager.isTestingMode) {
                 console.log('🔧 Auth module not found, initializing authentication...');
                 await this._initializeAuthentication(this.envConfig);
             }
 
-            // Check if app is already properly initialized and user is still authenticated
-            if (window.isAppInitialized && (window.authModule?.isAuthenticated?.() || window.sessionManager?.isAuthenticated)) {
+            // **CRITICAL FIX: Always attempt session recovery BEFORE checking app reuse**
+            // This ensures authentication state is properly restored from storage before any other checks
+            if (!tempAuthManager.isTestingMode) {
+                console.log('🔄 Ensuring session recovery before app load...');
+                
+                // Check if we have stored auth but current session manager isn't authenticated
+                const hasStoredAuth = this.hasAnyStoredAuth();
+                const isCurrentlyAuthenticated = window.sessionManager?.isAuthenticated || window.authModule?.isAuthenticated?.();
+                
+                if (hasStoredAuth && !isCurrentlyAuthenticated) {
+                    console.log('🔄 Found stored auth but not currently authenticated - forcing session recovery...');
+                    const recoverySuccess = await this.attemptSessionRecovery();
+                    
+                    if (recoverySuccess) {
+                        console.log('✅ Session recovery completed before app load');
+                        // Give the auth state change events time to propagate
+                        await new Promise(resolve => setTimeout(resolve, 100));
+                    } else {
+                        console.log('⚠️ Session recovery failed, proceeding as unauthenticated');
+                    }
+                } else if (isCurrentlyAuthenticated) {
+                    console.log('✅ Already authenticated, no recovery needed');
+                } else {
+                    console.log('ℹ️ No stored auth found');
+                }
+            }
+
+            // **IMPROVED: Now check app reuse with properly restored authentication state**
+            const isAuthenticatedNow = window.authModule?.isAuthenticated?.() || window.sessionManager?.isAuthenticated || tempAuthManager.shouldBypassAuth();
+            
+            if (window.isAppInitialized && isAuthenticatedNow) {
                 console.log('✅ App already initialized and user authenticated, reusing existing app state');
                 
                 try {
@@ -815,6 +1105,10 @@ class Router {
                         if (authState.isAuthenticated && authState.user) {
                             console.log('🔄 Refreshing UI with current auth state');
                             window.appUI.updateUI(authState);
+                        } else {
+                            console.log('⚠️ Auth state incomplete, forcing UI refresh');
+                            // Force UI manager to re-check all auth sources
+                            await window.appUI.init();
                         }
                     }
                     
@@ -830,6 +1124,9 @@ class Router {
                     window.isAppInitialized = false;
                     console.log('🔄 Falling back to full initialization due to refresh error');
                 }
+            } else if (window.isAppInitialized && !isAuthenticatedNow) {
+                console.log('⚠️ App was initialized but user is no longer authenticated - full reinit needed');
+                window.isAppInitialized = false;
             }
             
             // Initialize app if not already initialized
@@ -838,6 +1135,8 @@ class Router {
                 console.log('🔍 Debug: window.isAppInitialized =', window.isAppInitialized);
                 console.log('🔍 Debug: window.isFrameworkInitialized =', window.isFrameworkInitialized);
                 console.log('🔍 Debug: window.authModule available =', !!window.authModule);
+                console.log('🔍 Debug: authentication state =', isAuthenticatedNow);
+                
                 try {
                     // In testing mode, wait a moment to ensure auth status is properly set
                     if (tempAuthManager.isTestingMode) {
@@ -904,9 +1203,26 @@ class Router {
     // Load auth page
     async loadAuthPage() {
         try {
-            const appContainer = document.getElementById('appContainer');
+            // **FIX: Ensure appContainer exists or create it for page transitions**
+            let appContainer = document.getElementById('appContainer');
             if (!appContainer) {
-                throw new Error('App container not found for router.');
+                console.log('🔧 Creating appContainer for auth page transition');
+                appContainer = document.createElement('div');
+                appContainer.id = 'appContainer';
+                appContainer.style.opacity = '0';
+                appContainer.style.transition = 'opacity 0.5s ease-in-out';
+                
+                // Replace the current page content with the container
+                document.body.innerHTML = '';
+                document.body.appendChild(appContainer);
+                
+                // Restore necessary CSS links
+                if (!document.querySelector('link[href="/css/main.css"]')) {
+                    const mainCSS = document.createElement('link');
+                    mainCSS.rel = 'stylesheet';
+                    mainCSS.href = '/css/main.css';
+                    document.head.appendChild(mainCSS);
+                }
             }
 
             // Clean up app-specific resources only if actually leaving the app context
@@ -974,6 +1290,11 @@ class Router {
             initAuthPage(auth);
             window.cleanupAuthPage = cleanupAuthPage; // Make cleanup available
 
+            // **PERFORMANCE: Make appContainer visible with smooth transition**
+            setTimeout(() => {
+                appContainer.style.opacity = '1';
+            }, 100);
+
             console.log('🔐 Auth page loaded successfully');
             
         } catch (error) {
@@ -985,9 +1306,26 @@ class Router {
     // Load password reset page
     async loadResetPasswordPage() {
         try {
-            const appContainer = document.getElementById('appContainer');
+            // **FIX: Ensure appContainer exists or create it for page transitions**
+            let appContainer = document.getElementById('appContainer');
             if (!appContainer) {
-                throw new Error('App container not found for router.');
+                console.log('🔧 Creating appContainer for password reset page transition');
+                appContainer = document.createElement('div');
+                appContainer.id = 'appContainer';
+                appContainer.style.opacity = '0';
+                appContainer.style.transition = 'opacity 0.5s ease-in-out';
+                
+                // Replace the current page content with the container
+                document.body.innerHTML = '';
+                document.body.appendChild(appContainer);
+                
+                // Restore necessary CSS links
+                if (!document.querySelector('link[href="/css/main.css"]')) {
+                    const mainCSS = document.createElement('link');
+                    mainCSS.rel = 'stylesheet';
+                    mainCSS.href = '/css/main.css';
+                    document.head.appendChild(mainCSS);
+                }
             }
 
             // Ensure correct body class and remove conflicting assets

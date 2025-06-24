@@ -30,6 +30,13 @@ class AppUIManager {
             sessionManager.addListener(this.handleAuthStateChange.bind(this));
         }
         
+        // **ENHANCED: Force authentication state check before UI update**
+        // This is critical for page refresh scenarios
+        if (window.sessionManager && typeof window.sessionManager.checkAuthStatus === 'function') {
+            console.log('🔄 Triggering auth status check before UI initialization...');
+            await window.sessionManager.checkAuthStatus();
+        }
+        
         // Get comprehensive auth state from multiple sources
         const authState = this.getComprehensiveAuthState();
         

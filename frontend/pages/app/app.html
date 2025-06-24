@@ -267,6 +267,12 @@
                 const envConfig = envManager.getConfig();
                 appConfig.init(envConfig.server_type, envConfig.testing_mode);
                 
+                // **PERFORMANCE: Enable fast refresh mode if appropriate**
+                if (appConfig.shouldUseFastRefresh()) {
+                    appConfig.enableFastRefresh();
+                    console.log('🚀 Fast refresh mode enabled - optimized timing');
+                }
+                
                 // STEP 3: Apply environment settings immediately
                 console.log('🎯 Step 3: Applying environment settings...');
                 envManager.applyEnvironmentSettings();
@@ -279,30 +285,35 @@
                 console.log('📐 Step 5: Applying layout fixes...');
                 await applyLayoutFixes(envConfig);
                 
-                // STEP 6: Start authentication in parallel with other tasks for performance
-                console.log('🔐 Step 6: Starting authentication initialization...');
-                const authPromise = ensureAuthenticationReady(envConfig);
+                // STEP 6-8: Run authentication, testing UI, and stability delays in parallel
+                console.log('🔐 Step 6-8: Starting parallel initialization...');
                 
-                // STEP 7: Initialize testing mode UI if needed (in parallel)
+                const authPromise = ensureAuthenticationReady(envConfig);
+                const domReadyPromise = appConfig.delay('domReadyDelay');
+                
                 let testingUIPromise = Promise.resolve();
                 if (envConfig.testing_mode) {
-                    console.log('🧪 Step 7: Initializing testing mode UI...');
+                    console.log('🧪 Including testing mode UI in parallel initialization...');
                     testingUIPromise = testingModeUI.init();
                 }
                 
-                // STEP 8: Wait for stability and parallel tasks
+                // **PERFORMANCE: Run everything in parallel**
                 await Promise.all([
-                    appConfig.delay('domReadyDelay'),
                     authPromise,
+                    domReadyPromise,
                     testingUIPromise
                 ]);
                 
                 console.log('✅ Parallel initialization complete');
                 
-                // STEP 9: Initialize the main app
+                // STEP 9: Initialize the main app (only if not already done by router)
                 console.log('🎯 Step 9: Initializing main application...');
-                const { initialize } = await import('/js/main.js');
-                await initialize();
+                if (!window.isAppInitialized) {
+                    const { initialize } = await import('/js/main.js');
+                    await initialize();
+                } else {
+                    console.log('✅ App already initialized by router, skipping duplicate initialization');
+                }
                 
                 // STEP 10: Mark as ready and complete transition
                 document.body.classList.add('layout-ready', 'app-ready');
@@ -321,56 +332,70 @@
             const startAuthTime = Date.now();
             
             try {
-                // Check if auth module is already available
-                if (window.authModule && window.authModule.isAuthenticated) {
-                    console.log('✅ Auth module already available');
+                // **CRITICAL FIX: If router isn't initialized, initialize it first**
+                if (!window.router || !window.isFrameworkInitialized) {
+                    console.log('🔧 Router not found, initializing router and authentication...');
+                    
+                    // Import and initialize the router
+                    const { router } = await import('/js/modules/router.js');
+                    
+                    // Make router globally available
+                    window.router = router;
+                    
+                    // Initialize the router (this will set up auth modules)
+                    await router.init();
+                    
+                    // Mark framework as initialized
+                    window.isFrameworkInitialized = true;
+                    
+                    console.log('✅ Router and authentication modules initialized');
+                    return;
+                }
+                
+                // Check if auth modules are already initialized by the router
+                if (window.authModule && window.sessionManager) {
+                    console.log('✅ Auth modules already initialized by router');
                     return;
                 }
                 
                 // Check if we're in testing mode
                 if (envConfig.testing_mode) {
-                    console.log('🧪 Testing mode - using temp auth manager');
+                    console.log('🧪 Testing mode - checking temp auth manager');
                     
-                    // Initialize temp auth if needed
+                    // Verify temp auth is available (should be initialized by router)
                     if (!window.tempAuthManager) {
-                        const { tempAuthManager } = await import('/js/modules/tempAuth.js');
-                        window.tempAuthManager = tempAuthManager;
-                        await tempAuthManager.init();
+                        console.warn('⚠️ Temp auth manager not found, router initialization may have failed');
+                    } else {
+                        console.log('✅ Temp auth manager available');
                     }
                     return;
                 }
                 
-                // Normal mode - initialize Supabase authentication
-                console.log('🔑 Normal mode - initializing Supabase authentication...');
+                // Normal mode - check if router has initialized auth modules
+                console.log('🔑 Normal mode - checking auth module availability...');
                 
-                // Initialize auth module
-                const { AuthModule } = await import('/js/modules/auth.js');
-                window.authModule = new AuthModule();
-                await window.authModule.init();
+                // Wait briefly for router auth initialization to complete
+                let attempts = 0;
+                const maxAttempts = 10;
                 
-                // Initialize session manager
-                if (!window.sessionManager) {
-                    const { sessionManager } = await import('/js/modules/sessionManager.js');
-                    window.sessionManager = sessionManager;
-                    await sessionManager.init();
+                while ((!window.authModule || !window.sessionManager) && attempts < maxAttempts) {
+                    console.log(`⏳ Waiting for router auth initialization... (${attempts + 1}/${maxAttempts})`);
+                    await new Promise(resolve => setTimeout(resolve, 200));
+                    attempts++;
                 }
                 
-                // Set up auth state synchronization
                 if (window.authModule && window.sessionManager) {
-                    // Add auth state change listener
-                    window.authModule.addAuthListener((event, session) => {
-                        window.sessionManager.handleAuthStateChange(event, session);
-                    });
-                    
-                    console.log('🔗 Auth state synchronization established');
+                    console.log('✅ Auth modules found - router initialization successful');
+                } else {
+                    console.warn('⚠️ Auth modules not available after waiting - router initialization may have failed');
+                    console.warn('⚠️ App will continue with limited functionality');
                 }
                 
                 const authTime = Date.now() - startAuthTime;
-                console.log(`✅ Authentication ready in ${authTime}ms`);
+                console.log(`✅ Authentication check completed in ${authTime}ms`);
                 
             } catch (error) {
-                console.error('❌ Failed to initialize authentication:', error);
-                // Don't fail the whole app, just log the error
+                console.error('❌ Failed to verify authentication availability:', error);
                 console.warn('⚠️ Continuing with limited functionality');
             }
         }

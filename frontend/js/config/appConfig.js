@@ -42,13 +42,13 @@ const defaultConfig = {
  */
 const environmentConfigs = {
     'flask-dev': {
-        // Flask development server is slower
+        // **OPTIMIZED: Reduced delays for better performance**
         moduleLoadTimeout: 12000,
-        initializationDelay: 1200,
-        cssApplicationDelay: 400,
-        domReadyDelay: 500,
-        layoutStabilizationDelay: 600,
-        cssLoadWaitTime: 800,
+        initializationDelay: 300,  // Reduced from 1200ms
+        cssApplicationDelay: 100,  // Reduced from 400ms  
+        domReadyDelay: 100,        // Reduced from 500ms
+        layoutStabilizationDelay: 200, // Reduced from 600ms
+        cssLoadWaitTime: 300,      // Reduced from 800ms
         enableDetailedLogging: true,
         logModuleLoadTimes: true
     },
@@ -56,11 +56,11 @@ const environmentConfigs = {
     'gunicorn-prod': {
         // Gunicorn is faster but more consistent
         moduleLoadTimeout: 6000,
-        initializationDelay: 600,
-        cssApplicationDelay: 150,
-        domReadyDelay: 200,
-        layoutStabilizationDelay: 300,
-        cssLoadWaitTime: 400,
+        initializationDelay: 300,  // Reduced from 600ms
+        cssApplicationDelay: 50,   // Reduced from 150ms
+        domReadyDelay: 100,        // Reduced from 200ms
+        layoutStabilizationDelay: 150, // Reduced from 300ms
+        cssLoadWaitTime: 200,      // Reduced from 400ms
         enableDetailedLogging: false,
         logModuleLoadTimes: false
     }
@@ -71,10 +71,22 @@ const environmentConfigs = {
  */
 const testingModeConfig = {
     // More conservative timing for testing mode
-    initializationDelay: 1000,
-    testingModeDelay: 300,
-    cssApplicationDelay: 300,
-    layoutStabilizationDelay: 500
+    initializationDelay: 400,     // Reduced from 1000ms
+    testingModeDelay: 200,        // Reduced from 300ms
+    cssApplicationDelay: 150,     // Reduced from 300ms
+    layoutStabilizationDelay: 250 // Reduced from 500ms
+};
+
+/**
+ * Fast refresh mode for page refresh scenarios
+ */
+const fastRefreshConfig = {
+    // Minimal delays when app is already loaded
+    initializationDelay: 50,
+    cssApplicationDelay: 25,
+    domReadyDelay: 25,
+    layoutStabilizationDelay: 50,
+    cssLoadWaitTime: 100
 };
 
 /**
@@ -171,6 +183,33 @@ class AppConfig {
      */
     shouldLog() {
         return this.config.enableDetailedLogging;
+    }
+
+    /**
+     * Enable fast refresh mode for page refresh scenarios
+     */
+    enableFastRefresh() {
+        console.log('🚀 Enabling fast refresh mode for optimal performance');
+        this.config = { 
+            ...this.config, 
+            ...fastRefreshConfig 
+        };
+        return this.config;
+    }
+
+    /**
+     * Check if we should use fast refresh based on conditions
+     */
+    shouldUseFastRefresh() {
+        // Use fast refresh if:
+        // 1. CSS is already loaded
+        // 2. App container exists 
+        // 3. Body has app-body class (indicating page refresh scenario)
+        const hasAppBody = document.body.classList.contains('app-body');
+        const hasMainContainer = document.querySelector('.main-container');
+        const cssLoaded = document.querySelector('link[href*="main.css"]');
+        
+        return hasAppBody && hasMainContainer && cssLoaded;
     }
 }
 

@@ -253,6 +253,13 @@ function resetSmartSelectPosition() {
 async function initialize() {
     console.log('🚀 Initializing AudioBook Organizer...');
     
+    // **ENHANCED: Wait a moment for auth modules to be available after router init**
+    // This handles the case where router initialization just completed
+    if (!window.authModule && !window.tempAuthManager?.isTestingMode) {
+        console.log('⏳ Waiting briefly for auth modules to be available...');
+        await new Promise(resolve => setTimeout(resolve, 200));
+    }
+    
     // Check if we're in testing mode or normal mode
     let authModuleToUse = null;
     
@@ -273,7 +280,7 @@ async function initialize() {
     } else {
         console.warn('⚠️ No auth module found - proceeding with limited functionality');
         // In case no auth is available, we can still initialize the app
-        authModuleToUse = { isAuthenticated: () => true }; // Mock auth for fallback
+        authModuleToUse = { isAuthenticated: () => false }; // Mock auth for fallback with correct default
     }
     
     await initApp(authModuleToUse);
