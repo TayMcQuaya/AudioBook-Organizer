@@ -81,6 +81,13 @@ class Config:
         'AUTH_ATTEMPTS_PER_HOUR': int(os.getenv('AUTH_ATTEMPTS_PER_HOUR', '20')),
     }
 
+    # Credit System Configuration
+    # These can be overridden via environment variables for easy updates
+    CREDIT_COST_AUDIO_UPLOAD = int(os.environ.get('CREDIT_COST_AUDIO_UPLOAD', 2))
+    CREDIT_COST_DOCX_PROCESSING = int(os.environ.get('CREDIT_COST_DOCX_PROCESSING', 5))
+    CREDIT_COST_TXT_UPLOAD = int(os.environ.get('CREDIT_COST_TXT_UPLOAD', 3))
+    CREDIT_COST_PREMIUM_EXPORT = int(os.environ.get('CREDIT_COST_PREMIUM_EXPORT', 15))
+
 class DevelopmentConfig(Config):
     """Development configuration"""
     DEBUG = True

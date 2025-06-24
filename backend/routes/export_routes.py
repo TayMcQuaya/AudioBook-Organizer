@@ -66,7 +66,7 @@ def create_export_routes(app, upload_folder, export_folder):
             export_type = "basic export"
             
             if export_audio or merge_audio:
-                credit_cost = 15  # Premium audio export (computational work)
+                credit_cost = current_app.config['CREDIT_COST_PREMIUM_EXPORT']  # Premium audio export (computational work)
                 export_type = "premium audio export"
             else:
                 credit_cost = 0   # Data exports are free (same as project save)

@@ -80,14 +80,15 @@ def upload_docx():
             g.user_id = user['id']
             g.user_email = user['email']
             
-            # Check credits (5 credits required for DOCX processing)
+            # Check credits (configurable cost for DOCX processing)
+            required_credits = current_app.config['CREDIT_COST_DOCX_PROCESSING']
             current_credits = supabase_service.get_user_credits(user['id'])
-            if current_credits < 5:
+            if current_credits < required_credits:
                 return jsonify({
                     'error': 'Insufficient credits',
-                    'message': f'This action requires 5 credits. You have {current_credits} credits.',
+                    'message': f'This action requires {required_credits} credits. You have {current_credits} credits.',
                     'current_credits': current_credits,
-                    'required_credits': 5
+                    'required_credits': required_credits
                 }), 402
         # Validate request
         if 'file' not in request.files:
@@ -197,9 +198,10 @@ def upload_docx():
                             # Get current user from auth middleware
                             from flask import g
                             user_id = getattr(g, 'user_id', None)
+                            credits_to_consume = current_app.config['CREDIT_COST_DOCX_PROCESSING']
                             if user_id:
                             # Deduct credits for DOCX processing
-                                credit_success = supabase_service.update_user_credits(user_id, -5)
+                                credit_success = supabase_service.update_user_credits(user_id, -credits_to_consume)
                             if not credit_success:
                                 current_app.logger.warning('Failed to deduct credits for DOCX processing')
                             
@@ -207,7 +209,7 @@ def upload_docx():
                             supabase_service.log_usage(
                                     user_id,
                                 'docx_processed',
-                                credits_used=5,
+                                credits_used=credits_to_consume,
                                 metadata={
                                     'filename': filename,
                                     'file_size': file_size,

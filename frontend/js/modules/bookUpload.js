@@ -168,6 +168,11 @@ async function handleUploadSuccess(text, formattingData = null, metadata = null)
     // Update credits display after successful upload
     if (formattingData && formattingData.ranges && formattingData.ranges.length > 0) {
         // Refresh credit display after DOCX processing
+        console.log('💎 DOCX upload completed - refreshing credit display');
+        updateUserCredits().catch(err => console.warn('Failed to update credits:', err));
+    } else if (metadata && metadata.processing_method === 'backend_txt') {
+        // Refresh credit display after TXT processing
+        console.log('💎 TXT upload completed - refreshing credit display');
         updateUserCredits().catch(err => console.warn('Failed to update credits:', err));
     }
 }
@@ -521,9 +526,21 @@ export async function uploadBook() {
             
             console.log(`✅ DOCX processed: ${text.length} chars, ${formattingData.ranges.length} formatting ranges`);
         } else {
-            // Process TXT as before
+            // Process TXT with backend credit enforcement
             console.log('📄 Processing TXT file:', file.name);
-            text = await readFileAsText(file);
+            
+            // Check credits before processing TXT
+            const hasCredits = await checkCreditsForAction(3, 'Text file upload');
+            if (!hasCredits) {
+                hideLoading();
+                return;
+            }
+            
+            console.log('✅ Credit check passed, sending TXT file to backend...');
+            const result = await processTextFile(file);
+            console.log('✅ Backend TXT processing completed:', result);
+            text = result.text;
+            metadata = result.metadata;
         }
         
         await handleUploadSuccess(text, formattingData, metadata);
@@ -533,7 +550,46 @@ export async function uploadBook() {
     }
 }
 
-// Promisified FileReader
+// Process text file with backend credit enforcement
+async function processTextFile(file) {
+    console.log('🔄 processTextFile called with file:', file.name);
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+        console.log('📡 Sending TXT file to backend: /api/upload/txt');
+        const response = await apiFetch('/api/upload/txt', {
+            method: 'POST',
+            body: formData,
+        });
+
+        console.log('📡 Backend response status:', response.status);
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({ message: 'An unknown error occurred' }));
+            console.error('❌ Backend response error:', errorData);
+            throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        console.log('📡 Backend response data:', data);
+        
+        if (!data.success) {
+            throw new Error(data.message || 'Failed to process text file');
+        }
+
+        console.log('✅ TXT file processed successfully by backend');
+        return {
+            success: true,
+            text: data.text,
+            metadata: data.metadata || { processing_method: 'backend_txt' }
+        };
+    } catch (error) {
+        console.error('❌ Backend text processing error:', error);
+        throw error;
+    }
+}
+
+// Legacy function - kept for backward compatibility if needed
 function readFileAsText(file) {
     return new Promise((resolve, reject) => {
         const reader = new FileReader();

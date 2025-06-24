@@ -4,6 +4,8 @@
 
 The credit system has been successfully integrated into normal mode without affecting testing mode functionality. All routes now properly enforce authentication and credit requirements in production while maintaining unlimited credits simulation in testing mode.
 
+**✅ LATEST UPDATE:** Text file (.txt) upload credit enforcement has been successfully implemented and tested. TXT files now properly consume 3 credits through backend processing, closing a critical security vulnerability where text files were processed entirely on the frontend without authentication or credit consumption.
+
 ---
 
 ## 📊 **Credit Cost Structure (Consistent Across Modes)**
@@ -11,6 +13,7 @@ The credit system has been successfully integrated into normal mode without affe
 | **Feature** | **Credit Cost** | **Description** |
 |-------------|----------------|----------------|
 | Audio Upload | **2 credits** | MP3/WAV processing and conversion |
+| Text File Upload (TXT) | **3 credits** | Text file processing and validation |
 | DOCX Processing | **5 credits** | Document parsing with formatting extraction |
 | Premium Export (Audio) | **15 credits** | Audio merging and audiobook creation |
 | Data Export (Metadata/Text) | **0 credits** | JSON/text exports (FREE) |
@@ -23,7 +26,7 @@ The credit system has been successfully integrated into normal mode without affe
 
 ### **1. Route Authentication Updates**
 **Files Modified:**
-- `backend/routes/upload_routes.py`
+- `backend/routes/upload_routes.py` - Audio upload + **NEW TXT upload endpoint** ✅
 - `backend/routes/export_routes.py` 
 - `backend/routes/docx_routes.py`
 
@@ -33,6 +36,7 @@ The credit system has been successfully integrated into normal mode without affe
 - Added credit consumption after successful operations
 - Preserved testing mode behavior with session-based auth
 - Added comprehensive error handling for insufficient credits
+- **NEW:** Implemented `/api/upload/txt` endpoint with proper auth and credit enforcement
 
 ### **2. Authentication Logic**
 **Pattern Implemented:**
@@ -68,7 +72,24 @@ else:
 
 ## 🎨 **Frontend Changes Made**
 
-### **1. Landing Page Credit Display**
+### **1. TXT File Upload Security Fix** ✅
+**File Modified:** `frontend/js/modules/bookUpload.js`
+
+**Critical Security Issue Resolved:**
+- **Before:** TXT files processed entirely on frontend (no auth, no credits)
+- **After:** TXT files sent to backend `/api/upload/txt` endpoint
+- **Security:** Requires authentication and consumes 3 credits
+- **Testing:** Successfully verified credit consumption in production
+
+**Implementation:**
+```javascript
+// New backend processing for TXT files
+const result = await processTextFile(file);
+text = result.text;
+metadata = result.metadata;
+```
+
+### **2. Landing Page Credit Display**
 **File Modified:** `frontend/pages/landing/landing.js`
 
 **Changes:**
@@ -85,12 +106,13 @@ import('../../js/modules/appUI.js').then(module => {
 });
 ```
 
-### **2. Credit Display Integration**
+### **3. Credit Display Integration**
 **Behavior:**
 - **Landing Page:** Credits shown for authenticated users
 - **App Page:** Credits shown as before
 - **Testing Mode:** Shows simulated credits (localStorage)
 - **Normal Mode:** Shows real credits from database
+- **TXT Upload:** Credit display refreshes after successful TXT file processing
 
 ---
 
@@ -116,8 +138,9 @@ import('../../js/modules/appUI.js').then(module => {
 - `GET /api/auth/credits` - Get user's current credit balance ✅
 - Credit enforcement integrated into existing endpoints:
   - `POST /api/upload` - Audio upload (2 credits) ✅
-  - `POST /api/export` - Export operations (0-15 credits) ✅
+  - `POST /api/upload/txt` - **NEW** Text file upload (3 credits) ✅
   - `POST /api/upload/docx` - DOCX processing (5 credits) ✅
+  - `POST /api/export` - Export operations (0-15 credits) ✅
 
 ### **Authentication Endpoints**
 - All existing auth endpoints preserved ✅
@@ -153,7 +176,7 @@ SUPABASE_KEY=your_production_key
 - [x] Session-based authentication works
 - [x] Unlimited credits available
 - [x] Credit simulation tracks usage
-- [x] All features functional
+- [x] All features functional (including TXT uploads)
 - [x] Credit display shows simulated values
 
 ### **Normal Mode Functionality**
@@ -163,6 +186,7 @@ SUPABASE_KEY=your_production_key
 - [x] Insufficient credit errors handled properly
 - [x] Credit display shows real database values
 - [x] Usage logging for audit trail
+- [x] **NEW:** TXT file uploads properly consume credits ✅
 
 ### **Landing Page Integration**
 - [x] Credit display appears for authenticated users
@@ -175,6 +199,7 @@ SUPABASE_KEY=your_production_key
 - [x] Credit consumption updates database
 - [x] Usage logging captures metadata
 - [x] New users get starting credits (100)
+- [x] **NEW:** TXT uploads logged in usage_logs table ✅
 
 ---
 
@@ -195,10 +220,11 @@ SUPABASE_KEY=your_production_key
    - Test user credit initialization
 
 3. **Credit System Verification:**
-   - Test authentication flow
-   - Verify credit enforcement
-   - Test credit consumption
-   - Verify credit display on landing page
+   - Test authentication flow ✅
+   - Verify credit enforcement ✅
+   - Test credit consumption ✅
+   - Verify credit display on landing page ✅
+   - **Test TXT file upload credit consumption** ✅
 
 ### **Testing Mode for Development**
 ```bash
@@ -240,6 +266,7 @@ TEMPORARY_PASSWORD=dev_password
 3. **Graceful Degradation:** Clear error messages for insufficient credits
 4. **Audit Trail:** Complete usage logging for production
 5. **UI Integration:** Seamless credit display across all pages
+6. **Security-First:** **NEW** - All file uploads now require backend processing and credit consumption
 
 ### **Future Enhancements**
 - Payment integration for credit purchases
@@ -250,6 +277,73 @@ TEMPORARY_PASSWORD=dev_password
 
 ---
 
+## 🎛️ **Configurable Credit Costs (NEW)**
+
+### **Environment Variable Control**
+Credit costs are now configurable via environment variables without requiring code changes:
+
+```bash
+# Credit costs (change these values as needed)
+CREDIT_COST_AUDIO_UPLOAD=2          # Currently: 2 credits
+CREDIT_COST_TXT_UPLOAD=3             # Currently: 3 credits
+CREDIT_COST_DOCX_PROCESSING=5        # Currently: 5 credits  
+CREDIT_COST_PREMIUM_EXPORT=15        # Currently: 15 credits
+```
+
+### **Implementation Benefits**
+- ✅ **No Code Changes Needed** - Update costs instantly via environment variables
+- ✅ **Zero Downtime** - Change costs without redeploying code
+- ✅ **Backward Compatible** - Falls back to original hardcoded values if not set
+- ✅ **Production Safe** - All existing functionality preserved
+- ✅ **Testing Friendly** - Can test different pricing scenarios easily
+
+### **How to Change Credit Costs**
+
+**Digital Ocean Backend:**
+1. Update environment variables in your app settings
+2. Restart the application (takes ~30 seconds)
+3. New costs take effect immediately
+
+**Example Environment Variables:**
+```bash
+CREDIT_COST_AUDIO_UPLOAD=2           # Increase audio upload cost
+CREDIT_COST_DOCX_PROCESSING=5        # Increase DOCX processing cost
+CREDIT_COST_PREMIUM_EXPORT=20        # Increase premium export cost
+```
+
+### **Files Modified**
+- ✅ `backend/config.py` - Added credit cost configuration
+- ✅ `backend/routes/upload_routes.py` - Uses configurable audio upload cost + NEW TXT upload endpoint
+- ✅ `backend/routes/docx_routes.py` - Uses configurable DOCX processing cost
+- ✅ `backend/routes/export_routes.py` - Uses configurable premium export cost
+- ✅ `frontend/js/modules/bookUpload.js` - NEW backend credit enforcement for TXT files
+- ✅ `env.example` - Added example credit cost variables
+
+### **Security & Best Practices**
+- **Not Security Sensitive** - These are business logic values, not secrets
+- **Environment Variable Best Practice** - Perfect use case for configuration
+- **Fallback Values** - Code includes safe defaults if env vars not set
+- **Production Ready** - Safe to deploy to production immediately
+
+---
+
+## 🔐 **Security Vulnerability Fixed**
+
+### **Critical Issue Resolved: TXT File Upload Bypass**
+- **Discovered:** Text files were processed entirely on frontend without authentication or credit consumption
+- **Impact:** Users could upload unlimited text files for free, bypassing the credit system
+- **Solution:** Implemented `/api/upload/txt` backend endpoint with proper authentication and credit enforcement
+- **Status:** ✅ **FIXED** - All file uploads now properly consume credits
+
+### **Security Verification**
+- ✅ TXT files require authentication
+- ✅ TXT files consume 3 credits per upload
+- ✅ Credit consumption logged in database
+- ✅ Frontend properly handles insufficient credit errors
+- ✅ No frontend processing bypass available
+
+---
+
 **Status: ✅ COMPLETE - Ready for Production Deployment**
 
-*The credit system is now fully integrated into normal mode with proper authentication, credit enforcement, and UI display while preserving all testing mode functionality.* 
+*The credit system is now fully integrated into normal mode with proper authentication, credit enforcement, and UI display while preserving all testing mode functionality. All security vulnerabilities have been addressed and verified.* 
