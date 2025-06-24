@@ -135,16 +135,28 @@ export function createCreditsDisplay() {
             </div>
         `;
         
-        // Insert into nav-links before the auth button, or at the end of header
+        // Insert into nav-links with consistent positioning
         if (navLinks) {
+            // Check if user navigation already exists
+            const existingUserNav = navLinks.querySelector('.user-nav');
             const authButton = navLinks.querySelector('.auth-btn');
-            if (authButton) {
+            
+            if (existingUserNav) {
+                // If user nav exists, insert credits BEFORE the user nav to maintain order
+                existingUserNav.insertAdjacentHTML('beforebegin', creditsHTML);
+                console.log('💎 Credits inserted before existing user navigation');
+            } else if (authButton) {
+                // If no user nav but auth button exists, insert before auth button
                 authButton.insertAdjacentHTML('beforebegin', creditsHTML);
+                console.log('💎 Credits inserted before auth button');
             } else {
+                // Fallback: append to end of nav-links
                 navLinks.insertAdjacentHTML('beforeend', creditsHTML);
+                console.log('💎 Credits appended to end of nav-links');
             }
         } else {
             header.insertAdjacentHTML('beforeend', creditsHTML);
+            console.log('💎 Credits appended to header');
         }
         
         console.log('💎 Credits HTML inserted into DOM');
@@ -167,16 +179,18 @@ export function showLowCreditsModal() {
     let modal = document.getElementById('lowCreditsModal');
     if (!modal) {
         const modalHTML = `
-            <div id="lowCreditsModal" class="modal" style="display: none;">
+            <div id="lowCreditsModal" class="low-credits-modal" style="display: none;">
                 <div class="modal-content">
                     <span class="close" onclick="hideLowCreditsModal()">&times;</span>
                     <h2>Need More Credits?</h2>
                     <p>You're running low on credits. Credits are used for:</p>
                     <ul>
-                        <li>📄 DOCX processing (10 credits)</li>
-                        <li>🎵 Audio processing (2 credits per minute)</li>
+                        <li>📄 DOCX processing (5 credits per document)</li>
+                        <li>📚 Chapter creation (5 credits per chapter)</li>
+                        <li>📝 Section creation (3 credits per section)</li>
+                        <li>🎵 Audio file upload (2 credits per file)</li>
                         <li>🗣️ Text-to-speech (50 credits per 10k characters)</li>
-                        <li>📚 Premium exports (20 credits)</li>
+                        <li>📤 Premium exports (20 credits per export)</li>
                     </ul>
                     <div class="credits-purchase-preview">
                         <h3>Credit Packages (Coming Soon)</h3>
@@ -190,8 +204,10 @@ export function showLowCreditsModal() {
                             <strong>Professional Pack:</strong> 3,500 credits - $29.99
                         </div>
                     </div>
-                    <p><em>Credit purchasing will be available soon. For now, contact support for additional credits.</em></p>
-                    <button onclick="hideLowCreditsModal()" class="btn btn-primary">Got it</button>
+                    <p><em>Credit purchasing will be available soon.<br>For now, contact support for additional credits.</em></p>
+                    <div class="modal-button-container">
+                        <button onclick="hideLowCreditsModal()" class="btn btn-primary">Got it</button>
+                    </div>
                 </div>
             </div>
         `;

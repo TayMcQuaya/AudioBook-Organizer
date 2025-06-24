@@ -1685,6 +1685,17 @@ html {
     position: relative;
     display: flex;
     align-items: center;
+    margin-left: 0.75rem; /* Add consistent spacing after credits */
+}
+
+/* Ensure consistent spacing between credits and user nav */
+.nav-links .credits-display + .user-nav {
+    margin-left: 0.75rem;
+}
+
+/* Ensure credits display has proper spacing */
+.nav-links .credits-display {
+    margin-right: 0; /* Remove any conflicting margins */
 }
 
 .user-menu {

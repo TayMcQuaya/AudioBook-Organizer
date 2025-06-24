@@ -1489,6 +1489,18 @@ main {
     cursor: pointer;
     transition: all 0.3s ease;
     position: relative;
+    margin-right: 0; /* Remove any conflicting margins */
+}
+
+/* Ensure consistent spacing between credits and user nav */
+.nav-links .credits-display + .user-nav,
+.nav-links .credits-display + .user-menu {
+    margin-left: 0.75rem;
+}
+
+/* User Navigation positioned after credits */
+.nav-links .user-nav {
+    margin-left: 0.75rem; /* Default spacing when following credits */
 }
 
 .credits-display:hover {
@@ -1531,6 +1543,17 @@ main {
 }
 
 /* Low Credits Modal Styles */
+.low-credits-modal {
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px);
+}
+
 .modal {
     position: fixed;
     z-index: 1000;
@@ -1552,6 +1575,13 @@ main {
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
     position: relative;
     animation: modalSlideIn 0.3s ease-out;
+}
+
+/* Modal button container for centered buttons */
+.modal-button-container {
+    display: flex;
+    justify-content: center;
+    margin-top: 1.5rem;
 }
 
 @keyframes modalSlideIn {
@@ -1625,7 +1655,8 @@ main {
         padding: 0.4rem 0.8rem;
     }
     
-    .modal-content {
+    .modal-content,
+    .low-credits-modal .modal-content {
         margin: 10% auto;
         padding: 1.5rem;
         width: 95%;
@@ -1633,5 +1664,9 @@ main {
     
     .credits-purchase-preview {
         padding: 1rem;
+    }
+    
+    .modal-button-container {
+        margin-top: 1rem;
     }
 }

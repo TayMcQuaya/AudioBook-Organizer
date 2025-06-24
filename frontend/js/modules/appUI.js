@@ -166,7 +166,24 @@ class AppUIManager {
                 </div>
             `;
             
-            navLinks.appendChild(userNav);
+            // Insert user nav with consistent positioning
+            const existingCredits = navLinks.querySelector('#creditsDisplay');
+            const authButton = navLinks.querySelector('.auth-btn');
+            
+            if (existingCredits) {
+                // If credits display exists, insert user nav AFTER credits to maintain order
+                existingCredits.insertAdjacentElement('afterend', userNav);
+                console.log('✅ User nav inserted after existing credits display');
+            } else if (authButton) {
+                // If no credits but auth button exists, insert before auth button
+                authButton.insertAdjacentElement('beforebegin', userNav);
+                console.log('✅ User nav inserted before auth button');
+            } else {
+                // Fallback: append to end of nav-links
+                navLinks.appendChild(userNav);
+                console.log('✅ User nav appended to end of nav-links');
+            }
+            
             userNav.style.display = 'block';
             
             // Ensure dropdown is hidden initially

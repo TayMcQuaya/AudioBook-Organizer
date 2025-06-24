@@ -114,16 +114,20 @@ function handleAuthStateChange({ isAuthenticated, user }) {
 function updateLandingPageForAuthenticatedUser(user) {
     console.log('🔄 Updating landing page for authenticated user:', user?.email || 'Unknown user');
     
-    // Create user navigation dropdown
+    // Create user navigation dropdown and initialize credits in the right order
     if (window.appUI && user) {
-        window.appUI.createUserNavigation(user);
-        
-        // Initialize and display credits for authenticated users
+        // First initialize credit display to ensure it's positioned correctly
         import('../../js/modules/appUI.js').then(module => {
             module.initializeCreditsDisplay();
             console.log('💎 Credit display initialized for authenticated user on landing page');
+            
+            // Then create user navigation, which will position itself relative to credits
+            window.appUI.createUserNavigation(user);
+            console.log('👤 User navigation created after credits display');
         }).catch(error => {
             console.error('Failed to initialize credit display:', error);
+            // Fallback: create user navigation anyway
+            window.appUI.createUserNavigation(user);
         });
     } else if (!window.appUI) {
         console.warn('⚠️ appUI not available, cannot create user navigation');
