@@ -324,7 +324,7 @@ class StripeService {
         return `
             <div class="credit-purchase-section">
                 <div class="section-header">
-                    <h3>💳 Purchase Credits</h3>
+                    <span class="emoji">💳</span><h3> Purchase Credits</h3>
                     <p>Choose a credit package to continue using AudioBook Organizer</p>
                 </div>
                 
