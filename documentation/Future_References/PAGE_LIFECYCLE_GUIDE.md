@@ -284,6 +284,55 @@ if (authEvent === 'SIGNED_IN') {
 **Prevention for Future Authentication Logic**:
 Always distinguish between active user navigation vs passive session restoration when implementing authentication flows.
 
+### Problem 7: Payment Page Auto-Redirect (SOLVED)
+**Issue**: Users accessing payment result pages (`/payment/cancelled`, `/payment/failed`) were automatically redirected to the app page, preventing them from seeing payment confirmation or cancellation messages.
+
+**Root Cause**: 
+- Auth module's auto-redirect logic only excluded `/payment/success` from navigation
+- Other payment pages (`/payment/cancelled`, `/payment/failed`) triggered automatic app page navigation
+- Session restoration during payment page access caused unwanted redirects
+- User payment result page choice wasn't respected during authentication recovery
+
+**Files Changed**: 
+- `frontend/js/modules/auth.js` - Extended payment page exclusion logic in `handleAuthSuccess()`
+
+**Solution Applied**:
+```javascript
+// **BEFORE:** Only payment success page was excluded from auto-redirect
+} else if (currentPath === '/payment/success') {
+    // **CRITICAL FIX: Don't navigate away from payment success page**
+    console.log('🚫 Preventing navigation from payment success page');
+    console.log('✅ User should see their payment confirmation, staying on payment success');
+
+// **AFTER:** All payment pages excluded from auto-redirect
+} else if (currentPath.startsWith('/payment/')) {
+    // **CRITICAL FIX: Don't navigate away from any payment pages**
+    console.log(`🚫 Preventing navigation from payment page: ${currentPath}`);
+    console.log('✅ User should see their payment result page, respecting their choice');
+
+// Also updated INITIAL_SESSION handling:
+// **BEFORE:** Only payment success logging
+} else if (currentPath === '/payment/success') {
+    console.log('✅ Staying on payment success page during session restore');
+
+// **AFTER:** All payment pages logging
+} else if (currentPath.startsWith('/payment/')) {
+    console.log(`✅ Staying on payment page (${currentPath}) during session restore`);
+```
+
+**Behavior Changes**:
+- **Before**: Payment cancelled/failed pages → automatic redirect to app page
+- **After**: Payment cancelled/failed pages → stays on payment result page as intended
+- **Preserved**: Payment success functionality, normal authentication flows
+
+**Payment Pages Affected**:
+- ✅ `/payment/success` - Payment completed successfully
+- ✅ `/payment/cancelled` - User cancelled checkout
+- ✅ `/payment/failed` - Payment processing failed
+
+**Prevention for Future Payment Pages**:
+Any new payment-related routes should start with `/payment/` to automatically inherit this redirect prevention behavior.
+
 ## How It Works
 
 1.  **Navigation**: A user clicks a link, calling `router.navigate('/new-page')`.
@@ -696,7 +745,25 @@ Following this guide ensures your new pages will have seamless authentication, f
 
 ## 📋 **RECENT UPDATES & CRITICAL FIXES**
 
-### ✅ **Landing Page Refresh Auto-Redirect Fix (Latest)**
+### ✅ **Payment Page Auto-Redirect Fix (Latest)**
+**Issue Resolved**: Payment result pages (`/payment/cancelled`, `/payment/failed`) automatically redirected to app page.
+
+**What Changed**:
+- Extended auth module's auto-redirect prevention to cover all payment pages
+- Changed from specific `/payment/success` check to general `/payment/` prefix check
+- Enhanced both `SIGNED_IN` and `INITIAL_SESSION` event handling for payment pages
+- Improved payment result page preservation during authentication recovery
+
+**Action Required**: 
+- ✅ **All payment pages now preserved during session restoration**
+- 🚨 **New payment routes should start with `/payment/` prefix**
+- 📋 Test all payment result pages to ensure proper display without redirects
+
+**Files Modified**: `frontend/js/modules/auth.js` (handleAuthSuccess method)
+
+**Pages Affected**: `/payment/success`, `/payment/cancelled`, `/payment/failed`
+
+### ✅ **Landing Page Refresh Auto-Redirect Fix**
 **Issue Resolved**: Landing page refresh automatically redirected authenticated users to app page.
 
 **What Changed**:

@@ -431,10 +431,10 @@ class AuthModule {
                     // **CRITICAL FIX: Don't navigate away from landing page during refresh**
                     console.log('🚫 Preventing navigation from landing page during refresh/session restoration');
                     console.log('✅ User chose to be on landing page, respecting their choice');
-                } else if (currentPath === '/payment/success') {
-                    // **CRITICAL FIX: Don't navigate away from payment success page**
-                    console.log('🚫 Preventing navigation from payment success page');
-                    console.log('✅ User should see their payment confirmation, staying on payment success');
+                } else if (currentPath.startsWith('/payment/')) {
+                    // **CRITICAL FIX: Don't navigate away from any payment pages**
+                    console.log(`🚫 Preventing navigation from payment page: ${currentPath}`);
+                    console.log('✅ User should see their payment result page, respecting their choice');
                 } else {
                     // **FIX: Only navigate if not already on the target page**
                     if (currentPath !== returnUrl) {
@@ -469,8 +469,8 @@ class AuthModule {
                         console.log('✅ Staying on landing page during session restore');
                     } else if (currentPath === '/app') {
                         console.log('✅ Staying on app page during session restore');
-                    } else if (currentPath === '/payment/success') {
-                        console.log('✅ Staying on payment success page during session restore');
+                    } else if (currentPath.startsWith('/payment/')) {
+                        console.log(`✅ Staying on payment page (${currentPath}) during session restore`);
                     } else {
                         console.log(`✅ Staying on ${currentPath} during session restore`);
                     }

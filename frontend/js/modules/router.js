@@ -57,6 +57,18 @@ const routeConfig = {
         component: 'payment-success',
         requiresAuth: true, // Payment success requires authentication
         layout: 'app'
+    },
+    '/payment/cancelled': {
+        title: 'Payment Cancelled - AudioBook Organizer',
+        component: 'payment-cancelled',
+        requiresAuth: true, // Payment cancelled requires authentication
+        layout: 'app'
+    },
+    '/payment/failed': {
+        title: 'Payment Failed - AudioBook Organizer',
+        component: 'payment-failed',
+        requiresAuth: true, // Payment failed requires authentication
+        layout: 'app'
     }
 };
 
@@ -607,6 +619,12 @@ class Router {
                     break;
                 case 'payment-success':
                     await this.loadPaymentSuccessPage();
+                    break;
+                case 'payment-cancelled':
+                    await this.loadPaymentCancelledPage();
+                    break;
+                case 'payment-failed':
+                    await this.loadPaymentFailedPage();
                     break;
                 default:
                     throw new Error(`Unknown component: ${route.component}`);
@@ -1423,12 +1441,26 @@ class Router {
                 isAuthenticated: window.authModule ? window.authModule.isAuthenticated() : false
             });
             
-            // Ensure app container exists
-            let appContainer = document.getElementById('app');
+            // **FIX: Use consistent container management like other pages**
+            let appContainer = document.getElementById('appContainer');
             if (!appContainer) {
+                // Create main container and clear existing content completely
+                console.log('🔧 Creating appContainer for payment success page');
+                document.body.innerHTML = '';
+                
                 appContainer = document.createElement('div');
-                appContainer.id = 'app';
+                appContainer.id = 'appContainer';
+                appContainer.style.opacity = '0';
+                appContainer.style.transition = 'opacity 0.5s ease-in-out';
                 document.body.appendChild(appContainer);
+                
+                // Restore necessary CSS links
+                if (!document.querySelector('link[href="/css/main.css"]')) {
+                    const mainCSS = document.createElement('link');
+                    mainCSS.rel = 'stylesheet';
+                    mainCSS.href = '/css/main.css';
+                    document.head.appendChild(mainCSS);
+                }
             }
             
             // Show loading state
@@ -1599,6 +1631,11 @@ class Router {
                     document.head.appendChild(style);
                 }
                 
+                // **PERFORMANCE: Make appContainer visible with smooth transition**
+                setTimeout(() => {
+                    appContainer.style.opacity = '1';
+                }, 100);
+                
             } else {
                 throw new Error(data.error || 'Payment verification failed');
             }
@@ -1607,21 +1644,314 @@ class Router {
             console.error('Error loading payment success page:', error);
             
             // Show error state
-            document.getElementById('app').innerHTML = `
-                <div class="payment-success-container">
-                    <div class="success-content">
-                        <div class="error-icon">❌</div>
-                        <h1>Payment Verification Failed</h1>
-                        <p>We couldn't verify your payment. Please contact support if you were charged.</p>
+            const errorContainer = document.getElementById('appContainer') || document.getElementById('app');
+            if (errorContainer) {
+                errorContainer.innerHTML = `
+                    <div class="payment-success-container">
+                        <div class="success-content">
+                            <div class="error-icon">❌</div>
+                            <h1>Payment Verification Failed</h1>
+                            <p>We couldn't verify your payment. Please contact support if you were charged.</p>
+                            
+                            <div class="success-actions">
+                                <button class="btn primary" onclick="router.navigate('/app')">
+                                    Return to App
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+    }
+
+    async loadPaymentCancelledPage() {
+        try {
+            console.log('💳 Loading payment cancelled page...');
+            
+            // **FIX: Use consistent container management like other pages**
+            let appContainer = document.getElementById('appContainer');
+            if (!appContainer) {
+                // Create main container and clear existing content completely
+                console.log('🔧 Creating appContainer for payment cancelled page');
+                document.body.innerHTML = '';
+                
+                appContainer = document.createElement('div');
+                appContainer.id = 'appContainer';
+                appContainer.style.opacity = '0';
+                appContainer.style.transition = 'opacity 0.5s ease-in-out';
+                document.body.appendChild(appContainer);
+                
+                // Restore necessary CSS links
+                if (!document.querySelector('link[href="/css/main.css"]')) {
+                    const mainCSS = document.createElement('link');
+                    mainCSS.rel = 'stylesheet';
+                    mainCSS.href = '/css/main.css';
+                    document.head.appendChild(mainCSS);
+                }
+            }
+            
+            // Show cancelled page content
+            appContainer.innerHTML = `
+                <div class="payment-result-container">
+                    <div class="result-content">
+                        <div class="cancelled-icon">❌</div>
+                        <h1>Payment Cancelled</h1>
+                        <p>Your payment was cancelled. No charges were made to your account.</p>
                         
-                        <div class="success-actions">
+                        <div class="result-details">
+                            <p>You can try again anytime to purchase credits and continue using our service.</p>
+                        </div>
+                        
+                        <div class="result-actions">
                             <button class="btn primary" onclick="router.navigate('/app')">
+                                Return to App
+                            </button>
+                            <button class="btn secondary" onclick="router.showPricingModal()">
+                                View Pricing
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // Add CSS for payment result pages
+            this.addPaymentResultCSS();
+            
+            // **PERFORMANCE: Make appContainer visible with smooth transition**
+            setTimeout(() => {
+                appContainer.style.opacity = '1';
+            }, 100);
+            
+        } catch (error) {
+            console.error('Error loading payment cancelled page:', error);
+            // Fallback to app page
+            await this.navigate('/app');
+        }
+    }
+
+    async loadPaymentFailedPage() {
+        try {
+            console.log('💳 Loading payment failed page...');
+            
+            // **FIX: Use consistent container management like other pages**
+            let appContainer = document.getElementById('appContainer');
+            if (!appContainer) {
+                // Create main container and clear existing content completely
+                console.log('🔧 Creating appContainer for payment failed page');
+                document.body.innerHTML = '';
+                
+                appContainer = document.createElement('div');
+                appContainer.id = 'appContainer';
+                appContainer.style.opacity = '0';
+                appContainer.style.transition = 'opacity 0.5s ease-in-out';
+                document.body.appendChild(appContainer);
+                
+                // Restore necessary CSS links
+                if (!document.querySelector('link[href="/css/main.css"]')) {
+                    const mainCSS = document.createElement('link');
+                    mainCSS.rel = 'stylesheet';
+                    mainCSS.href = '/css/main.css';
+                    document.head.appendChild(mainCSS);
+                }
+            }
+            
+            // Get error details from URL if available
+            const urlParams = new URLSearchParams(window.location.search);
+            const errorMessage = urlParams.get('error') || 'An error occurred during payment processing';
+            
+            // Show failed page content
+            appContainer.innerHTML = `
+                <div class="payment-result-container">
+                    <div class="result-content">
+                        <div class="failed-icon">⚠️</div>
+                        <h1>Payment Failed</h1>
+                        <p>We couldn't process your payment. Please try again or use a different payment method.</p>
+                        
+                        <div class="result-details">
+                            <div class="detail-item">
+                                <span class="label">Error:</span>
+                                <span class="value">${errorMessage}</span>
+                            </div>
+                            <p class="help-text">If you continue to experience issues, please contact our support team.</p>
+                        </div>
+                        
+                        <div class="result-actions">
+                            <button class="btn primary" onclick="router.showPricingModal()">
+                                Try Again
+                            </button>
+                            <button class="btn secondary" onclick="router.navigate('/app')">
                                 Return to App
                             </button>
                         </div>
                     </div>
                 </div>
             `;
+            
+            // Add CSS for payment result pages
+            this.addPaymentResultCSS();
+            
+            // **PERFORMANCE: Make appContainer visible with smooth transition**
+            setTimeout(() => {
+                appContainer.style.opacity = '1';
+            }, 100);
+            
+        } catch (error) {
+            console.error('Error loading payment failed page:', error);
+            // Fallback to app page
+            await this.navigate('/app');
+        }
+    }
+
+    // Helper method to add shared CSS for payment result pages
+    addPaymentResultCSS() {
+        if (!document.querySelector('#payment-result-css')) {
+            const style = document.createElement('style');
+            style.id = 'payment-result-css';
+            style.textContent = `
+                .payment-result-container {
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                    min-height: 100vh;
+                    padding: 20px;
+                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                }
+                
+                .result-content {
+                    background: white;
+                    border-radius: 15px;
+                    padding: 40px;
+                    text-align: center;
+                    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+                    max-width: 500px;
+                    width: 100%;
+                }
+                
+                .cancelled-icon, .failed-icon {
+                    font-size: 64px;
+                    margin-bottom: 20px;
+                }
+                
+                .cancelled-icon {
+                    color: #f56565;
+                }
+                
+                .failed-icon {
+                    color: #ed8936;
+                }
+                
+                .result-content h1 {
+                    color: #2d3748;
+                    margin-bottom: 10px;
+                    font-size: 2rem;
+                }
+                
+                .result-content p {
+                    color: #4a5568;
+                    margin-bottom: 20px;
+                    line-height: 1.6;
+                }
+                
+                .result-details {
+                    margin: 30px 0;
+                    text-align: left;
+                }
+                
+                .detail-item {
+                    display: flex;
+                    justify-content: space-between;
+                    padding: 10px 0;
+                    border-bottom: 1px solid #e2e8f0;
+                    margin-bottom: 15px;
+                }
+                
+                .label {
+                    font-weight: 600;
+                    color: #4a5568;
+                }
+                
+                .value {
+                    color: #2d3748;
+                    word-break: break-word;
+                }
+                
+                .help-text {
+                    font-size: 0.9rem;
+                    color: #718096;
+                    font-style: italic;
+                    text-align: center;
+                    margin-top: 15px;
+                }
+                
+                .result-actions {
+                    margin-top: 30px;
+                    display: flex;
+                    gap: 15px;
+                    justify-content: center;
+                    flex-wrap: wrap;
+                }
+                
+                .result-actions .btn {
+                    padding: 12px 24px;
+                    border: none;
+                    border-radius: 8px;
+                    font-weight: 600;
+                    cursor: pointer;
+                    transition: all 0.2s;
+                    text-decoration: none;
+                    display: inline-block;
+                }
+                
+                .result-actions .btn.primary {
+                    background: #667eea;
+                    color: white;
+                }
+                
+                .result-actions .btn.primary:hover {
+                    background: #5a67d8;
+                    transform: translateY(-1px);
+                }
+                
+                .result-actions .btn.secondary {
+                    background: #e2e8f0;
+                    color: #4a5568;
+                }
+                
+                .result-actions .btn.secondary:hover {
+                    background: #cbd5e0;
+                    transform: translateY(-1px);
+                }
+                
+                @media (max-width: 768px) {
+                    .result-actions {
+                        flex-direction: column;
+                    }
+                    
+                    .result-actions .btn {
+                        width: 100%;
+                    }
+                }
+            `;
+            document.head.appendChild(style);
+        }
+    }
+
+    // Helper method to show pricing modal (can be implemented later)
+    async showPricingModal() {
+        try {
+            // Try to load the stripe module and show pricing
+            const { stripeService } = await import('/js/modules/stripe.js');
+            if (stripeService && typeof stripeService.showPricingModal === 'function') {
+                stripeService.showPricingModal();
+            } else {
+                // Fallback: navigate to app page where pricing should be available
+                await this.navigate('/app');
+                showInfo('Please use the "Buy Credits" button to view pricing options.');
+            }
+        } catch (error) {
+            console.error('Error showing pricing modal:', error);
+            await this.navigate('/app');
         }
     }
 
@@ -1789,6 +2119,41 @@ class Router {
             case 'auth':
                  if (window.cleanupAuthPage) {
                     window.cleanupAuthPage();
+                }
+                break;
+            case 'payment-success':
+                // Clean up payment success page specific styles and content
+                const paymentSuccessStyles = document.querySelector('#payment-success-css');
+                if (paymentSuccessStyles) {
+                    paymentSuccessStyles.remove();
+                    console.log('🧹 Cleaned up payment success page styles');
+                }
+                // Clear any leftover payment success content
+                const appContainer = document.getElementById('appContainer');
+                if (appContainer) {
+                    // Only clean if it contains payment success content
+                    if (appContainer.innerHTML.includes('payment-success-container')) {
+                        appContainer.innerHTML = '';
+                        console.log('🧹 Cleaned up payment success page content');
+                    }
+                }
+                break;
+            case 'payment-cancelled':
+            case 'payment-failed':
+                // Clean up payment result page styles and content
+                const paymentResultStyles = document.querySelector('#payment-result-css');
+                if (paymentResultStyles) {
+                    paymentResultStyles.remove();
+                    console.log('🧹 Cleaned up payment result page styles');
+                }
+                // Clear any leftover payment result content
+                const resultContainer = document.getElementById('appContainer');
+                if (resultContainer) {
+                    // Only clean if it contains payment result content
+                    if (resultContainer.innerHTML.includes('payment-result-container')) {
+                        resultContainer.innerHTML = '';
+                        console.log('🧹 Cleaned up payment result page content');
+                    }
                 }
                 break;
         }

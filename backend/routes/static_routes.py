@@ -36,11 +36,14 @@ def create_static_routes(app):
     @app.route('/profile')
     @app.route('/auth/reset-password')
     @app.route('/payment/success')
+    @app.route('/payment/cancelled')
+    @app.route('/payment/failed')
     def serve_auth_pages():
         """Serve auth-related pages - redirect to app in testing mode"""
         if app.config.get('TESTING_MODE'):
-            # In testing mode, redirect these pages to root (except payment success)
-            if request.endpoint != 'serve_auth_pages' or request.path != '/payment/success':
+            # In testing mode, redirect these pages to root (except payment-related pages)
+            payment_paths = ['/payment/success', '/payment/cancelled', '/payment/failed']
+            if request.endpoint != 'serve_auth_pages' or request.path not in payment_paths:
                 return redirect('/')
         
         return send_from_directory('../frontend', 'index.html')

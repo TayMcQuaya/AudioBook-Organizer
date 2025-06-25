@@ -111,3 +111,6 @@ for stripe to listen locally:
 
 Test card: 4242 4242 4242 4242 
 every other field can be random 
+
+testing error payment page by using this command on webbrowser console:
+window.router.navigate('/payment/failed?error=Test error message');
