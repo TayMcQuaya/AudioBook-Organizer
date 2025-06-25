@@ -1,8 +1,8 @@
-# 🧪 AudioBook Creator - Testing Mode Complete Guide
+# 🧪 AudioBook Organizer - Testing Mode Complete Guide
 
 ## 📋 Overview
 
-This guide documents the **Temporary Password Protection System** implemented for AudioBook Creator. This system allows deployment to production with simple password authentication while preserving all original functionality and the ability to restore full authentication later.
+This guide documents the **Temporary Password Protection System** implemented for AudioBook Organizer. This system allows deployment to production with simple password authentication while preserving all original functionality and the ability to restore full authentication later.
 
 ---
 
@@ -193,7 +193,7 @@ python app.py
 #### 3. **User Experience**
 1. **Visit website** → Password entry page appears
 2. **Enter password** → Immediate access to app
-3. **Use all features** → Complete AudioBook Creator functionality
+3. **Use all features** → Complete AudioBook Organizer functionality
 4. **No navigation** → Landing/auth pages blocked
 5. **Exit testing** → "Exit Testing" button available
 
@@ -220,7 +220,7 @@ JWT_SECRET_KEY=your-jwt-secret
 1. **Visit website** → Landing page with marketing content
 2. **Click sign in** → Authentication page
 3. **Create account or login** → Full Supabase authentication
-4. **Access app** → Complete AudioBook Creator functionality
+4. **Access app** → Complete AudioBook Organizer functionality
 5. **Full navigation** → All pages accessible
 
 ---

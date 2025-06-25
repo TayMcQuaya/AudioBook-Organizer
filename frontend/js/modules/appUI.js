@@ -401,7 +401,7 @@ export async function consumeTestCredits(amount, action) {
         // Show low credits warning
         if (newCredits < 20 && currentCredits >= 20) {
             const { showLowCreditsModal } = await import('./ui.js');
-            showLowCreditsModal();
+            await showLowCreditsModal();
         }
         
     } catch (error) {
@@ -420,7 +420,7 @@ export function checkCreditsForAction(requiredCredits, actionName) {
                 
                 if (currentCredits < requiredCredits) {
                     const { showLowCreditsModal } = await import('./ui.js');
-                    showLowCreditsModal();
+                    await showLowCreditsModal();
                     resolve(false);
                     return;
                 }

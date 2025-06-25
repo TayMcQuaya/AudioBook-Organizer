@@ -104,3 +104,5 @@ SUPABASE_URL=your-supabase-url
 
 
 
+for stripe to listen locally:
+.\stripe.exe listen --forward-to localhost:5000/api/stripe/webhook

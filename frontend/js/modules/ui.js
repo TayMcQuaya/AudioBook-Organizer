@@ -164,8 +164,8 @@ export function createCreditsDisplay() {
         // Add click handler for future credit purchase modal
         const creditsDisplay = document.getElementById('creditsDisplay');
         if (creditsDisplay) {
-            creditsDisplay.addEventListener('click', () => {
-                showLowCreditsModal();
+            creditsDisplay.addEventListener('click', async () => {
+                await showLowCreditsModal();
             });
             console.log('💎 Credits display created and click handler added');
         } else {
@@ -174,7 +174,7 @@ export function createCreditsDisplay() {
     }
 }
 
-export function showLowCreditsModal() {
+export async function showLowCreditsModal() {
     // Create modal if it doesn't exist
     let modal = document.getElementById('lowCreditsModal');
     if (!modal) {
@@ -190,21 +190,11 @@ export function showLowCreditsModal() {
                         <li>🗣️ Text-to-speech (50 credits per 10k characters)</li>
                         <li>📤 Premium exports (20 credits per export)</li>
                     </ul>
-                    <div class="credits-purchase-preview">
-                        <h3>Credit Packages (Coming Soon)</h3>
-                        <div class="credit-package">
-                            <strong>Starter Pack:</strong> 500 credits - $4.99
+                    <div id="creditPurchaseContent">
+                        <div class="loading-packages">
+                            <div class="spinner"></div>
+                            <p>Loading payment options...</p>
                         </div>
-                        <div class="credit-package">
-                            <strong>Creator Pack:</strong> 1,500 credits - $14.99
-                        </div>
-                        <div class="credit-package">
-                            <strong>Professional Pack:</strong> 3,500 credits - $29.99
-                        </div>
-                    </div>
-                    <p><em>Credit purchasing will be available soon.<br>For now, contact support for additional credits.</em></p>
-                    <div class="modal-button-container">
-                        <button onclick="hideLowCreditsModal()" class="btn btn-primary">Got it</button>
                     </div>
                 </div>
             </div>
@@ -215,6 +205,55 @@ export function showLowCreditsModal() {
     
     modal.style.display = 'block';
     document.body.style.overflow = 'hidden';
+    
+    // Load Stripe service and update content
+    try {
+        // Dynamically import Stripe service
+        const stripeModule = await import('./stripe.js');
+        const stripeService = stripeModule.default;
+        
+        // Initialize Stripe service
+        await stripeService.init();
+        
+        // Get the content container
+        const contentContainer = document.getElementById('creditPurchaseContent');
+        if (contentContainer) {
+            // Generate purchase UI
+            const purchaseUI = stripeService.createPurchaseUI();
+            contentContainer.innerHTML = purchaseUI;
+            
+            // If Stripe is properly configured, load packages
+            if (stripeService.isAvailable()) {
+                await stripeService.loadPackages();
+            }
+        }
+        
+    } catch (error) {
+        console.error('Error loading Stripe payment interface:', error);
+        
+        // Fallback to static display
+        const contentContainer = document.getElementById('creditPurchaseContent');
+        if (contentContainer) {
+            contentContainer.innerHTML = `
+                <div class="credits-purchase-preview">
+                    <h3>Credit Packages</h3>
+                    <div class="credit-package">
+                        <strong>Starter Pack:</strong> 500 credits - $4.99
+                    </div>
+                    <div class="credit-package">
+                        <strong>Creator Pack:</strong> 1,500 credits - $14.99
+                    </div>
+                    <div class="credit-package">
+                        <strong>Professional Pack:</strong> 3,500 credits - $29.99
+                    </div>
+                </div>
+                <p><em>Payment system is currently being configured.<br>Please contact support for additional credits.</em></p>
+                <div class="modal-button-container">
+                    <button onclick="hideLowCreditsModal()" class="btn btn-primary">Got it</button>
+                </div>
+            `;
+        }
+    }
 }
 
 export function hideLowCreditsModal() {

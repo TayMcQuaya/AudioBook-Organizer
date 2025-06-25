@@ -91,3 +91,5 @@ ExoWave/
 *.docx
 .vercel
 oldtoc.txt
+
+*.exe 

@@ -15,6 +15,7 @@ from .routes.auth_routes import create_auth_routes
 from .routes.project_routes import project_bp
 from .routes.docx_routes import docx_bp
 from .routes.password_protection import create_password_protection_routes
+from .routes.stripe_routes import stripe_bp
 from .services.supabase_service import init_supabase_service
 from .services.security_service import init_security_service
 
@@ -119,6 +120,9 @@ def create_app(config_name=None):
     
     # Register DOCX processing routes
     app.register_blueprint(docx_bp)
+    
+    # Register Stripe payment routes (Normal mode only)
+    app.register_blueprint(stripe_bp)
     
     # Register password protection routes
     create_password_protection_routes(app)

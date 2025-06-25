@@ -1,5 +1,8 @@
 /* AudioBook Organizer - Main Styles */
 
+/* Import Stripe payment styles */
+@import 'stripe.css';
+
 :root {
     /* Updated to match landing page purple theme */
     --primary-color: #667eea;
@@ -1542,6 +1545,11 @@ main {
     50% { transform: scale(1.05); }
 }
 
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
 /* Low Credits Modal Styles */
 .low-credits-modal {
     position: fixed;
@@ -1571,10 +1579,90 @@ main {
     padding: 2rem;
     border-radius: 12px;
     width: 90%;
-    max-width: 500px;
+    max-width: 800px; /* Increased to accommodate Stripe UI */
+    max-height: 80vh; /* Prevent modal from being too tall */
+    overflow-y: auto; /* Allow scrolling if content is tall */
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
     position: relative;
     animation: modalSlideIn 0.3s ease-out;
+}
+
+/* Loading spinner for credit purchase content */
+#creditPurchaseContent .loading-packages {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    color: var(--text-secondary);
+}
+
+#creditPurchaseContent .loading-packages .spinner {
+    width: 32px;
+    height: 32px;
+    border: 3px solid var(--border-color);
+    border-top: 3px solid var(--accent-color);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-bottom: 1rem;
+}
+
+/* Stripe UI elements in modal */
+#creditPurchaseContent .credit-purchase-section {
+    margin: 0; /* Remove default margin in modal */
+    padding: 1rem; /* Reduce padding in modal */
+    background: transparent; /* Use modal background */
+    box-shadow: none; /* Remove shadow in modal */
+}
+
+#creditPurchaseContent .credit-packages {
+    grid-template-columns: 1fr; /* Single column in modal */
+    gap: 1rem;
+}
+
+#creditPurchaseContent .package-card {
+    margin-bottom: 0;
+}
+
+/* Error and alert states in modal */
+#creditPurchaseContent .stripe-unavailable {
+    margin: 1rem 0;
+}
+
+#creditPurchaseContent .alert {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem;
+    border-radius: 8px;
+    margin: 1rem 0;
+}
+
+#creditPurchaseContent .alert-info {
+    background: rgba(103, 126, 234, 0.1);
+    border: 1px solid rgba(103, 126, 234, 0.2);
+    color: var(--text-primary);
+}
+
+#creditPurchaseContent .alert-warning {
+    background: rgba(255, 165, 0, 0.1);
+    border: 1px solid rgba(255, 165, 0, 0.2);
+    color: var(--text-primary);
+}
+
+#creditPurchaseContent .alert-icon {
+    font-size: 1.5rem;
+    flex-shrink: 0;
+}
+
+#creditPurchaseContent .alert-content h4 {
+    margin: 0 0 0.5rem 0;
+    color: var(--text-primary);
+}
+
+#creditPurchaseContent .alert-content p {
+    margin: 0;
+    color: var(--text-secondary);
 }
 
 /* Modal button container for centered buttons */
