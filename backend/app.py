@@ -97,7 +97,8 @@ def create_app(config_name=None):
         init_supabase_service(
             app.config['SUPABASE_URL'],
             app.config['SUPABASE_KEY'],
-            app.config['SUPABASE_JWT_SECRET']
+            app.config['SUPABASE_JWT_SECRET'],
+            app.config.get('SUPABASE_SERVICE_KEY')  # Add service key for webhooks
         )
         app.logger.info("✅ Supabase service initialized")
     else:

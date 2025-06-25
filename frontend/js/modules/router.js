@@ -51,6 +51,12 @@ const routeConfig = {
         component: 'profile',
         requiresAuth: true, // Profile requires authentication
         layout: 'app'
+    },
+    '/payment/success': {
+        title: 'Payment Successful - AudioBook Organizer',
+        component: 'payment-success',
+        requiresAuth: true, // Payment success requires authentication
+        layout: 'app'
     }
 };
 
@@ -598,6 +604,9 @@ class Router {
                     break;
                 case 'profile':
                     await this.loadProfilePage();
+                    break;
+                case 'payment-success':
+                    await this.loadPaymentSuccessPage();
                     break;
                 default:
                     throw new Error(`Unknown component: ${route.component}`);
@@ -1375,6 +1384,198 @@ class Router {
         } catch (error) {
             console.error('Error loading profile page:', error);
             showError('Failed to load profile page');
+        }
+    }
+    
+    // Load payment success page
+    async loadPaymentSuccessPage() {
+        try {
+            // Get session ID from URL
+            const urlParams = new URLSearchParams(window.location.search);
+            const sessionId = urlParams.get('session_id');
+            
+            if (!sessionId) {
+                console.error('No session ID found in URL');
+                await this.navigate('/app');
+                return;
+            }
+            
+            // Ensure app container exists
+            let appContainer = document.getElementById('app');
+            if (!appContainer) {
+                appContainer = document.createElement('div');
+                appContainer.id = 'app';
+                document.body.appendChild(appContainer);
+            }
+            
+            // Show loading state
+            appContainer.innerHTML = `
+                <div class="payment-success-container">
+                    <div class="loading-container">
+                        <div class="loading-spinner"></div>
+                        <p>Verifying your payment...</p>
+                    </div>
+                </div>
+            `;
+            
+            // Verify payment with backend
+            const response = await fetch(`/api/stripe/session/${sessionId}`, {
+                credentials: 'include'
+            });
+            
+            if (!response.ok) {
+                throw new Error('Failed to verify payment');
+            }
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                const session = data.session;
+                const credits = session.metadata?.credits || '0';
+                const packageType = session.metadata?.package_type || 'Unknown';
+                
+                // Show success page
+                appContainer.innerHTML = `
+                    <div class="payment-success-container">
+                        <div class="success-content">
+                            <div class="success-icon">✅</div>
+                            <h1>Payment Successful!</h1>
+                            <p>Thank you for your purchase. Your credits have been added to your account.</p>
+                            
+                            <div class="payment-details">
+                                <div class="detail-item">
+                                    <span class="label">Package:</span>
+                                    <span class="value">${packageType.replace('_', ' ').toUpperCase()}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="label">Credits Added:</span>
+                                    <span class="value">${credits}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="label">Payment Status:</span>
+                                    <span class="value">Completed</span>
+                                </div>
+                            </div>
+                            
+                            <div class="success-actions">
+                                <button class="btn primary" onclick="router.navigate('/app')">
+                                    Continue to App
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                // Add CSS for payment success page
+                if (!document.querySelector('#payment-success-css')) {
+                    const style = document.createElement('style');
+                    style.id = 'payment-success-css';
+                    style.textContent = `
+                        .payment-success-container {
+                            display: flex;
+                            justify-content: center;
+                            align-items: center;
+                            min-height: 100vh;
+                            padding: 20px;
+                            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                        }
+                        
+                        .success-content {
+                            background: white;
+                            border-radius: 15px;
+                            padding: 40px;
+                            text-align: center;
+                            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+                            max-width: 500px;
+                            width: 100%;
+                        }
+                        
+                        .success-icon {
+                            font-size: 64px;
+                            margin-bottom: 20px;
+                        }
+                        
+                        .success-content h1 {
+                            color: #2d3748;
+                            margin-bottom: 10px;
+                        }
+                        
+                        .payment-details {
+                            margin: 30px 0;
+                            text-align: left;
+                        }
+                        
+                        .detail-item {
+                            display: flex;
+                            justify-content: space-between;
+                            padding: 10px 0;
+                            border-bottom: 1px solid #e2e8f0;
+                        }
+                        
+                        .detail-item:last-child {
+                            border-bottom: none;
+                        }
+                        
+                        .label {
+                            font-weight: 600;
+                            color: #4a5568;
+                        }
+                        
+                        .value {
+                            color: #2d3748;
+                        }
+                        
+                        .success-actions {
+                            margin-top: 30px;
+                        }
+                        
+                        .loading-container {
+                            text-align: center;
+                            padding: 40px;
+                            color: white;
+                        }
+                        
+                        .loading-spinner {
+                            border: 4px solid rgba(255,255,255,0.3);
+                            border-radius: 50%;
+                            border-top: 4px solid white;
+                            width: 40px;
+                            height: 40px;
+                            animation: spin 1s linear infinite;
+                            margin: 0 auto 20px;
+                        }
+                        
+                        @keyframes spin {
+                            0% { transform: rotate(0deg); }
+                            100% { transform: rotate(360deg); }
+                        }
+                    `;
+                    document.head.appendChild(style);
+                }
+                
+            } else {
+                throw new Error(data.error || 'Payment verification failed');
+            }
+            
+        } catch (error) {
+            console.error('Error loading payment success page:', error);
+            
+            // Show error state
+            document.getElementById('app').innerHTML = `
+                <div class="payment-success-container">
+                    <div class="success-content">
+                        <div class="error-icon">❌</div>
+                        <h1>Payment Verification Failed</h1>
+                        <p>We couldn't verify your payment. Please contact support if you were charged.</p>
+                        
+                        <div class="success-actions">
+                            <button class="btn primary" onclick="router.navigate('/app')">
+                                Return to App
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
         }
     }
     

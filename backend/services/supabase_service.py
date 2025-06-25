@@ -17,12 +17,14 @@ logger = logging.getLogger(__name__)
 class SupabaseService:
     """Service for Supabase authentication and database operations"""
     
-    def __init__(self, supabase_url: str, supabase_key: str, jwt_secret: str):
+    def __init__(self, supabase_url: str, supabase_key: str, jwt_secret: str, service_key: str = None):
         """Initialize Supabase client"""
         self.url = supabase_url
         self.key = supabase_key
+        self.service_key = service_key
         self.jwt_secret = jwt_secret
         self.client: Client = None
+        self._service_client: Client = None
         
         # Simple cache for user initialization (session-based)
         self._user_init_cache = {}
@@ -48,6 +50,16 @@ class SupabaseService:
     def is_configured(self) -> bool:
         """Check if Supabase is properly configured"""
         return self.client is not None
+    
+    def get_service_client(self) -> Client:
+        """Get service role client that bypasses RLS for webhooks"""
+        if not self._service_client and self.service_key:
+            try:
+                self._service_client = create_client(self.url, self.service_key)
+                logger.info("✅ Supabase service client initialized successfully")
+            except Exception as e:
+                logger.error(f"❌ Failed to initialize Supabase service client: {e}")
+        return self._service_client or self.client
     
     # Authentication Methods
     
@@ -485,8 +497,8 @@ def get_supabase_service() -> SupabaseService:
         )
     return _supabase_service
 
-def init_supabase_service(supabase_url: str, supabase_key: str, jwt_secret: str) -> SupabaseService:
+def init_supabase_service(supabase_url: str, supabase_key: str, jwt_secret: str, service_key: str = None) -> SupabaseService:
     """Initialize the global Supabase service instance with custom configuration"""
     global _supabase_service
-    _supabase_service = SupabaseService(supabase_url, supabase_key, jwt_secret)
+    _supabase_service = SupabaseService(supabase_url, supabase_key, jwt_secret, service_key)
     return _supabase_service 

@@ -212,20 +212,22 @@ class StripeService:
             
             # Start transaction-like operations
             try:
-                # Record the event as being processed
+                # Record the event as being processed (use service role to bypass RLS)
                 event_record = {
                     'stripe_event_id': event_data['id'],
                     'event_type': event_data['type'],
                     'webhook_data': event_data,
                     'processing_status': 'processed'
                 }
-                supabase.table('stripe_events').insert(event_record).execute()
+                # Use service role client to bypass RLS for webhook events
+                service_supabase = supabase_service.get_service_client()
+                service_supabase.table('stripe_events').insert(event_record).execute()
                 
                 # Add credits to user account
                 success, error = self._add_credits_to_user(user_id, credits_to_add)
                 if not success:
                     # Update event status to failed
-                    supabase.table('stripe_events').update({
+                    service_supabase.table('stripe_events').update({
                         'processing_status': 'failed',
                         'error_message': error
                     }).eq('stripe_event_id', event_data['id']).execute()
@@ -258,7 +260,7 @@ class StripeService:
             except Exception as e:
                 # Update event status to failed
                 try:
-                    supabase.table('stripe_events').update({
+                    service_supabase.table('stripe_events').update({
                         'processing_status': 'failed',
                         'error_message': str(e)
                     }).eq('stripe_event_id', event_data['id']).execute()
