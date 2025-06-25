@@ -47,7 +47,7 @@ def require_payments_enabled(f):
 @require_auth
 @require_normal_mode
 @require_payments_enabled
-def get_credit_packages():
+def get_credit_packages(current_user):
     """Get available credit packages"""
     try:
         packages = stripe_service.get_all_packages()
@@ -81,17 +81,9 @@ def get_credit_packages():
 @require_auth
 @require_normal_mode
 @require_payments_enabled
-def create_checkout_session():
+def create_checkout_session(current_user):
     """Create a Stripe Checkout session for credit purchase"""
     try:
-        # Get current user
-        current_user = get_current_user()
-        if not current_user:
-            return jsonify({
-                'success': False,
-                'error': 'Authentication required'
-            }), 401
-        
         user_id = current_user.get('id')
         if not user_id:
             return jsonify({
@@ -160,17 +152,9 @@ def create_checkout_session():
 @require_auth
 @require_normal_mode
 @require_payments_enabled
-def get_checkout_session(session_id):
+def get_checkout_session(current_user, session_id):
     """Get checkout session details"""
     try:
-        # Get current user for security
-        current_user = get_current_user()
-        if not current_user:
-            return jsonify({
-                'success': False,
-                'error': 'Authentication required'
-            }), 401
-        
         # Retrieve session
         success, session_data, error = stripe_service.get_checkout_session(session_id)
         
@@ -256,17 +240,9 @@ def stripe_webhook():
 @require_auth
 @require_normal_mode
 @require_payments_enabled
-def get_user_transactions():
+def get_user_transactions(current_user):
     """Get user's transaction history"""
     try:
-        # Get current user
-        current_user = get_current_user()
-        if not current_user:
-            return jsonify({
-                'success': False,
-                'error': 'Authentication required'
-            }), 401
-        
         user_id = current_user.get('id')
         
         # Get transactions
