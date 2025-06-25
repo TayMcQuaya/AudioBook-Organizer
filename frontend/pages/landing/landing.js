@@ -44,6 +44,29 @@ function init() {
     
     // Add click outside handler for user dropdown
     document.addEventListener('click', outsideClickListener);
+    
+    // Handle hash navigation on page load
+    handleHashNavigation();
+}
+
+/**
+ * Handle hash navigation to scroll to specific sections
+ */
+function handleHashNavigation() {
+    const hash = window.location.hash;
+    if (hash) {
+        // Small delay to ensure page is fully loaded
+        setTimeout(() => {
+            const target = document.querySelector(hash);
+            if (target) {
+                console.log(`📍 Scrolling to section: ${hash}`);
+                target.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'start'
+                });
+            }
+        }, 300);
+    }
 }
 
 function cleanup() {
@@ -568,7 +591,7 @@ function setupAppWindowTilt() {
 }
 
 /**
- * Navigate to credit purchase based on package selection
+ * Direct credit purchase using Stripe (same as credit module)
  */
 async function navigateToCredits(packageType = null) {
     console.log(`🛒 User clicked to purchase credits: ${packageType || 'unspecified'}`);
@@ -586,52 +609,43 @@ async function navigateToCredits(packageType = null) {
             return;
         }
         
-        // User is authenticated, navigate to app and trigger credit purchase
-        console.log('✅ User authenticated, navigating to app for credit purchase');
+        // User is authenticated, directly trigger Stripe payment
+        console.log('✅ User authenticated, triggering direct Stripe payment');
         
-        // Show loading while navigating
+        // Show loading while processing
         if (loadingOverlay) {
             loadingOverlay.style.display = 'flex';
         }
         
-        // Navigate to app page
-        if (window.router) {
-            await window.router.navigate('/app');
-            
-            // Small delay to ensure app is loaded
-            setTimeout(() => {
-                // Try to trigger the credit purchase modal
-                if (window.stripeService && typeof window.stripeService.showPricingModal === 'function') {
-                    console.log('💳 Triggering credit purchase modal');
-                    window.stripeService.showPricingModal();
-                } else if (window.router && typeof window.router.showPricingModal === 'function') {
-                    console.log('💳 Using router pricing modal');
-                    window.router.showPricingModal();
-                } else {
-                    console.warn('⚠️ Credit purchase modal not available, showing info');
-                    showInfo('Credit purchase system is loading. Please check the app menu for credit options.');
-                }
-                
-                // Hide loading
-                if (loadingOverlay) {
-                    loadingOverlay.style.display = 'none';
-                }
-            }, 500);
-        } else {
-            // Fallback: direct navigation
-            window.location.href = '/app';
+                // Import and initialize Stripe service
+        const { default: stripeService } = await import('/js/modules/stripe.js');
+        await stripeService.init();
+        
+        // Directly call Stripe purchase (same as credit module)
+        const result = await stripeService.purchaseCredits(packageType);
+        
+        // Hide loading overlay after Stripe call
+        if (loadingOverlay) {
+            loadingOverlay.style.display = 'none';
         }
         
+        if (!result.success) {
+            console.error('❌ Purchase failed:', result.error);
+            // Show error notification
+            showError(result.error || 'Payment failed. Please try again.');
+        }
+        // Note: If successful, Stripe will redirect to payment page, then back to success page
+        
     } catch (error) {
-        console.error('❌ Error navigating to credits:', error);
+        console.error('❌ Error processing payment:', error);
         
         // Hide loading
         if (loadingOverlay) {
             loadingOverlay.style.display = 'none';
         }
         
-        // Fallback to direct navigation
-        window.location.href = '/app';
+        // Show error message
+        showError('Payment system error. Please try again.');
     }
 }
 
@@ -643,6 +657,7 @@ window.contactSales = contactSales;
 window.navigateToApp = navigateToApp;
 window.tryAppDemo = tryAppDemo;
 window.navigateToCredits = navigateToCredits;
+window.handleHashNavigation = handleHashNavigation;
 
 // Export for module use
 export {

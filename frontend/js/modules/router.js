@@ -1707,7 +1707,7 @@ class Router {
                             <button class="btn primary" onclick="router.navigate('/app')">
                                 Return to App
                             </button>
-                            <button class="btn secondary" onclick="router.showPricingModal()">
+                            <button class="btn secondary" onclick="router.navigateToLandingPricing()">
                                 View Pricing
                             </button>
                         </div>
@@ -1777,8 +1777,8 @@ class Router {
                         </div>
                         
                         <div class="result-actions">
-                            <button class="btn primary" onclick="router.showPricingModal()">
-                                Try Again
+                            <button class="btn primary" onclick="router.navigateToLandingPricing()">
+                                View Pricing
                             </button>
                             <button class="btn secondary" onclick="router.navigate('/app')">
                                 Return to App
@@ -1952,6 +1952,21 @@ class Router {
         } catch (error) {
             console.error('Error showing pricing modal:', error);
             await this.navigate('/app');
+        }
+    }
+
+    // Navigate to landing page pricing section
+    async navigateToLandingPricing() {
+        try {
+            console.log('🏠 Navigating to landing page pricing section...');
+            
+            // Use window.location.href to ensure we go to landing page with hash
+            window.location.href = '/#pricing';
+            
+        } catch (error) {
+            console.error('Error navigating to landing pricing:', error);
+            // Fallback: just go to landing page
+            window.location.href = '/';
         }
     }
 

@@ -427,10 +427,15 @@ class AuthModule {
                     } else {
                         window.location.href = '/app';
                     }
-                } else if (isPageRefresh && currentPath === '/') {
-                    // **CRITICAL FIX: Don't navigate away from landing page during refresh**
-                    console.log('🚫 Preventing navigation from landing page during refresh/session restoration');
-                    console.log('✅ User chose to be on landing page, respecting their choice');
+                } else if ((isPageRefresh && currentPath === '/') || (currentPath === '/' && window.location.hash)) {
+                    // **CRITICAL FIX: Don't navigate away from landing page during refresh OR when user specifically navigated to landing page with hash**
+                    if (window.location.hash) {
+                        console.log(`🚫 Preventing navigation from landing page - user specifically navigated to ${window.location.href}`);
+                        console.log('✅ User chose landing page with hash, respecting their choice (e.g., pricing section)');
+                    } else {
+                        console.log('🚫 Preventing navigation from landing page during refresh/session restoration');
+                        console.log('✅ User chose to be on landing page, respecting their choice');
+                    }
                 } else if (currentPath.startsWith('/payment/')) {
                     // **CRITICAL FIX: Don't navigate away from any payment pages**
                     console.log(`🚫 Preventing navigation from payment page: ${currentPath}`);
@@ -466,7 +471,11 @@ class AuthModule {
                     // Users should stay on whatever page they refreshed (landing, app, etc.)
                     // This prevents unwanted redirects during page refresh
                     if (currentPath === '/') {
-                        console.log('✅ Staying on landing page during session restore');
+                        if (window.location.hash) {
+                            console.log(`✅ Staying on landing page with hash (${window.location.hash}) during session restore`);
+                        } else {
+                            console.log('✅ Staying on landing page during session restore');
+                        }
                     } else if (currentPath === '/app') {
                         console.log('✅ Staying on app page during session restore');
                     } else if (currentPath.startsWith('/payment/')) {

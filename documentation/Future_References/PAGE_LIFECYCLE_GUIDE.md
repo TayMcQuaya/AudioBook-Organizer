@@ -745,7 +745,25 @@ Following this guide ensures your new pages will have seamless authentication, f
 
 ## 📋 **RECENT UPDATES & CRITICAL FIXES**
 
-### ✅ **Payment Page Auto-Redirect Fix (Latest)**
+### ✅ **Landing Page Hash Navigation Auto-Redirect Fix (Latest)**
+**Issue Resolved**: Clicking "View Pricing" button from payment pages (`/payment/cancelled`, `/payment/failed`) automatically redirected to app page instead of landing page pricing section.
+
+**What Changed**:
+- Enhanced auth module's auto-redirect logic to detect intentional navigation to landing page sections with hashes
+- Added detection for `window.location.hash` in addition to page refresh detection
+- Improved both `SIGNED_IN` and `INITIAL_SESSION` event handling for landing page hash navigation
+- Preserves user's intended destination when navigating to specific landing page sections
+
+**Action Required**: 
+- ✅ **All payment page "View Pricing" buttons now work correctly**
+- ✅ **Direct navigation to `/#pricing`, `/#features`, etc. preserved**
+- 📋 Test navigation from payment pages to landing page sections
+
+**Files Modified**: `frontend/js/modules/auth.js` (handleAuthSuccess method)
+
+**Pages Affected**: All payment result pages when clicking "View Pricing" button
+
+### ✅ **Payment Page Auto-Redirect Fix**
 **Issue Resolved**: Payment result pages (`/payment/cancelled`, `/payment/failed`) automatically redirected to app page.
 
 **What Changed**:
