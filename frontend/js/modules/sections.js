@@ -504,12 +504,18 @@ export async function attachAudio(chapterId, sectionId, input) {
         return;
     }
 
+    // 🔄 NEW: Show upload progress feedback
+    const uploadFeedback = showUploadProgress(input, file);
+
     const formData = new FormData();
     formData.append('audio', file);
     formData.append('chapterId', chapterId);
     formData.append('sectionId', sectionId);
 
     try {
+        // Update progress message for processing stage
+        updateUploadProgress(uploadFeedback, 'uploading', file);
+
         const response = await apiFetch('/api/upload', {
             method: 'POST',
             body: formData,
@@ -520,11 +526,17 @@ export async function attachAudio(chapterId, sectionId, input) {
             throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
         }
 
+        // Update progress for processing stage (MP3 conversion, etc.)
+        updateUploadProgress(uploadFeedback, 'processing', file);
+
         const data = await response.json();
         
         if (!data.success) {
             throw new Error(data.message || 'Failed to upload audio');
         }
+
+        // Update progress for finalizing
+        updateUploadProgress(uploadFeedback, 'finalizing', file);
 
         // Update credit display after successful upload
         const { updateUserCredits } = await import('./appUI.js');
@@ -546,11 +558,16 @@ export async function attachAudio(chapterId, sectionId, input) {
                 }
             }
         }
+
+        // 🔄 NEW: Remove upload feedback and update UI
+        hideUploadProgress(uploadFeedback);
         updateChaptersList();
         showSuccess('Audio attached successfully!');
 
     } catch (error) {
         console.error('Audio upload failed:', error);
+        // 🔄 NEW: Remove upload feedback on error
+        hideUploadProgress(uploadFeedback);
         showError(`Audio upload failed: ${error.message}`);
     }
 }
@@ -761,6 +778,107 @@ function moveSection(sectionId, newChapterId, newIndex) {
             }
             
             updateChaptersList();
+        }
+    }
+}
+
+// =============================================================================
+// UPLOAD PROGRESS FEEDBACK SYSTEM
+// =============================================================================
+
+/**
+ * Show upload progress feedback for audio files
+ * Creates visual indicator and disables input during upload
+ */
+function showUploadProgress(inputElement, file) {
+    // Disable the file input to prevent multiple uploads
+    inputElement.disabled = true;
+    
+    // Find the audio controls container
+    const audioControls = inputElement.closest('.audio-controls');
+    if (!audioControls) {
+        console.warn('Could not find audio controls container for upload feedback');
+        return null;
+    }
+    
+    // Create progress container
+    const progressContainer = document.createElement('div');
+    progressContainer.className = 'upload-progress-container';
+    progressContainer.innerHTML = `
+        <div class="upload-progress-content">
+            <div class="upload-progress-spinner"></div>
+            <div class="upload-progress-text">
+                <div class="upload-file-name">${file.name}</div>
+                <div class="upload-status">Preparing upload...</div>
+            </div>
+        </div>
+    `;
+    
+    // Insert progress indicator before the file input
+    audioControls.insertBefore(progressContainer, inputElement);
+    
+    // Hide the file input during upload
+    inputElement.style.display = 'none';
+    
+    console.log(`🔄 Upload progress started for: ${file.name}`);
+    
+    return {
+        container: progressContainer,
+        statusElement: progressContainer.querySelector('.upload-status'),
+        inputElement: inputElement
+    };
+}
+
+/**
+ * Update upload progress with current stage
+ */
+function updateUploadProgress(uploadFeedback, stage, file) {
+    if (!uploadFeedback || !uploadFeedback.statusElement) {
+        return;
+    }
+    
+    const messages = {
+        'uploading': file.name.toLowerCase().endsWith('.mp3') ? 
+            'Uploading and converting to WAV...' : 'Uploading audio file...',
+        'processing': 'Processing audio file...',
+        'finalizing': 'Finalizing upload...'
+    };
+    
+    const message = messages[stage] || 'Processing...';
+    uploadFeedback.statusElement.textContent = message;
+    
+    console.log(`🔄 Upload progress [${stage}]: ${message}`);
+}
+
+/**
+ * Hide upload progress and restore normal UI
+ */
+function hideUploadProgress(uploadFeedback) {
+    if (!uploadFeedback) {
+        return;
+    }
+    
+    try {
+        // Remove progress container
+        if (uploadFeedback.container && uploadFeedback.container.parentNode) {
+            uploadFeedback.container.parentNode.removeChild(uploadFeedback.container);
+        }
+        
+        // Restore file input
+        if (uploadFeedback.inputElement) {
+            uploadFeedback.inputElement.style.display = '';
+            uploadFeedback.inputElement.disabled = false;
+            uploadFeedback.inputElement.value = ''; // Clear the file input
+        }
+        
+        console.log('✅ Upload progress feedback removed');
+        
+    } catch (error) {
+        console.error('Error hiding upload progress:', error);
+        
+        // Fallback: at least re-enable the input
+        if (uploadFeedback.inputElement) {
+            uploadFeedback.inputElement.disabled = false;
         }
     }
 }

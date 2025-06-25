@@ -271,6 +271,82 @@
     color: var(--text-primary);
 }
 
+/* Upload Progress Feedback Styles */
+.upload-progress-container {
+    display: flex;
+    align-items: center;
+    padding: var(--spacing-sm);
+    background: rgba(33, 150, 243, 0.1);
+    border: 1px solid #2196F3;
+    border-radius: var(--radius-sm);
+    margin-bottom: var(--spacing-sm);
+    width: 100%;
+}
+
+.upload-progress-content {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    width: 100%;
+}
+
+.upload-progress-spinner {
+    width: 20px;
+    height: 20px;
+    border: 2px solid #e3f2fd;
+    border-top: 2px solid #2196F3;
+    border-radius: 50%;
+    animation: uploadSpin 1s linear infinite;
+    flex-shrink: 0;
+}
+
+.upload-progress-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    flex: 1;
+    min-width: 0; /* Allow text to wrap */
+}
+
+.upload-file-name {
+    font-weight: 500;
+    color: #1976D2;
+    font-size: 0.9rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.upload-status {
+    font-size: 0.8rem;
+    color: #666;
+    font-style: italic;
+}
+
+@keyframes uploadSpin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Dark theme styles for upload progress */
+[data-theme="dark"] .upload-progress-container {
+    background: rgba(33, 150, 243, 0.15);
+    border-color: #2196F3;
+}
+
+[data-theme="dark"] .upload-progress-spinner {
+    border-color: rgba(33, 150, 243, 0.3);
+    border-top-color: #2196F3;
+}
+
+[data-theme="dark"] .upload-file-name {
+    color: #64B5F6;
+}
+
+[data-theme="dark"] .upload-status {
+    color: #bbb;
+}
+
 /* File Upload Styles */
 .file-upload {
     display: flex;

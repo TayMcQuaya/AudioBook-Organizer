@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upload Progress Test</title>
+    <link rel="stylesheet" href="../frontend/css/main.css">
+    <link rel="stylesheet" href="../frontend/css/components.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .audio-controls {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #ddd;
+        }
+        .section-header {
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #333;
+        }
+        .test-instructions {
+            background: #e3f2fd;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            border-left: 4px solid #2196F3;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>🧪 Upload Progress Test</h1>
+        
+        <div class="test-instructions">
+            <strong>Instructions:</strong>
+            <ol>
+                <li>Select an audio file (MP3 or WAV) using the file input below</li>
+                <li>Watch for the upload progress indicator to appear</li>
+                <li>Progress should show: "Preparing" → "Uploading" → "Processing" → "Finalizing"</li>
+                <li>Check console for detailed logging</li>
+            </ol>
+        </div>
+
+        <div class="test-section">
+            <div class="section-header">Test Section 1</div>
+            <p>This simulates a regular section where you can test audio upload progress.</p>
+            <div class="audio-controls">
+                <input type="file" accept="audio/*" onchange="testUploadProgress(this, 'section1')" id="upload-input-1">
+            </div>
+        </div>
+
+        <div class="test-section">
+            <div class="section-header">Test Section 2 - Missing Audio Simulation</div>
+            <p>This simulates a section with missing audio that needs re-upload.</p>
+            <div class="missing-audio-warning">
+                <span class="warning-icon">⚠️</span>
+                <span class="warning-text">Audio file not accessible</span>
+                <div class="missing-audio-actions">
+                    <input type="file" accept="audio/*" onchange="testUploadProgress(this, 'section2')" title="Re-upload audio file">
+                    <button onclick="alert('Clear functionality would remove the missing audio reference')" title="Remove missing audio reference">Clear</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <div class="section-header">📊 Test Results</div>
+            <div id="test-results">
+                <p>No tests run yet. Select an audio file above to test upload progress.</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Mock functions to test upload progress without full app
+        function showUploadProgress(inputElement, file) {
+            console.log('🔄 Mock upload progress started for:', file.name);
+            
+            // Disable the file input
+            inputElement.disabled = true;
+            
+            // Find the audio controls container
+            const audioControls = inputElement.closest('.audio-controls') || inputElement.closest('.missing-audio-actions');
+            if (!audioControls) {
+                console.warn('Could not find audio controls container');
+                return null;
+            }
+            
+            // Create progress container
+            const progressContainer = document.createElement('div');
+            progressContainer.className = 'upload-progress-container';
+            progressContainer.innerHTML = `
+                <div class="upload-progress-content">
+                    <div class="upload-progress-spinner"></div>
+                    <div class="upload-progress-text">
+                        <div class="upload-file-name">${file.name}</div>
+                        <div class="upload-status">Preparing upload...</div>
+                    </div>
+                </div>
+            `;
+            
+            // Insert progress indicator before the file input
+            audioControls.insertBefore(progressContainer, inputElement);
+            
+            // Hide the file input during upload
+            inputElement.style.display = 'none';
+            
+            return {
+                container: progressContainer,
+                statusElement: progressContainer.querySelector('.upload-status'),
+                inputElement: inputElement
+            };
+        }
+
+        function updateUploadProgress(uploadFeedback, stage, file) {
+            if (!uploadFeedback || !uploadFeedback.statusElement) return;
+            
+            const messages = {
+                'uploading': file.name.toLowerCase().endsWith('.mp3') ? 
+                    'Uploading and converting to WAV...' : 'Uploading audio file...',
+                'processing': 'Processing audio file...',
+                'finalizing': 'Finalizing upload...'
+            };
+            
+            const message = messages[stage] || 'Processing...';
+            uploadFeedback.statusElement.textContent = message;
+            console.log(`🔄 Upload progress [${stage}]: ${message}`);
+        }
+
+        function hideUploadProgress(uploadFeedback) {
+            if (!uploadFeedback) return;
+            
+            try {
+                // Remove progress container
+                if (uploadFeedback.container && uploadFeedback.container.parentNode) {
+                    uploadFeedback.container.parentNode.removeChild(uploadFeedback.container);
+                }
+                
+                // Restore file input
+                if (uploadFeedback.inputElement) {
+                    uploadFeedback.inputElement.style.display = '';
+                    uploadFeedback.inputElement.disabled = false;
+                    uploadFeedback.inputElement.value = '';
+                }
+                
+                console.log('✅ Upload progress feedback removed');
+            } catch (error) {
+                console.error('Error hiding upload progress:', error);
+            }
+        }
+
+        // Test function
+        async function testUploadProgress(input, sectionId) {
+            const file = input.files[0];
+            if (!file) return;
+
+            console.log(`🧪 Testing upload progress for ${sectionId} with file: ${file.name}`);
+            
+            // Show results
+            const resultsDiv = document.getElementById('test-results');
+            resultsDiv.innerHTML = `
+                <p><strong>Testing:</strong> ${file.name} (${(file.size / 1024).toFixed(1)} KB)</p>
+                <p><strong>Section:</strong> ${sectionId}</p>
+                <p><strong>Status:</strong> <span id="current-status">Starting...</span></p>
+            `;
+
+            const statusSpan = document.getElementById('current-status');
+
+            try {
+                // Show upload progress
+                const uploadFeedback = showUploadProgress(input, file);
+                statusSpan.textContent = 'Progress indicator created';
+
+                // Simulate the upload stages with delays
+                await new Promise(resolve => setTimeout(resolve, 500));
+                updateUploadProgress(uploadFeedback, 'uploading', file);
+                statusSpan.textContent = 'Uploading stage';
+
+                await new Promise(resolve => setTimeout(resolve, 1500));
+                updateUploadProgress(uploadFeedback, 'processing', file);
+                statusSpan.textContent = 'Processing stage';
+
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                updateUploadProgress(uploadFeedback, 'finalizing', file);
+                statusSpan.textContent = 'Finalizing stage';
+
+                await new Promise(resolve => setTimeout(resolve, 500));
+                hideUploadProgress(uploadFeedback);
+                statusSpan.innerHTML = '<span style="color: green;">✅ Test completed successfully!</span>';
+
+            } catch (error) {
+                console.error('Test error:', error);
+                statusSpan.innerHTML = '<span style="color: red;">❌ Test failed</span>';
+            }
+        }
+
+        console.log('🧪 Upload Progress Test Page Loaded');
+        console.log('Select an audio file to test the upload progress functionality');
+    </script>
+</body>
+</html> 
