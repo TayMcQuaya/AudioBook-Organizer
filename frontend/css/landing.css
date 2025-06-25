@@ -2117,13 +2117,7 @@ html {
     color: #333 !important;
 }
 
-/* Additional protection against global dark theme affecting landing page chapter items */
-[data-theme="dark"] .landing-body .chapter-demo-item {
-    background: white !important;
-    border-left: 3px solid #667eea !important;
-    color: #333 !important;
-    border-color: #e9ecef !important;
-}
+/* Landing page should never be affected by dark theme - this rule is no longer needed */
 
 .landing-body .audio-player {
     background: white !important;
