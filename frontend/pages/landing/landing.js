@@ -567,6 +567,74 @@ function setupAppWindowTilt() {
     console.log('✨ App window tilt effect initialized with smooth animation');
 }
 
+/**
+ * Navigate to credit purchase based on package selection
+ */
+async function navigateToCredits(packageType = null) {
+    console.log(`🛒 User clicked to purchase credits: ${packageType || 'unspecified'}`);
+    
+    try {
+        // Check if user is authenticated first
+        const sessionAuth = window.sessionManager?.isAuthenticated;
+        const authModuleAuth = window.authModule?.isAuthenticated?.();
+        const isAuthenticated = sessionAuth || authModuleAuth;
+        
+        if (!isAuthenticated) {
+            console.log('🔒 User not authenticated, redirecting to signup');
+            // Redirect to auth page with signup mode
+            window.location.href = '/auth?mode=signup&from=pricing';
+            return;
+        }
+        
+        // User is authenticated, navigate to app and trigger credit purchase
+        console.log('✅ User authenticated, navigating to app for credit purchase');
+        
+        // Show loading while navigating
+        if (loadingOverlay) {
+            loadingOverlay.style.display = 'flex';
+        }
+        
+        // Navigate to app page
+        if (window.router) {
+            await window.router.navigate('/app');
+            
+            // Small delay to ensure app is loaded
+            setTimeout(() => {
+                // Try to trigger the credit purchase modal
+                if (window.stripeService && typeof window.stripeService.showPricingModal === 'function') {
+                    console.log('💳 Triggering credit purchase modal');
+                    window.stripeService.showPricingModal();
+                } else if (window.router && typeof window.router.showPricingModal === 'function') {
+                    console.log('💳 Using router pricing modal');
+                    window.router.showPricingModal();
+                } else {
+                    console.warn('⚠️ Credit purchase modal not available, showing info');
+                    showInfo('Credit purchase system is loading. Please check the app menu for credit options.');
+                }
+                
+                // Hide loading
+                if (loadingOverlay) {
+                    loadingOverlay.style.display = 'none';
+                }
+            }, 500);
+        } else {
+            // Fallback: direct navigation
+            window.location.href = '/app';
+        }
+        
+    } catch (error) {
+        console.error('❌ Error navigating to credits:', error);
+        
+        // Hide loading
+        if (loadingOverlay) {
+            loadingOverlay.style.display = 'none';
+        }
+        
+        // Fallback to direct navigation
+        window.location.href = '/app';
+    }
+}
+
 // Make functions globally available for HTML onclick handlers
 window.toggleMobileMenu = toggleMobileMenu;
 window.scrollToDemo = scrollToDemo;
@@ -574,6 +642,7 @@ window.playDemo = playDemo;
 window.contactSales = contactSales;
 window.navigateToApp = navigateToApp;
 window.tryAppDemo = tryAppDemo;
+window.navigateToCredits = navigateToCredits;
 
 // Export for module use
 export {
