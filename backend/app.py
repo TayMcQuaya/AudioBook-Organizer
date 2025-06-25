@@ -16,6 +16,10 @@ from .routes.project_routes import project_bp
 from .routes.docx_routes import docx_bp
 from .routes.password_protection import create_password_protection_routes
 from .routes.stripe_routes import stripe_bp
+from .routes.security_routes import security_bp
+from .middleware.csrf_middleware import csrf
+from .middleware.rate_limiter import create_limiter
+from .middleware.security_headers import init_security_headers
 from .services.supabase_service import init_supabase_service
 from .services.security_service import init_security_service
 
@@ -107,6 +111,17 @@ def create_app(config_name=None):
     # Initialize security service
     security_service = init_security_service()
     
+    # Initialize CSRF protection
+    csrf.init_app(app)
+    app.logger.info("✅ CSRF protection initialized")
+    
+    # Initialize rate limiter
+    app.limiter = create_limiter(app)
+    app.logger.info("✅ Rate limiting initialized")
+    
+    # Initialize security headers
+    init_security_headers(app)
+    
     # Register routes - preserving exact functionality and adding auth
     create_static_routes(app)
     create_upload_routes(app, app.config['UPLOAD_FOLDER'])
@@ -124,6 +139,9 @@ def create_app(config_name=None):
     
     # Register Stripe payment routes (Normal mode only)
     app.register_blueprint(stripe_bp)
+    
+    # Register security routes (CSRF tokens, etc.)
+    app.register_blueprint(security_bp)
     
     # Register password protection routes
     create_password_protection_routes(app)

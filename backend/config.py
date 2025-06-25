@@ -88,6 +88,17 @@ class Config:
     CREDIT_COST_TXT_UPLOAD = int(os.environ.get('CREDIT_COST_TXT_UPLOAD', 3))
     CREDIT_COST_PREMIUM_EXPORT = int(os.environ.get('CREDIT_COST_PREMIUM_EXPORT', 15))
 
+    # Enhanced Security Configuration
+    SECURITY_HEADERS_ENABLED = os.environ.get('SECURITY_HEADERS_ENABLED', 'true').lower() == 'true'
+    CSRF_PROTECTION_ENABLED = os.environ.get('CSRF_PROTECTION_ENABLED', 'true').lower() == 'true'
+    RATE_LIMITING_ENABLED = os.environ.get('RATE_LIMITING_ENABLED', 'true').lower() == 'true'
+    SECURE_LOGGING_ENABLED = os.environ.get('SECURE_LOGGING_ENABLED', 'true').lower() == 'true'
+    
+    # Rate limiting configuration for payments and API
+    PAYMENT_RATE_LIMIT = os.environ.get('PAYMENT_RATE_LIMIT', '5 per minute, 20 per hour')
+    AUTH_RATE_LIMIT = os.environ.get('AUTH_RATE_LIMIT', '10 per minute, 50 per hour') 
+    API_RATE_LIMIT = os.environ.get('API_RATE_LIMIT', '100 per minute, 1000 per hour')
+
 class DevelopmentConfig(Config):
     """Development configuration"""
     DEBUG = True
@@ -124,6 +135,16 @@ class ProductionConfig(Config):
         'AUTH_ATTEMPTS_PER_MINUTE': int(os.getenv('AUTH_ATTEMPTS_PER_MINUTE', '3')),
         'AUTH_ATTEMPTS_PER_HOUR': int(os.getenv('AUTH_ATTEMPTS_PER_HOUR', '10')),
     }
+
+    # Enhanced production security
+    SECURITY_HEADERS_ENABLED = True
+    CSRF_PROTECTION_ENABLED = True
+    RATE_LIMITING_ENABLED = True
+    SECURE_LOGGING_ENABLED = True
+    
+    # Stricter rate limits for production
+    PAYMENT_RATE_LIMIT = '3 per minute, 15 per hour'
+    AUTH_RATE_LIMIT = '5 per minute, 25 per hour'
 
 # Configuration mapping
 config = {

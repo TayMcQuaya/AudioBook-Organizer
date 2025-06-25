@@ -21,6 +21,28 @@ export const API_BASE_URL = getApiBaseUrl();
 // Use the same logic for the main BACKEND_URL variable
 const BACKEND_URL = getApiBaseUrl();
 
+// CSRF token management
+let csrfToken = null;
+
+// Function to get CSRF token
+async function getCSRFToken() {
+    if (!csrfToken) {
+        try {
+            const response = await fetch(`${BACKEND_URL}/api/security/csrf-token`, {
+                method: 'GET',
+                credentials: 'include'
+            });
+            const data = await response.json();
+            if (data.success) {
+                csrfToken = data.csrf_token;
+            }
+        } catch (error) {
+            console.warn('Failed to get CSRF token:', error);
+        }
+    }
+    return csrfToken;
+}
+
 // API configuration loaded
 
 /**
@@ -44,6 +66,14 @@ export async function apiFetch(endpoint, options = {}) {
     const defaultHeaders = {
         'Content-Type': 'application/json',
     };
+
+    // Add CSRF token for state-changing requests
+    if (options.method && ['POST', 'PUT', 'PATCH', 'DELETE'].includes(options.method.toUpperCase())) {
+        const token = await getCSRFToken();
+        if (token) {
+            defaultHeaders['X-CSRFToken'] = token;
+        }
+    }
 
     // **FIX**: Enhanced token handling for production cross-domain requests
     // Priority order: temp_auth_token > sb-access-token > legacy fallback

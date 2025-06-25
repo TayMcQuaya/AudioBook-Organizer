@@ -9,6 +9,8 @@ from functools import wraps
 import os
 
 from ..middleware.auth_middleware import require_auth, get_current_user
+from ..middleware.csrf_middleware import csrf_protect
+from ..utils.validation import validate_package_type, validate_string_input, validate_url, ValidationError
 from ..services.stripe_service import stripe_service
 
 # Configure logging
@@ -81,7 +83,13 @@ def get_credit_packages(current_user):
 @require_auth
 @require_normal_mode
 @require_payments_enabled
+@csrf_protect
 def create_checkout_session(current_user):
+    # Apply rate limiting using current_app
+    from flask import current_app
+    if hasattr(current_app, 'limiter'):
+        # Apply payment rate limit: 5 per minute, 20 per hour
+        current_app.limiter.limit("5 per minute, 20 per hour")(lambda: None)()
     """Create a Stripe Checkout session for credit purchase"""
     try:
         user_id = current_user.get('id')
@@ -91,7 +99,7 @@ def create_checkout_session(current_user):
                 'error': 'Invalid user session'
             }), 401
         
-        # Get request data
+        # Get and validate request data
         data = request.get_json()
         if not data:
             return jsonify({
@@ -99,25 +107,51 @@ def create_checkout_session(current_user):
                 'error': 'Request body required'
             }), 400
         
-        package_type = data.get('package_type')
-        if not package_type:
+        # Enhanced validation with security checks
+        try:
+            package_type = validate_string_input(data.get('package_type', ''), 50)
+            if not validate_package_type(package_type):
+                return jsonify({
+                    'success': False,
+                    'error': f'Invalid package type: {package_type}'
+                }), 400
+            
+            # Validate URLs if provided
+            frontend_url = os.environ.get('FRONTEND_URL', 'http://localhost:3000')
+            
+            if 'success_url' in data:
+                success_url = validate_string_input(data['success_url'], 500)
+                if not validate_url(success_url):
+                    return jsonify({
+                        'success': False,
+                        'error': 'Invalid success URL format'
+                    }), 400
+            else:
+                success_url = f"{frontend_url}/payment/success?session_id={{CHECKOUT_SESSION_ID}}"
+            
+            if 'cancel_url' in data:
+                cancel_url = validate_string_input(data['cancel_url'], 500)
+                if not validate_url(cancel_url):
+                    return jsonify({
+                        'success': False,
+                        'error': 'Invalid cancel URL format'
+                    }), 400
+            else:
+                cancel_url = f"{frontend_url}/payment/cancelled"
+                
+        except ValidationError as e:
             return jsonify({
                 'success': False,
-                'error': 'Package type is required'
+                'error': f'Validation error: {str(e)}'
             }), 400
         
-        # Validate package type
+        # Validate package type against service
         package_info = stripe_service.get_package_info(package_type)
         if not package_info:
             return jsonify({
                 'success': False,
                 'error': f'Invalid package type: {package_type}'
             }), 400
-        
-        # Get success and cancel URLs from request or use defaults
-        frontend_url = os.environ.get('FRONTEND_URL', 'http://localhost:3000')
-        success_url = data.get('success_url', f"{frontend_url}/payment/success?session_id={{CHECKOUT_SESSION_ID}}")
-        cancel_url = data.get('cancel_url', f"{frontend_url}/payment/cancelled")
         
         # Create checkout session
         success, session_id, error = stripe_service.create_checkout_session(

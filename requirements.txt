@@ -37,7 +37,10 @@ pytest-flask==1.3.0
 # Production web server
 gunicorn==22.0.0
 
+# Security dependencies
+flask-wtf>=1.2.0        # CSRF protection
+flask-limiter>=3.12     # Rate limiting
+
 # Optional: Additional security and monitoring (uncomment if needed)
-# flask-talisman==1.1.0  # Security headers
-# flask-limiter==3.5.0   # Rate limiting
+# flask-talisman==1.1.0  # Alternative security headers
 # psutil==5.9.6          # System monitoring 
