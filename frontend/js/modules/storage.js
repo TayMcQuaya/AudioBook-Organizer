@@ -1,10 +1,10 @@
 // AudioBook Organizer - Storage Management
 
-import { bookText, chapters, currentColorIndex, setBookText, setChapters, setCurrentColorIndex, setAutoSaveTrigger } from './state.js';
+import { bookText, chapters, currentColorIndex, setBookText, setChapters, setCurrentColorIndex, setAutoSaveTrigger, findChapter } from './state.js';
 import { updateChaptersList } from './ui.js';
 import { getNodeOffset, findTextNodeWithContent } from '../utils/helpers.js';
 import { createBlob, createObjectURL, revokeObjectURL, createDownloadLink } from '../utils/dom.js';
-import { showError, showSuccess, showConfirm } from './notifications.js';
+import { showError, showSuccess, showConfirm, showWarning } from './notifications.js';
 import { initializeSmartSelect } from './smartSelect.js';
 import { formattingData, setFormattingData, clearFormatting } from './formattingState.js';
 import { apiFetch } from './api.js';
@@ -341,6 +341,9 @@ function loadProjectDirectly(projectData) {
         // If no highlights, complete initialization immediately
         completeProjectLoad(projectData);
     }
+
+    // ✅ NEW: Validate and restore audio files after project load
+    validateAndRestoreAudioFiles(projectData);
 }
 
 /**
@@ -775,5 +778,133 @@ export function clearTestingModeData() {
     } catch (error) {
         console.error('❌ Error clearing testing mode data:', error);
         return false;
+    }
+}
+
+/**
+ * Validate and restore audio files for restored projects
+ * This ensures uploaded audio files are properly accessible after restoration
+ */
+async function validateAndRestoreAudioFiles(projectData) {
+    try {
+        console.log('🎵 Validating audio files for restored project...');
+        
+        // Collect all sections with audio paths from the project
+        const sectionsWithAudio = [];
+        if (projectData.chapters && Array.isArray(projectData.chapters)) {
+            projectData.chapters.forEach(chapter => {
+                if (chapter.sections && Array.isArray(chapter.sections)) {
+                    chapter.sections.forEach(section => {
+                        if (section.audioPath) {
+                            sectionsWithAudio.push({
+                                chapterId: chapter.id,
+                                sectionId: section.id,
+                                audioPath: section.audioPath,
+                                section: section
+                            });
+                        }
+                    });
+                }
+            });
+        }
+        
+        if (sectionsWithAudio.length === 0) {
+            console.log('📭 No audio files to validate in restored project');
+            return;
+        }
+        
+        console.log(`🔍 Found ${sectionsWithAudio.length} audio files to validate`);
+        
+        // Validate each audio file by attempting to load it
+        const validationPromises = sectionsWithAudio.map(async (item) => {
+            try {
+                // Create a test audio element to validate the file exists and is accessible
+                const testAudio = new Audio();
+                
+                // Promise-based audio loading test
+                const isValid = await new Promise((resolve) => {
+                    const timeout = setTimeout(() => {
+                        console.warn(`⚠️ Audio validation timeout for: ${item.audioPath}`);
+                        resolve(false);
+                    }, 5000); // 5 second timeout
+                    
+                    testAudio.oncanplaythrough = () => {
+                        clearTimeout(timeout);
+                        resolve(true);
+                    };
+                    
+                    testAudio.onerror = (error) => {
+                        clearTimeout(timeout);
+                        console.warn(`❌ Audio file validation failed for: ${item.audioPath}`, error);
+                        resolve(false);
+                    };
+                    
+                    testAudio.onabort = () => {
+                        clearTimeout(timeout);
+                        resolve(false);
+                    };
+                    
+                    // Start loading the audio file
+                    testAudio.src = item.audioPath;
+                    testAudio.load();
+                });
+                
+                return {
+                    ...item,
+                    isValid: isValid
+                };
+                
+            } catch (error) {
+                console.warn(`❌ Audio validation error for ${item.audioPath}:`, error);
+                return {
+                    ...item,
+                    isValid: false
+                };
+            }
+        });
+        
+        // Wait for all validations to complete
+        const validationResults = await Promise.all(validationPromises);
+        
+        // Process results
+        const validAudio = validationResults.filter(item => item.isValid);
+        const invalidAudio = validationResults.filter(item => !item.isValid);
+        
+        console.log(`✅ Audio validation complete: ${validAudio.length} valid, ${invalidAudio.length} invalid`);
+        
+        // Handle invalid audio files
+        if (invalidAudio.length > 0) {
+            console.warn(`⚠️ ${invalidAudio.length} audio files are no longer accessible`);
+            
+            // Update section status for invalid audio files
+            invalidAudio.forEach(item => {
+                // Find the section in current state and mark it as having missing audio
+                const chapter = findChapter(item.chapterId);
+                if (chapter) {
+                    const section = chapter.sections.find(s => s.id === item.sectionId);
+                    if (section) {
+                        section.audioStatus = 'missing';
+                        section.originalAudioPath = section.audioPath; // Store original path for reference
+                        console.warn(`⚠️ Marked section ${section.name} as having missing audio`);
+                    }
+                }
+            });
+            
+            // Show user notification about missing audio files
+            showWarning(`⚠️ ${invalidAudio.length} audio file(s) are no longer accessible. You may need to re-upload them.`);
+            
+            // Update UI to reflect the missing audio status
+            updateChaptersList();
+        }
+        
+        // Success notification for valid audio files
+        if (validAudio.length > 0) {
+            console.log(`✅ ${validAudio.length} audio files successfully validated and restored`);
+        }
+        
+    } catch (error) {
+        console.error('❌ Audio validation process failed:', error);
+        // Don't fail the entire restoration if audio validation fails
+        showWarning('Audio file validation encountered an issue. Some audio files may not be accessible.');
     }
 } 

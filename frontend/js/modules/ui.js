@@ -71,8 +71,19 @@ export function updateChaptersList() {
                         <div class="section-text">${section.text}</div>
                         <div class="audio-controls">
                             ${section.audioPath ? `
-                                <audio controls src="${section.audioPath}"></audio>
-                                <button onclick="removeAudio(${chapter.id}, ${section.id})">Remove Audio</button>
+                                ${section.audioStatus === 'missing' ? `
+                                    <div class="missing-audio-warning">
+                                        <span class="warning-icon">⚠️</span>
+                                        <span class="warning-text">Audio file not accessible</span>
+                                        <div class="missing-audio-actions">
+                                            <input type="file" accept="audio/*" onchange="attachAudio(${chapter.id}, ${section.id}, this)" title="Re-upload audio file">
+                                            <button onclick="clearMissingAudio(${chapter.id}, ${section.id})" title="Remove missing audio reference">Clear</button>
+                                        </div>
+                                    </div>
+                                ` : `
+                                    <audio controls src="${section.audioPath}"></audio>
+                                    <button onclick="removeAudio(${chapter.id}, ${section.id})">Remove Audio</button>
+                                `}
                             ` : `
                                 <input type="file" accept="audio/*" onchange="attachAudio(${chapter.id}, ${section.id}, this)">
                             `}

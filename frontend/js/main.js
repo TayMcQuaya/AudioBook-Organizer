@@ -28,6 +28,7 @@ import {
     navigateToSection,
     attachAudio,
     removeAudio,
+    clearMissingAudio,
     copySectionText
 } from './modules/sections.js';
 
@@ -131,6 +132,7 @@ window.deleteSection = deleteSection;
 window.navigateToSection = navigateToSection;
 window.attachAudio = attachAudio;
 window.removeAudio = removeAudio;
+window.clearMissingAudio = clearMissingAudio;
 window.copySectionText = copySectionText;
 window.showExportModal = showExportModal;
 window.hideExportModal = hideExportModal;

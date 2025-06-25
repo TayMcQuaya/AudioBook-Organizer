@@ -537,6 +537,9 @@ export async function attachAudio(chapterId, sectionId, input) {
             if (section) {
                 section.audioPath = data.path;
                 section.status = 'processed';
+                // Clear any missing audio status since we have a new valid file
+                section.audioStatus = null;
+                section.originalAudioPath = null;
                 // Update player in state
                 if (chapterPlayers[chapter.id]) {
                     chapterPlayers[chapter.id].updatePlaylist();
@@ -567,6 +570,34 @@ export function removeAudio(chapterId, sectionId) {
         }
         
         updateChaptersList();
+    }
+}
+
+/**
+ * Clear missing audio reference from a section
+ * This removes the audioPath and audioStatus properties when audio is confirmed missing
+ */
+export function clearMissingAudio(chapterId, sectionId) {
+    const chapter = findChapter(chapterId);
+    const section = chapter?.sections.find(s => s.id === sectionId);
+    if (section) {
+        // Clear all audio-related properties
+        section.audioPath = null;
+        section.audioStatus = null;
+        section.originalAudioPath = null;
+        section.status = 'pending';
+        
+        // Stop and reset chapter player if it exists
+        const player = chapterPlayers.get(chapterId);
+        if (player) {
+            player.stop();
+            chapterPlayers.delete(chapterId);
+        }
+        
+        updateChaptersList();
+        showSuccess('Missing audio reference cleared. You can now upload a new audio file.');
+        
+        console.log(`✅ Cleared missing audio reference for section ${section.name}`);
     }
 }
 

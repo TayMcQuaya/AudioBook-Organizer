@@ -199,6 +199,78 @@
     border-top: 1px solid var(--border-color);
 }
 
+/* Missing Audio Warning Styles */
+.missing-audio-warning {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+    padding: var(--spacing-sm);
+    background: rgba(255, 193, 7, 0.1);
+    border: 1px solid #ffc107;
+    border-radius: var(--radius-sm);
+    width: 100%;
+}
+
+.missing-audio-warning .warning-icon {
+    font-size: 1.2rem;
+    margin-right: var(--spacing-xs);
+}
+
+.missing-audio-warning .warning-text {
+    color: #856404;
+    font-weight: 500;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+}
+
+.missing-audio-actions {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    margin-top: var(--spacing-xs);
+}
+
+.missing-audio-actions input[type="file"] {
+    flex: 1;
+    font-size: 0.8rem;
+    padding: 4px 8px;
+    border: 1px solid #ccc;
+    border-radius: var(--radius-sm);
+    background: white;
+}
+
+.missing-audio-actions button {
+    padding: 4px 12px;
+    font-size: 0.8rem;
+    background: #dc3545;
+    color: white;
+    border: none;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.missing-audio-actions button:hover {
+    background: #c82333;
+}
+
+/* Dark theme styles for missing audio warning */
+[data-theme="dark"] .missing-audio-warning {
+    background: rgba(255, 193, 7, 0.15);
+    border-color: #ffc107;
+}
+
+[data-theme="dark"] .missing-audio-warning .warning-text {
+    color: #ffc107;
+}
+
+[data-theme="dark"] .missing-audio-actions input[type="file"] {
+    background: var(--background-secondary);
+    border-color: var(--border-color);
+    color: var(--text-primary);
+}
+
 /* File Upload Styles */
 .file-upload {
     display: flex;
