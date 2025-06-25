@@ -204,11 +204,16 @@ class StripeService:
             # Check if this event has already been processed
             supabase_service = get_supabase_service()
             supabase = supabase_service.client
-            existing_event = supabase.table('stripe_events').select('*').eq('stripe_event_id', event_data['id']).execute()
             
-            if existing_event.data:
-                logger.info(f"Event {event_data['id']} already processed, skipping")
-                return True, None
+            # Try to check for duplicate events, but don't fail if the table doesn't exist
+            try:
+                existing_event = supabase.table('stripe_events').select('*').eq('stripe_event_id', event_data['id']).execute()
+                if existing_event.data:
+                    logger.info(f"Event {event_data['id']} already processed, skipping")
+                    return True, None
+            except Exception as e:
+                logger.warning(f"Could not check for duplicate events: {e}, proceeding with payment")
+                # Continue processing - better to potentially double-process than to fail
             
             # Start transaction-like operations
             try:
@@ -221,7 +226,15 @@ class StripeService:
                 }
                 # Use service role client to bypass RLS for webhook events
                 service_supabase = supabase_service.get_service_client()
-                service_supabase.table('stripe_events').insert(event_record).execute()
+                if service_supabase:
+                    try:
+                        service_supabase.table('stripe_events').insert(event_record).execute()
+                        logger.info(f"Event {event_data['id']} recorded successfully")
+                    except Exception as e:
+                        logger.warning(f"Could not record event to stripe_events table: {e}")
+                        # Continue with payment processing even if event logging fails
+                else:
+                    logger.warning("Service client not available, skipping event logging")
                 
                 # Add credits to user account
                 success, error = self._add_credits_to_user(user_id, credits_to_add)
@@ -258,13 +271,15 @@ class StripeService:
                 return True, None
                 
             except Exception as e:
-                # Update event status to failed
+                # Update event status to failed (if service client is available)
                 try:
-                    service_supabase.table('stripe_events').update({
-                        'processing_status': 'failed',
-                        'error_message': str(e)
-                    }).eq('stripe_event_id', event_data['id']).execute()
-                except:
+                    if service_supabase:
+                        service_supabase.table('stripe_events').update({
+                            'processing_status': 'failed',
+                            'error_message': str(e)
+                        }).eq('stripe_event_id', event_data['id']).execute()
+                except Exception as update_error:
+                    logger.warning(f"Could not update event status: {update_error}")
                     pass  # Don't fail if we can't update the event status
                 raise e
                 
@@ -293,7 +308,7 @@ class StripeService:
                 
                 update_result = supabase.table('user_credits').update({
                     'credits': new_credits,
-                    'last_updated': datetime.now().isoformat()
+                    'last_updated': datetime.utcnow().isoformat()
                 }).eq('user_id', user_id).execute()
                 
                 if update_result.data:

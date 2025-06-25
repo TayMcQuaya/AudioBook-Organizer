@@ -219,4 +219,11 @@ npm start
 OR BEST OPTION TO START:
 python app.py
 
-<!-- Deployment trigger: 2025-06-17 -->
+
+for stripe to listen locally:
+.\stripe.exe listen --forward-to localhost:3000/api/stripe/webhook
+
+Test card: 4242 4242 4242 4242 
+every other field can be random 
+
+<!-- Deployment trigger: 2025-06-26 -->

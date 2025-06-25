@@ -103,6 +103,11 @@ SUPABASE_URL=your-supabase-url
 # + all Supabase credentials
 
 
+start frontend and backend:
+python app.py 
 
 for stripe to listen locally:
-.\stripe.exe listen --forward-to localhost:5000/api/stripe/webhook
+.\stripe.exe listen --forward-to localhost:3000/api/stripe/webhook
+
+Test card: 4242 4242 4242 4242 
+every other field can be random 

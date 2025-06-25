@@ -1399,6 +1399,29 @@ class Router {
                 await this.navigate('/app');
                 return;
             }
+
+            // Wait for auth module to be ready if it's not available yet
+            if (!window.authModule) {
+                console.log('⏳ Auth module not available, waiting for initialization...');
+                await new Promise((resolve) => {
+                    const checkAuth = () => {
+                        if (window.authModule && typeof window.authModule.isAuthenticated === 'function') {
+                            console.log('✅ Auth module is now available');
+                            resolve();
+                        } else {
+                            setTimeout(checkAuth, 100);
+                        }
+                    };
+                    checkAuth();
+                });
+            }
+
+            // Debug log the auth module state
+            console.log('🔍 Auth module state:', {
+                available: !!window.authModule,
+                methods: window.authModule ? Object.getOwnPropertyNames(Object.getPrototypeOf(window.authModule)) : 'N/A',
+                isAuthenticated: window.authModule ? window.authModule.isAuthenticated() : false
+            });
             
             // Ensure app container exists
             let appContainer = document.getElementById('app');
@@ -1419,8 +1442,31 @@ class Router {
             `;
             
             // Verify payment with backend
+            const headers = {
+                'Content-Type': 'application/json'
+            };
+            
+            // Add authentication token if available
+            if (window.authModule && window.authModule.isAuthenticated()) {
+                try {
+                    // Try getAuthToken first (new method), fallback to getToken for compatibility
+                    const token = window.authModule.getAuthToken?.() || window.authModule.getToken?.();
+                    if (token) {
+                        headers['Authorization'] = `Bearer ${token}`;
+                    }
+                } catch (error) {
+                    console.warn('Error getting auth token:', error);
+                    // Try alternative token sources
+                    const storedToken = localStorage.getItem('auth_token');
+                    if (storedToken) {
+                        headers['Authorization'] = `Bearer ${storedToken}`;
+                    }
+                }
+            }
+            
             const response = await fetch(`/api/stripe/session/${sessionId}`, {
-                credentials: 'include'
+                credentials: 'include',
+                headers: headers
             });
             
             if (!response.ok) {
@@ -1458,7 +1504,7 @@ class Router {
                             </div>
                             
                             <div class="success-actions">
-                                <button class="btn primary" onclick="router.navigate('/app')">
+                                <button class="btn primary" onclick="router.handlePaymentSuccessNavigation()">
                                     Continue to App
                                 </button>
                             </div>
@@ -1576,6 +1622,32 @@ class Router {
                     </div>
                 </div>
             `;
+        }
+    }
+
+    // Handle navigation from payment success page with credit refresh
+    async handlePaymentSuccessNavigation() {
+        try {
+            console.log('💎 Handling post-payment navigation - refreshing credits...');
+            
+            // First, navigate to the app
+            await this.navigate('/app');
+            
+            // Then refresh credits after a short delay to ensure the app is loaded
+            setTimeout(async () => {
+                try {
+                    const { updateUserCredits } = await import('/js/modules/appUI.js');
+                    await updateUserCredits();
+                    console.log('✅ Credits refreshed after payment success');
+                } catch (error) {
+                    console.warn('⚠️ Failed to refresh credits after payment:', error);
+                }
+            }, 1000); // 1 second delay to ensure app is fully loaded
+            
+        } catch (error) {
+            console.error('Error handling payment success navigation:', error);
+            // Fallback to regular navigation
+            await this.navigate('/app');
         }
     }
     

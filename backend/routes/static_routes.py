@@ -1,4 +1,4 @@
-from flask import Blueprint, send_from_directory, send_file, session, redirect, current_app
+from flask import Blueprint, send_from_directory, send_file, session, redirect, current_app, request
 import os
 from flask import jsonify
 
@@ -35,11 +35,13 @@ def create_static_routes(app):
     @app.route('/auth')
     @app.route('/profile')
     @app.route('/auth/reset-password')
+    @app.route('/payment/success')
     def serve_auth_pages():
         """Serve auth-related pages - redirect to app in testing mode"""
         if app.config.get('TESTING_MODE'):
-            # In testing mode, redirect these pages to root
-            return redirect('/')
+            # In testing mode, redirect these pages to root (except payment success)
+            if request.endpoint != 'serve_auth_pages' or request.path != '/payment/success':
+                return redirect('/')
         
         return send_from_directory('../frontend', 'index.html')
     
