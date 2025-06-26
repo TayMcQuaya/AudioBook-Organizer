@@ -196,10 +196,10 @@ export async function showLowCreditsModal() {
                     <h2>Need More Credits?</h2>
                     <p>You're running low on credits. Credits are used for:</p>
                     <ul>
-                        <li>📄 DOCX processing (5 credits per document)</li>
-                        <li>🎵 Audio file upload (2 credits per file)</li>
-                        <li>🗣️ Text-to-speech (50 credits per 10k characters)</li>
-                        <li>📤 Premium exports (20 credits per export)</li>
+                        <li><span class="emoji">📄</span> DOCX processing (5 credits per document)</li>
+                        <li><span class="emoji">🎵</span> Audio file upload (2 credits per file)</li>
+                        <li><span class="emoji">🗣️</span> Text-to-speech (50 credits per 10k chars)</li>
+                        <li><span class="emoji">📤</span> Premium exports (20 credits per export)</li>
                     </ul>
                     <div id="creditPurchaseContent">
                         <div class="loading-packages">
@@ -214,7 +214,7 @@ export async function showLowCreditsModal() {
         modal = document.getElementById('lowCreditsModal');
     }
     
-    modal.style.display = 'block';
+    modal.style.display = 'flex';
     document.body.style.overflow = 'hidden';
     
     // Load Stripe service and update content

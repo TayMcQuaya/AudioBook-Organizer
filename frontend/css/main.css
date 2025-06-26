@@ -1601,7 +1601,7 @@ main {
     box-shadow: 0 25px 80px rgba(0, 0, 0, 0.25);
     border: 1px solid var(--border-color);
     position: relative;
-    animation: modalSlideIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    animation: modalFadeZoom 0.3s ease-out;
     display: flex;
     flex-direction: column;
     margin: 0; /* Remove margin since parent handles centering */
@@ -1888,16 +1888,16 @@ main {
     margin-top: 1.5rem;
 }
 
-@keyframes modalSlideIn {
+@keyframes modalFadeZoom {
     from {
-      opacity: 0;
-      transform: translate(-50%, -50%) scale(0.95);
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(0.95);
     }
     to {
-      opacity: 1;
-      transform: translate(-50%, -50%) scale(1);
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1);
     }
-  }
+}
 
 /* Modal content styles are defined above in the duplicate section */
 
@@ -2148,4 +2148,35 @@ main {
     margin-right: 0.5rem;    /* Space between emoji and heading */
     vertical-align: middle;  /* Align better with text */
     transform: translateY(-10px);
+  }
+
+  #lowCreditsModal {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.6); /* optional backdrop */
+    z-index: 9999;
+  }
+  
+  #lowCreditsModal .modal-content {
+    /* cancel out the translate centering */
+    position: relative !important;
+    top: auto !important;
+    left: auto !important;
+    transform: none !important;
+  
+    /* optional, to let auto-margins center it in a flex container */
+    margin: auto;
+  }
+
+
+  /* force consistent emoji sizing in low-credits modal */
+#lowCreditsModal .modal-content ul li .emoji {
+    display: inline-block !important;
+    font-size: 1.25rem !important;
+    line-height: 1 !important;
+    margin-right: 0.75rem !important;
+    flex-shrink: 0 !important;
   }
