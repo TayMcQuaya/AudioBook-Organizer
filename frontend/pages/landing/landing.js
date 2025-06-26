@@ -135,7 +135,8 @@ function handleAuthStateChange({ isAuthenticated, user }) {
  * Update landing page elements for authenticated users
  */
 function updateLandingPageForAuthenticatedUser(user) {
-    console.log('🔄 Updating landing page for authenticated user:', user?.email || 'Unknown user');
+    // **SECURITY FIX: Removed email logging to prevent privacy exposure**
+    console.log('🔄 Updating landing page for authenticated user');
     
     // Create user navigation dropdown and initialize credits in the right order
     if (window.appUI && user) {
@@ -630,7 +631,8 @@ async function navigateToCredits(packageType = null) {
         }
         
         if (!result.success) {
-            console.error('❌ Purchase failed:', result.error);
+            // **SECURITY FIX: Removed result.error to prevent API details exposure**
+        console.error('❌ Purchase failed');
             // Show error notification
             showError(result.error || 'Payment failed. Please try again.');
         }

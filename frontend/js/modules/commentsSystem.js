@@ -34,7 +34,8 @@ export function showCommentDialog(position) {
             if (comment) {
                 // Re-render to show comment
                 applyFormattingToDOM();
-                console.log(`Comment added at position ${position}: "${text}"`);
+                // **SECURITY FIX: Removed comment text logging to prevent user content exposure**
+console.log(`Comment added at position ${position}`);
             }
         }
         document.body.removeChild(dialog);
@@ -99,7 +100,8 @@ export function showCommentPopup(commentId, x, y) {
         }
     }, 8000);
     
-    console.log(`Showing comment popup for: "${comment.text.substring(0, 50)}..."`);
+    // **SECURITY FIX: Removed comment text logging to prevent user content exposure**
+    console.log('Showing comment popup');
 }
 
 // Hide active comment popup

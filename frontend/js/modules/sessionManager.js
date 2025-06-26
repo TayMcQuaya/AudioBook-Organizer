@@ -71,10 +71,13 @@ class SessionManager {
             this.clearPasswordRecoveryFlag();
             this.isPasswordRecovery = false;
         } else if (isRecoveryUrl) {
-            console.log('🔑 Password recovery mode activated from URL.', { path: window.location.pathname, hash: urlHash });
-            this.activatePasswordRecovery();
+            // **SECURITY FIX: Removed URL path/hash logging to prevent privacy exposure**
+        console.log('🔑 Password recovery URL detected.');
+            // **FIX: Don't activate recovery mode immediately - let Supabase process the URL first**
+            // We'll activate recovery mode when we receive the PASSWORD_RECOVERY event from Supabase
+            console.log('⏳ Waiting for Supabase to process recovery URL and trigger PASSWORD_RECOVERY event...');
         } else {
-            // No recovery parameters in URL, check for orphaned state in localStorage
+            // Check for global recovery state from other tabs
             const globalRecoveryState = this.getGlobalRecoveryState();
             if (globalRecoveryState) {
                 if (this.isRecoveryStateExpired(globalRecoveryState)) {
@@ -110,7 +113,7 @@ class SessionManager {
         // Storage changes (logout from other tabs)
         window.addEventListener('storage', this.boundHandleStorageChange);
         
-        // **NEW: Listen for recovery state changes across tabs**
+        // **RESTORED: Cross-tab recovery state listening - needed for security per documentation**
         window.addEventListener('storage', this.boundHandleRecoveryStorageChange);
 
         // Page visibility changes
@@ -318,15 +321,6 @@ class SessionManager {
         const userId = user?.id;
         const eventKey = `${isAuthenticated}_${userId}`;
         
-        // **NEW: Security check - detect cross-tab recovery bypass attempts**
-        if (isAuthenticated && this.isPasswordRecovery) {
-            this.logSecurityEvent('recovery_bypass_attempt', {
-                userId: userId,
-                path: window.location.pathname,
-                event: 'auth_during_recovery'
-            });
-        }
-        
         // Prevent duplicate events in quick succession (within 1 second)
         if (this.lastEventProcessed === eventKey && (now - this.lastEventTime) < 1000) {
             console.log('🔄 Session manager ignoring duplicate auth state change');
@@ -336,7 +330,8 @@ class SessionManager {
         this.lastEventProcessed = eventKey;
         this.lastEventTime = now;
         
-        console.log('🔄 Session manager received auth state changed:', isAuthenticated ? `Signed in as ${user?.email}` : 'Signed out');
+        // **SECURITY FIX: Removed email logging to prevent privacy exposure**
+        console.log('🔄 Session manager received auth state changed:', isAuthenticated ? 'User authenticated' : 'Signed out');
         
         // Track if user becomes authenticated
         if (isAuthenticated && !this.isAuthenticated) {
@@ -354,7 +349,7 @@ class SessionManager {
             this.user = user;
         }
         
-        // Handle token storage - but DON'T store tokens during password recovery
+        // Handle token storage - but handle password recovery specially
         if (isAuthenticated && session?.token && !this.isPasswordRecovery) {
             if (this.isValidJWT(session.token)) {
                 localStorage.setItem('auth_token', session.token);
@@ -362,12 +357,18 @@ class SessionManager {
             } else {
                 console.warn('⚠️ Invalid JWT token received');
             }
-        } else if (!isAuthenticated || this.isPasswordRecovery) {
-            // Remove any existing tokens during sign out OR password recovery
+        } else if (session?.token && this.isPasswordRecovery) {
+            // **FIX: During password recovery, preserve the token for password updates**
+            if (this.isValidJWT(session.token)) {
+                localStorage.setItem('auth_token', session.token);
+                console.log('✅ Password recovery token preserved for password update');
+            }
+        } else if (!isAuthenticated && !this.isPasswordRecovery) {
+            // Only remove tokens during normal sign out, NOT during password recovery
             const existingToken = localStorage.getItem('auth_token');
             if (existingToken) {
                 localStorage.removeItem('auth_token');
-                console.log('🔑 Auth token removed' + (this.isPasswordRecovery ? ' (password recovery mode)' : ''));
+                console.log('🔑 Auth token removed (signed out)');
             }
         }
         
@@ -497,27 +498,182 @@ class SessionManager {
     }
 
     /**
-     * Clears the password recovery flag after the process is complete.
+     * Clear password recovery flag - FIXED to properly clear global state
      */
     clearPasswordRecoveryFlag(updateStorage = true) {
         this.isPasswordRecovery = false;
-        console.log('🔑 Password recovery state cleared');
         
-        // **NEW: Clear global recovery state for cross-tab communication**
+        // **FIX: Clear global recovery state properly**
         if (updateStorage) {
             // Track localStorage write to prevent same-tab processing
             this.lastLocalStorageWrite = Date.now();
             localStorage.removeItem(this.RECOVERY_STORAGE_KEY);
             console.log('🔑 Global password recovery state cleared');
         }
+        
+        this.notifyStateChange();
+    }
+
+    // **REMOVED: Cross-tab recovery handling - password reset should be tab-isolated**
+
+    /**
+     * NEW: Activate password recovery mode - FIXED to allow recovery session while preventing cross-tab interference
+     */
+    activatePasswordRecovery(updateStorage = true) {
+        this.isPasswordRecovery = true;
+        
+        // **FIX: Don't clear auth tokens immediately - let Supabase create the recovery session first**
+        // The recovery session is needed for password updates
+        // We'll control the auth events instead of blocking the session entirely
+        
+        if (window.location.pathname === '/auth/reset-password') {
+            console.log('🔑 Password recovery mode activated - allowing Supabase recovery session creation');
+        }
+        
+        // **FIX: Set global recovery state to prevent auto-login in other tabs**
+        // This is actually needed for cross-tab protection per the documentation
+        if (updateStorage) {
+            this.setGlobalRecoveryState();
+            console.log('🔑 Global password recovery state activated (prevents cross-tab auto-login)');
+        }
+        
+        // Force unauthenticated state ONLY for UI purposes - don't clear the actual session yet
+        this.isAuthenticated = false;
+        this.user = null;
+        this.notifyStateChange();
+    }
+
+    // **RESTORED: Global recovery state methods - needed for cross-tab protection per documentation**
+    
+    /**
+     * Set global recovery state in localStorage for cross-tab communication
+     */
+    setGlobalRecoveryState() {
+        const recoveryState = {
+            active: true,
+            timestamp: Date.now(),
+            tabId: this.currentTabId,
+            path: window.location.pathname
+        };
+        
+        // Track localStorage write to prevent same-tab processing
+        this.lastLocalStorageWrite = Date.now();
+        
+        localStorage.setItem(this.RECOVERY_STORAGE_KEY, JSON.stringify(recoveryState));
+        console.log('🔑 Global password recovery state activated', recoveryState);
     }
 
     /**
-     * NEW: Handle password recovery state changes across tabs
+     * Get global recovery state
+     */
+    getGlobalRecoveryState() {
+        try {
+            const recoveryData = localStorage.getItem(this.RECOVERY_STORAGE_KEY);
+            return recoveryData ? JSON.parse(recoveryData) : null;
+        } catch (error) {
+            console.warn('Failed to parse recovery state:', error);
+            return null;
+        }
+    }
+
+    /**
+     * Check if recovery state has expired
+     */
+    isRecoveryStateExpired(recoveryState) {
+        if (!recoveryState || !recoveryState.timestamp) return true;
+        return (Date.now() - recoveryState.timestamp) > this.RECOVERY_TIMEOUT;
+    }
+
+    /**
+     * NEW: Generate unique tab identifier
+     */
+    generateTabId() {
+        return `tab_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    }
+
+    /**
+     * NEW: Monitor and log security events
+     */
+    logSecurityEvent(eventType, details = {}) {
+        // **FIX: Reduce security event logging during password recovery to prevent spam**
+        if (this.isPasswordRecovery && (eventType === 'recovery_bypass_attempt' || eventType === 'potential_recovery_exploit')) {
+            console.log(`✅ Ignoring security event "${eventType}" during legitimate password recovery`);
+            return;
+        }
+
+        const securityEvent = {
+            type: eventType,
+            timestamp: Date.now(),
+            tabId: this.generateTabId(),
+            path: window.location.pathname,
+            recoveryMode: this.isPasswordRecovery,
+            authenticated: this.isAuthenticated,
+            details
+        };
+        
+        console.warn('🚨 Security Event:', securityEvent);
+        
+        // Store recent security events for analysis
+        const recentEvents = this.getRecentSecurityEvents();
+        recentEvents.push(securityEvent);
+        
+        // Keep only last 10 events
+        const trimmedEvents = recentEvents.slice(-10);
+        localStorage.setItem('security_events', JSON.stringify(trimmedEvents));
+        
+        // Check for attack patterns (but not during password recovery)
+        this.analyzeSecurityPatterns(trimmedEvents);
+    }
+
+    /**
+     * NEW: Get recent security events
+     */
+    getRecentSecurityEvents() {
+        try {
+            const events = localStorage.getItem('security_events');
+            return events ? JSON.parse(events) : [];
+        } catch (error) {
+            return [];
+        }
+    }
+
+    /**
+     * NEW: Analyze security patterns for potential attacks
+     */
+    analyzeSecurityPatterns(events) {
+        // **FIX: Don't analyze security patterns during password recovery - it causes false positives**
+        if (this.isPasswordRecovery) {
+            console.log('✅ Skipping security pattern analysis during password recovery');
+            return;
+        }
+
+        const now = Date.now();
+        const recentEvents = events.filter(e => (now - e.timestamp) < 5 * 60 * 1000); // Last 5 minutes
+        
+        // Check for rapid authentication attempts
+        const authEvents = recentEvents.filter(e => e.type === 'rapid_auth_attempt');
+        if (authEvents.length >= 3) {
+            this.logSecurityEvent('potential_brute_force', { 
+                attempts: authEvents.length,
+                timespan: '5_minutes'
+            });
+        }
+        
+        // Check for cross-tab recovery exploitation
+        const recoveryEvents = recentEvents.filter(e => e.type === 'recovery_bypass_attempt');
+        if (recoveryEvents.length >= 2) {
+            this.logSecurityEvent('potential_recovery_exploit', {
+                attempts: recoveryEvents.length
+            });
+        }
+    }
+
+    /**
+     * Handle password recovery state changes across tabs - RESTORED for security
      */
     handleRecoveryStorageChange(event) {
         if (event.key === this.RECOVERY_STORAGE_KEY) {
-            // **FIX: Ignore storage events during initialization**
+            // Ignore storage events during initialization
             if (this.isInitializing) {
                 console.log('🚫 Ignoring storage event during initialization');
                 return;
@@ -526,7 +682,7 @@ class SessionManager {
             const recoveryState = event.newValue ? JSON.parse(event.newValue) : null;
             console.log('🔄 Recovery storage change detected from another tab');
             
-            // **ENHANCED FIX: Multiple checks to prevent same-tab processing**
+            // Enhanced same-tab detection to prevent interference
             if (recoveryState) {
                 // Check 1: Tab ID comparison
                 if (recoveryState.tabId === this.currentTabId) {
@@ -548,160 +704,12 @@ class SessionManager {
             }
             
             if (recoveryState && !this.isRecoveryStateExpired(recoveryState)) {
-                console.log('🔑 Password recovery activated from another tab');
+                console.log('🔑 Password recovery activated from another tab - preventing auto-login');
                 this.activatePasswordRecovery(false); // Don't update storage again
             } else if (!recoveryState) {
                 console.log('🔑 Password recovery cleared from another tab');
                 this.clearPasswordRecoveryFlag(false); // Don't update storage again
             }
-        }
-    }
-
-    /**
-     * NEW: Activate password recovery mode
-     */
-    activatePasswordRecovery(updateStorage = true) {
-        this.isPasswordRecovery = true;
-        
-        // Clear any existing auth tokens to prevent automatic login
-        const existingToken = localStorage.getItem('auth_token');
-        if (existingToken) {
-            localStorage.removeItem('auth_token');
-            console.log('🔑 Cleared existing auth token for password recovery');
-        }
-        
-        // **NEW: Set global recovery state for cross-tab communication**
-        if (updateStorage) {
-            this.setGlobalRecoveryState();
-        }
-        
-        // Force unauthenticated state
-        this.isAuthenticated = false;
-        this.user = null;
-        this.notifyStateChange();
-    }
-
-    /**
-     * NEW: Set global recovery state in localStorage for cross-tab communication
-     */
-    setGlobalRecoveryState() {
-        const recoveryState = {
-            active: true,
-            timestamp: Date.now(),
-            tabId: this.currentTabId, // Use consistent tab ID
-            path: window.location.pathname
-        };
-        
-        // Track localStorage write to prevent same-tab processing
-        this.lastLocalStorageWrite = Date.now();
-        
-        localStorage.setItem(this.RECOVERY_STORAGE_KEY, JSON.stringify(recoveryState));
-        console.log('🔑 Global password recovery state activated', recoveryState);
-    }
-
-    /**
-     * NEW: Get global recovery state
-     */
-    getGlobalRecoveryState() {
-        try {
-            const recoveryData = localStorage.getItem(this.RECOVERY_STORAGE_KEY);
-            return recoveryData ? JSON.parse(recoveryData) : null;
-        } catch (error) {
-            console.warn('Failed to parse recovery state:', error);
-            return null;
-        }
-    }
-
-    /**
-     * NEW: Check if recovery state has expired
-     */
-    isRecoveryStateExpired(recoveryState) {
-        if (!recoveryState || !recoveryState.timestamp) return true;
-        return (Date.now() - recoveryState.timestamp) > this.RECOVERY_TIMEOUT;
-    }
-
-    /**
-     * NEW: Check and cleanup expired recovery state
-     */
-    checkAndCleanupRecoveryState() {
-        const globalRecoveryState = this.getGlobalRecoveryState();
-        if (globalRecoveryState && this.isRecoveryStateExpired(globalRecoveryState)) {
-            console.log('🧹 Auto-cleanup: Found and cleared expired password recovery state');
-            this.clearPasswordRecoveryFlag();
-            return true; // State was cleaned up
-        }
-        return false; // No cleanup needed
-    }
-
-    /**
-     * NEW: Generate unique tab identifier
-     */
-    generateTabId() {
-        return `tab_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    }
-
-    /**
-     * NEW: Monitor and log security events
-     */
-    logSecurityEvent(eventType, details = {}) {
-        const securityEvent = {
-            type: eventType,
-            timestamp: Date.now(),
-            tabId: this.generateTabId(),
-            path: window.location.pathname,
-            recoveryMode: this.isPasswordRecovery,
-            authenticated: this.isAuthenticated,
-            details
-        };
-        
-        console.warn('🚨 Security Event:', securityEvent);
-        
-        // Store recent security events for analysis
-        const recentEvents = this.getRecentSecurityEvents();
-        recentEvents.push(securityEvent);
-        
-        // Keep only last 10 events
-        const trimmedEvents = recentEvents.slice(-10);
-        localStorage.setItem('security_events', JSON.stringify(trimmedEvents));
-        
-        // Check for attack patterns
-        this.analyzeSecurityPatterns(trimmedEvents);
-    }
-
-    /**
-     * NEW: Get recent security events
-     */
-    getRecentSecurityEvents() {
-        try {
-            const events = localStorage.getItem('security_events');
-            return events ? JSON.parse(events) : [];
-        } catch (error) {
-            return [];
-        }
-    }
-
-    /**
-     * NEW: Analyze security patterns for potential attacks
-     */
-    analyzeSecurityPatterns(events) {
-        const now = Date.now();
-        const recentEvents = events.filter(e => (now - e.timestamp) < 5 * 60 * 1000); // Last 5 minutes
-        
-        // Check for rapid authentication attempts
-        const authEvents = recentEvents.filter(e => e.type === 'rapid_auth_attempt');
-        if (authEvents.length >= 3) {
-            this.logSecurityEvent('potential_brute_force', { 
-                attempts: authEvents.length,
-                timespan: '5_minutes'
-            });
-        }
-        
-        // Check for cross-tab recovery exploitation
-        const recoveryEvents = recentEvents.filter(e => e.type === 'recovery_bypass_attempt');
-        if (recoveryEvents.length >= 2) {
-            this.logSecurityEvent('potential_recovery_exploit', {
-                attempts: recoveryEvents.length
-            });
         }
     }
 }

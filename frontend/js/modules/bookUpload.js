@@ -119,7 +119,8 @@ async function handleUploadSuccess(text, formattingData = null, metadata = null)
             // Apply formatting to DOM with delay to ensure text is properly set
             setTimeout(() => {
                 import('./formattingRenderer.js').then(({ applyFormattingToDOM }) => {
-                    console.log('📋 DOCX IMPORT DEBUG: About to apply formatting. DOM text length:', bookContent.textContent.length);
+                    // **SECURITY FIX: Removed text content length logging to prevent user content exposure**
+console.log('📋 DOCX IMPORT DEBUG: About to apply formatting to loaded content');
                     applyFormattingToDOM();
                     console.log('✅ Applied DOCX formatting to DOM');
                 }).catch(error => {
@@ -149,13 +150,15 @@ async function handleUploadSuccess(text, formattingData = null, metadata = null)
     
     // Log success with metadata
     if (metadata) {
-        console.log(`📄 ${metadata.filename} uploaded successfully:`, {
+        // **SECURITY FIX: Removed filename logging to prevent exposure**
+        console.log(`📄 File uploaded successfully:`, {
             textLength: text.length,
             formattingRanges: formattingData?.ranges?.length || 0,
             processingTime: metadata.processing_time || 'N/A'
         });
     } else {
-        console.log(`Book uploaded successfully: ${text.length} characters`);
+        // **SECURITY FIX: Removed text length logging to prevent user content exposure**
+console.log('Book uploaded successfully');
     }
     
     // Refresh edit mode state after content change
@@ -221,7 +224,8 @@ async function processDocxFileFrontend(file, docxProcessor, htmlToFormattingConv
         // Convert HTML to internal formatting system
         const converted = htmlToFormattingConverter.convert(richResult.html);
         
-        console.log(`🔧 Frontend conversion result: ${converted.text.length} chars, ${converted.formattingRanges.length} ranges`);
+        // **SECURITY FIX: Removed text length logging to prevent user content exposure**
+console.log(`🔧 Frontend conversion result: ${converted.formattingRanges.length} formatting ranges`);
         
         return {
             success: true,
@@ -258,7 +262,8 @@ function mergeDocxResults(backendResult, frontendResult) {
     const backendText = backendResult.text || '';
     const frontendText = frontendResult.text || '';
     
-    console.log(`📊 Text lengths - Backend: ${backendText.length}, Frontend: ${frontendText.length}`);
+    // **SECURITY FIX: Removed text length logging to prevent user content exposure**
+console.log('📊 Text lengths analyzed for backend and frontend comparison');
     
     // Determine which processing was successful
     const backendSuccess = backendResult.success && backendText.length > 0;
@@ -428,6 +433,8 @@ async function processDocxFile(file) {
 
         if (!response.ok) {
             const errorData = await response.json().catch(() => ({ message: 'An unknown error occurred' }));
+            // **SECURITY FIX: Removed error data logging to prevent backend information exposure**
+            console.error('❌ Backend response error occurred');
             throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
         }
 
@@ -518,16 +525,19 @@ export async function uploadBook() {
             }
             
             // Process DOCX with enhanced hybrid approach
-            console.log('📄 Processing DOCX file with hybrid approach:', file.name);
+            // **SECURITY FIX: Removed filename logging to prevent exposure**
+            console.log('📄 Processing DOCX file with hybrid approach');
             const result = await processDocxFileHybrid(file);
             text = result.text;
             formattingData = result.formatting_data;
             metadata = result.metadata;
             
-            console.log(`✅ DOCX processed: ${text.length} chars, ${formattingData.ranges.length} formatting ranges`);
+            // **SECURITY FIX: Removed text length logging to prevent user content exposure**
+console.log(`✅ DOCX processed: ${formattingData.ranges.length} formatting ranges`);
         } else {
             // Process TXT with backend credit enforcement
-            console.log('📄 Processing TXT file:', file.name);
+            // **SECURITY FIX: Removed filename logging to prevent exposure**
+            console.log('📄 Processing TXT file');
             
             // Check credits before processing TXT
             const hasCredits = await checkCreditsForAction(3, 'Text file upload');
@@ -552,7 +562,8 @@ export async function uploadBook() {
 
 // Process text file with backend credit enforcement
 async function processTextFile(file) {
-    console.log('🔄 processTextFile called with file:', file.name);
+    // **SECURITY FIX: Removed filename logging to prevent exposure**
+    console.log('🔄 processTextFile called');
     const formData = new FormData();
     formData.append('file', file);
 
@@ -571,7 +582,8 @@ async function processTextFile(file) {
         }
 
         const data = await response.json();
-        console.log('📡 Backend response data:', data);
+        // **SECURITY FIX: Removed backend response data logging to prevent exposure**
+        console.log('📡 Backend response received successfully');
         
         if (!data.success) {
             throw new Error(data.message || 'Failed to process text file');

@@ -12,7 +12,8 @@ export function applyFormattingToDOM() {
     }
     
     console.log('🎨 FORMATTING: Starting enhanced DOM formatting application...');
-    console.log('🎨 FORMATTING: Book content text length:', bookContent.textContent.length);
+    // **SECURITY FIX: Removed text content length logging to prevent user content exposure**
+console.log('🎨 FORMATTING: Book content loaded and ready for formatting');
     console.log('🎨 FORMATTING: Number of formatting ranges:', formattingData.ranges.length);
     
     // Store current cursor position to restore after rendering
@@ -61,7 +62,8 @@ function prepareCleanDOMForDocx(bookContent) {
     // Normalize to ensure clean structure
     bookContent.normalize();
     
-    console.log(`🔧 DOCX FORMATTING: Created ${textChunks.length} optimized text chunks, total length: ${textContent.length}`);
+    // **SECURITY FIX: Removed text content length logging to prevent user content exposure**
+console.log(`🔧 DOCX FORMATTING: Created ${textChunks.length} optimized text chunks`);
 }
 
 // Smart text splitting that preserves DOCX structure
@@ -117,7 +119,8 @@ function applyFormattingRangesEnhanced() {
         return;
     }
     
-    console.log(`🎨 FORMATTING: Using text source - State: ${stateText?.length || 'N/A'}, DOM: ${domText.length}, Selected: ${text.length}`);
+    // **SECURITY FIX: Removed text length logging to prevent user content exposure**
+console.log('🎨 FORMATTING: Using text source - State, DOM, and Selected text analyzed');
 
     // Generate a complete map of all segments (formatted and unformatted).
     const segments = optimizeFormattingRangesForDocx(formattingData.ranges, text.length);
@@ -217,7 +220,8 @@ function applyFormattingRangesEnhanced() {
                         
                         // Debug logging for bullet cleaning
                         if (segmentText !== cleanText) {
-                            console.log(`🔧 LIST ITEM: Cleaned "${segmentText}" -> "${cleanText}"`);
+                            // **SECURITY FIX: Removed text content logging to prevent user content exposure**
+console.log('🔧 LIST ITEM: Text cleaned for list formatting');
                         }
                         
                         // Only add bullet if there's actual content after cleaning
@@ -225,7 +229,8 @@ function applyFormattingRangesEnhanced() {
                             listElement.innerHTML = `• ${cleanText}`;
                         } else {
                             // If no content after cleaning, don't add bullet
-                            console.log(`🔧 LIST ITEM: Empty after cleaning, using original: "${segmentText}"`);
+                            // **SECURITY FIX: Removed text content logging to prevent user content exposure**
+console.log('🔧 LIST ITEM: Empty after cleaning, using original text');
                             listElement.textContent = segmentText;
                         }
                     } else {
@@ -544,7 +549,8 @@ function validateDocxFormatting() {
     }
     
     // Log final statistics
-    console.log(`📊 DOCX FORMATTING: Final stats - ${formattingElements.length} formatted elements, ${bookContent.textContent.length} total characters`);
+    // **SECURITY FIX: Removed text length logging to prevent user content exposure**
+    console.log(`📊 DOCX FORMATTING: Final stats - ${formattingElements.length} formatted elements applied`);
 }
 
 // Clear only formatting elements, preserve section highlights
@@ -823,7 +829,8 @@ export function testNestedFormatting() {
         
         if (parent.dataset.formattingId) {
             textNodesInFormatting++;
-            console.log(`✅ Found text node inside formatting: "${node.textContent.substring(0, 30)}..." (parent: ${parent.className})`);
+                            // **SECURITY FIX: Removed text content logging to prevent user content exposure**
+                console.log(`✅ Found text node inside formatting (parent: ${parent.className})`);
         }
     }
     
@@ -851,7 +858,8 @@ export function runDocxImportDiagnostics() {
     // 1. Analyze current DOM state
     console.log('📋 1. DOM STATE ANALYSIS:');
     const totalText = bookContent.textContent;
-    console.log(`   📝 Total text length: ${totalText.length}`);
+    // **SECURITY FIX: Removed text length logging to prevent user content exposure**
+    console.log('   📝 Total text analyzed');
     
     const textNodes = [];
     const walker = document.createTreeWalker(
@@ -877,7 +885,8 @@ export function runDocxImportDiagnostics() {
     if (tinyNodes.length > 0) {
         console.log('   🔍 Sample tiny nodes:');
         tinyNodes.slice(0, 5).forEach((node, i) => {
-            console.log(`      ${i+1}. "${node.textContent}" (${node.textContent.length} chars)`);
+            // **SECURITY FIX: Removed text content logging to prevent user content exposure**
+            console.log(`      ${i+1}. Text node (${node.textContent.length} chars)`);
         });
     }
     
@@ -899,7 +908,8 @@ export function runDocxImportDiagnostics() {
     if (outOfBounds.length > 0) {
         console.log('   🔍 Out-of-bounds range details:');
         outOfBounds.slice(0, 3).forEach((range, i) => {
-            console.log(`      ${i+1}. ${range.start}-${range.end} (${range.type}) - Text length: ${totalText.length}`);
+            // **SECURITY FIX: Removed text length logging to prevent user content exposure**
+            console.log(`      ${i+1}. ${range.start}-${range.end} (${range.type})`);
         });
     }
     
@@ -924,7 +934,8 @@ export function runDocxImportDiagnostics() {
         const success = result.startNode && result.endNode;
         console.log(`   ${success ? '✅' : '❌'} Position ${pos}: ${success ? 'Found' : 'Failed'}`);
         if (!success) {
-            console.log(`      📍 Attempted range: ${pos}-${pos + 1}, Text length: ${totalText.length}`);
+            // **SECURITY FIX: Removed text length logging to prevent user content exposure**
+            console.log(`      📍 Attempted range: ${pos}-${pos + 1}`);
         }
     });
     

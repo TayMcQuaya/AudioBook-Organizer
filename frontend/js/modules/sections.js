@@ -197,7 +197,8 @@ export function copySectionText(sectionId) {
         return;
     }
     
-    console.log('Attempting to copy text:', sectionText.substring(0, 50) + '...');
+            // **SECURITY FIX: Removed text content logging to prevent user content exposure**
+        console.log('Attempting to copy selected text');
     
     // Try multiple copy methods in order of preference
     if (navigator.clipboard && window.isSecureContext) {
@@ -614,7 +615,8 @@ export function clearMissingAudio(chapterId, sectionId) {
         updateChaptersList();
         showSuccess('Missing audio reference cleared. You can now upload a new audio file.');
         
-        console.log(`✅ Cleared missing audio reference for section ${section.name}`);
+        // **SECURITY FIX: Removed section name to prevent user content exposure**
+        console.log('✅ Cleared missing audio reference for section');
     }
 }
 
@@ -820,7 +822,9 @@ function showUploadProgress(inputElement, file) {
     // Hide the file input during upload
     inputElement.style.display = 'none';
     
-    console.log(`🔄 Upload progress started for: ${file.name}`);
+    // Show upload progress
+    // **SECURITY FIX: Removed filename logging to prevent exposure**
+    console.log('🔄 Upload progress started for file');
     
     return {
         container: progressContainer,

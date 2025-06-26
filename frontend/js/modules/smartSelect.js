@@ -31,7 +31,8 @@ function getCursorPosition() {
         // Get the text content up to the cursor position
         const textToCursor = fullRange.toString();
         
-        console.log(`Cursor detected at position: ${textToCursor.length}`);
+        // **SECURITY FIX: Removed cursor position logging to prevent user content exposure**
+console.log('Cursor position detected and analyzed');
         return textToCursor.length;
     } catch (error) {
         console.warn('Error getting cursor position:', error);
@@ -126,7 +127,8 @@ export function performSmartSelect() {
     let endPos = Math.min(startPos + maxChars, actualText.length);
     
     console.log(`Smart Select: Starting at position ${startPos}, target end ${endPos}`);
-    console.log(`Using DOM text length: ${actualText.length}, bookText length: ${bookText.length}`);
+    // **SECURITY FIX: Removed text length logging to prevent user content exposure**
+console.log('Using DOM text for selection analysis');
     
     // If we're not at the very end of the book, find a good stopping point
     if (endPos < actualText.length) {
@@ -156,10 +158,13 @@ export function performSmartSelect() {
     
     // Debug output
     console.log('Final selection:');
-    console.log(`- Length: ${finalText.length}`);
+    // **SECURITY FIX: Removed text length logging to prevent user content exposure**
+console.log('- Final text processed');
     console.log(`- Ends with period: ${finalText.endsWith('.')}`);
-    console.log(`- Last char: "${finalText.charAt(finalText.length - 1)}"`);
-    console.log(`- Last 10 chars: "${finalText.slice(-10)}"`);
+    // **SECURITY FIX: Removed text character logging to prevent user content exposure**
+console.log('- Last character analyzed');
+    // **SECURITY FIX: Removed text content logging to prevent user content exposure**
+console.log('- Last characters analyzed');
     
     // Create the selection object
     const selection = {
@@ -257,12 +262,15 @@ export function highlightSmartSelection(selection) {
         clearSmartSelection();
         
         console.log('DOM Selection Debug:');
-        console.log(`Target: ${selection.startPosition} to ${selection.endPosition} (${selection.length} chars)`);
+        // **SECURITY FIX: Removed selection length logging to prevent user content exposure**
+console.log(`Target: ${selection.startPosition} to ${selection.endPosition}`);
         
         // Use the exact text from our selection object instead of trying to map positions
         const targetText = selection.text;
-        console.log(`Using exact text (${targetText.length} chars)`);
-        console.log(`Text ends with: "${targetText.slice(-10)}"`);
+        // **SECURITY FIX: Removed text length logging to prevent user content exposure**
+console.log('Using exact text for selection');
+        // **SECURITY FIX: Removed text content logging to prevent user content exposure**
+console.log('Text ending analyzed');
         console.log(`Text ends with period: ${targetText.endsWith('.')}`);
         
         // Find this exact text in the DOM starting from our calculated position
@@ -330,9 +338,12 @@ export function highlightSmartSelection(selection) {
                 
                 // Verify what we're actually selecting
                 const actualSelectedText = range.toString();
-                console.log(`Final DOM selection: ${actualSelectedText.length} chars`);
-                console.log(`Final ends with: "${actualSelectedText.slice(-10)}"`);
-                console.log(`Final ends with period: ${actualSelectedText.endsWith('.')}`);
+                // **SECURITY FIX: Removed selected text length logging to prevent user content exposure**
+console.log('Final DOM selection applied');
+                // **SECURITY FIX: Removed text content logging to prevent user content exposure**
+console.log('Final text ending analyzed');
+                // **SECURITY FIX: Removed text analysis logging to prevent user content exposure**
+console.log('Final text punctuation analyzed');
                 
                 // Create selection
                 const windowSelection = window.getSelection();

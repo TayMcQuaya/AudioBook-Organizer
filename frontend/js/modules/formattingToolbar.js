@@ -418,8 +418,10 @@ function applyFormatting(type, level = 1) {
         return;
     }
     
-    console.log(`🔧 FORMATTING TOOLBAR: Selected text: "${selectedText}"`);
-    console.log(`🔧 FORMATTING TOOLBAR: Selected text length: ${selectedText.length}`);
+    // **SECURITY FIX: Removed selected text logging to prevent user content exposure**
+console.log('🔧 FORMATTING TOOLBAR: Selected text analyzed for formatting');
+    // **SECURITY FIX: Removed selected text length logging to prevent user content exposure**
+console.log('🔧 FORMATTING TOOLBAR: Selected text analyzed for formatting');
     
     const bookContent = document.getElementById('bookContent');
     if (!bookContent) {
@@ -434,8 +436,9 @@ function applyFormatting(type, level = 1) {
     }
     
     console.log('🔧 FORMATTING TOOLBAR: Book content container found');
-    console.log('🔧 FORMATTING TOOLBAR: Range start container:', range.startContainer.textContent ? `"${range.startContainer.textContent.substring(0, 50)}..."` : '');
-    console.log('🔧 FORMATTING TOOLBAR: Range end container:', range.endContainer.textContent ? `"${range.endContainer.textContent.substring(0, 50)}..."` : '');
+            // **SECURITY FIX: Removed text content logging to prevent user content exposure**
+        console.log('🔧 FORMATTING TOOLBAR: Range start container type:', range.startContainer.nodeType);
+        console.log('🔧 FORMATTING TOOLBAR: Range end container type:', range.endContainer.nodeType);
     
     // Calculate positions in the plain text content
     const startPos = getPositionInText(bookContent, range.startContainer, range.startOffset);
@@ -500,8 +503,10 @@ function applyFormatting(type, level = 1) {
     // For text formats (bold, italic, underline), we can combine them with headings
     // So we don't remove overlapping heading formats when applying text formats
     
-    console.log(`🔧 FORMATTING TOOLBAR: Applying ${type} formatting to text "${selectedText.substring(0, 50)}..." at positions ${startPos}-${endPos}`);
-    console.log('🔧 FORMATTING TOOLBAR: Total book content length:', bookContent.textContent.length);
+            // **SECURITY FIX: Removed selected text logging to prevent user content exposure**
+        console.log(`🔧 FORMATTING TOOLBAR: Applying ${type} formatting at positions ${startPos}-${endPos}`);
+    // **SECURITY FIX: Removed text content length logging to prevent user content exposure**
+console.log('🔧 FORMATTING TOOLBAR: Total book content analyzed');
     
     // Add formatting range
     const formattingRange = addFormattingRange(startPos, endPos, type, level);

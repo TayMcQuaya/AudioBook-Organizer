@@ -84,7 +84,8 @@ class ModuleLoader {
                 return module;
                 
             } catch (error) {
-                console.warn(`⚠️ Failed to load module from ${path}:`, error.message);
+                // **SECURITY FIX: Removed error message to prevent path/details exposure**
+            console.warn(`⚠️ Failed to load module: ${path}`);
                 lastError = error;
                 continue;
             }

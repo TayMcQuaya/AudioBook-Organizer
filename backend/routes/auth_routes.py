@@ -231,7 +231,8 @@ def create_auth_routes() -> Blueprint:
             # Clear failed login attempts on successful login
             security_service.clear_login_attempts(email)
             
-            logger.info(f"Successful login for {email} - reCAPTCHA score: {recaptcha_result.get('score', 'N/A')}")
+            # **SECURITY FIX: Removed email logging to prevent user data exposure**
+            logger.info(f"Successful login - reCAPTCHA score: {recaptcha_result.get('score', 'N/A')}")
             
             return jsonify({
                 'success': True,
@@ -315,7 +316,8 @@ def create_auth_routes() -> Blueprint:
                     'message': auth_result.get('error', 'Failed to create account')
                 }), 400
             
-            logger.info(f"Successful signup for {email} - reCAPTCHA score: {recaptcha_result.get('score', 'N/A')}")
+            # **SECURITY FIX: Removed email logging to prevent user data exposure**
+            logger.info(f"Successful signup - reCAPTCHA score: {recaptcha_result.get('score', 'N/A')}")
             
             return jsonify({
                 'success': True,
@@ -545,7 +547,8 @@ def create_auth_routes() -> Blueprint:
                     'message': reset_result.get('error', 'Failed to send reset email')
                 }), 400
             
-            logger.info(f"Password reset email sent for {email}")
+            # **SECURITY FIX: Removed email logging to prevent user data exposure**
+            logger.info("Password reset email sent")
             
             return jsonify({
                 'success': True,

@@ -126,7 +126,8 @@ class AppConfig {
         this.isInitialized = true;
         
         if (this.config.enableDetailedLogging) {
-            console.log('📋 App configuration loaded:', this.config);
+            // **SECURITY FIX: Removed config object to prevent configuration details exposure**
+            console.log('📋 App configuration loaded successfully');
         }
         
         return this.config;

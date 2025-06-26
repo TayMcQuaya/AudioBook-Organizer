@@ -54,9 +54,12 @@ export function setCurrentColorIndex(index) {
 
 // File type management
 export function setCurrentFileType(fileType, fileName = '') {
-    currentFileType = fileType.toLowerCase();
+    currentFileType = fileType;
     currentFileName = fileName;
-    console.log(`📁 File type set to: ${currentFileType} (${fileName})`);
+    
+    // **SECURITY FIX: Removed filename logging to prevent exposure**
+    console.log(`📁 File type set to: ${currentFileType}`);
+    
     triggerAutoSaveIfEnabled();
 }
 

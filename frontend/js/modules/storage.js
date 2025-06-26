@@ -297,7 +297,10 @@ function loadProjectDirectly(projectData) {
         // Import and set file type for proper edit mode behavior
         import('./state.js').then(({ setCurrentFileType }) => {
             setCurrentFileType(fileType, fileName);
-            console.log(`📁 File type detected and set during load: ${fileType} (${fileName})`);
+            if (fileType) {
+                // **SECURITY FIX: Removed filename logging to prevent exposure**
+                console.log(`📁 File type detected and set during load: ${fileType}`);
+            }
         }).catch(error => {
             console.error('Error setting file type during load:', error);
         });
@@ -391,7 +394,8 @@ async function restoreHighlightsAsync(highlights, bookContent) {
  * Restore a single highlight (optimized version)
  */
 function restoreSingleHighlight(highlight, index, bookContent) {
-    console.log(`Restoring highlight ${index}: "${highlight.text.substring(0, 50)}..."`);
+    // **SECURITY FIX: Removed highlight text logging to prevent user content exposure**
+    console.log(`Restoring highlight ${index}`);
     
     // Create the highlight element
     const span = document.createElement('span');
@@ -477,7 +481,8 @@ function restoreSingleHighlight(highlight, index, bookContent) {
             console.warn(`✗ Could not create range for highlight ${index}`);
         }
     } else {
-        console.warn(`✗ Text not found for highlight ${index}: "${searchText.substring(0, 50)}..."`);
+        // **SECURITY FIX: Removed text content logging to prevent user content exposure**
+        console.warn(`✗ Text not found for highlight ${index}`);
     }
     
     return false;
@@ -885,7 +890,8 @@ async function validateAndRestoreAudioFiles(projectData) {
                     if (section) {
                         section.audioStatus = 'missing';
                         section.originalAudioPath = section.audioPath; // Store original path for reference
-                        console.warn(`⚠️ Marked section ${section.name} as having missing audio`);
+                        // **SECURITY FIX: Removed section name to prevent user content exposure**
+                        console.warn('⚠️ Marked section as having missing audio');
                     }
                 }
             });

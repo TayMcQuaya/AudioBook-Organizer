@@ -311,7 +311,8 @@ async function enterEditMode() {
 
 // Enter TXT edit mode (simple, fast, no formatting complications)
 async function enterTxtEditMode(bookContent, fileName) {
-    console.log('📝 Entering TXT edit mode for:', fileName);
+    // **SECURITY FIX: Removed filename logging to prevent exposure**
+    console.log('📝 Entering TXT edit mode');
     
     try {
         // Show simple formatting toolbar for TXT files
@@ -335,7 +336,8 @@ async function enterTxtEditMode(bookContent, fileName) {
 
 // Enter DOCX edit mode (formatting-aware, more complex)
 async function enterDocxEditMode(bookContent, fileName) {
-    console.log('📝 Entering DOCX edit mode for:', fileName);
+    // **SECURITY FIX: Removed filename logging to prevent exposure**
+    console.log('📝 Entering DOCX edit mode');
     
     try {
         // Show DOCX-aware formatting toolbar
@@ -605,7 +607,8 @@ function calculateTextDifferences(originalHTML, currentHTML, currentText) {
         tempDiv.innerHTML = originalHTML;
         const originalText = tempDiv.textContent;
         
-        console.log(`🔍 TEXT DIFF: Original length: ${originalText.length}, Current length: ${currentText.length}`);
+        // **SECURITY FIX: Removed text length logging to prevent user content exposure**
+console.log('🔍 TEXT DIFF: Original and current text analyzed for differences');
         
         // Simple difference detection - find where text was inserted/deleted
         const diffs = [];
@@ -708,11 +711,13 @@ export function debugFormattingIssues() {
     console.log('📊 STATE:');
     console.log('  - Edit mode:', isEditMode);
     console.log('  - File type:', getCurrentFileType());
-    console.log('  - Current fileName:', getCurrentFileName());
+    // **SECURITY FIX: Removed filename logging to prevent exposure**
+    console.log('  - Current file loaded:', !!getCurrentFileName());
     
     // Get text info
     console.log('📄 TEXT INFO:');
-    console.log('  - DOM text length:', bookContent.textContent.length);
+    // **SECURITY FIX: Removed text content length logging to prevent user content exposure**
+console.log('  - DOM content loaded and ready');
     console.log('  - State text length:', bookText?.length || 'N/A');
     console.log('  - Original content length:', originalContent?.length || 'N/A');
     

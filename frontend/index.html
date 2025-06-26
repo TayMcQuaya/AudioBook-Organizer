@@ -37,7 +37,8 @@
     <link rel="preconnect" href="https://js.stripe.com">
     
     <!-- Stripe.js -->
-    <script src="https://js.stripe.com/v3/" onload="console.log('✅ Stripe.js script loaded successfully'); window.stripeJsLoaded = true;" onerror="console.error('❌ Failed to load Stripe.js script'); window.stripeJsLoadError = true;"></script>
+    <!-- **SECURITY FIX: Removed console logging to prevent system information exposure** -->
+    <script src="https://js.stripe.com/v3/" onload="window.stripeJsLoaded = true;" onerror="window.stripeJsLoadError = true;"></script>
     
     <!-- Critical inline styles for initial load -->
     <style>
@@ -210,8 +211,8 @@
                     }, 500);
                 }
                 
-                const totalTime = Date.now() - startTime;
-                console.log(`✅ AudioBook Organizer initialized successfully in ${totalTime}ms`);
+                // **SECURITY FIX: Removed timing information to prevent system profiling**
+                console.log('✅ AudioBook Organizer initialized successfully');
                 window.isFrameworkInitialized = true;
                 
             } catch (error) {

@@ -32,7 +32,8 @@ function handleMouseUp(e) {
         document.getElementById('selectionLength').textContent = text.length;
         document.getElementById('selectionPreview').textContent = text;
         
-        console.log(`Manual selection: ${text.length} characters`);
+        // **SECURITY FIX: Removed selected text length logging to prevent user content exposure**
+console.log('Manual text selection applied');
     } else {
         hideSelectionTools();
     }

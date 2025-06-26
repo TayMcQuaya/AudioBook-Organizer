@@ -318,8 +318,8 @@
                 // STEP 10: Mark as ready and complete transition
                 document.body.classList.add('layout-ready', 'app-ready');
                 
-                const totalTime = Date.now() - startTime;
-                console.log(`✅ App page initialized successfully in ${totalTime}ms`);
+                // **SECURITY FIX: Removed timing information to prevent system profiling**
+                console.log('✅ App page initialized successfully');
                 
             } catch (error) {
                 console.error('❌ Failed to initialize app page:', error);
@@ -391,8 +391,8 @@
                     console.warn('⚠️ App will continue with limited functionality');
                 }
                 
-                const authTime = Date.now() - startAuthTime;
-                console.log(`✅ Authentication check completed in ${authTime}ms`);
+                // **SECURITY FIX: Removed timing information to prevent system profiling**
+                console.log('✅ Authentication check completed');
                 
             } catch (error) {
                 console.error('❌ Failed to verify authentication availability:', error);

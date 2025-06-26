@@ -57,7 +57,8 @@ class EnvironmentManager {
                     timestamp: Date.now()
                 };
 
-                console.log('✅ Environment configuration loaded:', this.config);
+                // **SECURITY FIX: Removed config object to prevent server details exposure**
+                console.log('✅ Environment configuration loaded successfully');
                 this.isInitialized = true;
                 return this.config;
 
@@ -104,22 +105,12 @@ class EnvironmentManager {
         
         console.warn('🔄 Using fallback environment configuration');
         
-        // TEMPORARY DEBUG: Force testing mode for production debugging
-        // TODO: Remove this override once environment variables are working
+        // **SECURITY FIX: Removed debug information that exposes server infrastructure**
         const currentHostname = window.location.hostname;
-        console.log('🔍 DEBUG: Current hostname:', currentHostname);
         
         const isProduction = currentHostname.includes('ondigitalocean.app');
-        console.log('🔍 DEBUG: Is production (ondigitalocean.app)?', isProduction);
-        
-        // Check for vercel as well since that might be where we're running
         const isVercel = currentHostname.includes('vercel.app');
-        console.log('🔍 DEBUG: Is Vercel?', isVercel);
-        
-        // For localhost, check if we should use testing mode (instead of forcing false)
-        // This allows localhost to use testing mode when TESTING_MODE=true is set
         const shouldUseTesting = isProduction || isVercel || isDevelopment;
-        console.log('🔍 DEBUG: Should use testing mode?', shouldUseTesting);
         
         return {
             testing_mode: shouldUseTesting, // Allow testing mode for localhost too
@@ -192,7 +183,8 @@ class EnvironmentManager {
             this._applyTestingModeSettings();
         }
 
-        console.log(`🎯 Environment settings applied for ${config.server_type} in ${config.environment} mode`);
+        // **SECURITY FIX: Removed server infrastructure logging to prevent exposure**
+        console.log('🎯 Environment settings applied successfully');
     }
 
     /**

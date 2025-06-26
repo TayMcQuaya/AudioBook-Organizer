@@ -415,8 +415,9 @@ async function handleLoginSubmit(e) {
     const email = emailInput.value.trim();
     const password = passwordInput.value;
     
-    console.log(`📧 Email: ${email}`);
-    console.log(`🔒 Password length: ${password.length}`);
+    // **SECURITY FIX: Removed email logging to prevent privacy exposure**
+    // console.log(`📧 Email: ${email}`);
+    // console.log(`🔒 Password length: ${password.length}`);
 
     if (!validateLoginForm(email, password)) {
         console.log('❌ Form validation failed');
@@ -445,7 +446,8 @@ async function handleLoginSubmit(e) {
             // including navigation. No need to call handleAuthSuccess directly.
         } else {
             // showError is called inside signIn, so just log here
-            console.error('Sign in failed from form handler:', result.error);
+            // **SECURITY FIX: Removed result.error to prevent API details exposure**
+        console.error('Sign in failed from form handler');
         }
     } catch (error) {
         console.error('❌ Sign in failed:', error);

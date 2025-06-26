@@ -306,8 +306,9 @@ class ProfileModal {
             }
 
             // Add some debug info for purchases
-            if (isPurchase) {
-                console.log(`Found credit purchase in history: ${credits} credits on ${date}`, entry);
+            if (entry.action === 'PURCHASE' && entry.description?.includes('credits')) {
+                // **SECURITY FIX: Removed transaction details logging to prevent exposure**
+                console.log('Found credit purchase in transaction history');
             }
 
             return `
@@ -366,10 +367,24 @@ class ProfileModal {
 
             <div class="settings-section">
                 <h3>Account Security</h3>
+                <div class="security-info">
+                    <p><strong>Email:</strong> ${profile.email}</p>
+                    <p class="help-text">Password reset emails will be sent to this address.</p>
+                </div>
                 <button class="btn btn-secondary" onclick="window.profileModal.handlePasswordReset()">
                     Reset Password
                 </button>
-                <p class="help-text">A password reset email will be sent to your registered email address.</p>
+                <p class="help-text">
+                    Click the button above to receive a password reset email. You'll be able to set a new password using the link in the email.
+                </p>
+                <div class="security-notice">
+                    <p><strong>🔒 Security Notice:</strong></p>
+                    <ul>
+                        <li>Reset links expire after 1 hour for security</li>
+                        <li>You'll need to check your email and spam folder</li>
+                        <li>The link can only be used once</li>
+                    </ul>
+                </div>
             </div>
         `;
     }
@@ -534,23 +549,140 @@ class ProfileModal {
 
     async handlePasswordReset() {
         try {
-            const email = this.userData.profile.email;
-            const response = await apiFetch('/api/auth/reset-password', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email })
-            });
-
-            if (response.ok) {
-                showSuccess('Password reset email sent! Check your inbox.');
-            } else {
-                const error = await response.json();
-                showError(error.message || 'Failed to send reset email');
+            // Get user's email from profile data
+            if (!this.userData || !this.userData.profile || !this.userData.profile.email) {
+                showError('Unable to get user email. Please try again.');
+                return;
             }
+
+            const email = this.userData.profile.email;
+            
+            // Create custom confirmation modal instead of browser confirm
+            const confirmed = await this.showPasswordResetConfirmation(email);
+            if (!confirmed) {
+                return; // User cancelled
+            }
+
+            // Show loading state
+            const resetButton = document.querySelector('button[onclick="window.profileModal.handlePasswordReset()"]');
+            if (resetButton) {
+                resetButton.disabled = true;
+                resetButton.textContent = 'Sending Reset Email...';
+            }
+
+            // Use the auth module's resetPassword method (same as the auth page)
+            if (window.authModule && typeof window.authModule.resetPassword === 'function') {
+                await window.authModule.resetPassword(email);
+                // The auth module will show the success message
+                
+                // Close the modal after successful reset
+                setTimeout(() => {
+                    this.close();
+                }, 2000);
+            } else {
+                throw new Error('Authentication module not available. Please refresh the page and try again.');
+            }
+            
         } catch (error) {
             console.error('Password reset error:', error);
-            showError('Network error. Please try again.');
+            
+            // The auth module handles most error display, but catch any that slip through
+            if (error.message && !error.message.includes('OAuth') && !error.message.includes('Google')) {
+                showError(error.message);
+            }
+        } finally {
+            // Reset button state
+            const resetButton = document.querySelector('button[onclick="window.profileModal.handlePasswordReset()"]');
+            if (resetButton) {
+                resetButton.disabled = false;
+                resetButton.textContent = 'Reset Password';
+            }
         }
+    }
+
+    /**
+     * Show custom confirmation dialog for password reset
+     */
+    showPasswordResetConfirmation(email) {
+        return new Promise((resolve) => {
+            // Create custom modal overlay
+            const overlay = document.createElement('div');
+            overlay.className = 'profile-modal-backdrop';
+            overlay.style.zIndex = '10001'; // Higher than profile modal
+            
+            const modal = document.createElement('div');
+            modal.className = 'profile-modal';
+            modal.style.maxWidth = '500px';
+            modal.style.zIndex = '10002';
+            
+            modal.innerHTML = `
+                <div class="profile-modal-header">
+                    <h2>🔑 Reset Password</h2>
+                </div>
+                <div class="profile-modal-content" style="padding: 24px;">
+                    <p style="margin-bottom: 16px;">
+                        Are you sure you want to reset your password?
+                    </p>
+                    <div class="security-info" style="margin-bottom: 20px;">
+                        <p><strong>Email:</strong> ${email}</p>
+                        <p class="help-text">A password reset link will be sent to this address.</p>
+                    </div>
+                    <div class="security-notice" style="margin-bottom: 24px;">
+                        <p><strong>🔒 What happens next:</strong></p>
+                        <ul>
+                            <li>You'll receive an email with a reset link</li>
+                            <li>The link expires in 1 hour for security</li>
+                            <li>Check your spam folder if you don't see it</li>
+                            <li>You can only use the link once</li>
+                        </ul>
+                    </div>
+                    <div style="display: flex; gap: 12px; justify-content: flex-end;">
+                        <button class="btn btn-secondary" id="resetCancelBtn">Cancel</button>
+                        <button class="btn btn-primary" id="resetConfirmBtn">Send Reset Email</button>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(overlay);
+            document.body.appendChild(modal);
+            
+            // Show with animation
+            setTimeout(() => {
+                overlay.classList.add('show');
+                modal.classList.add('show');
+            }, 10);
+            
+            // Handle button clicks
+            const cancelBtn = modal.querySelector('#resetCancelBtn');
+            const confirmBtn = modal.querySelector('#resetConfirmBtn');
+            
+            const cleanup = () => {
+                modal.classList.remove('show');
+                overlay.classList.remove('show');
+                setTimeout(() => {
+                    if (modal.parentNode) modal.remove();
+                    if (overlay.parentNode) overlay.remove();
+                }, 300);
+            };
+            
+            cancelBtn.onclick = () => {
+                cleanup();
+                resolve(false);
+            };
+            
+            confirmBtn.onclick = () => {
+                cleanup();
+                resolve(true);
+            };
+            
+            // Close on overlay click
+            overlay.onclick = (e) => {
+                if (e.target === overlay) {
+                    cleanup();
+                    resolve(false);
+                }
+            };
+        });
     }
 }
 

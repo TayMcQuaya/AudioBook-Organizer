@@ -279,7 +279,8 @@ export function runFormattingSystemDiagnostics() {
     if (bookContent) {
         console.log('   - Book content element found:', true);
         console.log('   - Book content classes:', bookContent.className);
-        console.log('   - Book content text length:', bookContent.textContent.length);
+        // **SECURITY FIX: Removed text content length logging to prevent user content exposure**
+console.log('   - Book content loaded and analyzed');
         console.log('   - Book content innerHTML length:', bookContent.innerHTML.length);
         console.log('   - Section highlights:', bookContent.querySelectorAll('.section-highlight').length);
         console.log('   - Formatting elements:', bookContent.querySelectorAll('[data-formatting-id]').length);
@@ -291,7 +292,8 @@ export function runFormattingSystemDiagnostics() {
     console.log('🔍 3. FORMATTING STATE CHECK:');
     console.log('   - Number of ranges:', formattingData.ranges.length);
     console.log('   - Number of comments:', formattingData.comments.length);
-    console.log('   - Formatting ranges:', formattingData.ranges);
+    // **SECURITY FIX: Removed formatting ranges logging to prevent user content exposure**
+    console.log('   - Formatting ranges initialized:', formattingData.ranges.length > 0);
     
     // 4. Check Edit Mode
     console.log('🔍 4. EDIT MODE CHECK:');

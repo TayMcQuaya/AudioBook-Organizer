@@ -41,8 +41,8 @@ export class HtmlToFormattingConverter {
         this.formattingRanges.sort((a, b) => a.start - b.start);
         this._mergeRanges();
         
-        console.log(`✅ Conversion complete: ${this.textContent.length} chars, ${this.formattingRanges.length} ranges`);
-        console.log(`📊 Text length comparison - Raw: ${rawText.length}, Processed: ${this.textContent.length}`);
+        // **SECURITY FIX: Removed text content length logging to prevent user content exposure**
+        console.log('✅ HTML to formatting conversion complete');
         
         return {
             text: this.textContent,

@@ -79,7 +79,8 @@ class SupabaseService:
             })
             
             if result.user and result.session:
-                logger.info(f"✅ User signed in successfully: {email}")
+                # **SECURITY FIX: Removed email logging to prevent user data exposure**
+                logger.info("✅ User signed in successfully")
                 return {
                     'success': True,
                     'user': result.user.model_dump() if hasattr(result.user, 'model_dump') else result.user,
@@ -125,7 +126,8 @@ class SupabaseService:
             result = self.client.auth.sign_up(signup_data)
             
             if result.user:
-                logger.info(f"✅ User signed up successfully: {email}")
+                # **SECURITY FIX: Removed email logging to prevent user data exposure**
+                logger.info("✅ User signed up successfully")
                 return {
                     'success': True,
                     'user': result.user.model_dump() if hasattr(result.user, 'model_dump') else result.user,
@@ -191,7 +193,8 @@ class SupabaseService:
                 logger.warning(f"🔍 DEBUG: Token has expired - exp: {exp}, current: {current_time}")
                 return None
                 
-            logger.debug(f"JWT token verified successfully for user: {payload.get('email', 'unknown')}")
+            # **SECURITY FIX: Removed email logging to prevent user data exposure**
+            logger.debug("JWT token verified successfully")
             return payload
             
         except JWTError as e:
@@ -266,7 +269,8 @@ class SupabaseService:
             result = self.client.table('profiles').insert(profile_data).execute()
             
             if result.data:
-                logger.info(f"✅ User profile created for {email}")
+                # **SECURITY FIX: Removed email logging to prevent user data exposure**
+                logger.info("✅ User profile created")
                 return True
             return False
             

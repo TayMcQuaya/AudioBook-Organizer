@@ -175,14 +175,8 @@ def run_app():
     """
     app = create_app()
     
-    print("\nServer starting...")
-    print(f"Static folder: {app.static_folder}")
-    print(f"Upload folder: {app.config['UPLOAD_FOLDER']}")
-    print(f"Export folder: {app.config['EXPORT_FOLDER']}")
-    print("\nRegistered routes:")
-    for rule in app.url_map.iter_rules():
-        print(f"{rule.endpoint}: {rule.methods} {rule}")
-    print(f"\nStarting server on http://{app.config['HOST']}:{app.config['PORT']}")
+    # **SECURITY FIX: Removed system information logging to prevent infrastructure exposure**
+    # Server starting with secured configuration
     
     app.run(
         host=app.config['HOST'], 

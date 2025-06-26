@@ -509,7 +509,8 @@ export function navigateToHeader(headerId) {
         return;
     }
     
-    console.log(`📋 Navigating to header: ${header.text}`);
+            // **SECURITY FIX: Removed header text logging to prevent user content exposure**
+        console.log('📋 Navigating to header');
     console.log('🔍 Header Details:', {
         id: header.id,
         text: header.text,

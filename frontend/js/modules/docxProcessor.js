@@ -121,7 +121,8 @@ export class DocxProcessor {
             
             // Log any conversion messages/warnings
             if (result.messages.length > 0) {
-                console.log('📋 Conversion messages:', result.messages);
+                // **SECURITY FIX: Removed messages array to prevent content exposure**
+        console.log(`📋 Conversion completed with ${result.messages.length} messages`);
             }
             
             return {

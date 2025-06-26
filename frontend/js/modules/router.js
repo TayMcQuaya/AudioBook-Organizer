@@ -748,7 +748,8 @@ class Router {
             
             // Debug: Check what document was parsed
             console.log('🔧 Parsed document title:', doc.title);
-            console.log('🔧 Parsed document body content preview:', doc.body.innerHTML.substring(0, 200));
+            // **SECURITY FIX: Removed content preview logging to prevent exposure**
+        console.log('🔧 Document body content parsed successfully');
             
             // Extract and inject the styles from the temp-auth page
             const styles = doc.querySelector('style');
@@ -770,13 +771,15 @@ class Router {
             // Extract body content and inject it
             const bodyContent = doc.body.innerHTML;
             console.log('🔧 Temp-auth body content length:', bodyContent.length);
-            console.log('🔧 First 200 chars of content:', bodyContent.substring(0, 200));
+            // **SECURITY FIX: Removed content preview logging to prevent exposure**
+            console.log('🔧 Content extracted successfully');
             
             // Verify this is actually temp-auth content by checking for the temp-auth-container
             if (!bodyContent.includes('temp-auth-container')) {
                 console.error('❌ ERROR: Extracted content does not contain temp-auth-container!');
                 console.error('🔧 This suggests wrong HTML file was parsed or extraction failed');
-                console.error('🔧 Raw fetched HTML preview:', html.substring(0, 300));
+                // **SECURITY FIX: Removed HTML content logging to prevent exposure**
+            console.error('🔧 Failed to extract content from fetched HTML');
                 throw new Error('Wrong HTML content extracted - missing temp-auth-container');
             }
             
@@ -810,10 +813,11 @@ class Router {
             const tempForm = document.getElementById('tempAuthForm');
             console.log('🔧 DOM check after injection - tempAuthForm found:', !!tempForm);
             console.log('🔧 appContainer innerHTML length:', appContainer.innerHTML.length);
-            console.log('🔧 appContainer content preview:', appContainer.innerHTML.substring(0, 200));
+            // **SECURITY FIX: Removed HTML content logging to prevent exposure**
+            console.log('🔧 appContainer content injected successfully');
             
-            // Debug: Show more of the injected HTML content
-            console.log('🔧 Full injected HTML content (first 1000 chars):', appContainer.innerHTML.substring(0, 1000));
+            // Debug: Show content length instead of actual content
+            console.log('🔧 Injected HTML content length:', appContainer.innerHTML.length);
             console.log('🔧 Searching for form elements in injected HTML...');
             console.log('🔧 Forms found via querySelectorAll:', appContainer.querySelectorAll('form').length);
             console.log('🔧 Elements with tempAuthForm ID:', appContainer.querySelectorAll('#tempAuthForm').length);

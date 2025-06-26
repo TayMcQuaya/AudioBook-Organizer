@@ -223,43 +223,52 @@ class AuthModule {
         const MIN_EVENT_INTERVAL = 500; // Minimum time between same events in ms
 
         supabaseClient.auth.onAuthStateChange(async (event, session) => {
-            // Prevent duplicate events in quick succession
-            const now = Date.now();
-            if (event === lastEvent && (now - lastEventTime) < MIN_EVENT_INTERVAL) {
+            // Prevent duplicate processing of the same event
+            if (this.lastEventProcessed === event && (Date.now() - this.lastEventTime) < 1000) {
                 console.log('🔄 Ignoring duplicate auth event:', event);
                 return;
             }
             
-            lastEvent = event;
-            lastEventTime = now;
+            this.lastEventProcessed = event;
+            this.lastEventTime = Date.now();
             
             console.log('🔄 Auth state changed:', event);
 
-            // **NEW: If in password recovery mode, ignore all auth events except PASSWORD_RECOVERY and SIGNED_OUT**
+            // **FIX: Handle PASSWORD_RECOVERY events FIRST to set recovery mode correctly**
+            if (event === 'PASSWORD_RECOVERY') {
+                console.log('🔑 Password recovery event detected - activating recovery mode');
+                sessionManager.activatePasswordRecovery();
+                this.notifyAuthListeners(event, session);
+                // **CRITICAL: Don't return here - let normal processing continue for session setup**
+            }
+
+            // **ENHANCED: Modified recovery mode handling - allow processing but control behavior**
             if (sessionManager.isPasswordRecovery) {
                 switch (event) {
-                                    case 'PASSWORD_RECOVERY':
-                    console.log('🔑 Password recovery mode detected from event (already active).');
-                    // Don't call activatePasswordRecovery() again - we're already in recovery mode
-                    this.notifyAuthListeners(event, session);
-                    break;
+                    case 'PASSWORD_RECOVERY':
+                        // Already handled above, continue with normal processing
+                        break;
                     case 'SIGNED_OUT':
                         console.log('🔑 Sign out during password recovery - allowing.');
                         await this.handleSignOut();
-                        break;
+                        return;
                     case 'SIGNED_IN':
                     case 'INITIAL_SESSION':
-                        console.log(`🔑 Ignoring ${event} during password recovery mode.`);
-                        // Still notify listeners for UI updates, but don't process as login
-                        this.notifyAuthListeners('PASSWORD_RECOVERY', session);
+                        console.log(`🔑 ${event} during recovery - allowing session setup but preventing login behavior.`);
+                        // **KEY FIX: Allow normal session processing but prevent login navigation/UI**
+                        if (session && session.user) {
+                            // Let the normal handleAuthSuccess process this but mark it as recovery
+                            await this.handleAuthSuccess(session, false, 'PASSWORD_RECOVERY');
+                            return;
+                        }
                         break;
                     default:
                         console.log(`🔑 Ignoring ${event} during password recovery mode.`);
+                        return;
                 }
-                return;
             }
 
-            // Centralized handling of all auth events (only when NOT in password recovery)
+            // Centralized handling of all auth events (normal processing when NOT in password recovery)
             switch (event) {
                 case 'SIGNED_IN':
                     await this.handleAuthSuccess(session, true /* isLogin */, event);
@@ -306,9 +315,7 @@ class AuthModule {
                     break;
 
                 case 'PASSWORD_RECOVERY':
-                    console.log('🔑 Password recovery mode detected from event.');
-                    sessionManager.activatePasswordRecovery();
-                    this.notifyAuthListeners(event, session);
+                    // Already handled at the top
                     break;
                     
                 default:
@@ -341,14 +348,15 @@ class AuthModule {
         if (this.user?.id === session.user.id && 
             this.session?.access_token === session.access_token &&
             this.userInitialized && !isNewSession) {
-            console.log('�� Ignoring duplicate auth success for same user session');
+            console.log('🔄 Ignoring duplicate auth success for same user session');
             return;
         }
 
         // Update session tracking
         if (isNewSession) {
             this.sessionId = currentSessionId;
-            console.log('🆕 New session detected:', this.sessionId);
+            // **SECURITY FIX: Removed session ID to prevent session identifier exposure**
+        console.log('🆕 New session detected');
         }
 
         this.session = session;
@@ -359,7 +367,8 @@ class AuthModule {
         authToken = session.access_token;
         
         if (!authToken) {
-            console.error('❌ No access token in session:', session);
+            // **SECURITY FIX: Removed session object logging to prevent exposure**
+        console.error('❌ No access token in session');
             showError('Authentication failed - no access token received');
             return;
         }
@@ -373,8 +382,28 @@ class AuthModule {
 
         // Store token in localStorage for API calls
         localStorage.setItem('auth_token', authToken);
-        console.log('✅ Valid JWT token stored for user:', this.user.email);
+        // **SECURITY FIX: Removed email logging to prevent privacy exposure**
+        console.log('✅ Valid JWT token stored for authenticated user');
         
+        // **FIX: Handle PASSWORD_RECOVERY differently - no login flows or navigation**
+        if (authEvent === 'PASSWORD_RECOVERY') {
+            console.log('✅ Password recovery session established - ready for password update');
+            
+            // Dispatch auth state for session manager but mark as recovery
+            window.dispatchEvent(new CustomEvent('auth-state-changed', {
+                detail: {
+                    isAuthenticated: false, // Don't mark as authenticated during recovery
+                    user: session.user,
+                    session: { token: authToken, event: authEvent }
+                }
+            }));
+            
+            // Notify listeners but prevent login UI changes
+            this.notifyAuthListeners('PASSWORD_RECOVERY', session);
+            return; // Don't continue with normal login processing
+        }
+        
+        // **NORMAL LOGIN PROCESSING** (only when not in PASSWORD_RECOVERY)
         // Dispatch auth state change event for session manager
         window.dispatchEvent(new CustomEvent('auth-state-changed', {
             detail: {
@@ -388,7 +417,8 @@ class AuthModule {
             // Initialize user profile and credits if this is a new user
             await this.initializeUser();
             
-            console.log('✅ User authenticated:', this.user.email);
+            // **SECURITY FIX: Sanitized user data logging to prevent exposure of sensitive information**
+            console.log('✅ User initialized successfully');
             
             // Welcome message logic: Show ONLY on actual login (SIGNED_IN event), not session restoration
             // And only if we haven't shown it for this session yet
@@ -430,7 +460,8 @@ class AuthModule {
                 } else if ((isPageRefresh && currentPath === '/') || (currentPath === '/' && window.location.hash)) {
                     // **CRITICAL FIX: Don't navigate away from landing page during refresh OR when user specifically navigated to landing page with hash**
                     if (window.location.hash) {
-                        console.log(`🚫 Preventing navigation from landing page - user specifically navigated to ${window.location.href}`);
+                        // **SECURITY FIX: Removed URL exposure to prevent privacy leak**
+            console.log('🚫 Preventing navigation from landing page - user specifically navigated here');
                         console.log('✅ User chose landing page with hash, respecting their choice (e.g., pricing section)');
                     } else {
                         console.log('🚫 Preventing navigation from landing page during refresh/session restoration');
@@ -472,7 +503,8 @@ class AuthModule {
                     // This prevents unwanted redirects during page refresh
                     if (currentPath === '/') {
                         if (window.location.hash) {
-                            console.log(`✅ Staying on landing page with hash (${window.location.hash}) during session restore`);
+                            // **SECURITY FIX: Removed URL hash logging to prevent privacy exposure**
+                    console.log('✅ Staying on landing page with hash during session restore');
                         } else {
                             console.log('✅ Staying on landing page during session restore');
                         }
@@ -496,6 +528,12 @@ class AuthModule {
      * NEW: Validate session security to prevent attacks
      */
     validateSessionSecurity(session, authEvent) {
+        // **FIX: Always allow PASSWORD_RECOVERY events - they are legitimate**
+        if (authEvent === 'PASSWORD_RECOVERY') {
+            console.log('✅ Allowing PASSWORD_RECOVERY event - legitimate password reset');
+            return true;
+        }
+
         // 1. Check for concurrent password recovery attacks
         if (sessionManager.isPasswordRecovery && authEvent === 'SIGNED_IN') {
             console.warn('🚨 Blocked SIGNED_IN during password recovery - potential session hijacking');
@@ -508,32 +546,33 @@ class AuthModule {
             return false;
         }
 
-        // 3. Check for rapid successive authentication attempts (but allow OAuth flows)
-        const now = Date.now();
-        const timeSinceLastAuth = now - (this.lastAuthTime || 0);
-        const isGoogleOAuthFlow = window.location.search.includes('from=google');
-        
-        // **FIX: Allow rapid events during OAuth flow (SIGNED_IN followed by INITIAL_SESSION is normal)**
-        if (timeSinceLastAuth < 1000 && !isGoogleOAuthFlow && authEvent !== 'INITIAL_SESSION') {
-            console.warn('🚨 Rapid authentication attempts detected');
-            sessionManager.logSecurityEvent('rapid_auth_attempt', {
-                timeSinceLastAuth,
-                authEvent,
-                userId: session.user?.id
-            });
-            return false;
+        // 3. **FIX: Don't flag rapid attempts during password recovery - it's normal**
+        if (!sessionManager.isPasswordRecovery) {
+            // Check for rapid successive authentication attempts (but allow OAuth flows)
+            const now = Date.now();
+            const timeSinceLastAuth = now - (this.lastAuthTime || 0);
+            const isGoogleOAuthFlow = window.location.search.includes('from=google');
+            
+            // Allow rapid events during OAuth flow and certain legitimate scenarios
+            if (timeSinceLastAuth < 1000 && !isGoogleOAuthFlow && authEvent !== 'INITIAL_SESSION' && authEvent !== 'TOKEN_VERIFICATION') {
+                console.warn('🚨 Rapid authentication attempts detected');
+                sessionManager.logSecurityEvent('rapid_auth_attempt', {
+                    timeSinceLastAuth,
+                    authEvent,
+                    userId: session.user?.id
+                });
+                return false;
+            }
+            this.lastAuthTime = now;
+        } else {
+            console.log('✅ Skipping rapid auth check during password recovery');
         }
-        this.lastAuthTime = now;
 
         // 4. Validate user email format to prevent injection
         if (session.user?.email && !this.isValidEmail(session.user.email)) {
             console.warn('🚨 Invalid email format in session');
             return false;
         }
-
-        // 5. **REMOVED: Overly strict OAuth parameter check - Supabase handles this internally**
-        // Modern Supabase OAuth doesn't always include visible parameters in the URL
-        // The session itself being valid is sufficient validation
 
         return true;
     }
@@ -645,12 +684,14 @@ class AuthModule {
                     console.log('🔄 New user credits message already shown this session');
                 }
                 
-                console.log('✅ User initialized:', data);
+                // **SECURITY FIX: Sanitized user data logging to prevent exposure of sensitive information**
+                console.log('✅ User initialized successfully');
                 
                 // Save session flags after initialization
                 this.saveSessionFlags();
             } else {
-                console.error('Failed to initialize user:', data);
+                // **SECURITY FIX: Removed data object to prevent backend structure exposure**
+            console.error('Failed to initialize user: API response error');
             }
         } catch (error) {
             console.error('Error initializing user:', error);
@@ -1114,7 +1155,8 @@ class AuthModule {
         const response = await apiFetch(endpoint, mergedOptions);
 
         if (response.status === 401) {
-            console.warn(`Unauthorized request to ${endpoint}.`);
+            // **SECURITY FIX: Removed endpoint logging to prevent API structure exposure**
+            console.warn('Unauthorized API request detected');
             // Attempt to refresh the token and retry, or sign out
             // For now, we rely on the main auth listener to catch this
             showNotification('Your session may have expired. Please refresh if you see issues.', 'warning');
@@ -1192,6 +1234,17 @@ class AuthModule {
             this.setLoading(updateBtn, true);
 
             try {
+                // **SECURITY FIX: Reduced session information exposure in logs**
+                const { data: { session: currentSession }, error: sessionError } = await supabaseClient.auth.getSession();
+                console.log('🔍 Password update session check:', {
+                    hasValidSession: !!currentSession?.access_token,
+                    recoveryMode: sessionManager.isPasswordRecovery
+                });
+                
+                if (!currentSession || !currentSession.access_token) {
+                    throw new Error('No valid Supabase session found for password update. Please refresh the page and try again.');
+                }
+
                 const { error } = await supabaseClient.auth.updateUser({ password: newPassword });
 
                 if (error) {

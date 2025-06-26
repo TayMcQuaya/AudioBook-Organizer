@@ -313,7 +313,8 @@ class StripeService {
                 return response;
             }
 
-            console.log('✅ Checkout session created:', response.session_id);
+            // **SECURITY FIX: Removed session ID logging to prevent exposure**
+            console.log('✅ Checkout session created successfully');
 
             // Redirect to Stripe Checkout
             const { error } = await this.stripe.redirectToCheckout({
