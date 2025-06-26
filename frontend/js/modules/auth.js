@@ -665,9 +665,33 @@ class AuthModule {
         }
 
         try {
+            // Prepare user data for initialization, including Google profile data
+            const userData = {};
+            
+            // If this is a Google user, include their profile data
+            if (this.user && this.user.user_metadata) {
+                const metadata = this.user.user_metadata;
+                
+                // Extract Google profile information
+                if (metadata.full_name || metadata.name) {
+                    userData.full_name = metadata.full_name || metadata.name;
+                }
+                
+                // Include Google profile picture
+                if (metadata.picture || metadata.avatar_url) {
+                    userData.avatar_url = metadata.picture || metadata.avatar_url;
+                    console.log('📸 Including Google profile picture in user initialization');
+                }
+                
+                // Include provider information
+                if (metadata.iss && metadata.iss.includes('google')) {
+                    userData.auth_provider = 'google';
+                }
+            }
+
             const response = await this.apiRequest('/api/auth/init-user', {
                 method: 'POST',
-                body: JSON.stringify({})
+                body: JSON.stringify(userData)
             });
 
             const data = await response.json();

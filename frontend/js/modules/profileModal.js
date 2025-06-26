@@ -204,6 +204,15 @@ class ProfileModal {
             profile.full_name.split(' ').map(n => n[0]).join('').toUpperCase() : 
             profile.email ? profile.email[0].toUpperCase() : '?';
 
+        // Check for Google profile picture from multiple sources
+        const googlePicture = this.getGoogleProfilePicture();
+        
+        // Create avatar HTML - use Google picture if available, otherwise show initials
+        const avatarHTML = googlePicture ? 
+            `<img src="${googlePicture}" alt="Profile Picture" class="profile-avatar-image" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+             <div class="profile-avatar-fallback" style="display: none;">${initials}</div>` :
+            `<div class="profile-avatar-text">${initials}</div>`;
+
         // Get current credits
         let currentCredits = 'Loading...';
         if (this.userData.credits !== undefined) {
@@ -219,7 +228,7 @@ class ProfileModal {
 
         return `
             <div class="profile-info">
-                <div class="profile-avatar">${initials}</div>
+                <div class="profile-avatar">${avatarHTML}</div>
                 <div class="profile-details">
                     <div class="profile-field">
                         <span class="field-label">Email</span>
@@ -240,6 +249,31 @@ class ProfileModal {
                 </div>
             </div>
         `;
+    }
+
+    /**
+     * Get Google profile picture URL from various sources
+     */
+    getGoogleProfilePicture() {
+        // Try to get from current session user metadata (most reliable for Google users)
+        if (window.sessionManager && window.sessionManager.user) {
+            const user = window.sessionManager.user;
+            // Google OAuth stores picture in user_metadata
+            const googlePicture = user.user_metadata?.picture || user.user_metadata?.avatar_url;
+            if (googlePicture) {
+                console.log('📸 Using Google profile picture from session');
+                return googlePicture;
+            }
+        }
+
+        // Fallback: Try to get from profile data (if stored in database)
+        if (this.userData && this.userData.profile && this.userData.profile.avatar_url) {
+            console.log('📸 Using profile picture from database');
+            return this.userData.profile.avatar_url;
+        }
+
+        // No profile picture available
+        return null;
     }
 
     getHistoryTabHTML() {
@@ -377,14 +411,6 @@ class ProfileModal {
                 <p class="help-text">
                     Click the button above to receive a password reset email. You'll be able to set a new password using the link in the email.
                 </p>
-                <div class="security-notice">
-                    <p><strong>🔒 Security Notice:</strong></p>
-                    <ul>
-                        <li>Reset links expire after 1 hour for security</li>
-                        <li>You'll need to check your email and spam folder</li>
-                        <li>The link can only be used once</li>
-                    </ul>
-                </div>
             </div>
         `;
     }
