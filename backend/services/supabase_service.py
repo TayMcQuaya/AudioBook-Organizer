@@ -370,6 +370,36 @@ class SupabaseService:
                 'message': 'An error occurred during user initialization'
             }
     
+    def reset_password_for_email(self, email: str) -> Dict[str, Any]:
+        """Send password reset email to user"""
+        if not self.client:
+            return {
+                'success': False,
+                'error': 'Service not configured'
+            }
+            
+        try:
+            result = self.client.auth.reset_password_email(email)
+            
+            if result:
+                logger.info(f"Password reset email sent for {email}")
+                return {
+                    'success': True,
+                    'message': 'Password reset email sent successfully'
+                }
+            else:
+                return {
+                    'success': False,
+                    'error': 'Failed to send reset email'
+                }
+                
+        except Exception as e:
+            logger.error(f"Error sending password reset email: {e}")
+            return {
+                'success': False,
+                'error': 'Failed to send reset email'
+            }
+
     # Credits System Methods
     
     def get_user_credits(self, user_id: str) -> int:

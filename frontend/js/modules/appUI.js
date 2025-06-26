@@ -161,10 +161,10 @@ class AppUIManager {
                         <span class="dropdown-arrow">▼</span>
                     </button>
                     <div class="user-dropdown" id="userDropdown">
-                        <a href="/profile" class="dropdown-item">
-                            <span class="item-icon">⚙️</span>
+                        <button class="dropdown-item" onclick="window.profileModal.open()">
+                            <span class="item-icon">👤</span>
                             Profile
-                        </a>
+                        </button>
                         <button class="dropdown-item logout-btn" onclick="window.sessionManager.signOut()">
                             <span class="item-icon">🚪</span>
                             Sign Out
@@ -233,7 +233,7 @@ class AppUIManager {
             <div class="mobile-user-info">
                 <span class="mobile-user-name">${this.getUserDisplayName(user)}</span>
             </div>
-            <a href="/profile" class="mobile-link">Profile</a>
+            <button class="mobile-link" onclick="window.profileModal.open()">Profile</button>
             <button class="mobile-link logout-btn" onclick="window.sessionManager.signOut()">
                 Sign Out
             </button>

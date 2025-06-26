@@ -435,6 +435,130 @@ def create_auth_routes() -> Blueprint:
                 'message': 'An error occurred while retrieving credits'
             }), 500
     
+    @auth_bp.route('/usage-history', methods=['GET'])
+    @require_auth
+    def get_usage_history(current_user):
+        """Get paginated usage history for the current user"""
+        try:
+            import math
+            
+            # Get pagination parameters
+            page = int(request.args.get('page', 1))
+            per_page = min(int(request.args.get('per_page', 20)), 100)
+            action_filter = request.args.get('action_filter')
+            
+            user_id = current_user['id']
+            
+            # Get Supabase service
+            supabase_service = get_supabase_service()
+            
+            # Build query with filters
+            query = supabase_service.client.table('usage_logs')\
+                .select('*')\
+                .eq('user_id', user_id)\
+                .order('created_at', desc=True)
+                
+            if action_filter:
+                query = query.eq('action', action_filter)
+                
+            # Execute with pagination
+            offset = (page - 1) * per_page
+            result = query.range(offset, offset + per_page - 1).execute()
+            
+            # Get total count for pagination
+            count_query = supabase_service.client.table('usage_logs')\
+                .select('*', count='exact')\
+                .eq('user_id', user_id)
+                
+            if action_filter:
+                count_query = count_query.eq('action', action_filter)
+                
+            count_result = count_query.execute()
+            total_count = count_result.count
+            
+            return jsonify({
+                'success': True,
+                'data': result.data,
+                'pagination': {
+                    'page': page,
+                    'per_page': per_page,
+                    'total': total_count,
+                    'pages': math.ceil(total_count / per_page) if total_count > 0 else 1
+                }
+            })
+            
+        except Exception as e:
+            logger.error(f"Usage history error: {e}")
+            return jsonify({'error': 'Failed to fetch usage history'}), 500
+
+    @auth_bp.route('/reset-password', methods=['POST'])
+    def reset_password():
+        """Send password reset email"""
+        try:
+            data = request.get_json()
+            
+            if not data:
+                return jsonify({
+                    'error': 'Invalid request',
+                    'message': 'Request body is required'
+                }), 400
+            
+            email = data.get('email')
+            
+            if not email:
+                return jsonify({
+                    'error': 'Missing email',
+                    'message': 'Email is required for password reset'
+                }), 400
+            
+            # Get security service for rate limiting
+            security_service = get_security_service()
+            client_ip = security_service._get_client_ip()
+            
+            # Check rate limiting
+            rate_limit = security_service.check_rate_limit(client_ip, 'auth')
+            if not rate_limit['allowed']:
+                return jsonify({
+                    'error': 'Rate limit exceeded',
+                    'message': rate_limit['reason'],
+                    'retry_after': rate_limit.get('retry_after', 60)
+                }), 429
+            
+            # Record the attempt
+            security_service.record_attempt(client_ip, 'auth')
+            
+            # Get Supabase service
+            supabase_service = get_supabase_service()
+            
+            if not supabase_service.is_configured():
+                return jsonify({
+                    'error': 'Service unavailable',
+                    'message': 'Authentication service is not properly configured'
+                }), 503
+            
+            # Send password reset email
+            reset_result = supabase_service.reset_password_for_email(email)
+            
+            if not reset_result['success']:
+                return jsonify({
+                    'error': 'Reset failed',
+                    'message': reset_result.get('error', 'Failed to send reset email')
+                }), 400
+            
+            logger.info(f"Password reset email sent for {email}")
+            
+            return jsonify({
+                'success': True,
+                'message': 'Password reset email sent successfully'
+            })
+            
+        except Exception as e:
+            logger.error(f"Password reset error: {e}")
+            return jsonify({
+                'error': 'Reset failed',
+                'message': 'An error occurred during password reset'
+            }), 500
+
     @auth_bp.route('/init-user', methods=['POST'])
     @require_auth
     def initialize_user(current_user):

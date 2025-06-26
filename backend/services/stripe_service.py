@@ -267,6 +267,21 @@ class StripeService:
                 
                 supabase.table('credit_transactions').insert(transaction_record).execute()
                 
+                # IMPORTANT: Also log the purchase in usage_logs so it appears in profile modal history
+                supabase_service.log_usage(
+                    user_id=user_id,
+                    action='credit_purchase',
+                    credits_used=credits_to_add,  # Positive value for purchases
+                    metadata={
+                        'package_type': package_type,
+                        'amount_cents': session.get('amount_total'),
+                        'currency': session.get('currency', 'USD'),
+                        'stripe_session_id': session_id,
+                        'stripe_payment_intent_id': session.get('payment_intent'),
+                        'transaction_type': 'purchase'
+                    }
+                )
+                
                 logger.info(f"Successfully processed payment: {credits_to_add} credits added to user {user_id}")
                 return True, None
                 

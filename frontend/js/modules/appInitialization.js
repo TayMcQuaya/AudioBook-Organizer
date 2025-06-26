@@ -13,6 +13,7 @@ import { loadFromDatabase, startAutoSave, stopAutoSave } from './storage.js';
 import { initializeTableOfContents, cleanupTableOfContents } from './tableOfContents.js';
 import { tempAuthManager } from './tempAuth.js';
 import { initializeCreditsDisplay, updateUserCredits } from './appUI.js';
+import './profileModal.js';
 
 let isInitialized = false;
 

@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profile Modal Test</title>
+    <link rel="stylesheet" href="frontend/css/profile-modal.css">
+    <style>
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        
+        /* Basic CSS variables for testing */
+        :root {
+            --bg-primary: white;
+            --bg-secondary: #f8f9fa;
+            --text-primary: #333;
+            --text-secondary: #666;
+            --border-color: #e0e0e0;
+            --border-light: #f0f0f0;
+            --accent-color: #3b82f6;
+            --accent-color-dark: #2563eb;
+            --success-color: #10b981;
+            --error-color: #ef4444;
+        }
+        
+        .test-button {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px;
+        }
+        
+        .test-button:hover {
+            background: #2563eb;
+        }
+    </style>
+</head>
+<body>
+    <h1>Profile Modal Test</h1>
+    <p>Click the button below to test the profile modal:</p>
+    
+    <button class="test-button" onclick="testProfileModal()">Open Profile Modal</button>
+    <button class="test-button" onclick="testWithMockData()">Test with Mock Data</button>
+    
+    <div id="test-info">
+        <h3>Test Status:</h3>
+        <div id="test-log"></div>
+    </div>
+
+    <!-- Mock notification system for testing -->
+    <script>
+        // Mock notification system
+        window.showError = function(message) {
+            console.error('Error:', message);
+            document.getElementById('test-log').innerHTML += `<p style="color: red;">Error: ${message}</p>`;
+        };
+        
+        window.showSuccess = function(message) {
+            console.log('Success:', message);
+            document.getElementById('test-log').innerHTML += `<p style="color: green;">Success: ${message}</p>`;
+        };
+        
+        // Mock API
+        window.apiFetch = function(endpoint, options = {}) {
+            console.log('Mock API call:', endpoint, options);
+            
+            if (endpoint.includes('/api/auth/profile')) {
+                return Promise.resolve({
+                    ok: true,
+                    json: () => Promise.resolve({
+                        success: true,
+                        profile: {
+                            id: 'test-user-123',
+                            email: 'test@example.com',
+                            full_name: 'Test User',
+                            created_at: '2024-01-01T00:00:00Z'
+                        },
+                        credits: 150
+                    })
+                });
+            }
+            
+            if (endpoint.includes('/api/auth/usage-history')) {
+                return Promise.resolve({
+                    ok: true,
+                    json: () => Promise.resolve({
+                        success: true,
+                        data: [
+                            {
+                                id: '1',
+                                action: 'audio_upload',
+                                credits_used: -2,
+                                created_at: '2024-01-15T14:30:00Z',
+                                metadata: {}
+                            },
+                            {
+                                id: '2',
+                                action: 'docx_processing',
+                                credits_used: -5,
+                                created_at: '2024-01-15T13:15:00Z',
+                                metadata: {}
+                            },
+                            {
+                                id: '3',
+                                action: 'credit_purchase',
+                                credits_used: 100,
+                                created_at: '2024-01-10T10:00:00Z',
+                                metadata: { package: 'starter' }
+                            }
+                        ],
+                        pagination: {
+                            page: 1,
+                            per_page: 10,
+                            total: 3,
+                            pages: 1
+                        }
+                    })
+                });
+            }
+            
+            if (endpoint.includes('/api/auth/reset-password')) {
+                return Promise.resolve({
+                    ok: true,
+                    json: () => Promise.resolve({
+                        success: true,
+                        message: 'Password reset email sent successfully'
+                    })
+                });
+            }
+            
+            return Promise.reject(new Error('Mock API endpoint not implemented'));
+        };
+        
+        function testProfileModal() {
+            document.getElementById('test-log').innerHTML += '<p>Testing basic modal opening...</p>';
+            
+            if (window.profileModal) {
+                window.profileModal.open();
+                document.getElementById('test-log').innerHTML += '<p style="color: green;">✅ Profile modal opened successfully</p>';
+            } else {
+                document.getElementById('test-log').innerHTML += '<p style="color: red;">❌ Profile modal not found</p>';
+            }
+        }
+        
+        function testWithMockData() {
+            document.getElementById('test-log').innerHTML += '<p>Testing with mock data...</p>';
+            testProfileModal();
+        }
+    </script>
+    
+    <!-- Load the profile modal module -->
+    <script type="module">
+        try {
+            // Import and test the profile modal module
+            import('./frontend/js/modules/profileModal.js').then(module => {
+                console.log('✅ Profile modal module loaded successfully:', module);
+                document.getElementById('test-log').innerHTML += '<p style="color: green;">✅ Profile modal module loaded</p>';
+                
+                // Test if global instance is available
+                if (window.profileModal) {
+                    document.getElementById('test-log').innerHTML += '<p style="color: green;">✅ Global profileModal instance available</p>';
+                } else {
+                    document.getElementById('test-log').innerHTML += '<p style="color: orange;">⚠️ Global profileModal instance not found (may be normal)</p>';
+                }
+            }).catch(error => {
+                console.error('❌ Failed to load profile modal module:', error);
+                document.getElementById('test-log').innerHTML += `<p style="color: red;">❌ Failed to load module: ${error.message}</p>`;
+            });
+        } catch (error) {
+            console.error('❌ Error importing profile modal:', error);
+            document.getElementById('test-log').innerHTML += `<p style="color: red;">❌ Import error: ${error.message}</p>`;
+        }
+    </script>
+</body>
+</html> 
