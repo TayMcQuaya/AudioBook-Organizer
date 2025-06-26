@@ -243,6 +243,17 @@ async function initializeModules() {
     // Initialize edit mode protection
     initializeEditProtection();
     
+    // **NEW: Pre-initialize Stripe service for better page refresh handling**
+    console.log('🔄 Pre-initializing Stripe service...');
+    try {
+        const stripeModule = await import('./stripe.js');
+        const { ensureStripeServiceGlobal } = stripeModule;
+        ensureStripeServiceGlobal();
+        console.log('✅ Stripe service pre-initialized and globally available');
+    } catch (error) {
+        console.warn('⚠️ Stripe service pre-initialization failed (this is normal in testing mode):', error.message);
+    }
+    
     // Initialize credit system after authentication is ready
     console.log('🔄 Initializing credit system...');
     try {

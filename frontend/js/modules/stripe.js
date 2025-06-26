@@ -32,6 +32,117 @@ class StripeService {
     }
 
     /**
+     * Wait for Stripe.js to be available
+     */
+    async waitForStripeScript() {
+        // If Stripe is already available, return immediately
+        if (typeof window.Stripe !== 'undefined') {
+            return true;
+        }
+
+        // Check if script failed to load
+        if (window.stripeJsLoadError) {
+            console.error('❌ Stripe.js script failed to load from CDN');
+            throw new Error('Stripe.js script load error detected');
+        }
+
+        console.log('⏳ Waiting for Stripe.js to load...');
+        
+        // First, try waiting for the existing script to load
+        const maxWaitTime = 5000; // Reduced to 5 seconds for first attempt
+        const checkInterval = 100;
+        let waitTime = 0;
+
+        const waitForExistingScript = () => {
+            return new Promise((resolve) => {
+                const checkStripe = () => {
+                    // Check for successful load flag
+                    if (window.stripeJsLoaded && typeof window.Stripe !== 'undefined') {
+                        console.log('✅ Stripe.js loaded from existing script');
+                        resolve(true);
+                        return;
+                    }
+
+                    // Check for error flag
+                    if (window.stripeJsLoadError) {
+                        console.error('❌ Stripe.js load error detected');
+                        resolve(false);
+                        return;
+                    }
+
+                    waitTime += checkInterval;
+                    if (waitTime >= maxWaitTime) {
+                        console.warn('⚠️ Existing Stripe.js script taking too long, trying dynamic load...');
+                        resolve(false);
+                        return;
+                    }
+
+                    setTimeout(checkStripe, checkInterval);
+                };
+
+                checkStripe();
+            });
+        };
+
+        // Try waiting for existing script first
+        const existingScriptLoaded = await waitForExistingScript();
+        if (existingScriptLoaded) {
+            return true;
+        }
+
+        // If existing script didn't load, try dynamic loading as fallback
+        console.log('🔄 Attempting to load Stripe.js dynamically...');
+        return this.loadStripeScriptDynamically();
+    }
+
+    /**
+     * Dynamically load Stripe.js script as fallback
+     */
+    async loadStripeScriptDynamically() {
+        return new Promise((resolve, reject) => {
+            // Check if script already exists
+            const existingScript = document.querySelector('script[src*="js.stripe.com"]');
+            if (existingScript) {
+                console.log('📄 Stripe.js script already exists in DOM, waiting for it...');
+                // Wait a bit more for the existing script
+                setTimeout(() => {
+                    if (typeof window.Stripe !== 'undefined') {
+                        resolve(true);
+                    } else {
+                        reject(new Error('Existing Stripe script failed to load'));
+                    }
+                }, 2000);
+                return;
+            }
+
+            // Create new script element
+            const script = document.createElement('script');
+            script.src = 'https://js.stripe.com/v3/';
+            script.async = true;
+
+            script.onload = () => {
+                if (typeof window.Stripe !== 'undefined') {
+                    console.log('✅ Stripe.js loaded dynamically');
+                    resolve(true);
+                } else {
+                    reject(new Error('Stripe.js loaded but not available'));
+                }
+            };
+
+            script.onerror = () => {
+                reject(new Error('Failed to load Stripe.js dynamically'));
+            };
+
+            // Set timeout for dynamic loading
+            setTimeout(() => {
+                reject(new Error('Dynamic Stripe.js load timeout'));
+            }, 10000);
+
+            document.head.appendChild(script);
+        });
+    }
+
+    /**
      * Initialize Stripe with publishable key
      */
     async init() {
@@ -40,6 +151,14 @@ class StripeService {
             const envConfig = envManager.getConfig();
             if (envConfig.testing_mode) {
                 console.warn('🚫 Stripe payment system is disabled in testing mode');
+                return false;
+            }
+
+            // **FIX: Wait for Stripe.js script to be available**
+            try {
+                await this.waitForStripeScript();
+            } catch (error) {
+                console.error('Failed to load Stripe.js script:', error);
                 return false;
             }
 
@@ -70,12 +189,7 @@ class StripeService {
 
             this.packages = response.packages;
 
-            // Initialize Stripe
-            if (typeof Stripe === 'undefined') {
-                console.error('Stripe.js not loaded');
-                return false;
-            }
-
+            // Initialize Stripe (we know it's available now)
             if (!response.publishable_key) {
                 console.error('No Stripe publishable key provided');
                 return false;
@@ -379,7 +493,7 @@ class StripeService {
                     </div>
                 </div>
                 
-                <button class="package-button" onclick="stripeService.purchaseCredits('${packageData.id}')">
+                <button class="package-button" onclick="(window.stripeService || stripeService)?.purchaseCredits?.('${packageData.id}')">
                     <span class="button-text">Purchase Credits</span>
                     <span class="button-icon">→</span>
                 </button>
@@ -402,7 +516,7 @@ class StripeService {
                     <div class="error-state">
                         <div class="error-icon">⚠️</div>
                         <p>Failed to load credit packages</p>
-                        <button onclick="stripeService.loadPackages()">Retry</button>
+                        <button onclick="window.stripeService?.loadPackages?.() || stripeService?.loadPackages?.()">Retry</button>
                     </div>
                 `;
                 return;
@@ -421,7 +535,7 @@ class StripeService {
                     <div class="error-state">
                         <div class="error-icon">❌</div>
                         <p>Error loading packages</p>
-                        <button onclick="stripeService.loadPackages()">Retry</button>
+                        <button onclick="window.stripeService?.loadPackages?.() || stripeService?.loadPackages?.()">Retry</button>
                     </div>
                 `;
             }
@@ -445,7 +559,7 @@ class StripeService {
                 return `
                     <div class="transactions-error">
                         <p>Failed to load transaction history</p>
-                        <button onclick="stripeService.refreshTransactions()">Retry</button>
+                        <button onclick="(window.stripeService || stripeService)?.refreshTransactions?.()">Retry</button>
                     </div>
                 `;
             }
@@ -485,7 +599,7 @@ class StripeService {
                 <div class="transactions-list">
                     <div class="transactions-header">
                         <h4>Recent Transactions</h4>
-                        <button class="refresh-btn" onclick="stripeService.refreshTransactions()">
+                        <button class="refresh-btn" onclick="(window.stripeService || stripeService)?.refreshTransactions?.()">
                             <span class="refresh-icon">🔄</span>
                             Refresh
                         </button>
@@ -520,5 +634,98 @@ const stripeService = new StripeService();
 
 // Make available globally for onclick handlers
 window.stripeService = stripeService;
+
+/**
+ * Ensure stripeService is globally available
+ * This is especially important after page refreshes
+ */
+export function ensureStripeServiceGlobal() {
+    if (!window.stripeService) {
+        window.stripeService = stripeService;
+        console.log('✅ stripeService restored to global scope');
+    }
+    return window.stripeService;
+}
+
+/**
+ * Safe wrapper for calling stripeService methods from HTML onclick handlers
+ */
+window.safeStripeCall = function(method, ...args) {
+    try {
+        const service = window.stripeService || stripeService;
+        if (service && typeof service[method] === 'function') {
+            return service[method](...args);
+        } else {
+            console.error(`Stripe service or method ${method} not available`);
+            return null;
+        }
+    } catch (error) {
+        console.error(`Error calling stripe method ${method}:`, error);
+        return null;
+    }
+};
+
+/**
+ * Debug function to test stripe service availability
+ * Can be called from browser console: testStripeAvailability()
+ */
+window.testStripeAvailability = function() {
+    console.log('🧪 Testing Stripe Service Availability:');
+    console.log('  - Stripe.js global object:', typeof window.Stripe !== 'undefined' ? '✅ Available' : '❌ Not loaded');
+    console.log('  - stripeJsLoaded flag:', window.stripeJsLoaded ? '✅ True' : '❌ False/Undefined');
+    console.log('  - stripeJsLoadError flag:', window.stripeJsLoadError ? '❌ Error detected' : '✅ No error');
+    console.log('  - window.stripeService exists:', !!window.stripeService);
+    console.log('  - stripeService (direct):', typeof stripeService !== 'undefined');
+    console.log('  - safeStripeCall function:', typeof window.safeStripeCall === 'function');
+    
+    if (window.stripeService) {
+        console.log('  - isInitialized:', window.stripeService.isInitialized);
+        console.log('  - isAvailable():', window.stripeService.isAvailable());
+        console.log('✅ Stripe service is properly available!');
+    } else {
+        console.error('❌ Stripe service is NOT available globally');
+    }
+    
+    // Check for Stripe script in DOM
+    const stripeScript = document.querySelector('script[src*="js.stripe.com"]');
+    console.log('  - Stripe script in DOM:', stripeScript ? '✅ Found' : '❌ Not found');
+    
+    if (typeof window.Stripe === 'undefined') {
+        console.log('🔧 Troubleshooting tips:');
+        console.log('  1. Check network connection');
+        console.log('  2. Check if Stripe.js is blocked by ad blockers');
+        console.log('  3. Try refreshing the page');
+        console.log('  4. Check browser console for script loading errors');
+        console.log('  5. Try calling forceLoadStripe() to retry loading');
+    }
+};
+
+/**
+ * Manual function to force load Stripe.js (for troubleshooting)
+ * Can be called from browser console: forceLoadStripe()
+ */
+window.forceLoadStripe = async function() {
+    console.log('🔧 Manually forcing Stripe.js load...');
+    
+    try {
+        if (typeof window.Stripe !== 'undefined') {
+            console.log('✅ Stripe.js already available');
+            return true;
+        }
+        
+        const stripeService = window.stripeService || stripeService;
+        if (stripeService && typeof stripeService.loadStripeScriptDynamically === 'function') {
+            await stripeService.loadStripeScriptDynamically();
+            console.log('✅ Stripe.js force loaded successfully');
+            return true;
+        } else {
+            console.error('❌ Cannot access stripeService.loadStripeScriptDynamically');
+            return false;
+        }
+    } catch (error) {
+        console.error('❌ Force load failed:', error);
+        return false;
+    }
+};
 
 export default stripeService; 

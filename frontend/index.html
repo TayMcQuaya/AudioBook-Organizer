@@ -36,7 +36,7 @@
     <link rel="preconnect" href="https://js.stripe.com">
     
     <!-- Stripe.js -->
-    <script src="https://js.stripe.com/v3/"></script>
+    <script src="https://js.stripe.com/v3/" onload="console.log('✅ Stripe.js script loaded successfully'); window.stripeJsLoaded = true;" onerror="console.error('❌ Failed to load Stripe.js script'); window.stripeJsLoadError = true;"></script>
     
     <!-- Critical inline styles for initial load -->
     <style>

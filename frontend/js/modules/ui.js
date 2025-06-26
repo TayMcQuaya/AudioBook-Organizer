@@ -223,6 +223,17 @@ export async function showLowCreditsModal() {
         const stripeModule = await import('./stripe.js');
         const stripeService = stripeModule.default;
         
+        // **FIX: Ensure stripeService is globally available before rendering UI**
+        // This prevents "stripeService is not defined" errors in onclick handlers
+        if (!window.stripeService) {
+            window.stripeService = stripeService;
+            console.log('✅ stripeService made globally available');
+        }
+        
+        // **ENHANCED: Use the new ensureStripeServiceGlobal function**
+        const { ensureStripeServiceGlobal } = stripeModule;
+        ensureStripeServiceGlobal();
+        
         // Initialize Stripe service
         await stripeService.init();
         
@@ -275,7 +286,7 @@ export function hideLowCreditsModal() {
     }
 }
 
-// Make functions globally available
+// Make hideLowCreditsModal globally available for onclick handlers
 window.hideLowCreditsModal = hideLowCreditsModal;
 
 // Modal functions - preserving exact logic from original
