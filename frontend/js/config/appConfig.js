@@ -220,4 +220,14 @@ const appConfig = new AppConfig();
 // Make it globally available
 window.appConfig = appConfig;
 
+// Add version for cache busting
+export const APP_VERSION = Date.now(); // Use timestamp for development
+// export const APP_VERSION = '1.0.0'; // Use semantic versioning for production
+
+// Cache busting helper
+export function addCacheBuster(url) {
+    const separator = url.includes('?') ? '&' : '?';
+    return `${url}${separator}v=${APP_VERSION}`;
+}
+
 export default appConfig; 
