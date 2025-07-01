@@ -32,6 +32,15 @@ python test_files/debug-docx-upload.py
 python deploy-setup.py --backend-url https://your-backend.ondigitalocean.app
 ```
 
+### Stripe Testing
+```bash
+# For testing Stripe locally, run this command in another terminal:
+.\stripe.exe listen --forward-to localhost:3000/api/stripe/webhook
+
+# Test card number: 4242 4242 4242 4242
+# Any fields after that don't matter as long as you don't use past dates
+```
+
 ### Docker Commands
 ```bash
 # Build Docker image
