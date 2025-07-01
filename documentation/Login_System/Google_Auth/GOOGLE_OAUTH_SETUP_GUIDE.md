@@ -1,14 +1,14 @@
-# 🔐 Google OAuth Setup Guide for AudioBook Creator
+# 🔐 Google OAuth Setup Guide for AudioBook Organizer
 
 ## Overview
 
-This guide will help you set up Google OAuth authentication for your AudioBook Creator application using Supabase. The integration is now complete on the frontend - you just need to configure the backend services.
+This guide will help you set up Google OAuth authentication for your AudioBook Organizer application using Supabase. The integration is now complete on the frontend - you just need to configure the backend services.
 
 ## 📋 Prerequisites
 
 - A Google Cloud Platform (GCP) account
 - A Supabase project
-- Access to your AudioBook Creator backend configuration
+- Access to your AudioBook Organizer backend configuration
 
 ---
 
@@ -18,7 +18,7 @@ This guide will help you set up Google OAuth authentication for your AudioBook C
 
 1. Go to [Google Cloud Console](https://console.cloud.google.com/)
 2. Click **"Create Project"** or select an existing project
-3. Enter a project name (e.g., "AudioBook Creator Auth")
+3. Enter a project name (e.g., "AudioBook Organizer Auth")
 4. Click **"Create"**
 
 ### 1.2 Enable Google+ API
@@ -34,14 +34,14 @@ This guide will help you set up Google OAuth authentication for your AudioBook C
 3. If prompted, configure the **OAuth Consent Screen** first:
    - Choose **"External"** for user type
    - Fill in required fields:
-     - App name: `AudioBook Creator`
+     - App name: `AudioBook Organizer`
      - User support email: Your email
      - Developer contact info: Your email
    - Add scopes: `email`, `profile`, `openid`
    - Add test users if needed
 4. Create the OAuth client:
    - Application type: **"Web application"**
-   - Name: `AudioBook Creator Web Client`
+   - Name: `AudioBook Organizer Web Client`
    - **Authorized JavaScript origins:**
      ```
      http://localhost:3000
@@ -67,7 +67,7 @@ After creating, you'll get:
 ### 2.1 Access Supabase Dashboard
 
 1. Go to [Supabase Dashboard](https://app.supabase.com/)
-2. Select your AudioBook Creator project
+2. Select your AudioBook Organizer project
 3. Navigate to **"Authentication" → "Providers"**
 
 ### 2.2 Configure Google Provider

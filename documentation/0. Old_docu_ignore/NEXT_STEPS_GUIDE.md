@@ -1,4 +1,4 @@
-# 🚀 AudioBook Creator - Next Steps Guide
+# 🚀 AudioBook Organizer - Next Steps Guide
 
 ## 🎉 **AUTHENTICATION SUCCESS!**
 

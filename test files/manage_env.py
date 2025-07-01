@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-AudioBook Creator - Environment Management Script
+AudioBook Organizer - Environment Management Script
 
 Usage:
   python manage_env.py local    # Switch to local/development environment
@@ -151,7 +151,7 @@ def get_timestamp():
 
 def main():
     """Main function"""
-    print("🔧 AudioBook Creator - Environment Manager")
+    print("🔧 AudioBook Organizer - Environment Manager")
     print("=" * 50)
     
     if len(sys.argv) != 2:

@@ -1,4 +1,4 @@
-# 🔐 AudioBook Creator - Authentication Flow & Implementation Guide
+# 🔐 AudioBook Organizer - Authentication Flow & Implementation Guide
 
 ## Table of Contents
 1. [Overview](#overview)
@@ -16,7 +16,7 @@
 
 ## Overview
 
-The AudioBook Creator uses a sophisticated authentication system built on **Supabase Auth** with custom session management, JWT token handling, **reCAPTCHA v3 bot protection**, and seamless page navigation. The system is designed to provide a smooth user experience with minimal authentication overhead while maintaining high security standards.
+The AudioBook Organizer uses a sophisticated authentication system built on **Supabase Auth** with custom session management, JWT token handling, **reCAPTCHA v3 bot protection**, and seamless page navigation. The system is designed to provide a smooth user experience with minimal authentication overhead while maintaining high security standards.
 
 ### Key Features
 - ✅ JWT-based authentication with Supabase
@@ -172,7 +172,7 @@ sequenceDiagram
 
 ### Overview
 
-AudioBook Creator uses **reCAPTCHA v3** for invisible bot protection. Unlike v2, reCAPTCHA v3:
+AudioBook Organizer uses **reCAPTCHA v3** for invisible bot protection. Unlike v2, reCAPTCHA v3:
 - **Works invisibly** - no checkboxes or challenges
 - **Analyzes user behavior** - mouse movements, typing patterns
 - **Generates risk scores** - 0.0 (bot) to 1.0 (human)
@@ -1318,7 +1318,7 @@ console.log('Router state:', {
 
 ## Summary
 
-The enhanced AudioBook Creator authentication system provides:
+The enhanced AudioBook Organizer authentication system provides:
 
 1. **Seamless User Experience:** Single login, persistent sessions with enhanced state management
 2. **Invisible Security:** reCAPTCHA v3 bot protection without user friction

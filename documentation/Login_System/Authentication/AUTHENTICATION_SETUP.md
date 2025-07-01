@@ -1,4 +1,4 @@
-# 🔐 AudioBook Creator - Authentication Setup Guide
+# 🔐 AudioBook Organizer - Authentication Setup Guide
 
 This guide will walk you through setting up complete authentication with Supabase for both local development and production deployment.
 
@@ -328,4 +328,4 @@ Once everything is set up, you'll have:
 - ✅ Database with proper security policies
 - ✅ Production-ready architecture
 
-Your users can now register, log in, and access the AudioBook Creator app with full authentication protection! 
+Your users can now register, log in, and access the AudioBook Organizer app with full authentication protection! 

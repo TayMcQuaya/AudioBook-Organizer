@@ -14,7 +14,7 @@
 
 ## Overview
 
-AudioBook Creator uses **Google reCAPTCHA v3** for invisible bot protection across all authentication forms. Unlike reCAPTCHA v2, version 3 works completely behind the scenes, analyzing user behavior to generate risk scores without requiring any user interaction.
+AudioBook Organizer uses **Google reCAPTCHA v3** for invisible bot protection across all authentication forms. Unlike reCAPTCHA v2, version 3 works completely behind the scenes, analyzing user behavior to generate risk scores without requiring any user interaction.
 
 ### Key Features
 - ✅ **Invisible Protection**: No checkboxes or image challenges
@@ -631,7 +631,7 @@ if not recaptcha_result['success']:
 
 ## Summary
 
-reCAPTCHA v3 provides invisible, seamless bot protection for AudioBook Creator. The implementation:
+reCAPTCHA v3 provides invisible, seamless bot protection for AudioBook Organizer. The implementation:
 
 1. **Loads dynamically** with the correct site key from backend configuration
 2. **Generates action-specific tokens** for login, signup, and password reset
