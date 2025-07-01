@@ -1,0 +1,139 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## Essential Commands
+
+### Initial Setup
+```bash
+# Install Python dependencies
+pip install -r requirements.txt
+
+# Set up environment (creates .env from template)
+python setup.py
+
+# Run the application
+python app.py
+```
+
+### Development Commands
+```bash
+# Run in development mode
+python app.py
+
+# Run authentication tests
+python test_files/test_auth.py
+python test_files/test_auth_verification.py
+
+# Test DOCX functionality
+python test_files/debug-docx-upload.py
+
+# Prepare for deployment
+python deploy-setup.py --backend-url https://your-backend.ondigitalocean.app
+```
+
+### Docker Commands
+```bash
+# Build Docker image
+docker build -t audiobook-organizer .
+
+# Run Docker container
+docker run -p 8000:8000 audiobook-organizer
+```
+
+## High-Level Architecture
+
+### Backend Architecture (Flask)
+
+The backend follows a **service-oriented architecture** with clear separation of concerns:
+
+1. **Entry Point**: `app.py` - Flask application factory pattern with environment-based configuration
+2. **Routes Layer** (`backend/routes/`): RESTful endpoints organized by feature
+   - `auth_routes.py`: Authentication flows including JWT validation
+   - `upload_routes.py`: File upload handling for text/audio/DOCX
+   - `export_routes.py`: Project export functionality
+3. **Service Layer** (`backend/services/`): Business logic isolation
+   - `supabase_service.py`: Database operations and authentication
+   - `audio_service.py`: Audio processing and conversion
+   - `docx_service.py`: DOCX parsing and formatting preservation
+4. **Middleware** (`backend/middleware/`): Cross-cutting concerns
+   - `auth_middleware.py`: JWT verification decorators
+5. **Security Features**: reCAPTCHA v3, rate limiting, password validation
+
+### Frontend Architecture (Pure JavaScript SPA)
+
+The frontend is a **module-based single-page application** without build tools:
+
+1. **Module System**: ES6 modules with direct imports (no bundling)
+2. **Core Modules** (`frontend/js/modules/`):
+   - `state.js`: Centralized state management with getters/setters
+   - `auth.js`: Authentication handling and session management
+   - `chapters.js` & `sections.js`: Core functionality for audiobook organization
+   - `router.js`: Client-side routing with authentication guards
+3. **Component Communication**: 
+   - Direct imports for tight coupling
+   - Custom events for loose coupling between features
+   - Global state for shared data
+4. **UI Patterns**: Template literals for dynamic HTML, event delegation
+
+### Critical Architectural Patterns
+
+1. **Authentication Flow**:
+   - Supabase Auth → JWT tokens → Backend verification → Frontend session
+   - Cross-tab synchronization via localStorage events
+   - Testing mode bypass with simple password
+
+2. **File Processing Pipeline**:
+   - **Audio**: Upload → Convert to WAV → Store → Export with merging
+   - **DOCX**: Parallel processing (backend + frontend) → Format preservation → Rich text
+
+3. **Project Persistence**:
+   - Auto-save with debouncing (5-second delay)
+   - Cloud storage via Supabase with conflict resolution
+   - Complete state serialization including formatting
+
+4. **Security Implementation**:
+   - Row Level Security on all database tables
+   - JWT-based authentication with refresh tokens
+   - CORS configuration for production domains
+
+### Key Integration Points
+
+1. **Frontend → Backend API Calls**:
+   - All protected routes require JWT in Authorization header
+   - Error responses follow consistent format with user-friendly messages
+   - File uploads use multipart/form-data
+
+2. **Database Structure** (Supabase/PostgreSQL):
+   - `users` table with auth integration
+   - `projects` table with user_id foreign key
+   - `audio_files` table for uploaded audio metadata
+
+3. **File Storage**:
+   - Local filesystem for audio files (uploads/ directory)
+   - Temporary exports in exports/ directory
+   - Cleanup utilities for orphaned files
+
+### Development Considerations
+
+1. **Environment Variables** (configured in `.env`):
+   - `SUPABASE_URL` and `SUPABASE_KEY` for database
+   - `BACKEND_URL` for frontend API calls
+   - `APP_MODE` (testing/production)
+   - `RECAPTCHA_SECRET_KEY` for bot protection
+
+2. **Testing Mode**:
+   - Bypass authentication with password "testaccess"
+   - Mock data generation for development
+   - Feature flags for experimental features
+
+3. **Error Handling**:
+   - Backend: Try-catch blocks with logging
+   - Frontend: User notifications via notification.js module
+   - Network errors: Automatic retry with exponential backoff
+
+4. **Performance Optimizations**:
+   - Lazy loading of modules
+   - Debounced autosave
+   - Audio streaming for large files
+   - LocalStorage caching for offline support
