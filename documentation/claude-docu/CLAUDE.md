@@ -146,3 +146,19 @@ The frontend is a **module-based single-page application** without build tools:
    - Debounced autosave
    - Audio streaming for large files
    - LocalStorage caching for offline support
+
+## Comprehensive Documentation
+
+The following documentation files provide detailed information about specific aspects of the codebase:
+
+@documentation/claude-docu/00_QUICK_REFERENCE.md
+@documentation/claude-docu/01_FILE_INDEX.md
+@documentation/claude-docu/02_API_ENDPOINTS.md
+@documentation/claude-docu/03_AUTHENTICATION_SYSTEM.md
+@documentation/claude-docu/04_TEXT_PROCESSING.md
+@documentation/claude-docu/05_AUDIO_SYSTEM.md
+@documentation/claude-docu/06_PROJECT_MANAGEMENT.md
+@documentation/claude-docu/07_UI_COMPONENTS.md
+@documentation/claude-docu/08_PAYMENT_SYSTEM.md
+@documentation/claude-docu/09_SECURITY_MIDDLEWARE.md
+@documentation/claude-docu/10_TESTING_DEVELOPMENT.md
