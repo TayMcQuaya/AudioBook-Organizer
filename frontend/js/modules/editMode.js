@@ -298,6 +298,9 @@ async function enterEditMode() {
     // Remove edit protection
     removeEditProtection();
     
+    // ✅ NEW: Add section highlight protection
+    addSectionHighlightProtection();
+    
     // Handle different edit modes
     if (isTxtFile()) {
         await enterTxtEditMode(bookContent, fileName);
@@ -398,6 +401,9 @@ function exitEditMode() {
     
     // Re-apply edit protection
     applyEditProtection();
+    
+    // ✅ NEW: Remove section highlight protection
+    removeSectionHighlightProtection();
     
     // Clear original content and formatting data
     originalContent = '';
@@ -762,4 +768,118 @@ console.log('  - DOM content loaded and ready');
 // Make debug function available globally
 if (typeof window !== 'undefined') {
     window.debugFormattingIssues = debugFormattingIssues;
+}
+
+// ✅ NEW: Section highlight protection functions
+let sectionHighlightProtectionHandlers = {
+    click: null,
+    keydown: null,
+    input: null,
+    beforeinput: null
+};
+
+/**
+ * Add protection to section highlights in edit mode
+ */
+function addSectionHighlightProtection() {
+    const bookContent = document.getElementById('bookContent');
+    if (!bookContent) return;
+    
+    console.log('🔒 Adding section highlight protection...');
+    
+    // Prevent clicking/selecting within section highlights
+    sectionHighlightProtectionHandlers.click = function(event) {
+        const sectionHighlight = event.target.closest('.section-highlight');
+        if (sectionHighlight) {
+            event.preventDefault();
+            event.stopPropagation();
+            console.log('🛡️ Prevented click on section highlight');
+            
+            // Show helpful message
+            import('./notifications.js').then(({ showInfo }) => {
+                showInfo('🔒 This text is protected. Delete the section to edit it.');
+            });
+        }
+    };
+    
+    // Prevent keyboard input within section highlights
+    sectionHighlightProtectionHandlers.keydown = function(event) {
+        const selection = window.getSelection();
+        if (selection.rangeCount > 0) {
+            const range = selection.getRangeAt(0);
+            const sectionHighlight = range.commonAncestorContainer.parentElement?.closest('.section-highlight');
+            if (sectionHighlight) {
+                event.preventDefault();
+                event.stopPropagation();
+                console.log('🛡️ Prevented keyboard input on section highlight');
+                
+                // Show helpful message
+                import('./notifications.js').then(({ showInfo }) => {
+                    showInfo('🔒 This text is protected. Delete the section to edit it.');
+                });
+            }
+        }
+    };
+    
+    // Prevent input events within section highlights
+    sectionHighlightProtectionHandlers.input = function(event) {
+        const sectionHighlight = event.target.closest('.section-highlight');
+        if (sectionHighlight) {
+            event.preventDefault();
+            event.stopPropagation();
+            console.log('🛡️ Prevented input event on section highlight');
+        }
+    };
+    
+    // Prevent beforeinput events within section highlights
+    sectionHighlightProtectionHandlers.beforeinput = function(event) {
+        const sectionHighlight = event.target.closest('.section-highlight');
+        if (sectionHighlight) {
+            event.preventDefault();
+            event.stopPropagation();
+            console.log('🛡️ Prevented beforeinput event on section highlight');
+        }
+    };
+    
+    // Add all event listeners
+    bookContent.addEventListener('click', sectionHighlightProtectionHandlers.click, true);
+    bookContent.addEventListener('keydown', sectionHighlightProtectionHandlers.keydown, true);
+    bookContent.addEventListener('input', sectionHighlightProtectionHandlers.input, true);
+    bookContent.addEventListener('beforeinput', sectionHighlightProtectionHandlers.beforeinput, true);
+    
+    console.log('✅ Section highlight protection added');
+}
+
+/**
+ * Remove protection from section highlights when exiting edit mode
+ */
+function removeSectionHighlightProtection() {
+    const bookContent = document.getElementById('bookContent');
+    if (!bookContent) return;
+    
+    console.log('🔓 Removing section highlight protection...');
+    
+    // Remove all event listeners
+    if (sectionHighlightProtectionHandlers.click) {
+        bookContent.removeEventListener('click', sectionHighlightProtectionHandlers.click, true);
+    }
+    if (sectionHighlightProtectionHandlers.keydown) {
+        bookContent.removeEventListener('keydown', sectionHighlightProtectionHandlers.keydown, true);
+    }
+    if (sectionHighlightProtectionHandlers.input) {
+        bookContent.removeEventListener('input', sectionHighlightProtectionHandlers.input, true);
+    }
+    if (sectionHighlightProtectionHandlers.beforeinput) {
+        bookContent.removeEventListener('beforeinput', sectionHighlightProtectionHandlers.beforeinput, true);
+    }
+    
+    // Clear handlers
+    sectionHighlightProtectionHandlers = {
+        click: null,
+        keydown: null,
+        input: null,
+        beforeinput: null
+    };
+    
+    console.log('✅ Section highlight protection removed');
 } 
