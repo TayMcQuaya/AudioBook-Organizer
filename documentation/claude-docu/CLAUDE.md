@@ -106,6 +106,13 @@ The frontend is a **module-based single-page application** without build tools:
    - JWT-based authentication with refresh tokens
    - CORS configuration for production domains
 
+5. **Section Highlight System**:
+   - **Visual Highlighting**: Colored backgrounds for text sections linked to audio
+   - **Edit Protection**: Section highlights are protected in edit mode to prevent accidental modifications
+   - **Context-Aware Positioning**: Highlights maintain position through formatting changes using surrounding text context
+   - **Formatted Text Support**: Works with headers, titles, and all formatted text from DOCX files
+   - **DOM Structure**: `<span class="section-highlight section-color-X"><span class="fmt-title">Text</span></span>`
+
 ### Key Integration Points
 
 1. **Frontend → Backend API Calls**:
@@ -146,6 +153,13 @@ The frontend is a **module-based single-page application** without build tools:
    - Debounced autosave
    - Audio streaming for large files
    - LocalStorage caching for offline support
+
+5. **Recent Improvements** (Latest Session):
+   - **Section Highlight Preservation**: Highlights now persist through edit mode toggles
+   - **Table of Contents Auto-Refresh**: TOC populates correctly after project restoration
+   - **Formatted Text Highlighting**: Headers/titles now show section highlights properly
+   - **Edit Protection System**: Section highlights are protected from accidental editing
+   - **Context-Based Positioning**: Robust positioning system prevents highlight drift
 
 ## Comprehensive Documentation
 
