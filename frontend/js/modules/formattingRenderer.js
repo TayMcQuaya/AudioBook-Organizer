@@ -2,6 +2,7 @@
 
 import { formattingData } from './formattingState.js';
 import { bookText } from './state.js';
+import { getNodeOffset } from '../utils/helpers.js';
 
 // Apply formatting to the book content DOM with enhanced DOCX support
 export function applyFormattingToDOM() {
@@ -18,6 +19,9 @@ console.log('🎨 FORMATTING: Book content loaded and ready for formatting');
     
     // Store current cursor position to restore after rendering
     const cursorPosition = getCurrentCursorPosition();
+    
+    // PRESERVE SECTION HIGHLIGHTS: Save existing highlights before DOM rebuild
+    const sectionHighlights = saveExistingSectionHighlights(bookContent);
     
     // Enhanced DOCX-aware DOM preparation
     prepareCleanDOMForDocx(bookContent);
@@ -37,6 +41,11 @@ console.log('🎨 FORMATTING: Book content loaded and ready for formatting');
     }
     
     console.log(`🎨 FORMATTING: Applied ${formattingData.ranges.length} formatting ranges and ${formattingData.comments.length} comments`);
+    
+    // RESTORE SECTION HIGHLIGHTS: Restore them after formatting is complete
+    if (sectionHighlights && sectionHighlights.length > 0) {
+        restoreSectionHighlightsAfterFormatting(bookContent, sectionHighlights);
+    }
     
     // Final validation for DOCX imports
     validateDocxFormatting();
@@ -1056,4 +1065,243 @@ export function testDocxFix() {
 // Export functions for external testing
 window.runDocxImportDiagnostics = runDocxImportDiagnostics;
 window.testDocxFix = testDocxFix;
-window.fixDocxImportIssues = fixDocxImportIssues; 
+window.fixDocxImportIssues = fixDocxImportIssues;
+
+// Save existing section highlights before formatting
+function saveExistingSectionHighlights(bookContent) {
+    const highlights = [];
+    const highlightElements = bookContent.querySelectorAll('.section-highlight');
+    
+    highlightElements.forEach(highlight => {
+        const sectionId = highlight.dataset.sectionId;
+        const colorIndex = Array.from(highlight.classList).find(c => c.startsWith('section-color-'))?.split('-')[2];
+        
+        // NEW: Use a more robust position calculation that accounts for formatting
+        const positionData = getAdvancedPositionData(bookContent, highlight);
+        
+        highlights.push({
+            sectionId: sectionId,
+            colorIndex: colorIndex,
+            startOffset: positionData.startOffset,
+            text: highlight.textContent,
+            innerHTML: highlight.innerHTML,
+            className: highlight.className,
+            // NEW: Store additional context for precise restoration
+            contextBefore: positionData.contextBefore,
+            contextAfter: positionData.contextAfter,
+            textLength: highlight.textContent.length
+        });
+    });
+    
+    if (highlights.length > 0) {
+        console.log(`🔧 FORMATTING: Saved ${highlights.length} section highlights for restoration`);
+    }
+    
+    return highlights;
+}
+
+// Helper function to get text position before an element
+function getTextPositionBeforeElement(container, element) {
+    const range = document.createRange();
+    range.setStart(container, 0);
+    range.setEnd(element, 0);
+    return range.toString().length;
+}
+
+// NEW: Advanced position calculation that stores context for robust restoration
+function getAdvancedPositionData(container, element) {
+    const fullText = container.textContent;
+    const elementText = element.textContent;
+    
+    // Get character position using plain text (fallback method)
+    const startOffset = getTextPositionBeforeElement(container, element);
+    
+    // Get surrounding context (50 characters before/after)
+    const contextLength = 50;
+    const contextStart = Math.max(0, startOffset - contextLength);
+    const contextEnd = Math.min(fullText.length, startOffset + elementText.length + contextLength);
+    
+    const contextBefore = fullText.substring(contextStart, startOffset);
+    const contextAfter = fullText.substring(startOffset + elementText.length, contextEnd);
+    
+    return {
+        startOffset: startOffset,
+        contextBefore: contextBefore,
+        contextAfter: contextAfter,
+        fullContext: fullText.substring(contextStart, contextEnd)
+    };
+}
+
+// Restore section highlights after formatting
+function restoreSectionHighlightsAfterFormatting(bookContent, savedHighlights) {
+    console.log(`🔧 FORMATTING: Restoring ${savedHighlights.length} section highlights`);
+    
+    // Sort by position (reverse order to avoid position shifts)
+    savedHighlights.sort((a, b) => b.startOffset - a.startOffset);
+    
+    savedHighlights.forEach(highlight => {
+        try {
+            // NEW: Use context-based text matching to find exact position
+            const position = findTextPositionByContext(bookContent, highlight);
+            
+            if (position) {
+                // Create range for the highlight
+                const range = document.createRange();
+                range.setStart(position.startNode, position.startOffset);
+                range.setEnd(position.endNode, position.endOffset);
+                
+                // Extract contents and wrap in highlight span
+                const contents = range.extractContents();
+                const span = document.createElement('span');
+                span.className = highlight.className;
+                span.dataset.sectionId = highlight.sectionId;
+                
+                // Preserve the original formatted content
+                if (highlight.innerHTML && highlight.innerHTML.trim()) {
+                    span.innerHTML = highlight.innerHTML;
+                } else {
+                    span.appendChild(contents);
+                }
+                
+                // Insert the highlight span
+                range.insertNode(span);
+                
+                console.log(`✅ Restored section highlight ${highlight.sectionId} using context matching`);
+            } else {
+                console.warn(`❌ Could not find position for section highlight ${highlight.sectionId}`);
+            }
+        } catch (error) {
+            console.error(`Failed to restore section highlight ${highlight.sectionId}:`, error);
+        }
+    });
+}
+
+// NEW: Context-based text position finder - more robust than character counting
+function findTextPositionByContext(container, highlight) {
+    const fullText = container.textContent;
+    const targetText = highlight.text;
+    const contextBefore = highlight.contextBefore || '';
+    const contextAfter = highlight.contextAfter || '';
+    
+    // Strategy 1: Find using context pattern
+    const contextPattern = contextBefore + targetText + contextAfter;
+    const patternIndex = fullText.indexOf(contextPattern);
+    
+    if (patternIndex !== -1) {
+        const targetStart = patternIndex + contextBefore.length;
+        const targetEnd = targetStart + targetText.length;
+        
+        // Convert text positions to DOM positions
+        const domPosition = findDOMPositionFromTextPosition(container, targetStart, targetEnd);
+        if (domPosition) {
+            console.log(`✅ Found highlight using context pattern for section ${highlight.sectionId}`);
+            return domPosition;
+        }
+    }
+    
+    // Strategy 2: Find using just target text (less reliable but fallback)
+    const targetIndex = fullText.indexOf(targetText);
+    if (targetIndex !== -1) {
+        const targetEnd = targetIndex + targetText.length;
+        
+        // Convert text positions to DOM positions
+        const domPosition = findDOMPositionFromTextPosition(container, targetIndex, targetEnd);
+        if (domPosition) {
+            console.log(`⚠️ Found highlight using text search fallback for section ${highlight.sectionId}`);
+            return domPosition;
+        }
+    }
+    
+    // Strategy 3: Use the original position as last resort
+    const originalPosition = findDOMPositionFromTextPosition(container, highlight.startOffset, highlight.startOffset + highlight.textLength);
+    if (originalPosition) {
+        console.log(`⚠️ Using original position as fallback for section ${highlight.sectionId}`);
+        return originalPosition;
+    }
+    
+    return null;
+}
+
+// Convert text character positions to DOM node positions
+function findDOMPositionFromTextPosition(container, startPos, endPos) {
+    const walker = document.createTreeWalker(
+        container,
+        NodeFilter.SHOW_TEXT,
+        {
+            acceptNode: function(node) {
+                // Only accept text nodes that are not inside comment indicators
+                const parent = node.parentNode;
+                if (parent && parent.classList.contains('comment-indicator')) {
+                    return NodeFilter.FILTER_REJECT;
+                }
+                return NodeFilter.FILTER_ACCEPT;
+            }
+        }
+    );
+    
+    let currentPos = 0;
+    let startNode = null;
+    let startOffset = 0;
+    let endNode = null;
+    let endOffset = 0;
+    
+    while (walker.nextNode()) {
+        const node = walker.currentNode;
+        const nodeLength = node.textContent.length;
+        
+        // Check if start position is in this node
+        if (!startNode && currentPos + nodeLength > startPos) {
+            startNode = node;
+            startOffset = startPos - currentPos;
+        }
+        
+        // Check if end position is in this node
+        if (currentPos + nodeLength >= endPos) {
+            endNode = node;
+            endOffset = endPos - currentPos;
+            break;
+        }
+        
+        currentPos += nodeLength;
+    }
+    
+    if (startNode && endNode) {
+        // Validate offsets
+        startOffset = Math.max(0, Math.min(startOffset, startNode.textContent.length));
+        endOffset = Math.max(0, Math.min(endOffset, endNode.textContent.length));
+        
+        return {
+            startNode: startNode,
+            startOffset: startOffset,
+            endNode: endNode,
+            endOffset: endOffset
+        };
+    }
+    
+    return null;
+}
+
+// Helper function to find text node at specific offset within an element
+function findTextNodeAtOffset(element, offset) {
+    let currentOffset = 0;
+    const walker = document.createTreeWalker(
+        element,
+        NodeFilter.SHOW_TEXT
+    );
+    
+    while (walker.nextNode()) {
+        const node = walker.currentNode;
+        const nodeLength = node.textContent.length;
+        
+        if (currentOffset + nodeLength >= offset) {
+            return {
+                node: node,
+                offset: offset - currentOffset
+            };
+        }
+        
+        currentOffset += nodeLength;
+    }
+    
+    return null;
+} 
