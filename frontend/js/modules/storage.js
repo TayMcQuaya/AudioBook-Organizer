@@ -15,6 +15,7 @@ export function saveProgress() {
     const bookContent = document.getElementById('bookContent');
     const highlights = Array.from(bookContent.querySelectorAll('.section-highlight')).map(highlight => ({
         text: highlight.textContent,
+        innerHTML: highlight.innerHTML,  // Save the HTML content to preserve formatting
         sectionId: highlight.dataset.sectionId,
         className: highlight.className,
         startOffset: getNodeOffset(highlight),
@@ -181,6 +182,7 @@ export function getCurrentProjectData() {
     const bookContent = document.getElementById('bookContent');
     const highlights = Array.from(bookContent.querySelectorAll('.section-highlight')).map(highlight => ({
         text: highlight.textContent,
+        innerHTML: highlight.innerHTML,  // Save the HTML content to preserve formatting
         sectionId: highlight.dataset.sectionId,
         className: highlight.className,
         startOffset: getNodeOffset(highlight),
@@ -309,6 +311,16 @@ function loadProjectDirectly(projectData) {
         import('./formattingRenderer.js').then(({ applyFormattingToDOM }) => {
             applyFormattingToDOM();
             console.log('Applied formatting to loaded project (immediate)');
+            
+            // Check if we have pending highlights to restore after formatting
+            if (bookContent._pendingHighlights && Array.isArray(bookContent._pendingHighlights)) {
+                console.log('Restoring highlights after formatting...');
+                restoreHighlightsAsync(bookContent._pendingHighlights, bookContent);
+                delete bookContent._pendingHighlights;
+            } else {
+                // Complete project load if no highlights
+                completeProjectLoad(projectData);
+            }
         }).catch(error => {
             console.error('Error applying formatting during load:', error);
         });
@@ -317,6 +329,16 @@ function loadProjectDirectly(projectData) {
         import('./state.js').then(({ setCurrentFileType }) => {
             setCurrentFileType('txt', '');
             console.log('📁 File type set to TXT (no formatting data)');
+            
+            // For TXT files, restore highlights immediately since there's no formatting to apply
+            if (bookContent._pendingHighlights && Array.isArray(bookContent._pendingHighlights)) {
+                console.log('Restoring highlights for TXT file...');
+                restoreHighlightsAsync(bookContent._pendingHighlights, bookContent);
+                delete bookContent._pendingHighlights;
+            } else {
+                // Complete project load if no highlights
+                completeProjectLoad(projectData);
+            }
         }).catch(error => {
             console.error('Error setting file type during load:', error);
         });
@@ -337,13 +359,8 @@ function loadProjectDirectly(projectData) {
         highlightsToRestore: projectData.highlights?.length || 0
     });
 
-    // Restore highlights asynchronously to avoid blocking UI
-    if (projectData.highlights && Array.isArray(projectData.highlights)) {
-        restoreHighlightsAsync(projectData.highlights, bookContent);
-    } else {
-        // If no highlights, complete initialization immediately
-        completeProjectLoad(projectData);
-    }
+    // Store highlights for later restoration after formatting
+    bookContent._pendingHighlights = projectData.highlights;
 
     // ✅ NEW: Validate and restore audio files after project load
     validateAndRestoreAudioFiles(projectData);
@@ -400,8 +417,14 @@ function restoreSingleHighlight(highlight, index, bookContent) {
     // Create the highlight element
     const span = document.createElement('span');
     span.className = highlight.className;
-    span.textContent = highlight.text;
     span.dataset.sectionId = highlight.sectionId;
+    
+    // Use innerHTML if available to preserve formatting, otherwise fallback to text
+    if (highlight.innerHTML) {
+        span.innerHTML = highlight.innerHTML;
+    } else {
+        span.textContent = highlight.text;
+    }
 
     // More robust text finding approach
     const fullText = bookContent.textContent;
