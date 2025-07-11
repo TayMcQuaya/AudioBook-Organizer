@@ -45,6 +45,37 @@ def require_payments_enabled(f):
         return f(*args, **kwargs)
     return decorated_function
 
+@stripe_bp.route('/public/pricing', methods=['GET'])
+def get_public_pricing():
+    """Get pricing information - no authentication required"""
+    try:
+        # Get packages from stripe service
+        packages = stripe_service.credit_packages
+        
+        formatted_packages = []
+        for package_id, package_info in packages.items():
+            formatted_packages.append({
+                'id': package_id,
+                'name': package_info['name'],
+                'credits': package_info['credits'],
+                'price_cents': package_info['price_cents'],
+                'price_display': f"${package_info['price_cents'] / 100:.2f}",
+                'description': package_info['description'],
+                'credits_per_dollar': round(package_info['credits'] / (package_info['price_cents'] / 100), 1)
+            })
+        
+        return jsonify({
+            'success': True,
+            'packages': formatted_packages
+        })
+        
+    except Exception as e:
+        logger.error(f"Error getting public pricing: {e}")
+        return jsonify({
+            'success': False,
+            'error': 'Failed to retrieve pricing information'
+        }), 500
+
 @stripe_bp.route('/packages', methods=['GET'])
 @require_auth
 @require_normal_mode

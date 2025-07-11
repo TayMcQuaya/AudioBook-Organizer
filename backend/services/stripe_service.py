@@ -35,26 +35,31 @@ class StripeService:
         # Set Stripe API key
         stripe.api_key = self.stripe_secret_key
         
+        # Get prices from environment variables (with fallbacks for backward compatibility)
+        starter_price = int(os.getenv('PRICE_STARTER_CENTS', '499'))
+        creator_price = int(os.getenv('PRICE_CREATOR_CENTS', '1499'))
+        professional_price = int(os.getenv('PRICE_PROFESSIONAL_CENTS', '2999'))
+        
         # Credit package configurations
         self.credit_packages = {
             'starter': {
                 'name': 'Starter Pack',
                 'credits': 500,
-                'price_cents': 499,  # $4.99
+                'price_cents': starter_price,
                 'price_id': self.starter_pack_price_id,
                 'description': '500 credits for processing documents and audio files'
             },
             'creator': {
                 'name': 'Creator Pack', 
                 'credits': 1500,
-                'price_cents': 1499,  # $14.99
+                'price_cents': creator_price,
                 'price_id': self.creator_pack_price_id,
                 'description': '1,500 credits for power users and content creators'
             },
             'professional': {
                 'name': 'Professional Pack',
                 'credits': 3500,
-                'price_cents': 2999,  # $29.99
+                'price_cents': professional_price,
                 'price_id': self.professional_pack_price_id,
                 'description': '3,500 credits for professional users and publishers'
             }

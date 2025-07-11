@@ -28,6 +28,9 @@ function init() {
     setupAppWindowTilt();
     setupBrandNavigation();
     
+    // Fetch and update pricing dynamically
+    fetchAndUpdatePricing();
+    
     // Initialize appUI manager
     if (window.appUI) {
         window.appUI.init().then(() => {
@@ -47,6 +50,59 @@ function init() {
     
     // Handle hash navigation on page load
     handleHashNavigation();
+}
+
+/**
+ * Fetch pricing from API and update the page
+ */
+async function fetchAndUpdatePricing() {
+    try {
+        // Get the backend URL
+        const backendUrl = window.appConfig?.backendUrl || '';
+        const response = await fetch(`${backendUrl}/api/stripe/public/pricing`);
+        
+        if (!response.ok) {
+            throw new Error('Failed to fetch pricing');
+        }
+        
+        const data = await response.json();
+        
+        if (data.success && data.packages) {
+            // Update each price element
+            data.packages.forEach(pkg => {
+                const priceElement = document.querySelector(`[data-package="${pkg.id}"]`);
+                if (priceElement) {
+                    priceElement.textContent = pkg.price_display;
+                }
+            });
+            
+            // Store pricing in localStorage for offline use
+            localStorage.setItem('cached_pricing', JSON.stringify({
+                timestamp: Date.now(),
+                packages: data.packages
+            }));
+        }
+    } catch (error) {
+        console.error('Failed to fetch pricing:', error);
+        
+        // Try to use cached pricing if available
+        const cached = localStorage.getItem('cached_pricing');
+        if (cached) {
+            try {
+                const { packages } = JSON.parse(cached);
+                packages.forEach(pkg => {
+                    const priceElement = document.querySelector(`[data-package="${pkg.id}"]`);
+                    if (priceElement) {
+                        priceElement.textContent = pkg.price_display;
+                    }
+                });
+            } catch (e) {
+                console.error('Failed to use cached pricing:', e);
+            }
+        }
+        
+        // Prices will fall back to hardcoded values in HTML
+    }
 }
 
 /**
