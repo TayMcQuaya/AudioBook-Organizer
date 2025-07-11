@@ -178,12 +178,7 @@
     border-left: 4px solid #7986cb !important;
 }
 
-/* ✅ EXTREME DEBUGGING: Force visible background for testing */
-.section-highlight {
-    /* Temporary: bright background to see if highlights are working at all */
-    background: rgba(255, 255, 0, 0.3) !important;
-    border: 2px solid red !important;
-}
+/* ✅ RESTORED: Proper section highlight styling */
 
 .section-highlight::after {
     content: '';
