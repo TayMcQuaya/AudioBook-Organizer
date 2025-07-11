@@ -407,15 +407,23 @@ export function removeHighlightFromText(sectionId) {
     // Store the parent element for cleanup
     const parent = highlight.parentNode;
     
-    // Replace the highlighted span with its text content
-    const textNode = document.createTextNode(highlight.textContent);
-    parent.replaceChild(textNode, highlight);
+    // ✅ PRESERVE FORMATTING: Extract all child nodes (which contain the formatting)
+    // instead of just getting the text content
+    const fragment = document.createDocumentFragment();
+    
+    // Move all child nodes from the highlight span to the fragment
+    while (highlight.firstChild) {
+        fragment.appendChild(highlight.firstChild);
+    }
+    
+    // Replace the highlight span with the fragment containing all the formatted content
+    parent.replaceChild(fragment, highlight);
     
     // Normalize the parent to merge any adjacent text nodes
     // This cleans up the DOM structure after removing highlights
     parent.normalize();
     
-    console.log(`Highlight successfully removed for section ID: ${sectionId}`);
+    console.log(`Highlight successfully removed for section ID: ${sectionId} with formatting preserved`);
 }
 
 /**
@@ -429,8 +437,17 @@ export function removeAllHighlights() {
     const highlights = bookContent.querySelectorAll('.section-highlight');
     highlights.forEach(highlight => {
         const parent = highlight.parentNode;
-        const textNode = document.createTextNode(highlight.textContent);
-        parent.replaceChild(textNode, highlight);
+        
+        // ✅ PRESERVE FORMATTING: Extract all child nodes instead of just text
+        const fragment = document.createDocumentFragment();
+        
+        // Move all child nodes from the highlight span to the fragment
+        while (highlight.firstChild) {
+            fragment.appendChild(highlight.firstChild);
+        }
+        
+        // Replace the highlight span with the fragment containing all the formatted content
+        parent.replaceChild(fragment, highlight);
         parent.normalize();
     });
 }
