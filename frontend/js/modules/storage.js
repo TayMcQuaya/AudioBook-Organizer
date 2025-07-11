@@ -312,6 +312,14 @@ function loadProjectDirectly(projectData) {
             applyFormattingToDOM();
             console.log('Applied formatting to loaded project (immediate)');
             
+            // ✅ NEW: Refresh TOC immediately after formatting is applied
+            import('./tableOfContents.js').then(({ refreshTableOfContents }) => {
+                refreshTableOfContents();
+                console.log('✅ Table of Contents refreshed after formatting application');
+            }).catch(error => {
+                console.error('❌ Failed to refresh TOC after formatting:', error);
+            });
+            
             // Check if we have pending highlights to restore after formatting
             if (bookContent._pendingHighlights && Array.isArray(bookContent._pendingHighlights)) {
                 console.log('Restoring highlights after formatting...');
@@ -329,6 +337,14 @@ function loadProjectDirectly(projectData) {
         import('./state.js').then(({ setCurrentFileType }) => {
             setCurrentFileType('txt', '');
             console.log('📁 File type set to TXT (no formatting data)');
+            
+            // ✅ NEW: Refresh TOC for TXT files too (might have chapter-based headers)
+            import('./tableOfContents.js').then(({ refreshTableOfContents }) => {
+                refreshTableOfContents();
+                console.log('✅ Table of Contents refreshed for TXT file');
+            }).catch(error => {
+                console.error('❌ Failed to refresh TOC for TXT file:', error);
+            });
             
             // For TXT files, restore highlights immediately since there's no formatting to apply
             if (bookContent._pendingHighlights && Array.isArray(bookContent._pendingHighlights)) {
@@ -517,6 +533,19 @@ function restoreSingleHighlight(highlight, index, bookContent) {
 function completeProjectLoad(projectData) {
     // Reinitialize smart select functionality
     initializeSmartSelect();
+    
+    // ✅ NEW: Refresh Table of Contents after project restoration
+    try {
+        // Import and refresh TOC to pick up restored formatting data
+        import('./tableOfContents.js').then(({ refreshTableOfContents }) => {
+            refreshTableOfContents();
+            console.log('✅ Table of Contents refreshed after project restoration');
+        }).catch(error => {
+            console.error('❌ Failed to refresh TOC after project restoration:', error);
+        });
+    } catch (error) {
+        console.error('❌ Error importing TOC module for refresh:', error);
+    }
     
     // Note: Formatting is now applied immediately during loadProjectDirectly(),
     // so we don't need to apply it again here
