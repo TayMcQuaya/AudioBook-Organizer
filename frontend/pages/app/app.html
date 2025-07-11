@@ -133,10 +133,10 @@
 
     <!-- Export Modal -->
     <div id="exportModal" class="modal-overlay">
-        <div class="modal">
+        <div class="modal export-modal">
+            <button class="modal-close" onclick="hideExportModal()">×</button>
             <div class="modal-header">
                 <h2>Export Options</h2>
-                <button class="modal-close" onclick="hideExportModal()">×</button>
             </div>
             <div class="modal-body">
                 <div class="export-options">
@@ -202,9 +202,9 @@
     <!-- Reorder Modal -->
     <div id="reorderModal" class="modal-overlay">
         <div class="modal reorder-modal">
+            <button class="modal-close" onclick="hideReorderModal()">×</button>
             <div class="modal-header">
                 <h2>↕️ Reorder Chapters & Sections</h2>
-                <button class="modal-close" onclick="hideReorderModal()">×</button>
             </div>
             <div class="modal-body">
                 <div class="reorder-instructions">

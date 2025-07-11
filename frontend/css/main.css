@@ -788,13 +788,13 @@ body.mobile-layout .main-container .column:last-child {
 
 /* Download Preview Section */
 .download-preview {
-    margin-top: 16px;
-    padding: 14px;
+    margin-top: 12px;
+    padding: 12px;
     background-color: var(--bg-secondary);
-    border-radius: 8px;
-    border-left: 4px solid var(--accent-color);
+    border-radius: 6px;
+    border-left: 3px solid var(--accent-color);
     transition: all 0.3s ease;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
 }
 
 .download-preview:hover {
@@ -837,9 +837,10 @@ body.mobile-layout .main-container .column:last-child {
 /* Export Modal Improvements */
 .export-options {
     max-height: none;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 8px;
+    width: 100%;
 }
 
 .export-options label {
@@ -848,18 +849,20 @@ body.mobile-layout .main-container .column:last-child {
 }
 
 .export-options > label {
-    display: flex;
+    display: flex !important;
     align-items: center;
     gap: 10px;
-    padding: 12px 14px;
+    padding: 10px 12px;
     background-color: var(--bg-secondary);
-    border-radius: 8px;
-    border: 2px solid transparent;
+    border-radius: 6px;
+    border: 1.5px solid transparent;
     transition: all 0.2s ease;
     cursor: pointer;
     margin-bottom: 0;
     position: relative;
-    font-size: 0.9em;
+    font-size: 0.875rem;
+    width: 100%;
+    box-sizing: border-box;
 }
 
 .export-options > label:hover {
@@ -951,11 +954,14 @@ body.mobile-layout .main-container .column:last-child {
 
 .audio-format-selection {
     background-color: var(--bg-tertiary);
-    padding: 12px;
-    border-radius: 8px;
-    margin: 6px 0 6px 30px;
-    border: 2px solid var(--border-color);
+    padding: 10px;
+    border-radius: 6px;
+    margin: 4px 0 8px 28px;
+    border: 1.5px solid var(--border-color);
     transition: all 0.2s ease;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
 }
 
 .audio-format-selection:hover {
@@ -1042,6 +1048,80 @@ body.mobile-layout .main-container .column:last-child {
     box-shadow: 0 0 0 3px rgba(var(--accent-color-rgb), 0.1);
 }
 
+/* Export Modal Specific Optimizations */
+#exportModal .modal {
+    max-height: 85vh;
+    min-width: 480px;
+    max-width: 520px;
+    padding: 24px;
+}
+
+#exportModal .modal-header {
+    padding-bottom: 16px;
+    margin-bottom: 20px;
+}
+
+#exportModal .modal-header h2 {
+    font-size: 1.25rem;
+    font-weight: 600;
+}
+
+#exportModal .modal-body {
+    margin-bottom: 20px;
+    padding: 0;
+    max-height: calc(85vh - 140px);
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--accent-color) transparent;
+}
+
+#exportModal .modal-body::-webkit-scrollbar {
+    width: 6px;
+}
+
+#exportModal .modal-body::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+#exportModal .modal-body::-webkit-scrollbar-thumb {
+    background-color: var(--accent-color);
+    border-radius: 3px;
+    opacity: 0.6;
+}
+
+#exportModal .modal-body::-webkit-scrollbar-thumb:hover {
+    opacity: 1;
+}
+
+#exportModal .modal-footer {
+    padding-top: 16px;
+    margin-top: 0;
+    justify-content: center;
+    border-top: 1px solid var(--border-color);
+}
+
+/* Force vertical layout for export options */
+#exportModal .export-options {
+    display: flex !important;
+    flex-direction: column !important;
+}
+
+#exportModal .export-options > label {
+    display: flex !important;
+    width: 100% !important;
+    margin-bottom: 8px !important;
+}
+
+#exportModal .audio-format-selection {
+    display: flex !important;
+    flex-direction: column !important;
+}
+
+#exportModal .audio-format-selection > label:not(:first-of-type) {
+    display: flex !important;
+    width: 100% !important;
+}
+
 /* Export Modal Responsive Design */
 @media (max-width: 768px) {
     .export-options > label {
@@ -1094,19 +1174,25 @@ body.mobile-layout .main-container .column:last-child {
 /* Export Modal Specific Optimizations */
 #exportModal .modal {
     max-height: 85vh;
-    min-width: 500px;
-    max-width: 550px;
+    min-width: 480px;
+    max-width: 520px;
+    padding: 24px;
 }
 
 #exportModal .modal-header {
-    padding-bottom: 12px;
-    margin-bottom: 16px;
+    padding-bottom: 16px;
+    margin-bottom: 20px;
+}
+
+#exportModal .modal-header h2 {
+    font-size: 1.25rem;
+    font-weight: 600;
 }
 
 #exportModal .modal-body {
-    margin-bottom: 16px;
+    margin-bottom: 20px;
     padding: 0;
-    max-height: calc(85vh - 120px);
+    max-height: calc(85vh - 140px);
     overflow-y: auto;
     scrollbar-width: thin;
     scrollbar-color: var(--accent-color) transparent;
@@ -1131,9 +1217,10 @@ body.mobile-layout .main-container .column:last-child {
 }
 
 #exportModal .modal-footer {
-    padding-top: 12px;
+    padding-top: 16px;
     margin-top: 0;
     justify-content: center;
+    border-top: 1px solid var(--border-color);
 }
 
 /* Ensure modal content fits perfectly */
