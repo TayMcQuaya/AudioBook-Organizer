@@ -103,17 +103,86 @@
     border: 1px solid rgba(0,0,0,0.1);
 }
 
-/* Section highlight in book content */
+/* ✅ FIXED: Section highlight in book content (unified definition) */
+/* The structure is: <span class="section-highlight section-color-X"><span class="fmt-title">Text</span></span> */
+
 .section-highlight {
     cursor: pointer;
     transition: all 0.2s ease;
-    padding: 2px 0;
-    border-radius: 2px;
+    padding: 4px 8px !important;
+    border-radius: 4px !important;
     position: relative;
+    /* Force display as block for formatted content */
+    display: block !important;
+    /* Add margin for spacing */
+    margin: 4px 0 !important;
 }
 
 .section-highlight:hover {
     filter: brightness(0.95);
+}
+
+/* ✅ CRITICAL: Override formatted text margins/padding inside section highlights */
+.section-highlight .fmt-title,
+.section-highlight .fmt-subtitle,
+.section-highlight .fmt-section,
+.section-highlight .fmt-subsection {
+    /* Remove default margins that formatted text usually has */
+    margin: 0 !important;
+    /* Remove padding to prevent double-padding */
+    padding: 0 !important;
+    /* Make sure background is transparent so parent color shows */
+    background: transparent !important;
+    /* Keep the text formatting but remove spacing */
+    display: block !important;
+}
+
+/* ✅ DEBUGGING: Force section highlights to be visible with higher specificity */
+.section-highlight.section-color-1 {
+    background-color: var(--section-color-1) !important;
+    border-left: 4px solid #ffb74d !important;
+}
+
+.section-highlight.section-color-2 {
+    background-color: var(--section-color-2) !important;
+    border-left: 4px solid #81c784 !important;
+}
+
+.section-highlight.section-color-3 {
+    background-color: var(--section-color-3) !important;
+    border-left: 4px solid #64b5f6 !important;
+}
+
+.section-highlight.section-color-4 {
+    background-color: var(--section-color-4) !important;
+    border-left: 4px solid #f06292 !important;
+}
+
+.section-highlight.section-color-5 {
+    background-color: var(--section-color-5) !important;
+    border-left: 4px solid #a1887f !important;
+}
+
+.section-highlight.section-color-6 {
+    background-color: var(--section-color-6) !important;
+    border-left: 4px solid #4dd0e1 !important;
+}
+
+.section-highlight.section-color-7 {
+    background-color: var(--section-color-7) !important;
+    border-left: 4px solid #ba68c8 !important;
+}
+
+.section-highlight.section-color-8 {
+    background-color: var(--section-color-8) !important;
+    border-left: 4px solid #7986cb !important;
+}
+
+/* ✅ EXTREME DEBUGGING: Force visible background for testing */
+.section-highlight {
+    /* Temporary: bright background to see if highlights are working at all */
+    background: rgba(255, 255, 0, 0.3) !important;
+    border: 2px solid red !important;
 }
 
 .section-highlight::after {
