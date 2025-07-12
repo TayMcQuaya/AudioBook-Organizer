@@ -12,6 +12,49 @@ This document outlines the comprehensive plan for integrating ElevenLabs Text-to
 
 **⚠️ V3 Model Status**: Currently in **alpha** and **not publicly available**. Contact ElevenLabs sales for access. This plan prepares the infrastructure for easy integration when V3 becomes available.
 
+## Database Architecture Decision
+
+### ❓ **Do we need the `file_uploads` table for ElevenLabs?**
+
+**Answer: No!** The `file_uploads` table exists in the schema but is completely unused in the current codebase and is NOT needed for ElevenLabs integration.
+
+### **Why we don't need it:**
+
+1. **Current Working Architecture**:
+   - Audio files are stored on the filesystem (`uploads/` directory)
+   - File paths are stored in the project JSON (`audiobook_projects.settings`)
+   - This works perfectly in production already
+
+2. **ElevenLabs Integration Flow**:
+   - Send text to ElevenLabs API (no file upload needed)
+   - Receive audio data back
+   - Save to filesystem using existing `save_uploaded_audio()` function
+   - Attach path to section using existing `attachAudio()` flow
+
+3. **Production Compatibility**:
+   - ✅ Works with Digital Ocean App Platform's persistent storage
+   - ✅ No additional database complexity
+   - ✅ Follows existing proven patterns
+   - ✅ Simpler to implement and maintain
+
+### **What `file_uploads` table was designed for:**
+
+Looking at its schema (project_id, filename, file_path, upload_status), it was likely intended for:
+- Upload progress tracking for large files
+- Collaborative features (multiple users uploading)
+- File versioning and history
+- Centralized file management and cleanup
+
+### **Future considerations:**
+
+You might use `file_uploads` later for:
+- Analytics on storage usage per user
+- Batch file operations
+- Orphaned file cleanup jobs
+- Multi-user collaboration
+
+But for the current single-user, project-based architecture, it would add unnecessary complexity without benefit.
+
 ## Current Codebase Analysis
 
 ### ✅ Existing Infrastructure Ready for Integration:
