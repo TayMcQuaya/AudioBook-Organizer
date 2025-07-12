@@ -40,25 +40,25 @@
 
                 <div class="legal-section">
                     <h2>1. Introduction</h2>
-                    <p>Welcome to AudioBook Organizer ("we," "our," or "us"). We are committed to protecting your personal information and your right to privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our service.</p>
-                    <p><strong>Important: This is a template privacy policy. You must update it with your actual business information, contact details, and specific data practices before using it in production.</strong></p>
+                    <p>Welcome to AudioBook Organizer ("we," "our," or "us"). We are committed to protecting your personal information and your right to privacy.<br>
+                    This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our service.</p>
                 </div>
 
                 <div class="legal-section">
                     <h2>2. Information We Collect</h2>
                     <h3>2.1 Information You Provide</h3>
                     <ul>
-                        <li><strong>Account Information:</strong> Email address, full name, username, bio, and avatar URL (stored in profiles table)</li>
+                        <li><strong>Account Information:</strong> Email address, full name, username, bio, and avatar URL</li>
                         <li><strong>Project Data:</strong> Your complete audiobook projects including:
                             <ul>
                                 <li>Book text content and formatting</li>
                                 <li>Chapter structure and sections</li>
                                 <li>Text highlights and selections</li>
                                 <li>Project titles and descriptions</li>
-                                <li>All stored in the audiobook_projects table</li>
+                                <li>Securely stored in our database</li>
                             </ul>
                         </li>
-                        <li><strong>Audio Files:</strong> Audio uploads (MP3, WAV, M4A, OGG) stored locally on our servers</li>
+                        <li><strong>Audio Files:</strong> Audio uploads (MP3, WAV, M4A, OGG) stored securely on our servers</li>
                         <li><strong>Payment Information:</strong> Only Stripe transaction IDs and session IDs (we never store credit card details)</li>
                     </ul>
 
@@ -67,7 +67,7 @@
                         <li><strong>Usage Logs:</strong> Every action you take (uploads, exports, credit usage) with timestamps</li>
                         <li><strong>Credit Balance:</strong> Your current credit balance and transaction history</li>
                         <li><strong>File Metadata:</strong> Filenames, sizes, types, and upload status</li>
-                        <li><strong>Session Data:</strong> JWT tokens for authentication (temporary)</li>
+                        <li><strong>Session Data:</strong> Authentication tokens for secure access (temporary)</li>
                     </ul>
                 </div>
 
@@ -88,10 +88,10 @@
                     <h2>4. Data Storage and Security</h2>
                     <p>Your data is stored using industry-standard security measures:</p>
                     <ul>
-                        <li><strong>Database:</strong> Supabase (PostgreSQL) with Row Level Security (RLS) policies ensuring you can only access your own data</li>
-                        <li><strong>Project Storage:</strong> Complete project data stored in JSONB format in audiobook_projects table</li>
-                        <li><strong>Audio Files:</strong> Stored locally in our servers' uploads directory (not in cloud storage)</li>
-                        <li><strong>Authentication:</strong> Supabase Auth with JWT tokens and secure session management</li>
+                        <li><strong>Database:</strong> Enterprise-grade cloud database with access control policies ensuring you can only access your own data</li>
+                        <li><strong>Project Storage:</strong> Complete project data stored securely in our database</li>
+                        <li><strong>Audio Files:</strong> Stored securely on our servers with restricted access</li>
+                        <li><strong>Authentication:</strong> Industry-standard authentication with secure token-based session management</li>
                         <li><strong>Encryption:</strong> HTTPS for all data transmission</li>
                         <li><strong>Data Isolation:</strong> Complete isolation between users - no shared data access</li>
                         <li><strong>Auto-save:</strong> Projects automatically save to prevent data loss</li>
@@ -102,7 +102,7 @@
                     <h2>5. Data Sharing</h2>
                     <p>We do not sell or rent your personal information. We may share your data only in these circumstances:</p>
                     <ul>
-                        <li><strong>Service Providers:</strong> Stripe for payments, Supabase for database</li>
+                        <li><strong>Service Providers:</strong> Third-party payment processors and cloud infrastructure providers</li>
                         <li><strong>Legal Requirements:</strong> If required by law or legal process</li>
                         <li><strong>Business Transfers:</strong> In case of merger or acquisition</li>
                         <li><strong>With Your Consent:</strong> When you explicitly agree</li>
