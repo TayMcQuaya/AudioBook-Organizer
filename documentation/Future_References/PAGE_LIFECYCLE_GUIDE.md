@@ -816,3 +816,64 @@ This fix ensures users stay on their chosen page during refresh while preserving
 
 This fix ensures seamless navigation between all page types and prevents container-related errors that were blocking page transitions from the app page to other pages.
 
+### ✅ **Legal Pages Added (July 2025)**
+**Pages Created**: Privacy Policy, Terms of Service, and Contact Us pages following proper lifecycle management.
+
+**What Changed**:
+- Added three new pages (`/privacy`, `/terms`, `/contact`) with full SPA integration
+- Each page implements proper init/cleanup lifecycle pattern
+- CSS loading with smooth transitions to prevent styling flicker
+- Consistent navigation and footer across all legal pages
+- Professional legal content tailored to AudioBook Organizer's data practices
+
+**Router Integration**:
+- Added `loadPrivacyPage()`, `loadTermsPage()`, `loadContactPage()` methods
+- Implemented proper cleanup for all three components
+- Dynamic CSS loading with promise-based waiting for style application
+- Scroll-to-top behavior for consistent navigation experience
+
+**Page Structure**:
+```javascript
+// Each legal page follows this pattern
+function init() {
+    console.log('🚀 Initializing [Page] page');
+    setupNavigationHandlers();
+    // Page-specific initialization
+}
+
+function cleanup() {
+    console.log('🧹 Cleaning up [Page] page');
+    removeNavigationHandlers();
+    // Page-specific cleanup
+}
+
+export { init as init[Page]Page, cleanup as cleanup[Page]Page };
+```
+
+**CSS Loading Pattern**:
+```javascript
+// Dynamic CSS loading with smooth transitions
+let pageCSS = document.querySelector('link[href="/pages/page/page.css"]');
+if (!pageCSS) {
+    pageCSS = document.createElement('link');
+    pageCSS.rel = 'stylesheet';
+    pageCSS.href = '/pages/page/page.css';
+    document.head.appendChild(pageCSS);
+    await new Promise((resolve) => {
+        pageCSS.onload = resolve;
+        pageCSS.onerror = resolve;
+    });
+    await new Promise(resolve => setTimeout(resolve, 50));
+}
+```
+
+**Files Modified**: 
+- `frontend/js/modules/router.js` - Added route handling and page loaders
+- `backend/routes/static_routes.py` - Added route definitions to prevent 404s
+
+**Content Features**:
+- Privacy Policy includes AudioBook Organizer-specific data practices
+- Terms of Service covers credit system and actual app functionality  
+- Contact page provides structured form for user communication
+- All pages maintain consistent theming and responsive design
+
