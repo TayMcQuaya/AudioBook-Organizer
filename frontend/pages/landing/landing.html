@@ -93,7 +93,7 @@
                 </h1>
                 <p class="hero-subtitle">
                     Organize your text and audio into professional audiobooks with intelligent chapter organization, 
-                    audio upload capabilities, and powerful content management tools. Text-to-speech coming soon!
+                    audio upload capabilities, and powerful content management tools. Text-to-speech integration coming soon!
                     Perfect for authors, content creators, and educators.
                 </p>
                 <div class="hero-actions">
@@ -155,8 +155,8 @@
                                 <div class="text-content">
                                     <div class="text-line highlighted-orange">Welcome to AudioBook Organizer - Transform Your Text Into Audio</div>
                                     <div class="text-line">Upload your documents, articles, or manuscripts and watch them come to life.</div>
-                                    <div class="text-line highlighted-green">Key features: Smart text chunking, chapter organization, and natural voice synthesis</div>
-                                    <div class="text-line">Advanced controls for speed, pitch, and voice selection across multiple languages.</div>
+                                    <div class="text-line highlighted-green">Key features: Smart text organization, chapter management, and audio attachment capabilities</div>
+                                    <div class="text-line">Voice synthesis and advanced audio controls coming soon!</div>
                                     <div class="text-line highlighted-blue">Professional audio export with chapter markers and metadata support</div>
                                     <div class="text-line">Perfect for authors, content Organizers, educators, and accessibility needs.</div>
                                     <div class="text-line highlighted-purple">Drag-and-drop interface makes organization simple and intuitive</div>
@@ -174,20 +174,22 @@
     <section id="features" class="features">
         <div class="container">
             <div class="section-header">
-                <h2 class="section-title">Powerful Features for Text-to-Audio Conversion</h2>
+                <h2 class="section-title">Powerful Features for Audiobook Organization</h2>
                 <p class="section-subtitle">
-                    Everything you need to transform text into professional audiobooks with ease
+                    Everything you need to organize text and audio into professional audiobooks
                 </p>
             </div>
             <div class="features-grid">
                 <div class="features-carousel" id="featuresCarousel">
                     <div class="feature-card" data-feature="chapters" style="--rotation: 0;">
-                        <div class="feature-icon">📚</div>
-                        <h3 class="feature-title">Chapter Organization</h3>
-                        <p class="feature-description">
-                            Create and manage chapters with intuitive drag-and-drop organization. 
-                            Easily reorder and structure your content.
-                        </p>
+                        <div class="feature-content">
+                            <div class="feature-icon">📚</div>
+                            <h3 class="feature-title">Chapter Organization</h3>
+                            <p class="feature-description">
+                                Create and manage chapters with intuitive drag-and-drop organization. 
+                                Easily reorder and structure your content.
+                            </p>
+                        </div>
                         <div class="feature-highlights">
                             <span class="highlight-item">✓ Drag & Drop</span>
                             <span class="highlight-item">✓ Nested Chapters</span>
@@ -195,27 +197,31 @@
                         </div>
                     </div>
 
-                    <div class="feature-card" data-feature="audio" style="--rotation: 60;">
-                        <div class="feature-icon">🎧</div>
-                        <h3 class="feature-title">Audio Features</h3>
-                        <p class="feature-description">
-                            Upload pre-recorded audio files and attach them to specific sections. 
-                            Text-to-speech coming soon! Support for MP3, WAV, M4A, and OGG formats.
-                        </p>
+                    <div class="feature-card" data-feature="audio" style="--rotation: 72;">
+                        <div class="feature-content">
+                            <div class="feature-icon">🎧</div>
+                            <h3 class="feature-title">Audio Features</h3>
+                            <p class="feature-description">
+                                Upload pre-recorded audio files and attach them to specific sections. 
+                                Supports MP3 format (automatically converted to WAV for processing). Text-to-speech integration coming soon!
+                            </p>
+                        </div>
                         <div class="feature-highlights">
-                            <span class="highlight-item">✓ Audio Upload</span>
+                            <span class="highlight-item">✓ Audio Upload (MP3)</span>
                             <span class="highlight-item">✓ Section Attachment</span>
-                            <span class="highlight-item">🚀 TTS Coming Soon</span>
+                            <span class="highlight-item">🚀 TTS Integration Soon</span>
                         </div>
                     </div>
 
-                    <div class="feature-card" data-feature="highlighting" style="--rotation: 120;">
-                        <div class="feature-icon">🎯</div>
-                        <h3 class="feature-title">Smart Text Highlighting</h3>
-                        <p class="feature-description">
-                            Intelligent text selection with 8-color coding system. 
-                            Perfect for categorizing important content.
-                        </p>
+                    <div class="feature-card" data-feature="highlighting" style="--rotation: 144;">
+                        <div class="feature-content">
+                            <div class="feature-icon">🎯</div>
+                            <h3 class="feature-title">Smart Text Highlighting</h3>
+                            <p class="feature-description">
+                                Intelligent text selection with 8-color coding system. 
+                                Perfect for categorizing important content.
+                            </p>
+                        </div>
                         <div class="feature-highlights">
                             <span class="highlight-item">✓ 8 Color System</span>
                             <span class="highlight-item">✓ Smart Selection</span>
@@ -223,20 +229,23 @@
                         </div>
                     </div>
 
-                    <div class="feature-card" data-feature="export" style="--rotation: 180;">
-                        <div class="feature-icon">📦</div>
-                        <h3 class="feature-title">Export & Publish</h3>
-                        <p class="feature-description">
-                            Export your finished audiobooks in multiple formats 
-                            with chapters, metadata, and cover art.
-                        </p>
+                    <div class="feature-card" data-feature="export" style="--rotation: 216;">
+                        <div class="feature-content">
+                            <div class="feature-icon">📦</div>
+                            <h3 class="feature-title">Export & Publish</h3>
+                            <p class="feature-description">
+                                Export your finished audiobooks in multiple formats 
+                                with chapters and project metadata.
+                            </p>
+                        </div>
                         <div class="feature-highlights">
                             <span class="highlight-item">✓ Multiple Formats</span>
                             <span class="highlight-item">✓ Chapter Markers</span>
-                            <span class="highlight-item">✓ Cover Art</span>
+                            <span class="highlight-item">✓ Project Metadata</span>
                         </div>
                     </div>
 
+                    <!-- Responsive Design feature card commented out - not fully mobile optimized yet
                     <div class="feature-card" data-feature="responsive" style="--rotation: 240;">
                         <div class="feature-icon">📱</div>
                         <h3 class="feature-title">Responsive Design</h3>
@@ -250,14 +259,17 @@
                             <span class="highlight-item">✓ Offline Ready</span>
                         </div>
                     </div>
+                    -->
 
-                    <div class="feature-card" data-feature="collaboration" style="--rotation: 300;">
-                        <div class="feature-icon">👥</div>
-                        <h3 class="feature-title">Project Sharing & Collaboration</h3>
-                        <p class="feature-description">
-                            Export projects as JSON files to share with collaborators. 
-                            Import and merge projects with intelligent conflict resolution.
-                        </p>
+                    <div class="feature-card" data-feature="collaboration" style="--rotation: 288;">
+                        <div class="feature-content">
+                            <div class="feature-icon">👥</div>
+                            <h3 class="feature-title">Project Sharing & Collaboration</h3>
+                            <p class="feature-description">
+                                Export projects as JSON files to share with collaborators. 
+                                Import and merge projects with intelligent conflict resolution.
+                            </p>
+                        </div>
                         <div class="feature-highlights">
                             <span class="highlight-item">✓ JSON Export/Import</span>
                             <span class="highlight-item">✓ Smart Merging</span>
@@ -286,7 +298,7 @@
                         <h3 class="step-title">Upload Your Text</h3>
                         <p class="step-description">
                             Simply upload your text file or document. 
-                            We support TXT files and DOCX documents with full formatting preservation.
+                            We support TXT files and DOCX documents (DOCX formatting is preserved during processing).
                         </p>
                         <div class="step-visual">
                             <div class="upload-demo">
@@ -320,7 +332,7 @@
                     <div class="step-content">
                         <h3 class="step-title">Upload Audio & Add Highlights</h3>
                         <p class="step-description">
-                            Upload pre-recorded audio files and attach them to specific sections.
+                            Upload pre-recorded MP3 audio files and attach them to specific sections.
                             Use our 8-color highlighting system to mark important content and organize your text.
                         </p>
                         <div class="step-visual">
@@ -362,7 +374,7 @@
             <div class="section-header">
                 <h2 class="section-title">See It In Action</h2>
                 <p class="section-subtitle">
-                    Watch how AudioBook Organizer transforms your text into professional audiobooks
+                    Watch how AudioBook Organizer helps you organize text and audio into professional audiobook projects
                 </p>
             </div>
             <div class="demo-container">
@@ -384,7 +396,7 @@
                     </div>
                     <div class="demo-feature">
                         <span class="demo-icon">🎧</span>
-                        <span class="demo-text">Audio upload and section attachment capabilities</span>
+                        <span class="demo-text">MP3 audio upload and section attachment capabilities</span>
                     </div>
                     <div class="demo-feature">
                         <span class="demo-icon">📚</span>

@@ -672,7 +672,8 @@ html {
 .feature-card .feature-description {
     font-size: 0.9rem;
     line-height: 1.4;
-    margin-bottom: 1rem;
+    margin-bottom: 0;
+    flex-grow: 1;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     overflow: visible;
@@ -741,7 +742,7 @@ html {
     padding: 1.5rem;
     display: flex;
     flex-direction: column;
-    justify-content: flex-start;
+    justify-content: space-between;
     align-items: center;
     text-align: center;
     border: 2px solid #e0e0e0;
@@ -787,12 +788,20 @@ html {
     margin-bottom: 1.5rem;
 }
 
+/* Create wrapper for top content */
+.feature-content {
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+}
+
 .feature-highlights {
     display: flex;
     flex-direction: column;
     flex-wrap: wrap;
     gap: 0.5rem;
-    margin-top: 1.5rem;
+    margin-top: 1rem;
+    flex-shrink: 0;
 }
 
 .highlight-item {
