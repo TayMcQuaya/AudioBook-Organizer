@@ -167,7 +167,11 @@ USING (auth.uid() = user_id);
 
 -- Function to automatically create user profile and credits on signup
 CREATE OR REPLACE FUNCTION public.handle_new_user()
-RETURNS TRIGGER AS $$
+RETURNS TRIGGER 
+LANGUAGE plpgsql
+SECURITY INVOKER
+SET search_path = ''
+AS $$
 BEGIN
     INSERT INTO public.profiles (id, email, full_name)
     VALUES (
@@ -181,7 +185,7 @@ BEGIN
     
     RETURN NEW;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$;
 
 -- Trigger to call handle_new_user function on user creation
 CREATE OR REPLACE TRIGGER on_auth_user_created
@@ -190,12 +194,15 @@ CREATE OR REPLACE TRIGGER on_auth_user_created
 
 -- Function to update updated_at timestamp
 CREATE OR REPLACE FUNCTION public.handle_updated_at()
-RETURNS TRIGGER AS $$
+RETURNS TRIGGER 
+LANGUAGE plpgsql
+SET search_path = ''
+AS $$
 BEGIN
     NEW.updated_at = NOW();
     RETURN NEW;
 END;
-$$ LANGUAGE plpgsql;
+$$;
 
 -- Triggers for updated_at
 CREATE TRIGGER profiles_updated_at
@@ -208,12 +215,15 @@ CREATE TRIGGER audiobook_projects_updated_at
 
 -- Function to update credits last_updated timestamp
 CREATE OR REPLACE FUNCTION public.handle_credits_updated()
-RETURNS TRIGGER AS $$
+RETURNS TRIGGER 
+LANGUAGE plpgsql
+SET search_path = ''
+AS $$
 BEGIN
     NEW.last_updated = NOW();
     RETURN NEW;
 END;
-$$ LANGUAGE plpgsql;
+$$;
 
 CREATE TRIGGER user_credits_updated
     BEFORE UPDATE ON public.user_credits
