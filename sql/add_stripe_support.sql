@@ -56,7 +56,8 @@ CREATE INDEX IF NOT EXISTS idx_credit_transactions_stripe_event ON public.credit
 -- =================================================================
 
 -- Create view for payment analytics (service role access only)
-CREATE OR REPLACE VIEW public.stripe_payment_analytics AS
+CREATE OR REPLACE VIEW public.stripe_payment_analytics 
+WITH (security_invoker = true) AS
 SELECT 
     DATE_TRUNC('day', ct.created_at) as payment_date,
     COUNT(*) as total_transactions,

@@ -235,7 +235,8 @@ CREATE INDEX IF NOT EXISTS idx_file_uploads_project_id ON public.file_uploads(pr
 -- Create views for easier data access
 
 -- User stats view
-CREATE OR REPLACE VIEW public.user_stats AS
+CREATE OR REPLACE VIEW public.user_stats 
+WITH (security_invoker = true) AS
 SELECT 
     p.id,
     p.email,
@@ -252,7 +253,8 @@ LEFT JOIN public.usage_logs ul ON p.id = ul.user_id
 GROUP BY p.id, p.email, p.full_name, uc.credits, p.created_at;
 
 -- Recent activity view
-CREATE OR REPLACE VIEW public.recent_activity AS
+CREATE OR REPLACE VIEW public.recent_activity 
+WITH (security_invoker = true) AS
 SELECT 
     ul.user_id,
     ul.action,

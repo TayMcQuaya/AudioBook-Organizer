@@ -91,5 +91,6 @@ ExoWave/
 *.docx
 .vercel
 oldtoc.txt
+problem.txt
 
 .claude/
