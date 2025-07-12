@@ -69,6 +69,24 @@ const routeConfig = {
         component: 'payment-failed',
         requiresAuth: true, // Payment failed requires authentication
         layout: 'app'
+    },
+    '/privacy': {
+        title: 'Privacy Policy - AudioBook Organizer',
+        component: 'privacy',
+        requiresAuth: false,
+        layout: 'landing'
+    },
+    '/terms': {
+        title: 'Terms of Service - AudioBook Organizer',
+        component: 'terms',
+        requiresAuth: false,
+        layout: 'landing'
+    },
+    '/contact': {
+        title: 'Contact Us - AudioBook Organizer',
+        component: 'contact',
+        requiresAuth: false,
+        layout: 'landing'
     }
 };
 
@@ -626,6 +644,15 @@ class Router {
                 case 'payment-failed':
                     await this.loadPaymentFailedPage();
                     break;
+                case 'privacy':
+                    await this.loadPrivacyPage();
+                    break;
+                case 'terms':
+                    await this.loadTermsPage();
+                    break;
+                case 'contact':
+                    await this.loadContactPage();
+                    break;
                 default:
                     throw new Error(`Unknown component: ${route.component}`);
             }
@@ -698,7 +725,8 @@ class Router {
             initLandingPage();
             window.cleanupLandingPage = cleanupLandingPage; // Make cleanup available to the router
 
-            // **PERFORMANCE: Make appContainer visible with smooth transition**
+            // Scroll to top and make container visible
+            window.scrollTo(0, 0);
             setTimeout(() => {
                 appContainer.style.opacity = '1';
             }, 100);
@@ -1974,6 +2002,234 @@ class Router {
         }
     }
 
+    // Load privacy page
+    async loadPrivacyPage() {
+        try {
+            console.log('📜 Loading privacy page...');
+            
+            const response = await fetch('/pages/privacy/privacy.html');
+            if (!response.ok) {
+                throw new Error(`Failed to load privacy page: ${response.status}`);
+            }
+            
+            const html = await response.text();
+            
+            // Ensure appContainer exists
+            let appContainer = document.getElementById('appContainer');
+            if (!appContainer) {
+                console.log('🔧 Creating appContainer for privacy page');
+                appContainer = document.createElement('div');
+                appContainer.id = 'appContainer';
+                appContainer.style.opacity = '0';
+                appContainer.style.transition = 'opacity 0.5s ease-in-out';
+                document.body.appendChild(appContainer);
+            }
+            
+            // Ensure landing CSS is loaded for navigation styles
+            let landingCSS = document.querySelector('link[href="/css/landing.css"]');
+            if (!landingCSS) {
+                landingCSS = document.createElement('link');
+                landingCSS.rel = 'stylesheet';
+                landingCSS.href = '/css/landing.css';
+                document.head.appendChild(landingCSS);
+            }
+            
+            // Ensure privacy page CSS is loaded first
+            let privacyCSS = document.querySelector('link[href="/pages/privacy/privacy.css"]');
+            if (!privacyCSS) {
+                privacyCSS = document.createElement('link');
+                privacyCSS.rel = 'stylesheet';
+                privacyCSS.href = '/pages/privacy/privacy.css';
+                document.head.appendChild(privacyCSS);
+                
+                // Wait for CSS to load
+                await new Promise((resolve) => {
+                    privacyCSS.onload = resolve;
+                    privacyCSS.onerror = resolve; // Resolve even on error to prevent hanging
+                });
+                
+                // Small delay to ensure styles are applied
+                await new Promise(resolve => setTimeout(resolve, 50));
+            }
+            
+            // Set body class before content injection
+            document.body.className = 'privacy-body';
+            
+            // Extract body content and inject it
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            appContainer.innerHTML = doc.body.innerHTML;
+            
+            // Load privacy page specific JavaScript
+            const { initPrivacyPage, cleanupPrivacyPage } = await import('/pages/privacy/main.js');
+            initPrivacyPage();
+            window.cleanupPrivacyPage = cleanupPrivacyPage;
+            
+            // Scroll to top and make container visible
+            window.scrollTo(0, 0);
+            setTimeout(() => {
+                appContainer.style.opacity = '1';
+            }, 100);
+            
+        } catch (error) {
+            console.error('Error loading privacy page:', error);
+            showError('Failed to load privacy page');
+            await this.navigate('/');
+        }
+    }
+
+    // Load terms page
+    async loadTermsPage() {
+        try {
+            console.log('📜 Loading terms page...');
+            
+            const response = await fetch('/pages/terms/terms.html');
+            if (!response.ok) {
+                throw new Error(`Failed to load terms page: ${response.status}`);
+            }
+            
+            const html = await response.text();
+            
+            // Ensure appContainer exists
+            let appContainer = document.getElementById('appContainer');
+            if (!appContainer) {
+                console.log('🔧 Creating appContainer for terms page');
+                appContainer = document.createElement('div');
+                appContainer.id = 'appContainer';
+                appContainer.style.opacity = '0';
+                appContainer.style.transition = 'opacity 0.5s ease-in-out';
+                document.body.appendChild(appContainer);
+            }
+            
+            // Ensure landing CSS is loaded for navigation styles
+            let landingCSS = document.querySelector('link[href="/css/landing.css"]');
+            if (!landingCSS) {
+                landingCSS = document.createElement('link');
+                landingCSS.rel = 'stylesheet';
+                landingCSS.href = '/css/landing.css';
+                document.head.appendChild(landingCSS);
+            }
+            
+            // Ensure terms page CSS is loaded first
+            let termsCSS = document.querySelector('link[href="/pages/terms/terms.css"]');
+            if (!termsCSS) {
+                termsCSS = document.createElement('link');
+                termsCSS.rel = 'stylesheet';
+                termsCSS.href = '/pages/terms/terms.css';
+                document.head.appendChild(termsCSS);
+                
+                // Wait for CSS to load
+                await new Promise((resolve) => {
+                    termsCSS.onload = resolve;
+                    termsCSS.onerror = resolve; // Resolve even on error to prevent hanging
+                });
+                
+                // Small delay to ensure styles are applied
+                await new Promise(resolve => setTimeout(resolve, 50));
+            }
+            
+            // Set body class before content injection
+            document.body.className = 'terms-body';
+            
+            // Extract body content and inject it
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            appContainer.innerHTML = doc.body.innerHTML;
+            
+            // Load terms page specific JavaScript
+            const { initTermsPage, cleanupTermsPage } = await import('/pages/terms/main.js');
+            initTermsPage();
+            window.cleanupTermsPage = cleanupTermsPage;
+            
+            // Scroll to top and make container visible
+            window.scrollTo(0, 0);
+            setTimeout(() => {
+                appContainer.style.opacity = '1';
+            }, 100);
+            
+        } catch (error) {
+            console.error('Error loading terms page:', error);
+            showError('Failed to load terms page');
+            await this.navigate('/');
+        }
+    }
+
+    // Load contact page
+    async loadContactPage() {
+        try {
+            console.log('📧 Loading contact page...');
+            
+            const response = await fetch('/pages/contact/contact.html');
+            if (!response.ok) {
+                throw new Error(`Failed to load contact page: ${response.status}`);
+            }
+            
+            const html = await response.text();
+            
+            // Ensure appContainer exists
+            let appContainer = document.getElementById('appContainer');
+            if (!appContainer) {
+                console.log('🔧 Creating appContainer for contact page');
+                appContainer = document.createElement('div');
+                appContainer.id = 'appContainer';
+                appContainer.style.opacity = '0';
+                appContainer.style.transition = 'opacity 0.5s ease-in-out';
+                document.body.appendChild(appContainer);
+            }
+            
+            // Ensure landing CSS is loaded for navigation styles
+            let landingCSS = document.querySelector('link[href="/css/landing.css"]');
+            if (!landingCSS) {
+                landingCSS = document.createElement('link');
+                landingCSS.rel = 'stylesheet';
+                landingCSS.href = '/css/landing.css';
+                document.head.appendChild(landingCSS);
+            }
+            
+            // Ensure contact page CSS is loaded first
+            let contactCSS = document.querySelector('link[href="/pages/contact/contact.css"]');
+            if (!contactCSS) {
+                contactCSS = document.createElement('link');
+                contactCSS.rel = 'stylesheet';
+                contactCSS.href = '/pages/contact/contact.css';
+                document.head.appendChild(contactCSS);
+                
+                // Wait for CSS to load
+                await new Promise((resolve) => {
+                    contactCSS.onload = resolve;
+                    contactCSS.onerror = resolve; // Resolve even on error to prevent hanging
+                });
+                
+                // Small delay to ensure styles are applied
+                await new Promise(resolve => setTimeout(resolve, 50));
+            }
+            
+            // Set body class before content injection
+            document.body.className = 'contact-body';
+            
+            // Extract body content and inject it
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            appContainer.innerHTML = doc.body.innerHTML;
+            
+            // Load contact page specific JavaScript
+            const { initContactPage, cleanupContactPage } = await import('/pages/contact/main.js');
+            initContactPage();
+            window.cleanupContactPage = cleanupContactPage;
+            
+            // Scroll to top and make container visible
+            window.scrollTo(0, 0);
+            setTimeout(() => {
+                appContainer.style.opacity = '1';
+            }, 100);
+            
+        } catch (error) {
+            console.error('Error loading contact page:', error);
+            showError('Failed to load contact page');
+            await this.navigate('/');
+        }
+    }
+
     // Handle navigation from payment success page with credit refresh
     async handlePaymentSuccessNavigation() {
         try {
@@ -2173,6 +2429,21 @@ class Router {
                         resultContainer.innerHTML = '';
                         console.log('🧹 Cleaned up payment result page content');
                     }
+                }
+                break;
+            case 'privacy':
+                if (window.cleanupPrivacyPage) {
+                    window.cleanupPrivacyPage();
+                }
+                break;
+            case 'terms':
+                if (window.cleanupTermsPage) {
+                    window.cleanupTermsPage();
+                }
+                break;
+            case 'contact':
+                if (window.cleanupContactPage) {
+                    window.cleanupContactPage();
                 }
                 break;
         }

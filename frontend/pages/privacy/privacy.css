@@ -1,0 +1,123 @@
+/* Privacy Policy Page Styles */
+
+.privacy-body {
+    min-height: 100vh;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+}
+
+.legal-content {
+    padding: 80px 0;
+    min-height: calc(100vh - 160px);
+}
+
+.legal-title {
+    font-size: 2.5rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+    color: var(--text-primary);
+    text-align: center;
+}
+
+.legal-updated {
+    text-align: center;
+    color: var(--text-secondary);
+    margin-bottom: 3rem;
+    font-size: 0.9rem;
+}
+
+.legal-section {
+    margin-bottom: 2.5rem;
+    background: var(--surface-primary);
+    padding: 2rem;
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+    box-shadow: var(--shadow-sm);
+}
+
+.legal-section h2 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+    color: var(--text-primary);
+}
+
+.legal-section h3 {
+    font-size: 1.2rem;
+    font-weight: 500;
+    margin-top: 1.5rem;
+    margin-bottom: 0.75rem;
+    color: var(--text-primary);
+}
+
+.legal-section p {
+    line-height: 1.6;
+    color: var(--text-secondary);
+    margin-bottom: 1rem;
+}
+
+.legal-section ul {
+    list-style: none;
+    padding-left: 0;
+}
+
+.legal-section li {
+    padding-left: 1.5rem;
+    margin-bottom: 0.5rem;
+    position: relative;
+    color: var(--text-secondary);
+    line-height: 1.6;
+}
+
+.legal-section li:before {
+    content: "•";
+    position: absolute;
+    left: 0;
+    color: var(--primary);
+    font-weight: bold;
+}
+
+.legal-section strong {
+    color: var(--text-primary);
+    font-weight: 500;
+}
+
+.contact-placeholder {
+    background: var(--warning-bg);
+    color: var(--warning-text);
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+    margin: 0.5rem 0;
+    font-family: monospace;
+}
+
+.legal-actions {
+    text-align: center;
+    margin-top: 3rem;
+}
+
+/* Dark mode support */
+[data-theme="dark"] .legal-section {
+    background: var(--surface-primary);
+    box-shadow: var(--shadow-sm);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .legal-content {
+        padding: 60px 0;
+    }
+    
+    .legal-title {
+        font-size: 2rem;
+    }
+    
+    .legal-section {
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .legal-section h2 {
+        font-size: 1.3rem;
+    }
+}

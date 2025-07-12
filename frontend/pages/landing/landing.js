@@ -48,8 +48,44 @@ function init() {
     // Add click outside handler for user dropdown
     document.addEventListener('click', outsideClickListener);
     
+    // Add navigation handler for footer links
+    document.addEventListener('click', handleNavigationClick);
+    
     // Handle hash navigation on page load
     handleHashNavigation();
+}
+
+/**
+ * Handle navigation clicks for SPA routing
+ */
+function handleNavigationClick(event) {
+    const target = event.target.closest('[data-action="navigate"]');
+    if (!target) return;
+    
+    event.preventDefault();
+    const route = target.dataset.route;
+    
+    // If navigating to home from legal pages, scroll to top for better UX
+    if (route === '/' && (
+        window.location.pathname === '/privacy' || 
+        window.location.pathname === '/terms' || 
+        window.location.pathname === '/contact'
+    )) {
+        // Navigate first, then scroll will be handled by router
+        if (window.router) {
+            window.router.navigate(route);
+        } else {
+            window.location.href = route;
+        }
+        return;
+    }
+    
+    if (window.router) {
+        window.router.navigate(route);
+    } else {
+        // Fallback to direct navigation if router not available
+        window.location.href = route;
+    }
 }
 
 /**
@@ -129,6 +165,7 @@ function cleanup() {
     console.log('🧹 Cleaning up landing page listeners');
     window.removeEventListener('auth-state-changed', authStateChangeListener);
     document.removeEventListener('click', outsideClickListener);
+    document.removeEventListener('click', handleNavigationClick);
 }
 
 // The router is now responsible for calling init

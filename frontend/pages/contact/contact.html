@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Contact AudioBook Organizer - Get in touch with our team for support or inquiries.">
+    <title>Contact Us - AudioBook Organizer</title>
+    
+    <!-- Favicons -->
+    <link rel="icon" href="/public/icons/favicon.ico" type="image/x-icon">
+    <link rel="icon" type="image/png" sizes="16x16" href="/public/icons/favicon-16x16.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/public/icons/favicon-32x32.png">
+    
+    <!-- CSS Files -->
+    <link rel="stylesheet" href="/css/main.css">
+    <link rel="stylesheet" href="/css/components.css">
+    <link rel="stylesheet" href="/css/themes.css">
+    <link rel="stylesheet" href="/pages/contact/contact.css">
+</head>
+<body class="contact-body">
+    <!-- Navigation -->
+        <nav class="landing-nav">
+            <div class="nav-container">
+                <a href="/" data-action="navigate" data-route="/" class="nav-brand">
+                    <span class="brand-icon">📚</span>
+                    <span class="brand-text">AudioBook Organizer</span>
+                </a>
+                <div class="nav-links">
+                    <a href="/" data-action="navigate" data-route="/" class="nav-link">Home</a>
+                    <a href="/auth" data-action="navigate" data-route="/auth" class="btn btn-primary">Sign In</a>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Contact Content -->
+        <section class="contact-content">
+            <div class="container">
+                <h1 class="contact-title">Contact Us</h1>
+                <p class="contact-subtitle">We'd love to hear from you. Send us a message and we'll respond as soon as possible.</p>
+
+                <div class="contact-grid">
+                    <!-- Contact Form -->
+                    <div class="contact-form-section">
+                        <form id="contactForm" class="contact-form">
+                            <div class="form-group">
+                                <label for="name">Your Name</label>
+                                <input type="text" id="name" name="name" required class="form-input">
+                            </div>
+
+                            <div class="form-group">
+                                <label for="email">Email Address</label>
+                                <input type="email" id="email" name="email" required class="form-input">
+                            </div>
+
+                            <div class="form-group">
+                                <label for="subject">Subject</label>
+                                <select id="subject" name="subject" required class="form-select">
+                                    <option value="">Select a topic</option>
+                                    <option value="support">Technical Support</option>
+                                    <option value="billing">Billing Question</option>
+                                    <option value="feature">Feature Request</option>
+                                    <option value="bug">Report a Bug</option>
+                                    <option value="other">Other</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="message">Message</label>
+                                <textarea id="message" name="message" rows="6" required class="form-textarea"></textarea>
+                            </div>
+
+                            <div class="form-actions">
+                                <button type="submit" class="btn btn-primary" id="submitButton">
+                                    <span class="btn-text">Send Message</span>
+                                    <span class="btn-loading" style="display: none;">Sending...</span>
+                                </button>
+                            </div>
+
+                            <div id="formMessage" class="form-message" style="display: none;"></div>
+                        </form>
+                    </div>
+
+                    <!-- Contact Information -->
+                    <div class="contact-info-section">
+                        <div class="info-card">
+                            <h3>Get in Touch</h3>
+                            <p>Have questions about AudioBook Organizer? We're here to help!</p>
+                        </div>
+
+                        <div class="info-card">
+                            <h3>Response Time</h3>
+                            <p>We typically respond within 24-48 hours during business days.</p>
+                        </div>
+
+                        <div class="info-card">
+                            <h3>Common Questions</h3>
+                            <ul class="faq-list">
+                                <li><strong>How do I reset my password?</strong><br>
+                                    Use the "Forgot Password" link on the sign-in page.</li>
+                                <li><strong>Can I get a refund for unused credits?</strong><br>
+                                    Credits are non-refundable, but contact us for special circumstances.</li>
+                                <li><strong>What file formats are supported?</strong><br>
+                                    We support TXT and DOCX for text, and MP3, WAV, M4A, OGG for audio.</li>
+                            </ul>
+                        </div>
+
+                        <div class="info-card warning">
+                            <h3>⚠️ Important Notice</h3>
+                            <p class="contact-placeholder">This contact form is currently not connected to a backend service. To enable it:</p>
+                            <ol class="setup-list">
+                                <li>Create a backend endpoint at <code>/api/contact</code></li>
+                                <li>Configure email service (SMTP, SendGrid, etc.)</li>
+                                <li>Update the form submission handler in main.js</li>
+                            </ol>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="legal-actions">
+                    <a href="/" data-action="navigate" data-route="/" class="btn btn-secondary">Back to Home</a>
+                </div>
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <div class="container">
+                <div class="footer-bottom" style="justify-content: center;">
+                    <p class="footer-copyright">
+                        © 2025 AudioBook Organizer. All rights reserved.
+                    </p>
+                </div>
+            </div>
+        </footer>
+
+    <!-- Scripts -->
+    <script type="module" src="/pages/contact/main.js"></script>
+</body>
+</html>

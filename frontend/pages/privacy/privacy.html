@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Privacy Policy for AudioBook Organizer - Learn how we protect your data and respect your privacy.">
+    <title>Privacy Policy - AudioBook Organizer</title>
+    
+    <!-- Favicons -->
+    <link rel="icon" href="/public/icons/favicon.ico" type="image/x-icon">
+    <link rel="icon" type="image/png" sizes="16x16" href="/public/icons/favicon-16x16.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/public/icons/favicon-32x32.png">
+    
+    <!-- CSS Files -->
+    <link rel="stylesheet" href="/css/main.css">
+    <link rel="stylesheet" href="/css/components.css">
+    <link rel="stylesheet" href="/css/themes.css">
+    <link rel="stylesheet" href="/pages/privacy/privacy.css">
+</head>
+<body class="privacy-body">
+    <!-- Navigation -->
+        <nav class="landing-nav">
+            <div class="nav-container">
+                <a href="/" data-action="navigate" data-route="/" class="nav-brand">
+                    <span class="brand-icon">📚</span>
+                    <span class="brand-text">AudioBook Organizer</span>
+                </a>
+                <div class="nav-links">
+                    <a href="/" data-action="navigate" data-route="/" class="nav-link">Home</a>
+                    <a href="/auth" data-action="navigate" data-route="/auth" class="btn btn-primary">Sign In</a>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Privacy Policy Content -->
+        <section class="legal-content">
+            <div class="container">
+                <h1 class="legal-title">Privacy Policy</h1>
+                <p class="legal-updated">Last updated: January 12, 2025</p>
+
+                <div class="legal-section">
+                    <h2>1. Introduction</h2>
+                    <p>Welcome to AudioBook Organizer ("we," "our," or "us"). We are committed to protecting your personal information and your right to privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our service.</p>
+                    <p><strong>Important: This is a template privacy policy. You must update it with your actual business information, contact details, and specific data practices before using it in production.</strong></p>
+                </div>
+
+                <div class="legal-section">
+                    <h2>2. Information We Collect</h2>
+                    <h3>2.1 Information You Provide</h3>
+                    <ul>
+                        <li><strong>Account Information:</strong> Email address, full name, username, bio, and avatar URL (stored in profiles table)</li>
+                        <li><strong>Project Data:</strong> Your complete audiobook projects including:
+                            <ul>
+                                <li>Book text content and formatting</li>
+                                <li>Chapter structure and sections</li>
+                                <li>Text highlights and selections</li>
+                                <li>Project titles and descriptions</li>
+                                <li>All stored in the audiobook_projects table</li>
+                            </ul>
+                        </li>
+                        <li><strong>Audio Files:</strong> Audio uploads (MP3, WAV, M4A, OGG) stored locally on our servers</li>
+                        <li><strong>Payment Information:</strong> Only Stripe transaction IDs and session IDs (we never store credit card details)</li>
+                    </ul>
+
+                    <h3>2.2 Information Automatically Collected</h3>
+                    <ul>
+                        <li><strong>Usage Logs:</strong> Every action you take (uploads, exports, credit usage) with timestamps</li>
+                        <li><strong>Credit Balance:</strong> Your current credit balance and transaction history</li>
+                        <li><strong>File Metadata:</strong> Filenames, sizes, types, and upload status</li>
+                        <li><strong>Session Data:</strong> JWT tokens for authentication (temporary)</li>
+                    </ul>
+                </div>
+
+                <div class="legal-section">
+                    <h2>3. How We Use Your Information</h2>
+                    <p>We use your information to:</p>
+                    <ul>
+                        <li>Provide and maintain our service</li>
+                        <li>Process your transactions and manage your account</li>
+                        <li>Save and restore your projects</li>
+                        <li>Send you important updates about the service</li>
+                        <li>Improve our service and develop new features</li>
+                        <li>Comply with legal obligations</li>
+                    </ul>
+                </div>
+
+                <div class="legal-section">
+                    <h2>4. Data Storage and Security</h2>
+                    <p>Your data is stored using industry-standard security measures:</p>
+                    <ul>
+                        <li><strong>Database:</strong> Supabase (PostgreSQL) with Row Level Security (RLS) policies ensuring you can only access your own data</li>
+                        <li><strong>Project Storage:</strong> Complete project data stored in JSONB format in audiobook_projects table</li>
+                        <li><strong>Audio Files:</strong> Stored locally in our servers' uploads directory (not in cloud storage)</li>
+                        <li><strong>Authentication:</strong> Supabase Auth with JWT tokens and secure session management</li>
+                        <li><strong>Encryption:</strong> HTTPS for all data transmission</li>
+                        <li><strong>Data Isolation:</strong> Complete isolation between users - no shared data access</li>
+                        <li><strong>Auto-save:</strong> Projects automatically save to prevent data loss</li>
+                    </ul>
+                </div>
+
+                <div class="legal-section">
+                    <h2>5. Data Sharing</h2>
+                    <p>We do not sell or rent your personal information. We may share your data only in these circumstances:</p>
+                    <ul>
+                        <li><strong>Service Providers:</strong> Stripe for payments, Supabase for database</li>
+                        <li><strong>Legal Requirements:</strong> If required by law or legal process</li>
+                        <li><strong>Business Transfers:</strong> In case of merger or acquisition</li>
+                        <li><strong>With Your Consent:</strong> When you explicitly agree</li>
+                    </ul>
+                </div>
+
+                <div class="legal-section">
+                    <h2>6. Your Rights</h2>
+                    <p>You have the right to:</p>
+                    <ul>
+                        <li>Access your personal information</li>
+                        <li>Correct inaccurate data</li>
+                        <li>Request deletion of your data</li>
+                        <li>Export your projects</li>
+                        <li>Opt-out of marketing communications</li>
+                    </ul>
+                </div>
+
+                <div class="legal-section">
+                    <h2>7. Data Retention</h2>
+                    <p>We retain your data as follows:</p>
+                    <ul>
+                        <li><strong>Active Data:</strong> Your projects and files remain as long as your account is active</li>
+                        <li><strong>Deleted Data:</strong> When you delete a project or file, it's permanently removed (no soft delete)</li>
+                        <li><strong>Account Deletion:</strong> Deleting your account permanently removes all your data</li>
+                        <li><strong>Usage Logs:</strong> Action logs are retained for analytics and debugging</li>
+                        <li><strong>Payment Records:</strong> Transaction history retained for legal and tax purposes</li>
+                    </ul>
+                </div>
+
+                <div class="legal-section">
+                    <h2>8. Children's Privacy</h2>
+                    <p>Our service is not intended for children under 13. We do not knowingly collect personal information from children under 13.</p>
+                </div>
+
+                <div class="legal-section">
+                    <h2>9. Changes to This Policy</h2>
+                    <p>We may update this Privacy Policy from time to time. We will notify you of any changes by posting the new Privacy Policy on this page and updating the "Last updated" date.</p>
+                </div>
+
+                <div class="legal-section">
+                    <h2>10. Contact Us</h2>
+                    <p>If you have questions about this Privacy Policy, please contact us:</p>
+                    <p>
+                        <a href="/contact" data-action="navigate" data-route="/contact" class="btn btn-primary">
+                            Contact Us
+                        </a>
+                    </p>
+                </div>
+
+                <div class="legal-actions">
+                    <a href="/" data-action="navigate" data-route="/" class="btn btn-secondary">Back to Home</a>
+                </div>
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <div class="container">
+                <div class="footer-bottom" style="justify-content: center;">
+                    <p class="footer-copyright">
+                        © 2025 AudioBook Organizer. All rights reserved.
+                    </p>
+                </div>
+            </div>
+        </footer>
+
+    <!-- Scripts -->
+    <script type="module" src="/pages/privacy/main.js"></script>
+</body>
+</html>
