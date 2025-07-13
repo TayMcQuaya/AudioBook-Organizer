@@ -20,6 +20,7 @@ from .routes.security_routes import security_bp
 from .middleware.csrf_middleware import csrf
 from .middleware.rate_limiter import create_limiter
 from .middleware.security_headers import init_security_headers
+from .middleware.domain_redirect import init_domain_redirect
 from .services.supabase_service import init_supabase_service
 from .services.security_service import init_security_service
 
@@ -115,6 +116,10 @@ def create_app(config_name=None):
     
     # Initialize security service
     security_service = init_security_service()
+    
+    # Initialize domain redirect middleware (production only)
+    init_domain_redirect(app)
+    app.logger.info("✅ Domain redirect middleware initialized")
     
     # Initialize CSRF protection
     csrf.init_app(app)
