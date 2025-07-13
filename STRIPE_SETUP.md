@@ -57,6 +57,11 @@ Stripe Setup for Your New Account 💳
 
   You can find these in Stripe Dashboard → Developers → API keys
 
+  In Stripe Dashboard → Settings → Customer emails
+    - Turn ON "Email customers for successful payments"
+    - Customize the receipt template if desired
+    - Stripe sends professional PDF receipts automatically!
+
   That's it!
 
   Once you've:

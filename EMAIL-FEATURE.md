@@ -13,3 +13,17 @@
   3. Payment Confirmation → NOT IMPLEMENTED
     - You'd need to add this to stripe_routes.py
     - Would use your Gmail SMTP
+
+
+ 1. Email Service (OPTIONAL):
+    - Only needed for Contact Form
+    - Account deletion confirmations
+    - Can deploy without it!
+  2. Google OAuth Update:
+  Go to https://console.cloud.google.com:
+    - APIs & Services → Credentials → Your OAuth 2.0 Client ID
+    - Add to Authorized JavaScript origins:
+        - https://www.audiobookorganizer.com
+      - https://audiobookorganizer.com
+    - Add to Authorized redirect URIs:
+        - https://www.audiobookorganizer.com/app
