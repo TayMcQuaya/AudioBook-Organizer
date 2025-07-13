@@ -33,7 +33,7 @@ class EnvironmentManager {
             try {
                 console.log(`🔧 Loading environment configuration (attempt ${attempt}/${maxRetries})...`);
                 
-                const response = await apiFetch('/debug/config', {
+                const response = await fetch('/debug/config', {
                     method: 'GET',
                     headers: { 'Content-Type': 'application/json' }
                 });

@@ -110,3 +110,20 @@
 
   That's it! Users will now see your professional domain in all authentication emails instead of the Supabase
   database string! 🎉
+
+
+  Google OAuth is not enabled in your Supabase dashboard!
+
+  Fix in Supabase:
+  1. Go to your production Supabase project
+  2. Navigate to Authentication → Providers
+  3. Find Google in the list
+  4. Toggle it ON
+  5. Add your Google OAuth credentials:
+    - Client ID (from Google Console)
+    - Client Secret (from Google Console)
+  6. Save
+
+  Also check:
+  - Make sure you're using the correct Google OAuth credentials
+  - The redirect URL in Google Console should include your Supabase project URL
