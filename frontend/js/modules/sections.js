@@ -534,7 +534,7 @@ export async function attachAudio(chapterId, sectionId, input) {
         // Update progress message for processing stage
         updateUploadProgress(uploadFeedback, 'uploading', file);
 
-        const response = await apiFetch('/api/upload', {
+        const response = await apiFetch('/upload', {
             method: 'POST',
             body: formData,
         });

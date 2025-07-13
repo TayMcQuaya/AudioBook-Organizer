@@ -137,7 +137,7 @@ class AuthModule {
      */
     async loadAuthConfig() {
         try {
-            const response = await apiFetch('/api/auth/config');
+            const response = await apiFetch('/auth/config');
             const data = await response.json();
             
             if (data.success && data.config) {
@@ -732,7 +732,7 @@ class AuthModule {
 
         try {
             // Call backend login endpoint with reCAPTCHA token first for security
-            const response = await apiFetch('/api/auth/login', {
+            const response = await apiFetch('/auth/login', {
                 method: 'POST',
                 body: JSON.stringify({
                     email: email,
@@ -1062,7 +1062,7 @@ class AuthModule {
      */
     async checkAuthStatus() {
         try {
-            const response = await apiFetch('/api/auth/status');
+            const response = await apiFetch('/auth/status');
 
             const data = await response.json();
             

@@ -426,7 +426,7 @@ async function processDocxFile(file) {
     formData.append('file', file);
 
     try {
-        const response = await apiFetch('/api/upload/docx', {
+        const response = await apiFetch('/upload/docx', {
             method: 'POST',
             body: formData,
         });
@@ -569,7 +569,7 @@ async function processTextFile(file) {
 
     try {
         console.log('📡 Sending TXT file to backend: /api/upload/txt');
-        const response = await apiFetch('/api/upload/txt', {
+        const response = await apiFetch('/upload/txt', {
             method: 'POST',
             body: formData,
         });

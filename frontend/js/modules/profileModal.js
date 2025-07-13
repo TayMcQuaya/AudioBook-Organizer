@@ -43,9 +43,9 @@ class ProfileModal {
         try {
             // Fetch profile and usage history in parallel
             const [profileResponse, historyResponse, creditsResponse] = await Promise.all([
-                apiFetch('/api/auth/profile'),
-                apiFetch('/api/auth/usage-history?page=1&per_page=10'),
-                apiFetch('/api/auth/credits')
+                apiFetch('/auth/profile'),
+                apiFetch('/auth/usage-history?page=1&per_page=10'),
+                apiFetch('/auth/credits')
             ]);
 
             if (!profileResponse.ok) {
@@ -563,7 +563,7 @@ class ProfileModal {
                 full_name: formData.get('full_name')
             };
 
-            const response = await apiFetch('/api/auth/profile', {
+            const response = await apiFetch('/auth/profile', {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json'
@@ -783,7 +783,7 @@ class ProfileModal {
      */
     async handleAccountDeletion(password, confirmationText) {
         try {
-            const response = await apiFetch('/api/auth/account', {
+            const response = await apiFetch('/auth/account', {
                 method: 'DELETE',
                 headers: {
                     'Content-Type': 'application/json'

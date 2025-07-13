@@ -224,7 +224,7 @@ class SessionManager {
                 
                 try {
                     // Try to verify with backend if available
-                    const response = await apiFetch('/api/auth/verify', {
+                    const response = await apiFetch('/auth/verify', {
                         method: 'POST',
                         headers: { 'Authorization': `Bearer ${storedToken}` },
                         body: JSON.stringify({ token: storedToken })

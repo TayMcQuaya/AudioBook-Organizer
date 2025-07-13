@@ -33,7 +33,7 @@ let csrfToken = null;
 async function getCSRFToken() {
     if (!csrfToken) {
         try {
-            const response = await fetch(`${BACKEND_URL}/api/security/csrf-token`, {
+            const response = await fetch(`${BACKEND_URL}/security/csrf-token`, {
                 method: 'GET',
                 credentials: 'include'
             });
@@ -139,7 +139,7 @@ export async function apiFetch(endpoint, options = {}) {
 export const checkApiHealth = async () => {
     try {
         // Using a lightweight, non-existent endpoint for a quick check
-        const response = await apiFetch('/api/health-check');
+        const response = await apiFetch('/health-check');
         // We consider any response from the server (even a 404) as a sign of it being reachable
         return { success: true, status: response.status };
     } catch (error) {

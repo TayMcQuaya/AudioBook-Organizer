@@ -221,7 +221,7 @@ export async function startExport() {
     };
     
     try {
-        const response = await apiFetch('/api/export', {
+        const response = await apiFetch('/export', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
