@@ -157,7 +157,8 @@ class TempAuth {
                 apiUrl = '/api/auth/temp-login';
             } else {
                 // Production - use DigitalOcean backend
-                apiUrl = 'https://audiobook-organizer-test-vdhku.ondigitalocean.app/api/auth/temp-login';
+                //apiUrl = 'https://audiobook-organizer-test-vdhku.ondigitalocean.app/api/auth/temp-login';
+                apiUrl = '/api/auth/temp-login'
             }
             
             const response = await fetch(apiUrl, {
