@@ -78,3 +78,35 @@
   5. Continue with Stripe setup as previously outlined
 
   This way you can safely test locally without affecting production data!
+
+   The issue is that Supabase is using {{ .SiteURL }} in email templates, which defaults to your Supabase project
+  URL instead of your custom domain.
+
+  🔧 Fix in Supabase Dashboard:
+
+  1. Go to your PRODUCTION Supabase project
+  2. Authentication → URL Configuration
+    - Change Site URL from: https://unepueirtakyzuzutjrl.supabase.co
+    - To: https://www.audiobookorganizer.com
+  3. Authentication → Email Templates
+    - Click on each template (Confirm signup, Reset password, etc.)
+    - Look for URLs like: {{ .SiteURL }}/auth/confirm?token=...
+    - These will now use your custom domain!
+
+  📝 What This Changes:
+
+  Before:
+  Please confirm your email:
+  https://unepueirtakyzuzutjrl.supabase.co/auth/confirm?token=...
+
+  After:
+  Please confirm your email:
+  https://www.audiobookorganizer.com/auth/confirm?token=...
+
+  ⚠️ Important:
+
+  Make sure you've already set the Site URL to your custom domain in the URL Configuration section. This is what
+  Supabase uses for {{ .SiteURL }} in all email templates.
+
+  That's it! Users will now see your professional domain in all authentication emails instead of the Supabase
+  database string! 🎉
