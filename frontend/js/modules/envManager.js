@@ -111,7 +111,7 @@ class EnvironmentManager {
         // Simplified environment detection
         // Anything not localhost is considered production
         const isProduction = !isDevelopment;
-        const shouldUseTesting = true; // Allow testing mode everywhere for now
+        const shouldUseTesting = false; // Allow testing mode everywhere if you put true 
         
         return {
             testing_mode: shouldUseTesting, // Allow testing mode for localhost too
