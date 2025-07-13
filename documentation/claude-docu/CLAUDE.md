@@ -176,3 +176,4 @@ The following documentation files provide detailed information about specific as
 @documentation/claude-docu/08_PAYMENT_SYSTEM.md
 @documentation/claude-docu/09_SECURITY_MIDDLEWARE.md
 @documentation/claude-docu/10_TESTING_DEVELOPMENT.md
+@documentation/claude-docu/11_RECENT_UPDATES.md

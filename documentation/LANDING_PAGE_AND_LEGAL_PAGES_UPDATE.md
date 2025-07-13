@@ -327,3 +327,72 @@ CREDIT_COST_PREMIUM_EXPORT = 15     # with audio
 **Business Alignment**: Honest feature representation ✅  
 
 **All user-facing content now truthfully represents the AudioBook Organizer codebase while maintaining professional marketing appeal and clearly indicating planned future features.**
+
+## 9. Account Deletion Feature Implementation - July 13, 2025
+
+### Overview
+Added comprehensive account deletion functionality allowing users to permanently delete their accounts and all associated data.
+
+### Backend Implementation
+**Endpoint**: `DELETE /api/auth/account`
+- Password verification required
+- "DELETE" confirmation text (case-sensitive)
+- Rate limiting using standard auth limits
+- Comprehensive data deletion process
+
+### Data Deletion Scope
+**Database Records Deleted**:
+- User profile (`profiles` table)
+- Credit balance (`user_credits` table)
+- All projects (`audiobook_projects` table)
+- File metadata (`file_uploads` table)
+- Usage history (`usage_logs` table)
+- Auth record (`auth.users` - when possible)
+
+**File System Cleanup**:
+- Automatic deletion of all uploaded audio files
+- Pattern matching for user-related files
+- No manual intervention required
+
+### Frontend Implementation
+**Profile Modal Updates**:
+- Added "Delete Account" section in Settings tab
+- Red delete button with clear warnings
+- Dual verification dialog (password + "DELETE" text)
+- Theme-aware styling for light/dark modes
+
+**CSS Enhancements**:
+- Subtle danger zone styling (removed exaggerated warnings)
+- Professional appearance with proper theme colors
+- Smooth transitions and hover states
+
+### Security Features
+1. **Authentication**: Must be logged in
+2. **Password Verification**: Current password required
+3. **Confirmation Text**: Must type "DELETE" exactly
+4. **Rate Limiting**: Standard auth rate limits apply
+5. **Audit Logging**: All attempts logged
+
+### User Experience Flow
+1. Navigate to Profile → Settings tab
+2. Scroll to "Delete Account" section
+3. Click red "Delete Account" button
+4. Enter password and type "DELETE"
+5. Confirm deletion
+6. See success message
+7. Automatic redirect to landing page
+
+### Testing Results
+- ✅ Auth record successfully deleted from Supabase
+- ✅ All database records removed
+- ✅ Audio files automatically cleaned up
+- ✅ Theme compatibility verified
+- ✅ Error handling tested
+
+### Files Modified
+- `backend/routes/auth_routes.py` - Added delete_account endpoint
+- `backend/utils/file_cleanup.py` - Added cleanup_user_files function
+- `backend/services/supabase_service.py` - Fixed service key initialization
+- `frontend/js/modules/profileModal.js` - Added deletion UI and handlers
+- `frontend/css/profile-modal.css` - Added danger zone styles
+- Multiple documentation files updated

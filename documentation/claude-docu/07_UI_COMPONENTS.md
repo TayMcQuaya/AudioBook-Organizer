@@ -92,13 +92,18 @@ const confirmed = await showConfirm(
 ## Modal Systems
 
 ### Profile Modal (`frontend/js/modules/profileModal.js`)
-- **Lines**: 723
+- **Lines**: 900+
 - **Features**:
   - User profile editing
   - Email/name updates
   - Credit balance display
-  - Usage history
-  - Password change
+  - Usage history with pagination
+  - Password reset functionality
+  - Account deletion with secure confirmation
+- **Tabs**:
+  - Profile: User info and avatar
+  - History: Usage logs and credit transactions
+  - Settings: Profile updates and account management
 
 ### Modal Structure
 ```html

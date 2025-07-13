@@ -527,7 +527,8 @@ def get_supabase_service() -> SupabaseService:
         _supabase_service = SupabaseService(
             app_config.SUPABASE_URL,
             app_config.SUPABASE_KEY,
-            app_config.SUPABASE_JWT_SECRET
+            app_config.SUPABASE_JWT_SECRET,
+            app_config.SUPABASE_SERVICE_KEY  # Include service key if available
         )
     return _supabase_service
 

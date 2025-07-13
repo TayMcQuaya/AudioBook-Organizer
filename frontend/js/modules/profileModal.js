@@ -412,6 +412,28 @@ class ProfileModal {
                     Click the button above to receive a password reset email. You'll be able to set a new password using the link in the email.
                 </p>
             </div>
+
+            <div class="settings-section danger-zone">
+                <h3 class="danger-title">Delete Account</h3>
+                <div class="danger-content">
+                    <p class="danger-warning">
+                        Once you delete your account, there is no going back. This action cannot be undone.
+                    </p>
+                    <p class="danger-info">
+                        This will permanently delete:
+                    </p>
+                    <ul class="danger-list">
+                        <li>Your profile and all personal data</li>
+                        <li>All your audiobook projects</li>
+                        <li>All uploaded audio files</li>
+                        <li>Your credit balance (${this.userData.credits || 0} credits)</li>
+                        <li>Your usage history</li>
+                    </ul>
+                    <button class="btn btn-danger" onclick="window.profileModal.showDeleteAccountDialog()">
+                        Delete Account
+                    </button>
+                </div>
+            </div>
         `;
     }
 
@@ -623,6 +645,176 @@ class ProfileModal {
                 resetButton.disabled = false;
                 resetButton.textContent = 'Reset Password';
             }
+        }
+    }
+
+    /**
+     * Show account deletion confirmation dialog
+     */
+    showDeleteAccountDialog() {
+        // Create custom modal overlay with higher z-index
+        const overlay = document.createElement('div');
+        overlay.className = 'profile-modal-backdrop delete-account-backdrop';
+        overlay.style.zIndex = '10001';
+        
+        const modal = document.createElement('div');
+        modal.className = 'profile-modal delete-account-modal';
+        modal.style.maxWidth = '500px';
+        modal.style.zIndex = '10002';
+        
+        modal.innerHTML = `
+            <div class="profile-modal-header danger-header">
+                <h2>Delete Account</h2>
+            </div>
+            <div class="profile-modal-content" style="padding: 24px;">
+                <div class="danger-notice">
+                    <p><strong>This action is permanent and cannot be undone!</strong></p>
+                </div>
+                
+                <p style="margin: 16px 0;">
+                    To confirm account deletion, please:
+                </p>
+                
+                <form id="delete-account-form" style="margin-top: 20px;">
+                    <div class="form-group">
+                        <label for="delete-password">Enter your password:</label>
+                        <input type="password" id="delete-password" class="form-control" required 
+                               placeholder="Enter your current password">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="delete-confirmation">Type <strong>DELETE</strong> to confirm:</label>
+                        <input type="text" id="delete-confirmation" class="form-control" required 
+                               placeholder="Type DELETE in capital letters"
+                               pattern="DELETE"
+                               autocomplete="off">
+                    </div>
+                    
+                    <div class="delete-warning">
+                        <p><strong>This will permanently delete:</strong></p>
+                        <ul>
+                            <li>All your projects and data</li>
+                            <li>Your ${this.userData.credits || 0} credits</li>
+                            <li>All uploaded audio files</li>
+                            <li>Your entire account</li>
+                        </ul>
+                    </div>
+                    
+                    <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 24px;">
+                        <button type="button" class="btn btn-secondary" id="deleteCancelBtn">Cancel</button>
+                        <button type="submit" class="btn btn-danger" id="deleteConfirmBtn">
+                            Delete My Account
+                        </button>
+                    </div>
+                </form>
+            </div>
+        `;
+        
+        document.body.appendChild(overlay);
+        document.body.appendChild(modal);
+        
+        // Show with animation
+        setTimeout(() => {
+            overlay.classList.add('show');
+            modal.classList.add('show');
+        }, 10);
+        
+        // Handle form submission
+        const form = document.getElementById('delete-account-form');
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const password = document.getElementById('delete-password').value;
+            const confirmation = document.getElementById('delete-confirmation').value;
+            
+            if (confirmation !== 'DELETE') {
+                showError('Please type DELETE to confirm account deletion');
+                return;
+            }
+            
+            // Show loading state
+            const deleteBtn = document.getElementById('deleteConfirmBtn');
+            deleteBtn.disabled = true;
+            deleteBtn.textContent = 'Deleting Account...';
+            
+            try {
+                await this.handleAccountDeletion(password, confirmation);
+            } catch (error) {
+                // Reset button on error
+                deleteBtn.disabled = false;
+                deleteBtn.textContent = 'Delete My Account';
+            }
+        });
+        
+        // Handle cancel
+        const cancelBtn = document.getElementById('deleteCancelBtn');
+        cancelBtn.addEventListener('click', () => {
+            this.closeDeleteDialog(overlay, modal);
+        });
+        
+        // Close on backdrop click
+        overlay.addEventListener('click', (e) => {
+            if (e.target === overlay) {
+                this.closeDeleteDialog(overlay, modal);
+            }
+        });
+        
+        // Focus password field
+        setTimeout(() => {
+            document.getElementById('delete-password').focus();
+        }, 100);
+    }
+
+    /**
+     * Close delete account dialog
+     */
+    closeDeleteDialog(overlay, modal) {
+        overlay.classList.remove('show');
+        modal.classList.remove('show');
+        
+        setTimeout(() => {
+            overlay.remove();
+            modal.remove();
+        }, 300);
+    }
+
+    /**
+     * Handle account deletion
+     */
+    async handleAccountDeletion(password, confirmationText) {
+        try {
+            const response = await apiFetch('/api/auth/account', {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    password: password,
+                    confirmation_text: confirmationText
+                })
+            });
+
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.message || 'Failed to delete account');
+            }
+
+            // Success - show message and redirect
+            showSuccess('Account deleted successfully. Redirecting...');
+            
+            // Clear all local storage
+            localStorage.clear();
+            sessionStorage.clear();
+            
+            // Close modal and redirect after a short delay
+            setTimeout(() => {
+                window.location.href = '/';
+            }, 2000);
+            
+        } catch (error) {
+            console.error('Account deletion error:', error);
+            showError(error.message || 'Failed to delete account. Please try again.');
+            throw error; // Re-throw to reset button state
         }
     }
 

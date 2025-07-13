@@ -7,6 +7,7 @@
 - **JWT Verification**: `backend/middleware/auth_middleware.py:require_auth` decorator
 - **Session Management**: `frontend/js/modules/sessionManager.js` (cross-tab sync)
 - **Testing Mode Auth**: `backend/routes/password_protection.py` + `frontend/js/modules/tempAuth.js`
+- **Account Deletion**: `backend/routes/auth_routes.py:delete_account()` → `frontend/js/modules/profileModal.js:handleAccountDeletion()`
 
 ### File Processing
 - **DOCX Upload**: `backend/routes/docx_routes.py:upload_docx()` → `backend/services/docx_service.py`
@@ -30,6 +31,7 @@
 - **Notifications**: `frontend/js/modules/notifications.js:showSuccess/Error/Info()`
 - **Modal Management**: `frontend/js/modules/profileModal.js` + `reorder.js`
 - **Theme Switching**: `frontend/js/modules/themeManager.js`
+- **Legal Pages**: `/frontend/pages/privacy/`, `/frontend/pages/terms/`, `/frontend/pages/contact/`
 
 ### Rich Text & Formatting
 - **Formatting Toolbar**: `frontend/js/modules/formattingToolbar.js:showFormattingToolbar()`

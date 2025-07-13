@@ -21,6 +21,7 @@
 | `/api/auth/credits` | GET | Get credit balance | 0 |
 | `/api/auth/usage-history` | GET | Get usage history | 0 |
 | `/api/auth/init-user` | POST | Initialize new user | 0 |
+| `/api/auth/account` | DELETE | Delete user account | 0 |
 
 ### Testing Mode Endpoints
 | Endpoint | Method | Purpose | Available In |
@@ -84,6 +85,9 @@ Credits: 5 for audio export, 0 for data-only export
 | `/payment/success` | None | Payment success |
 | `/payment/cancelled` | None | Payment cancelled |
 | `/temp-auth` | None | Testing mode auth |
+| `/privacy` | None | Privacy Policy page |
+| `/terms` | None | Terms of Service page |
+| `/contact` | None | Contact Us page |
 
 *Requires temp auth in testing mode
 
@@ -122,6 +126,32 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIs...
 // CSRF token (when required)
 X-CSRF-Token: your-csrf-token
 ```
+
+## Account Deletion
+
+### DELETE /api/auth/account
+Permanently deletes user account and all associated data.
+
+**Request Body:**
+```json
+{
+  "password": "current_password",
+  "confirmation_text": "DELETE"
+}
+```
+
+**Security Features:**
+- Requires current password verification
+- Must type "DELETE" exactly (case-sensitive)
+- Rate limited using standard auth limits
+- Deletes all user data from database
+- Automatically removes all uploaded audio files
+
+**Response:**
+- 200: Account deleted successfully
+- 401: Invalid password
+- 400: Invalid confirmation text
+- 429: Rate limit exceeded
 
 ## Error Response Format
 

@@ -107,4 +107,68 @@ def get_storage_info(upload_folder):
         
     except Exception as e:
         logger.error(f"Storage info error: {e}")
-        return {'file_count': 0, 'total_size': 0} 
+        return {'file_count': 0, 'total_size': 0}
+
+def cleanup_user_files(user_id, file_paths):
+    """
+    Clean up all files belonging to a specific user.
+    Called during account deletion to remove user's uploaded files.
+    
+    Args:
+        user_id: The user's ID
+        file_paths: List of file paths from the database
+        
+    Returns:
+        Number of files successfully deleted
+    """
+    deleted_count = 0
+    
+    try:
+        # Get upload folder from config
+        from ..config import Config
+        upload_folder = Config.UPLOAD_FOLDER
+        
+        if not os.path.exists(upload_folder):
+            logger.warning(f"Upload folder does not exist: {upload_folder}")
+            return 0
+        
+        upload_path = Path(upload_folder)
+        
+        # Delete each file in the list
+        for file_path in file_paths:
+            try:
+                # Extract filename from path (handle both full paths and filenames)
+                if isinstance(file_path, str):
+                    filename = os.path.basename(file_path)
+                    full_path = upload_path / filename
+                    
+                    if full_path.exists() and full_path.is_file():
+                        full_path.unlink()
+                        deleted_count += 1
+                        logger.debug(f"Deleted user file: {filename} for user {user_id}")
+                    else:
+                        logger.debug(f"File not found or already deleted: {filename}")
+                        
+            except Exception as e:
+                logger.warning(f"Could not delete file {file_path}: {e}")
+        
+        # Also check for any files that might be named with the user_id pattern
+        # This catches files that might not be in the database
+        try:
+            for file_path in upload_path.glob(f"*{user_id}*"):
+                if file_path.is_file():
+                    try:
+                        file_path.unlink()
+                        deleted_count += 1
+                        logger.debug(f"Deleted user-pattern file: {file_path.name}")
+                    except Exception as e:
+                        logger.warning(f"Could not delete pattern file {file_path.name}: {e}")
+        except Exception as e:
+            logger.warning(f"Error searching for user pattern files: {e}")
+        
+        logger.info(f"User file cleanup completed for {user_id}: {deleted_count} files deleted")
+        return deleted_count
+        
+    except Exception as e:
+        logger.error(f"User file cleanup error for {user_id}: {e}")
+        return deleted_count 

@@ -831,6 +831,7 @@ This fix ensures seamless navigation between all page types and prevents contain
 - Implemented proper cleanup for all three components
 - Dynamic CSS loading with promise-based waiting for style application
 - Scroll-to-top behavior for consistent navigation experience
+- Fixed "Back to Home" buttons to navigate to top of landing page (window.scrollTo(0, 0))
 
 **Page Structure**:
 ```javascript
@@ -847,7 +848,41 @@ function cleanup() {
     // Page-specific cleanup
 }
 
+// Navigation handler for SPA links
+function handleNavigationClick(event) {
+    const target = event.target.closest('[data-action="navigate"]');
+    if (!target) return;
+    
+    event.preventDefault();
+    const route = target.dataset.route;
+    
+    if (window.router) {
+        window.router.navigate(route);
+    } else {
+        window.location.href = route;
+    }
+}
+
+function setupNavigationHandlers() {
+    document.addEventListener('click', handleNavigationClick);
+}
+
+function removeNavigationHandlers() {
+    document.removeEventListener('click', handleNavigationClick);
+}
+
 export { init as init[Page]Page, cleanup as cleanup[Page]Page };
+```
+
+**HTML Navigation Pattern**:
+```html
+<!-- Footer navigation example from legal pages -->
+<nav class="footer-nav" role="navigation" aria-label="Footer navigation">
+    <a href="#" data-action="navigate" data-route="/">Home</a>
+    <a href="#" data-action="navigate" data-route="/privacy">Privacy Policy</a>
+    <a href="#" data-action="navigate" data-route="/terms">Terms of Service</a>
+    <a href="#" data-action="navigate" data-route="/contact">Contact Us</a>
+</nav>
 ```
 
 **CSS Loading Pattern**:

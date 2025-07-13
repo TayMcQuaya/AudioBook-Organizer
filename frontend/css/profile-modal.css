@@ -666,4 +666,132 @@
     background: var(--text-secondary, #666);
 }
 
-/* Theme compatibility - modal follows app theme automatically through CSS variables */ 
+/* Theme compatibility - modal follows app theme automatically through CSS variables */
+
+/* Danger Zone Styles */
+.danger-zone {
+    margin-top: 48px;
+    border: 1px solid var(--error-color, #dc3545);
+    border-radius: 8px;
+    background-color: var(--bg-secondary, #f8f9fa);
+}
+
+.danger-title {
+    color: var(--error-color, #dc3545);
+    margin: 0;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border-color, #e2e8f0);
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+.danger-content {
+    padding: 20px;
+}
+
+.danger-warning {
+    color: var(--text-primary, #2d3748);
+    background-color: var(--bg-secondary, #f8f9fa);
+    border: 1px solid var(--border-color, #e2e8f0);
+    padding: 12px 16px;
+    border-radius: 4px;
+    margin-bottom: 16px;
+    font-weight: 500;
+}
+
+[data-theme="dark"] .danger-warning {
+    background-color: var(--bg-secondary, #2d3748);
+    border-color: var(--border-color, #4a5568);
+}
+
+.danger-info {
+    margin: 16px 0 8px 0;
+    font-weight: 500;
+    color: var(--text-primary, #2d3748);
+}
+
+.danger-list {
+    margin: 8px 0 20px 20px;
+    color: var(--text-secondary, #4a5568);
+}
+
+.danger-list li {
+    margin: 4px 0;
+}
+
+.btn-danger {
+    background-color: #dc3545;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 4px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.btn-danger:hover {
+    background-color: #c82333;
+}
+
+.btn-danger:disabled {
+    background-color: #e47682;
+    cursor: not-allowed;
+}
+
+/* Delete Account Modal Styles */
+.delete-account-backdrop {
+    background-color: rgba(0, 0, 0, 0.7);
+}
+
+.delete-account-modal .danger-header {
+    background-color: #dc3545;
+    color: white;
+}
+
+.delete-account-modal .danger-header h2 {
+    color: white;
+}
+
+.danger-notice {
+    background-color: rgba(220, 53, 69, 0.1);
+    color: var(--error-color, #dc3545);
+    padding: 16px;
+    border-radius: 4px;
+    border: 1px solid var(--error-color, #dc3545);
+    margin-bottom: 16px;
+}
+
+.danger-notice p {
+    margin: 0;
+    font-weight: 600;
+}
+
+.delete-warning {
+    background-color: var(--bg-secondary, #f8f9fa);
+    border: 1px solid var(--border-color, #e2e8f0);
+    padding: 16px;
+    border-radius: 4px;
+    margin-top: 20px;
+}
+
+[data-theme="dark"] .delete-warning {
+    background-color: var(--bg-secondary, #2d3748);
+    border-color: var(--border-color, #4a5568);
+}
+
+.delete-warning p {
+    margin: 0 0 8px 0;
+    font-weight: 600;
+    color: var(--text-primary, #2d3748);
+}
+
+.delete-warning ul {
+    margin: 0 0 0 20px;
+    padding: 0;
+    color: var(--text-secondary, #4a5568);
+}
+
+.delete-warning li {
+    margin: 4px 0;
+} 
