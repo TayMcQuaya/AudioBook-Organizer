@@ -20,6 +20,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY backend/ ./backend/
 COPY app.py .
 
+# Copy frontend files for unified deployment
+COPY frontend/ ./frontend/
+
 # Create necessary directories
 RUN mkdir -p uploads exports
 

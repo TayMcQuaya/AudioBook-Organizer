@@ -816,6 +816,29 @@ def create_auth_routes() -> Blueprint:
                 # Still return success if files were cleaned up
                 # The user's data is effectively deleted even if auth record remains
             
+            # Send account deletion confirmation email
+            try:
+                from backend.services.email_service import get_email_service
+                email_service = get_email_service()
+                
+                if email_service.is_configured():
+                    user_email = user.get('email', '')
+                    user_name = user.get('user_metadata', {}).get('full_name', 'User')
+                    
+                    if user_email:
+                        email_result = email_service.send_account_deletion_confirmation(user_email, user_name)
+                        if email_result['success']:
+                            logger.info(f"Account deletion confirmation email sent to {user_email}")
+                        else:
+                            logger.warning(f"Failed to send deletion confirmation email: {email_result.get('error')}")
+                    else:
+                        logger.warning("No email found for account deletion confirmation")
+                else:
+                    logger.info("Email service not configured - skipping deletion confirmation email")
+            except Exception as e:
+                logger.error(f"Error sending deletion confirmation email: {e}")
+                # Don't fail the deletion if email fails
+            
             # Log the successful deletion
             logger.info(f"✅ Account and all associated data deleted for user {user_id}")
             

@@ -47,13 +47,8 @@ async function handleFormSubmit(event) {
     btnLoading.style.display = 'inline';
     
     try {
-        // Note: This is a placeholder. In production, you would:
-        // 1. Create a backend endpoint at /api/contact
-        // 2. Send the form data to that endpoint
-        // 3. The backend would send the email
-        
-        // For now, simulate a submission
-        await simulateFormSubmission(formData);
+        // Send form data to backend
+        await submitToBackend(formData);
         
         // Show success message
         showFormMessage('Thank you for your message! We\'ll get back to you soon.', 'success');
@@ -72,36 +67,24 @@ async function handleFormSubmit(event) {
     }
 }
 
-// Simulate form submission (placeholder for actual backend call)
-function simulateFormSubmission(formData) {
-    return new Promise((resolve, reject) => {
-        // Log form data for development
-        console.log('Contact form submission:', formData);
-        
-        // Simulate network delay
-        setTimeout(() => {
-            // For demonstration, always resolve
-            // In production, this would be an actual API call
-            resolve();
-            
-            // Example of what the actual API call would look like:
-            /*
-            fetch('/api/contact', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(formData)
-            })
-            .then(response => {
-                if (!response.ok) throw new Error('Failed to send message');
-                return response.json();
-            })
-            .then(resolve)
-            .catch(reject);
-            */
-        }, 1000);
+// Submit form data to backend
+async function submitToBackend(formData) {
+    console.log('Submitting contact form:', formData);
+    
+    const response = await fetch('/api/contact', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(formData)
     });
+    
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || 'Failed to send message');
+    }
+    
+    return response.json();
 }
 
 // Show form message

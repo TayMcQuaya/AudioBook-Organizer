@@ -108,9 +108,10 @@ class EnvironmentManager {
         // **SECURITY FIX: Removed debug information that exposes server infrastructure**
         const currentHostname = window.location.hostname;
         
-        const isProduction = currentHostname.includes('ondigitalocean.app');
-        const isVercel = currentHostname.includes('vercel.app');
-        const shouldUseTesting = isProduction || isVercel || isDevelopment;
+        // Simplified environment detection
+        // Anything not localhost is considered production
+        const isProduction = !isDevelopment;
+        const shouldUseTesting = true; // Allow testing mode everywhere for now
         
         return {
             testing_mode: shouldUseTesting, // Allow testing mode for localhost too

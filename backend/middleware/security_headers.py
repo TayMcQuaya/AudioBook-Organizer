@@ -10,13 +10,16 @@ def add_security_headers(response):
     """Add security headers to response"""
     
     # Content Security Policy - tailored for AudioBook Organizer
+    # Environment-aware configuration for unified deployment
+    app_domain = os.environ.get('APP_DOMAIN', '')
+    
     csp_policy = (
         "default-src 'self'; "
         "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com https://cdn.jsdelivr.net https://www.google.com https://www.gstatic.com; "
         "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
         "font-src 'self' https://fonts.gstatic.com; "
         "img-src 'self' data: https:; "
-        "connect-src 'self' https://api.stripe.com https://*.supabase.co https://audiobook-organizer-test-vdhku.ondigitalocean.app https://www.google.com; "
+        f"connect-src 'self' https://api.stripe.com https://*.supabase.co {app_domain} https://www.google.com; "
         "frame-src https://js.stripe.com https://www.google.com; "
         "object-src 'none'; "
         "base-uri 'self';"

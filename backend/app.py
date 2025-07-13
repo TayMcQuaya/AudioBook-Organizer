@@ -45,33 +45,38 @@ def create_app(config_name=None):
                    f"SameSite={app.config['SESSION_COOKIE_SAMESITE']}, "
                    f"Testing Mode={app.config.get('TESTING_MODE', False)}")
     
-    # Define allowed origins for CORS.
-    # This allows the main Vercel app URL and any of its preview deployments.
-    # We compile the regex for performance and correctness.
-    allowed_origins_regex = re.compile(r"https://audio-book-organizer(-[a-z0-9\-]+)?\.vercel\.app")
-
-    # Add debug logging for CORS configuration
-    app.logger.info(f"🌐 CORS Configuration:")
-    app.logger.info(f"   - Main Vercel URL: https://audio-book-organizer.vercel.app")
-    app.logger.info(f"   - Regex pattern: {allowed_origins_regex.pattern}")
-    app.logger.info(f"   - Testing mode: {app.config.get('TESTING_MODE', False)}")
-
-    CORS(
-        app,
-        origins=[
-            "http://localhost:3000",
+    # Environment-aware CORS configuration
+    # Development: Enable CORS for Docker testing
+    # Production: No CORS needed (unified deployment = same origin)
+    
+    if os.environ.get('FLASK_ENV') == 'development':
+        # Development: Minimal CORS for Docker testing
+        allowed_origins_env = os.environ.get('ALLOWED_ORIGINS', 'http://localhost:3000,http://localhost:8000')
+        allowed_origins = [origin.strip() for origin in allowed_origins_env.split(',')]
+        
+        # Add common development origins
+        allowed_origins.extend([
             "http://127.0.0.1:3000",
-            "http://localhost:5000",
-            "http://127.0.0.1:5000",
-            "https://audio-book-organizer.vercel.app", # Explicitly add main production URL
-            r"https://audio-book-organizer.*\.vercel\.app", # More permissive regex for preview branches
-            allowed_origins_regex  # Add the compiled regex
-        ],
-        supports_credentials=True,
-        methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-        allow_headers=["Content-Type", "Authorization", "X-Requested-With", "X-CSRF-Token", "X-Temp-Auth"],
-        expose_headers=["Content-Disposition", "X-Auth-Status", "X-Session-Status"]  # Add debugging headers
-    )
+            "http://127.0.0.1:8000"
+        ])
+        
+        app.logger.info(f"🌐 CORS Configuration (Development):")
+        app.logger.info(f"   - Allowed origins: {allowed_origins}")
+        app.logger.info(f"   - Testing mode: {app.config.get('TESTING_MODE', False)}")
+        
+        CORS(
+            app,
+            origins=allowed_origins,
+            supports_credentials=True,
+            methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+            allow_headers=["Content-Type", "Authorization", "X-Requested-With", "X-CSRF-Token", "X-Temp-Auth"],
+            expose_headers=["Content-Disposition", "X-Auth-Status", "X-Session-Status"]
+        )
+    else:
+        # Production: No CORS needed for unified deployment
+        app.logger.info(f"🌐 CORS Configuration (Production):")
+        app.logger.info(f"   - CORS disabled (unified deployment - same origin)")
+        app.logger.info(f"   - App domain: {os.environ.get('APP_DOMAIN', 'Not configured')}")
     
     # Configure logging based on environment
     if config_name == 'production':
@@ -142,6 +147,10 @@ def create_app(config_name=None):
     
     # Register security routes (CSRF tokens, etc.)
     app.register_blueprint(security_bp)
+    
+    # Register contact form routes
+    from backend.routes.contact_routes import contact_bp
+    app.register_blueprint(contact_bp)
     
     # Register password protection routes
     create_password_protection_routes(app)

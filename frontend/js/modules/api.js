@@ -4,16 +4,21 @@
  * In production, it points to the deployed backend on DigitalOcean.
  */
 const getApiBaseUrl = () => {
-  // Detect environment based on hostname only
+  // Environment-aware API URL configuration
   const hostname = window.location.hostname;
+  
+  // Check if we have a configured backend URL from environment
+  const configuredBackendUrl = window.ENV?.BACKEND_URL;
   
   // Local development detection
   if (hostname === 'localhost' || hostname === '127.0.0.1') {
-    return ''; // Relative paths for local Flask backend
+    // For unified local deployment, use relative paths
+    return configuredBackendUrl || ''; // Use env var or default to relative
   }
   
-  // Production: Use DigitalOcean backend
-  return 'https://audiobook-organizer-test-vdhku.ondigitalocean.app';
+  // Production unified deployment: always use relative API paths
+  // This works because frontend and backend are served from the same domain
+  return '/api';
 };
 
 export const API_BASE_URL = getApiBaseUrl();

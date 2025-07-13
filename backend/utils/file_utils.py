@@ -29,14 +29,16 @@ def create_url_safe_path(filename):
     
     logger = logging.getLogger(__name__)
     
-    # In production, use full backend URL for cross-domain access
+    # For unified deployment, always use relative paths
+    # Both development (localhost:3000) and production (same domain) work with relative paths
+    relative_path = f"/uploads/{filename}"
+    
     if os.environ.get('FLASK_ENV') == 'production':
-        backend_url = os.environ.get('BACKEND_URL', 'https://audiobook-organizer-test-vdhku.ondigitalocean.app')
-        full_url = f"{backend_url}/uploads/{filename}"
-        logger.info(f"🔗 Generated cross-domain file URL: {full_url}")
-        return full_url
+        # Production unified deployment
+        app_domain = os.environ.get('APP_DOMAIN', '')
+        logger.info(f"🔗 Generated unified deployment file URL: {app_domain}{relative_path}")
     else:
-        # For local development, use relative path
-        relative_path = f"/uploads/{filename}"
+        # Local development
         logger.debug(f"🔗 Generated local file path: {relative_path}")
-        return relative_path 
+    
+    return relative_path 
