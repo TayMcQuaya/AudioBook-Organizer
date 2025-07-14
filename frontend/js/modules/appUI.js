@@ -166,7 +166,7 @@ class AppUIManager {
                             <span class="item-icon">🚀</span>
                             Open App
                         </button>` : ''}
-                        <button class="dropdown-item" onclick="window.profileModal.open()">
+                        <button class="dropdown-item" onclick="window.appUI.openProfile()">
                             <span class="item-icon">👤</span>
                             Profile
                         </button>
@@ -239,7 +239,7 @@ class AppUIManager {
                 <span class="mobile-user-name">${this.getUserDisplayName(user)}</span>
             </div>
             ${window.location.pathname === '/' ? `<button class="mobile-link" onclick="window.navigateToApp && window.navigateToApp()">Open App</button>` : ''}
-            <button class="mobile-link" onclick="window.profileModal.open()">Profile</button>
+            <button class="mobile-link" onclick="window.appUI.openProfile()">Profile</button>
             <button class="mobile-link logout-btn" onclick="window.sessionManager.signOut()">
                 Sign Out
             </button>
@@ -312,6 +312,52 @@ class AppUIManager {
                 }
             };
             setTimeout(() => document.addEventListener('click', closeDropdown), 0);
+        }
+    }
+
+    /**
+     * Safely open profile modal with defensive checks
+     */
+    openProfile() {
+        try {
+            if (window.profileModal && typeof window.profileModal.open === 'function') {
+                window.profileModal.open();
+            } else if (window.profileModal) {
+                console.warn('🚨 profileModal exists but open method not available');
+                // Fallback: try to import the module dynamically
+                this.fallbackOpenProfile();
+            } else {
+                console.warn('🚨 profileModal not available, attempting to load...');
+                // Try to load the profile modal module
+                this.fallbackOpenProfile();
+            }
+        } catch (error) {
+            console.error('🚨 Error opening profile modal:', error);
+            // Fallback navigation to profile page
+            window.location.href = '/profile';
+        }
+    }
+
+    /**
+     * Fallback method to load and open profile modal
+     */
+    async fallbackOpenProfile() {
+        try {
+            console.log('🔄 Loading profile modal module...');
+            const profileModule = await import('./profileModal.js');
+            
+            // Wait a moment for module to initialize
+            await new Promise(resolve => setTimeout(resolve, 100));
+            
+            if (window.profileModal && typeof window.profileModal.open === 'function') {
+                window.profileModal.open();
+            } else {
+                throw new Error('Profile modal still not available after loading');
+            }
+        } catch (error) {
+            console.error('🚨 Failed to load profile modal:', error);
+            // Final fallback: navigate to profile page
+            window.location.href = '/profile';
         }
     }
 

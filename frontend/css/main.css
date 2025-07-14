@@ -2267,3 +2267,90 @@ main {
     margin-right: 0.75rem !important;
     flex-shrink: 0 !important;
   }
+
+/* ============================================================================
+   APPLICATION INITIALIZATION STATES
+   ============================================================================ */
+
+/* Hide potential duplicate navigation during app initialization */
+body.app-initializing .nav-links {
+    opacity: 0.5;
+    transition: opacity 0.3s ease;
+}
+
+/* Prevent interaction during initialization */
+body.app-initializing .user-nav {
+    pointer-events: none;
+}
+
+/* Show loading state during initialization */
+body.app-initializing::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.8);
+    z-index: 9998;
+    pointer-events: all;
+}
+
+body.app-initializing::after {
+    content: 'Initializing...';
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: var(--primary-color);
+    color: white;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-family: system-ui, sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    z-index: 9999;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* Fully ready state */
+body.app-ready .nav-links {
+    opacity: 1;
+    transition: opacity 0.3s ease;
+}
+
+body.app-ready .user-nav {
+    pointer-events: all;
+}
+
+/* Error state */
+body.app-error .nav-links {
+    opacity: 0.7;
+}
+
+body.app-error::after {
+    content: 'App initialization failed. Please refresh.';
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: #e53e3e;
+    color: white;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-family: system-ui, sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    z-index: 9999;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* Dark mode support for initialization states */
+[data-theme="dark"] body.app-initializing::before {
+    background: rgba(45, 55, 72, 0.8);
+}
+
+[data-theme="dark"] body.app-initializing::after {
+    background: var(--primary-color);
+    color: white;
+}

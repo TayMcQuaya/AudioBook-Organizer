@@ -255,28 +255,8 @@ async function initializeModules() {
         console.warn('⚠️ Stripe service pre-initialization failed (this is normal in testing mode):', error.message);
     }
     
-    // Initialize credit system after authentication is ready
-    console.log('🔄 Initializing credit system...');
-    try {
-        const { initializeCreditsDisplay, updateUserCredits } = await import('./appUI.js');
-        
-        // Always show credit display (in testing mode or when authenticated)
-        initializeCreditsDisplay();
-        
-        if (window.authModule && window.authModule.isAuthenticated()) {
-            await updateUserCredits();
-            console.log('✅ Credit system initialized with real user data');
-        } else if (tempAuthManager.isTestingMode) {
-            // In testing mode, show demo credits
-            const { updateCreditsDisplay } = await import('./ui.js');
-            updateCreditsDisplay(100); // Show 100 demo credits
-            console.log('✅ Credit system initialized with demo data (testing mode)');
-        } else {
-            console.log('✅ Credit system UI initialized (no auth)');
-        }
-    } catch (error) {
-        console.error('❌ Credit system initialization failed:', error);
-    }
+    // Credit system is already initialized in appUI.init() - skip duplicate initialization
+    console.log('✅ Credit system already initialized via appUI.init()');
     
     console.log('All modules initialized');
 }
@@ -290,6 +270,9 @@ export async function initApp() {
     }
     
     console.log('📱 AudioBook Organizer - Initializing application...');
+    
+    // Add initialization class to body to prevent display issues during loading
+    document.body.classList.add('app-initializing');
     
     try {
         // Initialize default state
@@ -328,12 +311,21 @@ export async function initApp() {
         // Mark as initialized
         isInitialized = true;
         window.isAppInitialized = true;
+        
+        // Remove initialization class to show app is ready
+        document.body.classList.remove('app-initializing');
+        document.body.classList.add('app-ready');
+        
         console.log('✅ AudioBook Organizer - Application ready!');
         
     } catch (error) {
         console.error('❌ Error during app initialization:', error);
         isInitialized = false;
         window.isAppInitialized = false;
+        
+        // Remove initialization class even on error
+        document.body.classList.remove('app-initializing');
+        document.body.classList.add('app-error');
     }
 }
 
