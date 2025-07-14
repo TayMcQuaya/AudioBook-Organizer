@@ -1,5 +1,87 @@
 # Recent Updates - AudioBook Organizer
 
+## July 14, 2025 Session
+
+### 1. Domain Redirect Implementation
+**Problem**: Need to redirect audiobookorganizer.com to www.audiobookorganizer.com
+**Solution**:
+- Created domain redirect middleware
+- Implemented 301 permanent redirects for SEO
+- Applied to production environment only
+- Preserves all paths and query parameters
+
+**Files Created**:
+- `/backend/middleware/domain_redirect.py`
+- `/DOMAIN_REDIRECT_SETUP.md`
+
+### 2. API Endpoint Double Prefix Fix
+**Problem**: Frontend was making requests to `/api/api/` causing 404 errors
+**Solution**:
+- Fixed `getApiBaseUrl()` to return '/api' for local development
+- Reverted incorrect removal of `/api` prefix from endpoint calls
+- Ensured consistent API routing across all modules
+
+**Files Modified**:
+- `/frontend/js/modules/api.js`
+- All frontend modules using `apiCall()`
+
+### 3. Row Level Security (RLS) Fix
+**Problem**: Database operations failing with "new row violates row-level security policy"
+**Solution**:
+- Authenticated Supabase Python client with user's JWT token
+- Applied fix to project routes and supabase service
+- Created comprehensive documentation
+
+**Files Created**:
+- `/RLS_FIX_DOCUMENTATION.md`
+
+**Files Modified**:
+- `/backend/routes/project_routes.py`
+- `/backend/services/supabase_service.py`
+
+### 4. Google OAuth Signup Fix
+**Problem**: "Database error saving new user" when signing up with Google
+**Solution**:
+- Changed database trigger from SECURITY INVOKER to SECURITY DEFINER
+- Fixed automatic profile and credits creation
+- Added error handling to prevent signup failures
+
+**Files Created**:
+- `/sql/07_fix_oauth_trigger.sql`
+- `/GOOGLE_OAUTH_FIX.md`
+
+### 5. Email Verification Implementation
+**Problem**: Users could create fake accounts to farm free credits
+**Solution**:
+- Enabled email verification requirement
+- Credits only granted after email confirmation
+- Google OAuth users exempt (pre-verified)
+- Comprehensive anti-abuse documentation
+
+**Files Created**:
+- `/EMAIL_VERIFICATION_SETUP.md`
+- `/sql/08_credits_after_verification.sql`
+
+### 6. Signup Form Validation Improvements
+**Problem**: Poor user feedback for validation errors
+**Solution**:
+- Added live password requirements display with checkmarks
+- Fixed terms checkbox validation feedback
+- Removed HTML5 required attributes to use custom validation
+- Added visual feedback (red borders, shake animation)
+- Scroll to first error on validation failure
+
+**UI Improvements**:
+- ○ → ✓ for each password requirement met
+- Clear error messages below each field
+- Password strength indicator (Weak/Fair/Good/Strong)
+- "Password must contain..." specific error messages
+
+**Files Modified**:
+- `/frontend/pages/auth/auth.html`
+- `/frontend/pages/auth/auth.js`
+- `/frontend/css/auth.css`
+
 ## July 13, 2025 Session
 
 ### 1. Landing Page Content Accuracy

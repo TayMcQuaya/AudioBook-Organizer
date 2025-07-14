@@ -9,6 +9,7 @@ The security system implements multiple layers:
 5. reCAPTCHA integration
 6. Input validation
 7. File upload security
+8. Domain redirect (SEO & canonicalization)
 
 ## Authentication Middleware
 
@@ -373,6 +374,40 @@ def validate_file_upload(file):
     
     return True, "File valid"
 ```
+
+## Domain Redirect Middleware
+
+### Domain Redirect (`backend/middleware/domain_redirect.py`)
+- **Purpose**: Enforce canonical domain (www.audiobookorganizer.com)
+- **Lines**: ~50
+- **Features**:
+  - SEO-friendly 301 permanent redirects
+  - Production-only (disabled in development)
+  - Preserves all paths and query parameters
+
+### Implementation
+```python
+@app.before_request
+def redirect_to_www():
+    """Redirect non-www to www domain for SEO"""
+    # Only in production
+    if not app.config.get('DEBUG', True):
+        host = request.host.lower()
+        
+        # Redirect audiobookorganizer.com -> www.audiobookorganizer.com
+        if host == 'audiobookorganizer.com':
+            new_url = request.url.replace(
+                'audiobookorganizer.com', 
+                'www.audiobookorganizer.com', 
+                1
+            )
+            return redirect(new_url, code=301)
+```
+
+### Configuration
+- Applied before all other middleware
+- Handles both HTTP and HTTPS
+- Maintains security headers on redirect
 
 ## Session Security
 

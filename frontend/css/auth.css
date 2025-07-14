@@ -424,6 +424,18 @@
     display: block;
 }
 
+/* Invalid input styles */
+.auth-body .form-input.is-invalid {
+    border-color: var(--auth-error);
+    animation: shake 0.3s ease-in-out;
+}
+
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-5px); }
+    75% { transform: translateX(5px); }
+}
+
 @keyframes errorSlideIn {
     0% {
         opacity: 0;
@@ -1072,6 +1084,47 @@
 /* Enhanced password strength indicator */
 .auth-body .password-strength {
     margin-top: 0.75rem;
+}
+
+.auth-body .password-requirements {
+    margin-top: 0.5rem;
+}
+
+.auth-body .password-requirements .help-text {
+    display: block;
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+    line-height: 1.4;
+}
+
+.auth-body .requirement {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.25rem;
+}
+
+.auth-body .requirement-icon {
+    font-size: 0.75rem;
+    width: 1rem;
+    text-align: center;
+}
+
+.auth-body .requirement.met {
+    color: var(--success-color, #10b981);
+}
+
+.auth-body .requirement.met .requirement-icon {
+    /* Hide the original ○ symbol */
+    color: transparent;
+}
+
+.auth-body .requirement.met .requirement-icon::before {
+    content: "✓";
+    color: var(--success-color, #10b981);
+    display: inline-block;
 }
 
 .auth-body .strength-bar {

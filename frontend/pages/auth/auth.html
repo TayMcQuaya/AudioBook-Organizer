@@ -174,7 +174,6 @@
                                 name="password" 
                                 class="form-input" 
                                 placeholder="Create a password"
-                                required
                                 autocomplete="new-password"
                             >
                             <button type="button" class="password-toggle" id="signupPasswordToggle">
@@ -187,6 +186,28 @@
                             </div>
                             <span class="strength-text">Password strength</span>
                         </div>
+                        <div class="password-requirements" id="passwordRequirements">
+                            <div class="requirement" id="req-length">
+                                <span class="requirement-icon">○</span>
+                                <span class="requirement-text">At least 8 characters</span>
+                            </div>
+                            <div class="requirement" id="req-lower">
+                                <span class="requirement-icon">○</span>
+                                <span class="requirement-text">One lowercase letter</span>
+                            </div>
+                            <div class="requirement" id="req-upper">
+                                <span class="requirement-icon">○</span>
+                                <span class="requirement-text">One uppercase letter</span>
+                            </div>
+                            <div class="requirement" id="req-number">
+                                <span class="requirement-icon">○</span>
+                                <span class="requirement-text">One number</span>
+                            </div>
+                            <div class="requirement" id="req-special">
+                                <span class="requirement-icon">○</span>
+                                <span class="requirement-text">One special character</span>
+                            </div>
+                        </div>
                         <div class="form-error" id="signupPasswordError"></div>
                     </div>
 
@@ -198,7 +219,6 @@
                                 id="confirmPassword" 
                                 class="form-input" 
                                 placeholder="Confirm your password"
-                                required
                                 autocomplete="new-password"
                             >
                             <button type="button" class="password-toggle" id="confirmPasswordToggle">
@@ -210,7 +230,7 @@
 
                     <div class="form-group">
                         <label class="checkbox-label">
-                            <input type="checkbox" id="agreeTerms" class="checkbox-input" required>
+                            <input type="checkbox" id="agreeTerms" class="checkbox-input">
                             <span class="checkbox-custom"></span>
                             <span class="checkbox-text">
                                 I agree to the <a href="/terms" target="_blank">Terms of Service</a> 

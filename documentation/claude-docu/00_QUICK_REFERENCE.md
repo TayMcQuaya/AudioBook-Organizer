@@ -8,6 +8,8 @@
 - **Session Management**: `frontend/js/modules/sessionManager.js` (cross-tab sync)
 - **Testing Mode Auth**: `backend/routes/password_protection.py` + `frontend/js/modules/tempAuth.js`
 - **Account Deletion**: `backend/routes/auth_routes.py:delete_account()` → `frontend/js/modules/profileModal.js:handleAccountDeletion()`
+- **Email Verification**: `backend/routes/auth_routes.py:signup()` → Email sent → User verifies
+- **Google OAuth Fix**: `sql/07_fix_oauth_trigger.sql` → Database trigger with SECURITY DEFINER
 
 ### File Processing
 - **DOCX Upload**: `backend/routes/docx_routes.py:upload_docx()` → `backend/services/docx_service.py`
@@ -59,6 +61,13 @@
 - **Schema**: `/sql/database_schema_cloud.sql`
 - **Migrations**: `/sql/add_*.sql` files
 - **Service**: `/backend/services/supabase_service.py`
+
+### Middleware
+- **Authentication**: `/backend/middleware/auth_middleware.py`
+- **CSRF Protection**: `/backend/middleware/csrf_middleware.py`
+- **Rate Limiting**: `/backend/middleware/rate_limiter.py`
+- **Security Headers**: `/backend/middleware/security_headers.py`
+- **Domain Redirect**: `/backend/middleware/domain_redirect.py` → Enforces www subdomain
 
 ## 🛠️ Debugging Tips
 

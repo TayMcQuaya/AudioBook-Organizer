@@ -180,6 +180,37 @@ login_limiter = RateLimiter(
 - At least one number
 - At least one special character
 - Password strength meter shown
+- Live validation with checkmarks (○ → ✓)
+```
+
+## Email Verification
+
+### Purpose
+Prevents fake account abuse and credit farming
+
+### Implementation
+```javascript
+// Email verification required for new signups
+if (!user.email_confirmed_at) {
+    showInfo('Please check your email to verify your account');
+    // Redirect to verification pending page
+}
+```
+
+### Features
+- Verification email sent automatically on signup
+- Users must verify before accessing app
+- Credits only granted after verification
+- Google OAuth users exempt (pre-verified)
+
+### Database Trigger
+```sql
+-- Only give credits if email is confirmed OR OAuth user
+IF NEW.email_confirmed_at IS NOT NULL OR 
+   NEW.raw_app_meta_data->>'provider' IN ('google', 'github', 'facebook') THEN
+    INSERT INTO public.user_credits (user_id, credits)
+    VALUES (NEW.id, 100);
+END IF;
 ```
 
 ## Cross-Tab Synchronization
@@ -246,6 +277,12 @@ def get_current_user():
 - **Location**: `auth_middleware.py:85`
 - **Fix**: Implement token refresh
 - **Frontend**: `auth.js:refreshSession()`
+
+### Google OAuth Signup Fix
+- **Problem**: "Database error saving new user"
+- **Cause**: Database trigger using SECURITY INVOKER without auth context
+- **Solution**: Changed to SECURITY DEFINER in trigger
+- **File**: `/sql/07_fix_oauth_trigger.sql`
 
 ### Cross-Tab Issues
 - **Location**: `sessionManager.js:handleStorageChange()`

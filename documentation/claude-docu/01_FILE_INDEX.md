@@ -32,13 +32,14 @@
 | `/backend/services/export_service.py` | 178 | Export and ZIP creation |
 | `/backend/services/audio_service.py` | 72 | Audio processing and conversion |
 
-### Middleware (4 files, ~525 lines)
+### Middleware (5 files, ~575 lines)
 | File | Lines | Purpose |
 |------|-------|---------|
 | `/backend/middleware/auth_middleware.py` | 305 | JWT verification and auth decorators |
 | `/backend/middleware/rate_limiter.py` | 85 | Request rate limiting |
 | `/backend/middleware/csrf_middleware.py` | 76 | CSRF protection |
 | `/backend/middleware/security_headers.py` | 59 | Security headers middleware |
+| `/backend/middleware/domain_redirect.py` | ~50 | Domain canonicalization |
 
 ### Utilities (4 files, ~358 lines)
 | File | Lines | Purpose |

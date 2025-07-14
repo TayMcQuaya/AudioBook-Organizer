@@ -21,6 +21,7 @@
   4. fix_security_definer_views.sql - View security fixes
   5. rls_issue_fix.sql - RLS policy fixes
   6. delete_user_account.sql - Account deletion support
+  7. fix_oauth_trigger.sql 
 
   4. Configure Production Database
 

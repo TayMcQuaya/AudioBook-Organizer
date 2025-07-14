@@ -154,7 +154,15 @@ The frontend is a **module-based single-page application** without build tools:
    - Audio streaming for large files
    - LocalStorage caching for offline support
 
-5. **Recent Improvements** (Latest Session):
+5. **Recent Improvements** (July 14, 2025):
+   - **Domain Redirect**: Implemented redirect from audiobookorganizer.com to www.audiobookorganizer.com
+   - **API Endpoint Fix**: Resolved double /api/api/ prefix issue in frontend requests
+   - **RLS Fix**: Fixed Row Level Security errors by authenticating Supabase client
+   - **Google OAuth Fix**: Database trigger now properly creates user records on signup
+   - **Email Verification**: Added email verification requirement to prevent fake accounts
+   - **Signup Validation**: Enhanced form validation with password requirements display
+
+6. **Previous Session Improvements**:
    - **Section Highlight Preservation**: Highlights now persist through edit mode toggles
    - **Table of Contents Auto-Refresh**: TOC populates correctly after project restoration
    - **Formatted Text Highlighting**: Headers/titles now show section highlights properly

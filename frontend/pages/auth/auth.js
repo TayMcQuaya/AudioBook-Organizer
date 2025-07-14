@@ -120,6 +120,11 @@ export async function initAuthPage(auth) {
         // Set up form validation
         setupFormValidation();
         
+        // Initialize password requirements checker
+        if (authModule && authModule.initPasswordRequirementsChecker) {
+            authModule.initPasswordRequirementsChecker('signupPassword');
+        }
+        
         // Show initial form based on URL parameters
         handleInitialRoute();
         
@@ -488,7 +493,8 @@ async function handleSignupSubmit(e) {
     const agreeTerms = agreeTermsInput.checked;
 
     if (!validateSignupForm(fullName, email, password, confirmPassword, agreeTerms)) {
-        return;
+        setLoading(false);
+        return false; // Explicitly return false to prevent submission
     }
 
     if (!authModule) {
@@ -679,8 +685,16 @@ function validateSignupForm(fullName, email, password, confirmPassword, agreeTer
         clearFieldError(emailInput);
     }
 
-    if (password.length < 8) {
-        showFieldError(passwordInput, 'Password must be at least 8 characters long.');
+    // Check all password requirements
+    const passwordErrors = [];
+    if (password.length < 8) passwordErrors.push('at least 8 characters');
+    if (!/[a-z]/.test(password)) passwordErrors.push('one lowercase letter');
+    if (!/[A-Z]/.test(password)) passwordErrors.push('one uppercase letter');
+    if (!/[0-9]/.test(password)) passwordErrors.push('one number');
+    if (!/[!@#$%^&*()_+\-=\[\]{}|;:,.<>?]/.test(password)) passwordErrors.push('one special character');
+    
+    if (passwordErrors.length > 0) {
+        showFieldError(passwordInput, `Password must contain ${passwordErrors.join(', ')}.`);
         isValid = false;
     } else {
         clearFieldError(passwordInput);
@@ -694,10 +708,27 @@ function validateSignupForm(fullName, email, password, confirmPassword, agreeTer
     }
 
     if (!agreeTerms) {
-        showFieldError(agreeTermsInput.parentElement, 'You must agree to the terms.');
+        // Show error on the actual error div, not the parent
+        const errorDiv = document.getElementById('agreeTermsError');
+        if (errorDiv) {
+            errorDiv.textContent = 'You must agree to the terms and privacy policy';
+            errorDiv.style.display = 'block';
+        }
         isValid = false;
     } else {
-        clearFieldError(agreeTermsInput.parentElement);
+        const errorDiv = document.getElementById('agreeTermsError');
+        if (errorDiv) {
+            errorDiv.textContent = '';
+            errorDiv.style.display = 'none';
+        }
+    }
+
+    // If validation failed, scroll to the first error
+    if (!isValid) {
+        const firstError = document.querySelector('.form-error:not(:empty)');
+        if (firstError && firstError.style.display !== 'none') {
+            firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
     }
 
     return isValid;
