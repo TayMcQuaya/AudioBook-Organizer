@@ -577,8 +577,15 @@ def create_auth_routes() -> Blueprint:
             # Get Supabase service
             supabase_service = get_supabase_service()
             
+            # Get the auth token from the request header
+            from backend.middleware.auth_middleware import extract_token_from_header
+            token = extract_token_from_header()
+            
+            # Get user data from request body
+            data = request.get_json() or {}
+            
             # Initialize user data (profile, credits, etc.)
-            result = supabase_service.initialize_user(user['id'], user['email'])
+            result = supabase_service.initialize_user(user['id'], user['email'], data, token)
             
             return jsonify(result)
             

@@ -163,7 +163,7 @@ class StripeService {
             }
 
             // Get Stripe configuration from backend
-            const response = await apiCall('/api/stripe/config');
+            const response = await apiCall('/stripe/config');
             
             if (!response.success) {
                 console.error('Failed to get Stripe config:', response.error);
@@ -280,7 +280,7 @@ class StripeService {
                 return { success: false, error: 'Stripe not available in testing mode' };
             }
 
-            const response = await apiCall('/api/stripe/packages');
+            const response = await apiCall('/stripe/packages');
             return response;
 
         } catch (error) {
@@ -303,7 +303,7 @@ class StripeService {
             showInfo('Creating payment session...');
 
             // Create checkout session
-            const response = await apiCall('/api/stripe/create-checkout-session', {
+            const response = await apiCall('/stripe/create-checkout-session', {
                 method: 'POST',
                 body: JSON.stringify({ package_type: packageType })
             });
@@ -363,7 +363,7 @@ class StripeService {
                 return { success: false, error: 'Stripe not available' };
             }
 
-            const response = await apiCall('/api/stripe/transactions');
+            const response = await apiCall('/stripe/transactions');
             return response;
 
         } catch (error) {

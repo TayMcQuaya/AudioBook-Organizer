@@ -246,12 +246,16 @@ class SupabaseService:
             logger.error(f"Error fetching user profile: {e}")
             return None
     
-    def create_user_profile(self, user_id: str, email: str, user_data: Dict[str, Any] = None) -> bool:
+    def create_user_profile(self, user_id: str, email: str, user_data: Dict[str, Any] = None, auth_token: str = None) -> bool:
         """Create a new user profile"""
         if not self.client:
             return False
             
         try:
+            # FIX: Authenticate the postgrest client with user's token for RLS
+            if auth_token and hasattr(self.client, 'postgrest'):
+                self.client.postgrest.auth(auth_token)
+            
             profile_data = {
                 'id': user_id,
                 'email': email,
@@ -297,9 +301,14 @@ class SupabaseService:
             logger.error(f"Error updating user profile: {e}")
             return False
     
-    def initialize_user(self, user_id: str, email: str, user_data: Dict[str, Any] = None) -> Dict[str, Any]:
+    def initialize_user(self, user_id: str, email: str, user_data: Dict[str, Any] = None, auth_token: str = None) -> Dict[str, Any]:
         """Initialize user profile and credits for new or existing users - OPTIMIZED"""
         try:
+            # FIX: Authenticate the postgrest client with user's token for RLS
+            if auth_token and hasattr(self.client, 'postgrest'):
+                self.client.postgrest.auth(auth_token)
+                logger.debug("✅ Authenticated Supabase client for RLS operations")
+            
             # Check cache first
             cached_data = self._get_cached_user_data(user_id)
             if cached_data:
@@ -323,8 +332,8 @@ class SupabaseService:
             if is_new_user:
                 # For new users, create profile and credits in parallel
                 with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
-                    profile_task = executor.submit(self.create_user_profile, user_id, email, user_data or {})
-                    credits_task = executor.submit(self.initialize_user_credits, user_id, 100)
+                    profile_task = executor.submit(self.create_user_profile, user_id, email, user_data or {}, auth_token)
+                    credits_task = executor.submit(self.initialize_user_credits, user_id, 100, auth_token)
                     
                     # Wait for both to complete
                     profile_success = profile_task.result()
@@ -422,12 +431,16 @@ class SupabaseService:
             logger.error(f"Error fetching user credits: {e}")
             return 0
     
-    def initialize_user_credits(self, user_id: str, initial_credits: int = 100) -> bool:
+    def initialize_user_credits(self, user_id: str, initial_credits: int = 100, auth_token: str = None) -> bool:
         """Initialize credits for a new user"""
         if not self.client:
             return False
             
         try:
+            # FIX: Authenticate the postgrest client with user's token for RLS
+            if auth_token and hasattr(self.client, 'postgrest'):
+                self.client.postgrest.auth(auth_token)
+            
             credits_data = {
                 'user_id': user_id,
                 'credits': initial_credits,

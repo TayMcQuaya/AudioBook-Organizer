@@ -3,6 +3,9 @@
 ## The Issue
 When using Supabase Python client v2.x with Row Level Security (RLS) enabled tables, the client needs to be explicitly authenticated with the user's JWT token. Without this, `auth.uid()` in RLS policies returns `null`, causing a mismatch with `user_id` and blocking database operations.
 
+## Special Case: Google OAuth Signup
+The "Database error saving new user" during Google OAuth signup is a different issue caused by a database trigger. See `GOOGLE_OAUTH_FIX.md` for the solution.
+
 ## The Fix
 Add these lines before any Supabase table operations:
 
@@ -19,6 +22,11 @@ if token and hasattr(supabase.client, 'postgrest'):
 1. **✅ Fixed**: `backend/routes/project_routes.py`
    - `save_project()` function - line 47-51
    - `get_latest_project()` function - line 125-129
+
+2. **✅ Fixed**: `backend/services/supabase_service.py`
+   - `initialize_user()` function - line 304-310
+   - `create_user_profile()` function - line 255-261
+   - `initialize_user_credits()` function - line 448-454
 
 ## Potential Areas That May Need the Fix
 
