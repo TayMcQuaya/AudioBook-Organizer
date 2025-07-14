@@ -77,7 +77,7 @@ class ProfileModal {
 
     async fetchUsageHistory(page = 1, actionFilter = null) {
         try {
-            let url = `/api/auth/usage-history?page=${page}&per_page=10`;
+            let url = `/auth/usage-history?page=${page}&per_page=10`;
             if (actionFilter) {
                 url += `&action_filter=${actionFilter}`;
             }
@@ -301,9 +301,9 @@ class ProfileModal {
                 <select id="action-filter" onchange="window.profileModal.handleFilterChange(this.value)">
                     <option value="">All actions</option>
                     <option value="audio_upload" ${this.actionFilter === 'audio_upload' ? 'selected' : ''}>Audio Upload</option>
-                    <option value="docx_processing" ${this.actionFilter === 'docx_processing' ? 'selected' : ''}>DOCX Processing</option>
+                    <option value="docx_processed" ${this.actionFilter === 'docx_processed' ? 'selected' : ''}>DOCX Processing</option>
                     <option value="txt_upload" ${this.actionFilter === 'txt_upload' ? 'selected' : ''}>TXT Upload</option>
-                    <option value="premium_export" ${this.actionFilter === 'premium_export' ? 'selected' : ''}>Premium Export</option>
+                    <option value="premium_audio_export" ${this.actionFilter === 'premium_audio_export' ? 'selected' : ''}>Premium Export</option>
                     <option value="credit_purchase" ${this.actionFilter === 'credit_purchase' ? 'selected' : ''}>Credit Purchase</option>
                 </select>
             </div>
@@ -514,9 +514,20 @@ class ProfileModal {
         }
 
         // If switching to history tab, make sure we have the data
-        if (tabName === 'history' && (!this.usageHistory || this.usageHistory.data.length === 0)) {
+        if (tabName === 'history') {
+            // Show loading state immediately
+            content.innerHTML = `
+                <div class="loading-state">
+                    <div class="spinner"></div>
+                    <p>Loading usage history...</p>
+                </div>
+            `;
+            
             try {
-                this.usageHistory = await this.fetchUsageHistory(this.currentPage, this.actionFilter);
+                // Fetch data if needed
+                if (!this.usageHistory || this.usageHistory.data.length === 0) {
+                    this.usageHistory = await this.fetchUsageHistory(this.currentPage, this.actionFilter);
+                }
                 content.innerHTML = this.getTabContent();
             } catch (error) {
                 console.error('Failed to load usage history:', error);
@@ -528,6 +539,20 @@ class ProfileModal {
     async changePage(page) {
         try {
             this.currentPage = page;
+            
+            // Show loading state in the table body only
+            const tableBody = document.querySelector('.usage-history-table tbody');
+            if (tableBody) {
+                tableBody.innerHTML = `
+                    <tr>
+                        <td colspan="4" class="loading-cell">
+                            <div class="spinner-inline"></div>
+                            Loading...
+                        </td>
+                    </tr>
+                `;
+            }
+            
             this.usageHistory = await this.fetchUsageHistory(page, this.actionFilter);
             const content = document.querySelector('.profile-modal-content');
             if (content) {
@@ -543,6 +568,20 @@ class ProfileModal {
         try {
             this.actionFilter = filterValue || null;
             this.currentPage = 1;
+            
+            // Show loading state in the table body only
+            const tableBody = document.querySelector('.usage-history-table tbody');
+            if (tableBody) {
+                tableBody.innerHTML = `
+                    <tr>
+                        <td colspan="4" class="loading-cell">
+                            <div class="spinner-inline"></div>
+                            Applying filter...
+                        </td>
+                    </tr>
+                `;
+            }
+            
             this.usageHistory = await this.fetchUsageHistory(1, this.actionFilter);
             const content = document.querySelector('.profile-modal-content');
             if (content) {

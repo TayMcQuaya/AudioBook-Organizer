@@ -558,6 +558,7 @@ export async function attachAudio(chapterId, sectionId, input) {
 
         // Update credit display after successful upload
         const { updateUserCredits } = await import('./appUI.js');
+        window._creditRefreshNeeded = true;
         updateUserCredits(); // Refresh credit display to show consumption
 
         // Update section state with audio path

@@ -13,23 +13,33 @@ The UI system consists of:
 ## Core UI Modules
 
 ### UI Utilities (`frontend/js/modules/ui.js`)
-- **Lines**: 337
-- **Purpose**: General UI helper functions
+- **Lines**: 337+
+- **Purpose**: General UI helper functions and credits display
 - **Key Functions**:
   - `updateChaptersList()` - Render chapters
   - `updateSectionsList()` - Render sections
   - `createChapterElement()` - Chapter UI
   - `createSectionElement()` - Section UI
   - `showLoadingSpinner()` - Loading states
+  - `createCreditsDisplay()` - Create credits UI element
+  - `updateCreditsDisplay(credits)` - Update credits value
+  - `showLowCreditsModal()` - Display low credits warning
 
 ### App UI (`frontend/js/modules/appUI.js`)
-- **Lines**: 445
-- **Purpose**: Application-wide UI management
+- **Lines**: 600+
+- **Purpose**: Application-wide UI management and credit display
 - **Key Functions**:
-  - `updateAuthUI()` - Auth-aware UI updates
-  - `generateUserNavigation()` - User menus
-  - `handleResponsiveMenu()` - Mobile UI
-  - `updateNavigationState()` - Active states
+  - `init()` - Initialize UI manager with credits display
+  - `initializeCreditsDisplay()` - Create credits UI element
+  - `updateUserCredits(retryCount)` - Fetch and display credits with retry
+  - `createUserNavigation()` - User navigation with dropdown
+  - `handleAuthStateChange()` - React to auth changes
+  - `checkCreditsForAction()` - Verify credit balance before actions
+- **Credit System Features**:
+  - Automatic retry with exponential backoff
+  - Force refresh after credit consumption
+  - Credits display initialization on app page
+  - Auth recovery listener for post-restart issues
 
 ## Notification System
 
@@ -241,6 +251,48 @@ function applyTestingModeStyles() {
   document.body.style.border = '3px solid #ff9800';
 }
 ```
+
+## Credits Display System
+
+### Implementation Details
+```javascript
+// Credits display initialization (appUI.js)
+if (window.location.pathname === '/app') {
+    initializeCreditsDisplay();
+}
+
+// Credits HTML structure (ui.js)
+const creditsHTML = `
+    <div id="creditsDisplay" class="credits-display">
+        <span class="credits-icon">💎</span>
+        <span id="creditsValue">--</span>
+        <span class="credits-label">credits</span>
+    </div>
+`;
+
+// Update with retry logic (appUI.js)
+export async function updateUserCredits(retryCount = 0) {
+    const MAX_RETRIES = 3;
+    const RETRY_DELAY = 1000;
+    
+    // Force refresh after uploads
+    const shouldForceRefresh = retryCount === 0 && window._creditRefreshNeeded;
+    const credits = await window.authModule.getUserCredits(shouldForceRefresh);
+    
+    // Retry on 0 credits with valid auth
+    if (credits === 0 && hasValidToken && retryCount < MAX_RETRIES) {
+        setTimeout(() => updateUserCredits(retryCount + 1), RETRY_DELAY * (retryCount + 1));
+        return;
+    }
+    
+    updateCreditsDisplay(credits);
+}
+```
+
+### Session Recovery Integration
+- Credits automatically refresh after server restart detection
+- Auth recovery listener updates credits when authentication is restored
+- Force refresh triggered after credit-consuming actions (uploads)
 
 ## Component Communication
 

@@ -28,6 +28,9 @@ class AppUIManager {
         } else {
             // Listen for auth state changes (only on first init)
             sessionManager.addListener(this.handleAuthStateChange.bind(this));
+            
+            // **NEW: Add authentication recovery listener for credit updates**
+            this.setupAuthRecoveryListener();
         }
         
         // **ENHANCED: Force authentication state check before UI update**
@@ -43,8 +46,50 @@ class AppUIManager {
         // Always update UI with current auth state
         this.updateUI(authState);
         
+        // Initialize credits display (if on app page)
+        if (window.location.pathname === '/app') {
+            console.log('💎 Initializing credits display on app page...');
+            initializeCreditsDisplay();
+        }
+        
         this.isInitialized = true;
         console.log('✅ UI manager initialized');
+    }
+
+    /**
+     * Setup authentication recovery listener for post-restart session issues
+     */
+    setupAuthRecoveryListener() {
+        // Listen for authentication state improvements
+        let lastAuthState = false;
+        let lastCreditsState = 0;
+        
+        const checkAuthRecovery = () => {
+            const currentAuthState = window.authModule?.isAuthenticated() || false;
+            const hasToken = !!localStorage.getItem('auth_token');
+            
+            // Detect authentication recovery after restart
+            if (!lastAuthState && currentAuthState && hasToken) {
+                console.log('💎 Authentication recovered - refreshing credits...');
+                updateUserCredits(0); // Start fresh retry cycle
+            }
+            
+            // Update tracking state
+            lastAuthState = currentAuthState;
+        };
+        
+        // Check periodically for auth state changes
+        setInterval(checkAuthRecovery, 2000); // Check every 2 seconds
+        
+        // Also listen for storage events (cross-tab auth changes)
+        window.addEventListener('storage', (event) => {
+            if (event.key === 'auth_token' && event.newValue) {
+                console.log('💎 Auth token updated - checking for credit recovery...');
+                setTimeout(() => updateUserCredits(0), 500); // Small delay to let auth stabilize
+            }
+        });
+        
+        console.log('✅ Authentication recovery listener setup complete');
     }
     
     /**
@@ -71,7 +116,17 @@ class AppUIManager {
      * Handle authentication state changes
      */
     handleAuthStateChange(state) {
+        console.log('🔄 UI: Auth state changed:', state);
         this.updateUI(state);
+        
+        // **NEW: Trigger credit update when user becomes authenticated**
+        if (state.isAuthenticated && state.user) {
+            console.log('💎 User authenticated - updating credits...');
+            // Small delay to ensure auth is fully established
+            setTimeout(() => {
+                updateUserCredits(0);
+            }, 500);
+        }
     }
 
     /**
@@ -397,9 +452,12 @@ export function initializeCreditsDisplay() {
 }
 
 /**
- * Update user credits display
+ * Update user credits display with retry logic and authentication recovery
  */
-export async function updateUserCredits() {
+export async function updateUserCredits(retryCount = 0) {
+    const MAX_RETRIES = 3;
+    const RETRY_DELAY = 1000; // 1 second
+    
     try {
         // Check if we're in testing mode first
         const envManager = await import('./envManager.js');
@@ -413,22 +471,85 @@ export async function updateUserCredits() {
             return;
         }
         
-        // Normal mode - use auth module
-        if (window.authModule && window.authModule.isAuthenticated()) {
-            const credits = await window.authModule.getUserCredits();
+        // Enhanced authentication state checking
+        const isAuthenticated = window.authModule && window.authModule.isAuthenticated();
+        const hasValidToken = localStorage.getItem('auth_token');
+        
+        console.log(`💎 Credit fetch attempt ${retryCount + 1}/${MAX_RETRIES + 1} - Auth: ${isAuthenticated}, Token: ${!!hasValidToken}`);
+        
+        if (isAuthenticated) {
+            // Check if we should force refresh (e.g., after an upload)
+            const shouldForceRefresh = retryCount === 0 && window._creditRefreshNeeded;
+            if (shouldForceRefresh) {
+                console.log('💎 Force refreshing credits after action...');
+                delete window._creditRefreshNeeded;
+            }
+            
+            const credits = await window.authModule.getUserCredits(shouldForceRefresh);
+            console.log(`💎 Credits fetched: ${credits}`);
+            
+            // Detect potential session invalidation issue
+            if (credits === 0 && hasValidToken && retryCount < MAX_RETRIES) {
+                console.warn(`⚠️ Credits returned 0 but user appears authenticated - potential session invalidation (retry ${retryCount + 1})`);
+                
+                // Wait and retry - this handles timing issues after server restart
+                setTimeout(() => {
+                    updateUserCredits(retryCount + 1);
+                }, RETRY_DELAY * (retryCount + 1)); // Exponential backoff
+                return;
+            }
+            
+            // Force update the display with the fetched credits
+            console.log(`💎 Updating credits display to: ${credits}`);
             updateCreditsDisplay(credits);
             
-            // Show warning if credits are low
-            if (credits < 20) {
+            // Also force update the auth module cache if needed
+            if (window.authModule && window.authModule.user) {
+                window.authModule.user.credits = credits;
+            }
+            
+            // Show warning if credits are low (but not 0 due to technical issues)
+            if (credits > 0 && credits < 20) {
                 console.warn(`⚠️ Low credits: ${credits} remaining`);
                 // Could show a subtle notification here
             }
+            
+            // If we successfully got credits after retries, clear any pending session recovery
+            if (credits > 0 && retryCount > 0) {
+                console.log(`✅ Credits recovered after ${retryCount} retries: ${credits}`);
+            }
+            
+        } else if (hasValidToken && retryCount < MAX_RETRIES) {
+            // We have a token but auth module says not authenticated - possible timing issue
+            console.warn(`⚠️ Valid token found but not authenticated - waiting for auth recovery (retry ${retryCount + 1})`);
+            
+            // Wait for authentication to be established
+            setTimeout(() => {
+                updateUserCredits(retryCount + 1);
+            }, RETRY_DELAY * (retryCount + 1));
+            return;
+            
         } else {
+            // Genuinely not authenticated
+            console.log(`💎 User not authenticated, setting credits to 0`);
             updateCreditsDisplay(0);
         }
+        
     } catch (error) {
-        console.error('Error updating credits display:', error);
+        console.error(`❌ Error updating credits display (attempt ${retryCount + 1}):`, error);
+        
+        // Retry on error if we haven't exceeded max retries
+        if (retryCount < MAX_RETRIES) {
+            console.log(`🔄 Retrying credit fetch in ${RETRY_DELAY * (retryCount + 1)}ms...`);
+            setTimeout(() => {
+                updateUserCredits(retryCount + 1);
+            }, RETRY_DELAY * (retryCount + 1));
+            return;
+        }
+        
+        // Final fallback after all retries failed
         updateCreditsDisplay(0);
+        console.error(`❌ Credit fetching failed after ${MAX_RETRIES} retries`);
     }
 }
 

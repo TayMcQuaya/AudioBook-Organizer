@@ -211,6 +211,53 @@ function hideLoadingIndicator() {
     }
 }
 
+// Wait for authentication to be fully established before proceeding
+async function waitForAuthenticationStability() {
+    const MAX_WAIT_TIME = 10000; // 10 seconds max wait
+    const CHECK_INTERVAL = 500; // Check every 500ms
+    const startTime = Date.now();
+    
+    console.log('🔄 Waiting for authentication stability...');
+    
+    while (Date.now() - startTime < MAX_WAIT_TIME) {
+        // Check multiple authentication sources for consistency
+        const authModuleAuth = window.authModule?.isAuthenticated();
+        const sessionManagerAuth = window.sessionManager?.isAuthenticated;
+        const hasValidToken = !!localStorage.getItem('auth_token');
+        const authModuleUser = window.authModule?.getCurrentUser?.();
+        const sessionManagerUser = window.sessionManager?.user;
+        
+        // Debug logging for auth state
+        console.log(`🔍 Auth check: AuthModule=${authModuleAuth}, SessionManager=${sessionManagerAuth}, Token=${hasValidToken}, User=${!!(authModuleUser || sessionManagerUser)}`);
+        
+        // Case 1: User is clearly not authenticated (stable state)
+        if (!authModuleAuth && !sessionManagerAuth && !hasValidToken) {
+            console.log('✅ Authentication stable: User not authenticated');
+            return;
+        }
+        
+        // Case 2: User is clearly authenticated with all systems in agreement (stable state)
+        if (authModuleAuth && sessionManagerAuth && hasValidToken && (authModuleUser || sessionManagerUser)) {
+            console.log('✅ Authentication stable: User fully authenticated');
+            return;
+        }
+        
+        // Case 3: Mixed state - wait for stability
+        console.log('⏳ Authentication state inconsistent, waiting for stability...');
+        await new Promise(resolve => setTimeout(resolve, CHECK_INTERVAL));
+    }
+    
+    // If we timeout, log the final state and continue
+    const finalAuthState = {
+        authModule: window.authModule?.isAuthenticated(),
+        sessionManager: window.sessionManager?.isAuthenticated,
+        token: !!localStorage.getItem('auth_token'),
+        user: !!(window.authModule?.getCurrentUser?.() || window.sessionManager?.user)
+    };
+    
+    console.warn('⚠️ Authentication stability timeout reached, proceeding with current state:', finalAuthState);
+}
+
 // Initialize all modules in correct order
 async function initializeModules() {
     // Initialize temporary auth manager first (for testing mode)
@@ -232,7 +279,11 @@ async function initializeModules() {
         console.log('✅ Using session manager initialized by router');
     }
     
-    // Initialize UI manager after session manager
+    // **NEW: Wait for authentication to be fully established before UI initialization**
+    console.log('🔄 Ensuring authentication is fully established...');
+    await waitForAuthenticationStability();
+    
+    // Initialize UI manager after session manager AND authentication stability
     await appUI.init();
     
     // Initialize UI handlers

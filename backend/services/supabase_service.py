@@ -415,20 +415,90 @@ class SupabaseService:
 
     # Credits System Methods
     
-    def get_user_credits(self, user_id: str) -> int:
-        """Get user's current credit balance"""
+    def get_user_credits(self, user_id: str, use_cache: bool = True, auth_token: str = None) -> int:
+        """Get user's current credit balance with enhanced caching and recovery"""
         if not self.client:
+            logger.warning(f"💎 No Supabase client available for credits fetch: {user_id}")
             return 0
+        
+        logger.debug(f"💎 Fetching credits for user {user_id} (cache: {use_cache})")
+        
+        # Check cache first if enabled
+        if use_cache:
+            cached_data = self._get_cached_user_data(user_id)
+            if cached_data and 'credits' in cached_data:
+                logger.debug(f"💎 Using cached credits for {user_id}: {cached_data['credits']}")
+                return cached_data['credits']
             
         try:
+            # **ENHANCED: Add authentication for RLS compliance**
+            if auth_token and hasattr(self.client, 'postgrest'):
+                try:
+                    self.client.postgrest.auth(auth_token)
+                    logger.debug(f"💎 Authenticated Supabase client for credits fetch: {user_id}")
+                except Exception as auth_error:
+                    logger.warning(f"💎 Auth setup failed for credits fetch: {auth_error}")
+            
+            # Fetch from database
+            logger.debug(f"💎 Querying database for credits: {user_id}")
             result = self.client.table('user_credits').select('credits').eq('user_id', user_id).execute()
             
             if result.data and len(result.data) > 0:
-                return result.data[0]['credits']
-            return 0
+                credits = result.data[0]['credits']
+                logger.info(f"💎 Successfully fetched credits for {user_id}: {credits}")
+                
+                # **NEW: Update cache with fetched credits**
+                if use_cache:
+                    # Get existing cache data or create new
+                    cached_data = self._get_cached_user_data(user_id) or {}
+                    cached_data['credits'] = credits
+                    self._cache_user_data(user_id, cached_data)
+                    logger.debug(f"💎 Credits cached for {user_id}: {credits}")
+                
+                return credits
+            else:
+                logger.warning(f"💎 No credits record found for user {user_id}")
+                
+                # **NEW: Recovery logic - try to initialize credits for existing user**
+                if auth_token:
+                    logger.info(f"💎 Attempting to initialize credits for user {user_id}")
+                    initialized = self.initialize_user_credits(user_id, 100, auth_token)
+                    if initialized:
+                        logger.info(f"💎 Credits initialized during recovery for {user_id}")
+                        return 100  # Return the initialized amount
+                
+                return 0
             
         except Exception as e:
-            logger.error(f"Error fetching user credits: {e}")
+            logger.error(f"❌ Error fetching user credits for {user_id}: {e}")
+            logger.error(f"❌ Error type: {type(e).__name__}")
+            
+            # **NEW: Try cache fallback on database error**
+            if use_cache:
+                cached_data = self._get_cached_user_data(user_id)
+                if cached_data and 'credits' in cached_data:
+                    logger.warning(f"💎 Database error, using stale cache for {user_id}: {cached_data['credits']}")
+                    return cached_data['credits']
+            
+            # **NEW: Enhanced error recovery**
+            if "authentication" in str(e).lower() or "rls" in str(e).lower():
+                logger.error(f"❌ Authentication/RLS error for credits fetch: {user_id}")
+                # This suggests a server restart - we should retry with proper auth
+                if auth_token:
+                    logger.info(f"💎 Retrying credits fetch with fresh authentication: {user_id}")
+                    try:
+                        # Force re-authentication and retry
+                        if hasattr(self.client, 'postgrest'):
+                            self.client.postgrest.auth(auth_token)
+                        
+                        result = self.client.table('user_credits').select('credits').eq('user_id', user_id).execute()
+                        if result.data and len(result.data) > 0:
+                            credits = result.data[0]['credits']
+                            logger.info(f"💎 Retry successful - credits fetched for {user_id}: {credits}")
+                            return credits
+                    except Exception as retry_error:
+                        logger.error(f"❌ Retry failed for credits fetch: {retry_error}")
+            
             return 0
     
     def initialize_user_credits(self, user_id: str, initial_credits: int = 100, auth_token: str = None) -> bool:
@@ -526,6 +596,88 @@ class SupabaseService:
         self._user_init_cache[user_id] = {
             'data': data,
             'timestamp': time.time()
+        }
+    
+    def warm_cache_for_active_users(self, max_users: int = 50) -> int:
+        """
+        Warm cache for recently active users to improve post-restart performance
+        Returns number of users cached
+        """
+        if not self.client:
+            logger.warning("💎 Cannot warm cache - no Supabase client available")
+            return 0
+        
+        try:
+            logger.info(f"💎 Starting cache warming for up to {max_users} active users...")
+            
+            # Get recently active users from usage logs
+            # This helps identify users who might need their data cached
+            result = self.client.table('usage_logs').select('user_id').gte(
+                'created_at', 
+                (datetime.datetime.utcnow() - datetime.timedelta(hours=24)).isoformat()
+            ).order('created_at', desc=True).limit(max_users).execute()
+            
+            if not result.data:
+                logger.info("💎 No recent active users found for cache warming")
+                return 0
+            
+            # Get unique user IDs
+            user_ids = list(set([entry['user_id'] for entry in result.data]))
+            logger.info(f"💎 Found {len(user_ids)} unique active users for cache warming")
+            
+            cached_count = 0
+            for user_id in user_ids:
+                try:
+                    # Fetch and cache user profile and credits
+                    profile_data = self.get_user_profile(user_id)
+                    credits_data = self.get_user_credits(user_id, use_cache=False)  # Skip cache to force DB fetch
+                    
+                    if profile_data or credits_data > 0:
+                        cache_data = {}
+                        if profile_data:
+                            cache_data['profile'] = profile_data
+                        if credits_data > 0:
+                            cache_data['credits'] = credits_data
+                        
+                        self._cache_user_data(user_id, cache_data)
+                        cached_count += 1
+                        logger.debug(f"💎 Cached data for user {user_id}")
+                    
+                except Exception as user_error:
+                    logger.warning(f"💎 Failed to cache data for user {user_id}: {user_error}")
+                    continue
+            
+            logger.info(f"✅ Cache warming complete: {cached_count}/{len(user_ids)} users cached")
+            return cached_count
+            
+        except Exception as e:
+            logger.error(f"❌ Cache warming failed: {e}")
+            return 0
+    
+    def clear_cache(self) -> None:
+        """Clear all cached user data"""
+        cache_size = len(self._user_init_cache)
+        self._user_init_cache.clear()
+        logger.info(f"💎 Cache cleared: {cache_size} entries removed")
+    
+    def get_cache_stats(self) -> Dict[str, Any]:
+        """Get cache statistics for monitoring"""
+        now = time.time()
+        valid_entries = 0
+        expired_entries = 0
+        
+        for user_id, cache_entry in self._user_init_cache.items():
+            if (now - cache_entry['timestamp']) < self._cache_ttl:
+                valid_entries += 1
+            else:
+                expired_entries += 1
+        
+        return {
+            'total_entries': len(self._user_init_cache),
+            'valid_entries': valid_entries,
+            'expired_entries': expired_entries,
+            'cache_ttl_seconds': self._cache_ttl,
+            'hit_rate': getattr(self, '_cache_hits', 0) / max(1, getattr(self, '_cache_requests', 1))
         }
 
 # Global Supabase service instance

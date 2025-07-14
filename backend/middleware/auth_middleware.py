@@ -271,6 +271,11 @@ def consume_credits(credits_to_consume: int, action: str):
                     success = supabase_service.update_user_credits(g.user_id, -credits_to_consume)
                     
                     if success:
+                        # Clear user cache to force fresh fetch next time
+                        if hasattr(supabase_service, '_user_init_cache') and g.user_id in supabase_service._user_init_cache:
+                            del supabase_service._user_init_cache[g.user_id]
+                            logger.debug(f"💎 Cleared cache for user {g.user_id} after credit consumption")
+                        
                         # Log the usage
                         supabase_service.log_usage(
                             g.user_id, 

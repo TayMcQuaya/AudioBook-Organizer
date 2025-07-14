@@ -236,6 +236,7 @@ export async function startExport() {
             if (exportAudio || mergeAudio) {
                 // Only refresh credits if this was a paid export
                 const { updateUserCredits } = await import('./appUI.js');
+                window._creditRefreshNeeded = true;
                 updateUserCredits(); // Refresh credit display to show consumption
             }
             

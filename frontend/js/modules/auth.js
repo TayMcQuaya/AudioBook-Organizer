@@ -277,6 +277,8 @@ class AuthModule {
                 case 'INITIAL_SESSION':
                     if (session) {
                         await this.handleAuthSuccess(session, false /* isLogin */, event);
+                        // **REMOVED: Initial session doesn't need recovery check - it's already a fresh session**
+                        // Only check recovery on actual failures, not on successful sessions
                     } else {
                         // Check if this might be a Google OAuth callback that hasn't processed yet
                         const isGoogleOAuthCallback = window.location.search.includes('from=google');
@@ -303,6 +305,8 @@ class AuthModule {
 
                 case 'TOKEN_REFRESHED':
                     await this.handleTokenRefresh(session);
+                    // **REMOVED: This was causing infinite loops - token refresh is already a recovery action**
+                    // Don't trigger recovery check here as it will cause another token refresh
                     break;
 
                 case 'USER_UPDATED':
@@ -1082,23 +1086,29 @@ class AuthModule {
     /**
      * Get user credits
      */
-    async getUserCredits() {
+    async getUserCredits(forceRefresh = false) {
         if (!this.isAuthenticated()) {
+            console.log('💎 getUserCredits: Not authenticated, returning 0');
             return 0;
         }
 
         try {
-            const response = await this.apiRequest('/auth/credits');
+            console.log(`💎 getUserCredits: Fetching credits from API... (refresh: ${forceRefresh})`);
+            const endpoint = forceRefresh ? '/auth/credits?refresh=true' : '/auth/credits';
+            const response = await this.apiRequest(endpoint);
 
             const data = await response.json();
+            console.log('💎 getUserCredits: API response:', data);
             
             if (data.success) {
+                console.log(`💎 getUserCredits: Returning ${data.credits} credits`);
                 return data.credits;
             }
             
+            console.warn('💎 getUserCredits: API returned success=false, returning 0');
             return 0;
         } catch (error) {
-            console.error('Error fetching credits:', error);
+            console.error('💎 getUserCredits: Error fetching credits:', error);
             return 0;
         }
     }
@@ -1432,6 +1442,153 @@ class AuthModule {
         });
     }
     
+    /**
+     * NEW: Trigger session recovery check to detect and handle server restart issues
+     */
+    triggerSessionRecoveryCheck(trigger = 'unknown') {
+        // **FIX: Prevent recovery loops by tracking recent attempts**
+        const now = Date.now();
+        const lastRecoveryKey = 'last_session_recovery_attempt';
+        const lastAttempt = parseInt(localStorage.getItem(lastRecoveryKey) || '0');
+        
+        // Don't attempt recovery if we just did one in the last 30 seconds
+        if (now - lastAttempt < 30000) {
+            console.log(`🔄 Skipping recovery check - too recent (${Math.round((now - lastAttempt) / 1000)}s ago)`);
+            return;
+        }
+        
+        console.log(`🔄 Triggering session recovery check (trigger: ${trigger})`);
+        localStorage.setItem(lastRecoveryKey, now.toString());
+        
+        // Small delay to allow auth state to stabilize
+        setTimeout(async () => {
+            try {
+                // Test if session is working properly by checking critical endpoints
+                const isWorking = await this.testSessionHealth();
+                
+                if (!isWorking) {
+                    console.warn('🔄 Session health check failed - possible server restart detected');
+                    
+                    // Notify UI components that session recovery is needed
+                    window.dispatchEvent(new CustomEvent('session-recovery-needed', {
+                        detail: { trigger, timestamp: Date.now() }
+                    }));
+                    
+                    // Try to refresh session automatically
+                    const recovered = await this.attemptSessionRecovery();
+                    
+                    if (recovered) {
+                        console.log('✅ Session recovery successful');
+                        window.dispatchEvent(new CustomEvent('session-recovery-successful', {
+                            detail: { trigger, timestamp: Date.now() }
+                        }));
+                    } else {
+                        console.warn('❌ Session recovery failed');
+                        window.dispatchEvent(new CustomEvent('session-recovery-failed', {
+                            detail: { trigger, timestamp: Date.now() }
+                        }));
+                    }
+                }
+            } catch (error) {
+                console.error('❌ Session recovery check failed:', error);
+            }
+        }, 1000); // 1 second delay
+    }
+
+    /**
+     * NEW: Test session health by trying critical operations
+     */
+    async testSessionHealth() {
+        try {
+            // Test 1: Try to fetch user credits (common failure after restart)
+            const credits = await this.getUserCredits();
+            
+            // Test 2: Try to verify auth status with proper token
+            const token = this.getAuthToken();
+            if (!token) {
+                console.warn('🔄 No auth token available for health check');
+                return false;
+            }
+            
+            const response = await this.apiRequest('/auth/verify', { 
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ token })
+            });
+            
+            if (!response.ok) {
+                console.warn('🔄 Auth verification failed in health check');
+                return false;
+            }
+            
+            // If we get here, session seems healthy
+            console.log('✅ Session health check passed');
+            return true;
+            
+        } catch (error) {
+            console.warn('🔄 Session health check failed:', error);
+            return false;
+        }
+    }
+
+    /**
+     * NEW: Attempt to recover session after server restart
+     */
+    async attemptSessionRecovery() {
+        try {
+            console.log('🔄 Attempting session recovery...');
+            
+            // Get current session from Supabase
+            const { data: { session }, error } = await supabaseClient.auth.getSession();
+            
+            if (error) {
+                console.error('🔄 Failed to get session for recovery:', error);
+                return false;
+            }
+            
+            if (!session) {
+                console.warn('🔄 No session available for recovery');
+                return false;
+            }
+            
+            // Try to refresh the session
+            const { data: refreshData, error: refreshError } = await supabaseClient.auth.refreshSession();
+            
+            if (refreshError) {
+                console.error('🔄 Session refresh failed:', refreshError);
+                return false;
+            }
+            
+            if (refreshData.session) {
+                console.log('✅ Session refreshed successfully');
+                
+                // Update local state
+                this.session = refreshData.session;
+                this.user = refreshData.session.user;
+                
+                // Store updated token
+                localStorage.setItem('auth_token', refreshData.session.access_token);
+                
+                // Notify session manager
+                if (window.sessionManager && typeof window.sessionManager.notifyStateChange === 'function') {
+                    window.sessionManager.user = this.user;
+                    window.sessionManager.isAuthenticated = true;
+                    window.sessionManager.notifyStateChange();
+                }
+                
+                return true;
+            }
+            
+            return false;
+            
+        } catch (error) {
+            console.error('❌ Session recovery attempt failed:', error);
+            return false;
+        }
+    }
+
     setLoading(button, isLoading) {
         const btnText = button.querySelector('.btn-text');
         btnText.textContent = isLoading ? 'Processing...' : 'Update Password';

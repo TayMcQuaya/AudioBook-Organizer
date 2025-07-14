@@ -82,7 +82,7 @@ def require_auth(f):
 ### Frontend Authentication
 
 #### Auth Module (`frontend/js/modules/auth.js`)
-- **Lines**: 1,446
+- **Lines**: 1,446+
 - **Dependencies**: notifications, validators, sessionManager, recaptcha
 - **Key Functions**:
   - `initializeSupabase()` - Dynamic Supabase client setup
@@ -90,15 +90,21 @@ def require_auth(f):
   - `handleGoogleAuth()` - OAuth flow
   - `refreshSession()` - Token refresh
   - `logout()` - Clear all auth state
+  - `getUserCredits(forceRefresh)` - Fetch credits with optional cache bypass
+  - `testSessionHealth()` - Verify session is valid
+  - `triggerSessionRecoveryCheck()` - Initiate recovery with rate limiting
 
 #### Session Manager (`frontend/js/modules/sessionManager.js`)
-- **Lines**: 720
-- **Purpose**: Cross-tab authentication sync
+- **Lines**: 720+
+- **Purpose**: Cross-tab authentication sync and server restart recovery
 - **Key Features**:
   - Storage event listeners for tab sync
   - Password recovery mode handling
   - Security event logging
   - Token validation
+  - Server restart detection (`detectServerRestart()`)
+  - Automatic session recovery (`recoverFromServerRestart()`)
+  - Session health monitoring every 30 seconds
 
 #### Testing Mode UI (`frontend/js/modules/testingModeUI.js`)
 - **Lines**: 327
@@ -277,6 +283,24 @@ def get_current_user():
 - **Location**: `auth_middleware.py:85`
 - **Fix**: Implement token refresh
 - **Frontend**: `auth.js:refreshSession()`
+
+### Session Invalidation After Server Restart
+- **Problem**: Users see 0 credits and audio files return 500 errors
+- **Cause**: In-memory cache invalidation and RLS context loss
+- **Solution**: Automatic session recovery system
+- **Key Fixes**:
+  - Auth verify endpoint now receives token in JSON body
+  - Credits endpoint passes auth token for RLS compliance
+  - Cache cleared after credit consumption
+  - Credits display initialized during appUI init
+  - Force refresh option for post-upload updates
+- **Features**:
+  - Credit fetching with retry logic and exponential backoff
+  - Session health monitoring every 30 seconds
+  - Server restart detection via 3-point health check
+  - Automatic re-authentication without user intervention
+  - Rate limiting to prevent infinite loops
+- **Documentation**: `/documentation/Security/SESSION_INVALIDATION_FIX_GUIDE.md`
 
 ### Google OAuth Signup Fix
 - **Problem**: "Database error saving new user"

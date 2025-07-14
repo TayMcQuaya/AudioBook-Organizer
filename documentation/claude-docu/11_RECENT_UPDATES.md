@@ -1,6 +1,73 @@
 # Recent Updates - AudioBook Organizer
 
-## July 14, 2025 Session
+## July 14, 2025 Session (Part 2)
+
+### Session Invalidation Fix Implementation (Complete)
+**Problem**: Users see 0 credits and get 500 errors on audio files after server restart
+**Additional Issue**: Credits display disappearing on page refresh
+
+**Root Causes**:
+- In-memory cache invalidation on server restart
+- Supabase RLS context loss requiring re-authentication
+- Timing issues with credit fetching before auth establishment
+- No automatic recovery mechanism
+- Credits UI element not initialized before update attempts
+
+**Complete Solution**:
+
+1. **Frontend Recovery System**
+   - Credit fetching with exponential backoff retry (3 attempts)
+   - Session health monitoring every 30 seconds
+   - Automatic recovery on server restart detection
+   - Authentication state synchronization
+   - Credits display initialization in appUI.init()
+   - Force refresh option after credit-consuming actions
+
+2. **Backend Enhancements**
+   - RLS-aware credit fetching with auth token passthrough
+   - Cache clearing after credit consumption
+   - Force refresh parameter (?refresh=true) to bypass cache
+   - Enhanced error recovery for RLS failures
+   - Comprehensive file serving diagnostics
+
+3. **Critical Bug Fixes**
+   - **500 Error Fix**: Auth verify endpoint now receives token in JSON body
+   - **Infinite Loop Fix**: Added 30-second rate limiting between recovery attempts
+   - **Timing Fix**: Authentication stability check before credit fetching
+   - **Display Fix**: Credits element created during UI initialization
+   - **Cache Fix**: Backend cache cleared after credit consumption
+
+**Implementation Details**:
+```javascript
+// Frontend: Force refresh after uploads
+window._creditRefreshNeeded = true;
+updateUserCredits(); // Will use refresh=true
+
+// Backend: RLS compliance
+auth_token = request.headers.get('Authorization')[7:]
+credits = supabase_service.get_user_credits(user_id, use_cache=use_cache, auth_token=auth_token)
+```
+
+**Production Considerations**:
+- RLS compliance critical for production databases
+- Cache management works identically in production
+- Retry logic handles production network latency
+- CORS already configured for production domains
+
+**Files Modified**:
+- `/frontend/js/modules/appUI.js` - Credits display init + retry logic
+- `/frontend/js/modules/sessionManager.js` - Fixed auth verify call
+- `/frontend/js/modules/auth.js` - Added forceRefresh parameter
+- `/frontend/js/modules/bookUpload.js` - Force refresh after upload
+- `/frontend/js/modules/sections.js` - Force refresh after audio upload
+- `/backend/routes/auth_routes.py` - RLS auth token + refresh param
+- `/backend/middleware/auth_middleware.py` - Cache clearing
+- `/backend/services/supabase_service.py` - Enhanced credit fetching
+
+**Documentation Created**:
+- `/documentation/Security/SESSION_INVALIDATION_FIX_GUIDE.md` (comprehensive)
+
+## July 14, 2025 Session (Part 1)
 
 ### 1. Domain Redirect Implementation
 **Problem**: Need to redirect audiobookorganizer.com to www.audiobookorganizer.com

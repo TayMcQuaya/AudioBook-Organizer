@@ -113,7 +113,28 @@ def create_static_routes(app):
             return response
         
         try:
-            response = make_response(send_from_directory(app.config['UPLOAD_FOLDER'], filename))
+            # **ENHANCED: Comprehensive diagnostic logging before attempting file serving**
+            upload_folder = app.config.get('UPLOAD_FOLDER')
+            file_path = os.path.join(upload_folder, filename) if upload_folder else None
+            
+            # Log detailed diagnostic information
+            app.logger.info(f'🔍 FILE SERVE REQUEST: {filename}')
+            app.logger.info(f'🔍 Upload folder config: {upload_folder}')
+            app.logger.info(f'🔍 Full file path: {file_path}')
+            app.logger.info(f'🔍 Upload folder exists: {os.path.exists(upload_folder) if upload_folder else "No upload folder configured"}')
+            
+            if upload_folder and os.path.exists(upload_folder):
+                app.logger.info(f'🔍 Upload folder readable: {os.access(upload_folder, os.R_OK)}')
+                app.logger.info(f'🔍 Upload folder contents count: {len(os.listdir(upload_folder)) if os.access(upload_folder, os.R_OK) else "Cannot read"}')
+                
+                if file_path:
+                    app.logger.info(f'🔍 File exists: {os.path.exists(file_path)}')
+                    if os.path.exists(file_path):
+                        app.logger.info(f'🔍 File readable: {os.access(file_path, os.R_OK)}')
+                        app.logger.info(f'🔍 File size: {os.path.getsize(file_path)} bytes')
+            
+            # Proceed with serving the file
+            response = make_response(send_from_directory(upload_folder, filename))
             
             # Add CORS headers for cross-domain audio file access
             response.headers['Access-Control-Allow-Origin'] = '*'
@@ -134,14 +155,66 @@ def create_static_routes(app):
                 elif filename.lower().endswith('.ogg'):
                     response.headers['Content-Type'] = 'audio/ogg'
             
+            app.logger.info(f'✅ Successfully served file: {filename}')
             return response
             
-        except FileNotFoundError:
-            app.logger.error(f'Audio file not found: {filename}')
-            return jsonify({'error': 'File not found'}), 404
+        except FileNotFoundError as e:
+            # **ENHANCED: Detailed file not found logging**
+            app.logger.error(f'❌ FILE NOT FOUND: {filename}')
+            app.logger.error(f'❌ Upload folder: {app.config.get("UPLOAD_FOLDER")}')
+            app.logger.error(f'❌ Expected path: {os.path.join(app.config.get("UPLOAD_FOLDER", ""), filename)}')
+            app.logger.error(f'❌ Upload folder exists: {os.path.exists(app.config.get("UPLOAD_FOLDER", ""))}')
+            
+            # List available files for debugging
+            upload_folder = app.config.get('UPLOAD_FOLDER')
+            if upload_folder and os.path.exists(upload_folder):
+                try:
+                    available_files = os.listdir(upload_folder)
+                    app.logger.error(f'❌ Available files in upload folder: {available_files[:10]}')  # First 10 files
+                    app.logger.error(f'❌ Total files in upload folder: {len(available_files)}')
+                except Exception as list_error:
+                    app.logger.error(f'❌ Could not list upload folder contents: {list_error}')
+            
+            return jsonify({'error': 'File not found', 'filename': filename}), 404
+            
+        except PermissionError as e:
+            # **NEW: Handle permission errors specifically**
+            app.logger.error(f'❌ PERMISSION ERROR serving {filename}: {str(e)}')
+            app.logger.error(f'❌ Upload folder: {app.config.get("UPLOAD_FOLDER")}')
+            app.logger.error(f'❌ File path: {os.path.join(app.config.get("UPLOAD_FOLDER", ""), filename)}')
+            app.logger.error(f'❌ Process user: {os.getuid() if hasattr(os, "getuid") else "Unknown"}')
+            return jsonify({'error': 'Permission denied', 'filename': filename}), 403
+            
         except Exception as e:
-            app.logger.error(f'Error serving audio file {filename}: {str(e)}')
-            return jsonify({'error': 'Internal server error'}), 500
+            # **ENHANCED: Comprehensive error logging with system diagnostics**
+            app.logger.error(f'❌ UNEXPECTED ERROR serving {filename}: {str(e)}')
+            app.logger.error(f'❌ Error type: {type(e).__name__}')
+            app.logger.error(f'❌ Upload folder config: {app.config.get("UPLOAD_FOLDER")}')
+            app.logger.error(f'❌ Current working directory: {os.getcwd()}')
+            app.logger.error(f'❌ App instance: {app}')
+            
+            # Check app configuration state
+            app.logger.error(f'❌ App config keys: {list(app.config.keys())}')
+            app.logger.error(f'❌ Flask app name: {app.name}')
+            
+            # System diagnostics
+            try:
+                import psutil
+                memory_info = psutil.virtual_memory()
+                app.logger.error(f'❌ System memory usage: {memory_info.percent}%')
+                disk_info = psutil.disk_usage('/')
+                app.logger.error(f'❌ Disk usage: {disk_info.percent}%')
+            except ImportError:
+                app.logger.error(f'❌ psutil not available for system diagnostics')
+            except Exception as sys_error:
+                app.logger.error(f'❌ System diagnostics failed: {sys_error}')
+            
+            return jsonify({
+                'error': 'Internal server error', 
+                'filename': filename,
+                'error_type': type(e).__name__,
+                'timestamp': str(e)
+            }), 500
 
     @app.route('/exports/<export_id>/<filename>')
     def serve_export(export_id, filename):

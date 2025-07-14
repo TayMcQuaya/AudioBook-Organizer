@@ -172,10 +172,12 @@ console.log('Book uploaded successfully');
     if (formattingData && formattingData.ranges && formattingData.ranges.length > 0) {
         // Refresh credit display after DOCX processing
         console.log('💎 DOCX upload completed - refreshing credit display');
+        window._creditRefreshNeeded = true;
         updateUserCredits().catch(err => console.warn('Failed to update credits:', err));
     } else if (metadata && metadata.processing_method === 'backend_txt') {
         // Refresh credit display after TXT processing
         console.log('💎 TXT upload completed - refreshing credit display');
+        window._creditRefreshNeeded = true;
         updateUserCredits().catch(err => console.warn('Failed to update credits:', err));
     }
 }

@@ -94,6 +94,11 @@ class SessionManager {
         // Final state reporting
         console.log(`✅ Session manager initialized ${this.isPasswordRecovery ? '(Password Recovery Mode)' : ''}`);
         
+        // **NEW: Start server restart monitoring after initialization**
+        setTimeout(() => {
+            this.startServerRestartMonitoring();
+        }, 5000); // Wait 5 seconds after init to start monitoring
+        
         // **FIX: Clear initialization flag after a brief delay to allow initial setup**
         setTimeout(() => {
             this.isInitializing = false;
@@ -711,6 +716,176 @@ class SessionManager {
                 this.clearPasswordRecoveryFlag(false); // Don't update storage again
             }
         }
+    }
+
+    /**
+     * NEW: Detect server restart and session invalidation
+     */
+    async detectServerRestart() {
+        try {
+            // Multiple indicators of server restart issues
+            const hasValidToken = !!localStorage.getItem('auth_token');
+            const isAuthModuleAuthenticated = window.authModule?.isAuthenticated();
+            const hasUserData = !!this.user;
+            
+            // If we think we're authenticated but something seems wrong, investigate
+            if ((hasValidToken || isAuthModuleAuthenticated || hasUserData) && this.isAuthenticated) {
+                
+                // Test 1: Try to fetch user credits (common failure after restart)
+                try {
+                    const creditsResponse = await apiFetch('/auth/credits');
+                    if (!creditsResponse.ok) {
+                        console.warn('🔄 Credits fetch failed - possible server restart detected');
+                        return true;
+                    }
+                    
+                    const creditsData = await creditsResponse.json();
+                    if (creditsData.credits === 0 && hasValidToken) {
+                        console.warn('🔄 Credits returned 0 despite valid token - possible session invalidation');
+                        return true;
+                    }
+                } catch (error) {
+                    console.warn('🔄 Credits request failed - server may have restarted:', error);
+                    return true;
+                }
+                
+                // Test 2: Try to verify auth status
+                try {
+                    const token = localStorage.getItem('auth_token');
+                    const verifyResponse = await apiFetch('/auth/verify', {
+                        method: 'POST',
+                        headers: { 
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ token })
+                    });
+                    
+                    if (!verifyResponse.ok) {
+                        console.warn('🔄 Auth verification failed - possible server restart detected');
+                        return true;
+                    }
+                } catch (error) {
+                    console.warn('🔄 Auth verification request failed - server may have restarted:', error);
+                    return true;
+                }
+                
+                // Test 3: Check if Supabase session is valid but backend fails
+                if (window.authModule?.supabaseClient) {
+                    try {
+                        const { data: { session } } = await window.authModule.supabaseClient.auth.getSession();
+                        if (session && session.access_token) {
+                            // We have a valid Supabase session but backend tests failed
+                            console.log('🔄 Supabase session valid but backend failing - server restart likely');
+                            return true;
+                        }
+                    } catch (error) {
+                        console.warn('🔄 Supabase session check failed:', error);
+                    }
+                }
+            }
+            
+            return false;
+        } catch (error) {
+            console.error('🔄 Error during server restart detection:', error);
+            return false;
+        }
+    }
+
+    /**
+     * NEW: Recover from server restart by refreshing session
+     */
+    async recoverFromServerRestart() {
+        console.log('🔄 Attempting session recovery from server restart...');
+        
+        try {
+            // Step 1: Check if we have a valid Supabase session
+            if (window.authModule?.supabaseClient) {
+                const { data: { session }, error } = await window.authModule.supabaseClient.auth.getSession();
+                
+                if (session && session.access_token) {
+                    console.log('🔄 Found valid Supabase session, refreshing backend authentication...');
+                    
+                    // Step 2: Re-authenticate with backend using the Supabase token
+                    try {
+                        const response = await apiFetch('/auth/verify', {
+                            method: 'POST',
+                            headers: { 'Authorization': `Bearer ${session.access_token}` },
+                            body: JSON.stringify({ token: session.access_token })
+                        });
+                        
+                        if (response.ok) {
+                            const data = await response.json();
+                            if (data.success && data.user) {
+                                console.log('✅ Session recovered successfully after server restart');
+                                
+                                // Update local state
+                                this.user = data.user;
+                                this.isAuthenticated = true;
+                                localStorage.setItem('auth_token', session.access_token);
+                                
+                                // Update auth module state
+                                if (window.authModule) {
+                                    window.authModule.user = data.user;
+                                    window.authModule.session = session;
+                                }
+                                
+                                // Notify all listeners
+                                this.notifyStateChange();
+                                
+                                return true;
+                            }
+                        }
+                    } catch (error) {
+                        console.error('🔄 Backend re-authentication failed:', error);
+                    }
+                }
+            }
+            
+            // Step 3: If Supabase session recovery fails, try token refresh
+            console.log('🔄 Attempting token refresh...');
+            if (window.authModule && typeof window.authModule.refreshSession === 'function') {
+                const refreshed = await window.authModule.refreshSession();
+                if (refreshed) {
+                    console.log('✅ Session refreshed successfully');
+                    return true;
+                }
+            }
+            
+            console.warn('❌ Session recovery failed - user may need to re-authenticate');
+            return false;
+            
+        } catch (error) {
+            console.error('❌ Error during session recovery:', error);
+            return false;
+        }
+    }
+
+    /**
+     * NEW: Monitor for server restart issues and auto-recover
+     */
+    startServerRestartMonitoring() {
+        // Check every 30 seconds for potential server restart issues
+        setInterval(async () => {
+            if (this.isAuthenticated && !this.isCheckingAuth) {
+                const serverRestarted = await this.detectServerRestart();
+                if (serverRestarted) {
+                    console.log('🔄 Server restart detected, attempting automatic recovery...');
+                    const recovered = await this.recoverFromServerRestart();
+                    
+                    if (recovered) {
+                        console.log('✅ Automatic session recovery successful');
+                        // Trigger UI updates by notifying state change
+                        this.notifyStateChange();
+                    } else {
+                        console.warn('❌ Automatic session recovery failed');
+                        // Could show a notification to user here
+                    }
+                }
+            }
+        }, 30000); // Check every 30 seconds
+        
+        console.log('✅ Server restart monitoring started');
     }
 }
 

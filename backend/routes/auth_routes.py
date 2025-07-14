@@ -418,11 +418,24 @@ def create_auth_routes() -> Blueprint:
             user = current_user
             user_id = user['id']
             
+            # Get auth token from request headers for RLS
+            auth_header = request.headers.get('Authorization')
+            auth_token = None
+            if auth_header and auth_header.startswith('Bearer '):
+                auth_token = auth_header[7:]
+            
             # Get Supabase service
             supabase_service = get_supabase_service()
             
-            # Get credits
-            credits = supabase_service.get_user_credits(user_id)
+            # Check if this is a post-action refresh (e.g., after upload)
+            # If so, bypass cache to get fresh data
+            force_refresh = request.args.get('refresh', '').lower() == 'true'
+            use_cache = not force_refresh
+            
+            # Get credits with auth token for RLS compliance
+            credits = supabase_service.get_user_credits(user_id, use_cache=use_cache, auth_token=auth_token)
+            
+            logger.info(f"💎 Credits fetched for user {user_id}: {credits}")
             
             return jsonify({
                 'success': True,

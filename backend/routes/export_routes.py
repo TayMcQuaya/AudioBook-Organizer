@@ -103,6 +103,11 @@ def create_export_routes(app, upload_folder, export_folder):
                 supabase_service = get_supabase_service()
                 success = supabase_service.update_user_credits(g.user_id, -credit_cost)
                 if success:
+                    # Clear user cache to force fresh fetch next time (same as decorator)
+                    if hasattr(supabase_service, '_user_init_cache') and g.user_id in supabase_service._user_init_cache:
+                        del supabase_service._user_init_cache[g.user_id]
+                        app.logger.debug(f"💎 Cleared cache for user {g.user_id} after export credit consumption")
+                    
                     supabase_service.log_usage(
                         g.user_id, 
                         export_type.replace(' ', '_'), 

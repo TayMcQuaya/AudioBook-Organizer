@@ -155,6 +155,12 @@ The frontend is a **module-based single-page application** without build tools:
    - LocalStorage caching for offline support
 
 5. **Recent Improvements** (July 14, 2025):
+   - **Session Invalidation Fix**: Complete automatic recovery system after server restart
+     - Fixed 500 errors on /api/auth/verify endpoint (JSON body issue)
+     - Credits display persists on page refresh (UI initialization fix)
+     - RLS-compliant credit fetching with auth token passthrough
+     - Cache management with force refresh after credit consumption
+     - Rate-limited recovery to prevent infinite loops
    - **Domain Redirect**: Implemented redirect from audiobookorganizer.com to www.audiobookorganizer.com
    - **API Endpoint Fix**: Resolved double /api/api/ prefix issue in frontend requests
    - **RLS Fix**: Fixed Row Level Security errors by authenticating Supabase client
