@@ -200,16 +200,16 @@ def upload_docx():
                             user_id = getattr(g, 'user_id', None)
                             credits_to_consume = current_app.config['CREDIT_COST_DOCX_PROCESSING']
                             if user_id:
-                            # Deduct credits for DOCX processing
+                                # Deduct credits for DOCX processing
                                 credit_success = supabase_service.update_user_credits(user_id, -credits_to_consume)
-                            if not credit_success:
-                                current_app.logger.warning('Failed to deduct credits for DOCX processing')
-                            
-                            # Log usage
-                            supabase_service.log_usage(
+                                if not credit_success:
+                                    current_app.logger.warning('Failed to deduct credits for DOCX processing')
+                                
+                                # Log usage
+                                supabase_service.log_usage(
                                     user_id,
-                                'docx_processed',
-                                credits_used=credits_to_consume,
+                                    'docx_processed',
+                                    credits_used=credits_to_consume,
                                 metadata={
                                     'filename': filename,
                                     'file_size': file_size,
