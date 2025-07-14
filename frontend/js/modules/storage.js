@@ -592,7 +592,7 @@ export async function saveToDatabase() {
         }
         
         // Make API call to save project using authenticated request
-        const response = await window.authModule.apiRequest('/api/projects/save', {
+        const response = await window.authModule.apiRequest('/projects/save', {
             method: 'POST',
             body: JSON.stringify(projectData)
         });
@@ -666,7 +666,7 @@ export async function loadFromDatabase() {
         }
         
         // Make API call to get latest project using authenticated request
-        const response = await window.authModule.apiRequest('/api/projects/latest', {
+        const response = await window.authModule.apiRequest('/projects/latest', {
             method: 'GET'
         });
         

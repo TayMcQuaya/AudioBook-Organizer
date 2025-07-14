@@ -689,7 +689,7 @@ class AuthModule {
                 }
             }
 
-            const response = await this.apiRequest('/api/auth/init-user', {
+            const response = await this.apiRequest('/auth/init-user', {
                 method: 'POST',
                 body: JSON.stringify(userData)
             });
@@ -1088,7 +1088,7 @@ class AuthModule {
         }
 
         try {
-            const response = await this.apiRequest('/api/auth/credits');
+            const response = await this.apiRequest('/auth/credits');
 
             const data = await response.json();
             

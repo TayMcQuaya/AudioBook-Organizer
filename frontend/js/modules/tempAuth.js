@@ -34,7 +34,7 @@ class TempAuthManager {
                 
                 if (this._isTestingMode) {
                     // Only check server status if we're actually in testing mode
-                    const response = await apiFetch('/api/auth/temp-status');
+                    const response = await apiFetch('/auth/temp-status');
                     if (response.ok) {
                         const data = await response.json();
                         this._isAuthenticated = data.authenticated;
@@ -55,7 +55,7 @@ class TempAuthManager {
             
             // Fallback: Check server for testing mode (old behavior)
             console.log('🔧 TempAuth: No env config provided, checking server for testing mode');
-            const response = await apiFetch('/api/auth/temp-status');
+            const response = await apiFetch('/auth/temp-status');
 
             if (response.ok) {
                 const data = await response.json();
@@ -111,7 +111,7 @@ class TempAuthManager {
                 // If user has been active, refresh the session first
                 if (this._isAuthenticated && isRecentlyActive) {
                     try {
-                        await apiFetch('/api/auth/temp-refresh', {
+                        await apiFetch('/auth/temp-refresh', {
                             method: 'POST'
                         });
                     } catch (refreshError) {
@@ -119,7 +119,7 @@ class TempAuthManager {
                     }
                 }
 
-                const response = await apiFetch('/api/auth/temp-status');
+                const response = await apiFetch('/auth/temp-status');
                 
                 if (response.ok) {
                     const data = await response.json();
@@ -157,7 +157,7 @@ class TempAuthManager {
         if (!this._isTestingMode) return;
          
         try {
-            await apiFetch('/api/auth/temp-logout', { method: 'POST' });
+            await apiFetch('/auth/temp-logout', { method: 'POST' });
         } catch (error) {
             // Silent error handling
         } finally {

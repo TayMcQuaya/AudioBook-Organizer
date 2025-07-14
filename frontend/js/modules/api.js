@@ -12,8 +12,8 @@ const getApiBaseUrl = () => {
   
   // Local development detection
   if (hostname === 'localhost' || hostname === '127.0.0.1') {
-    // For unified local deployment, use relative paths
-    return configuredBackendUrl || ''; // Use env var or default to relative
+    // For unified local deployment, use /api prefix
+    return configuredBackendUrl || '/api'; // Use env var or default to /api
   }
   
   // Production unified deployment: always use relative API paths
