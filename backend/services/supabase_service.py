@@ -416,14 +416,14 @@ class SupabaseService:
     # Credits System Methods
     
     def get_user_credits(self, user_id: str, use_cache: bool = True, auth_token: str = None) -> int:
-        """Get user's current credit balance with enhanced caching and recovery"""
+        """Get user's current credit balance with proper cache handling"""
         if not self.client:
             logger.warning(f"💎 No Supabase client available for credits fetch: {user_id}")
             return 0
         
         logger.debug(f"💎 Fetching credits for user {user_id} (cache: {use_cache})")
         
-        # Check cache first if enabled
+        # FIXED: Only check cache if explicitly enabled AND cache is valid
         if use_cache:
             cached_data = self._get_cached_user_data(user_id)
             if cached_data and 'credits' in cached_data:
@@ -431,7 +431,7 @@ class SupabaseService:
                 return cached_data['credits']
             
         try:
-            # **ENHANCED: Add authentication for RLS compliance**
+            # Set up authentication for RLS compliance if token provided
             if auth_token and hasattr(self.client, 'postgrest'):
                 try:
                     self.client.postgrest.auth(auth_token)
@@ -439,7 +439,7 @@ class SupabaseService:
                 except Exception as auth_error:
                     logger.warning(f"💎 Auth setup failed for credits fetch: {auth_error}")
             
-            # Fetch from database
+            # Always fetch from database when cache is disabled or cache miss
             logger.debug(f"💎 Querying database for credits: {user_id}")
             result = self.client.table('user_credits').select('credits').eq('user_id', user_id).execute()
             
@@ -447,9 +447,8 @@ class SupabaseService:
                 credits = result.data[0]['credits']
                 logger.info(f"💎 Successfully fetched credits for {user_id}: {credits}")
                 
-                # **NEW: Update cache with fetched credits**
+                # FIXED: Only update cache when cache is enabled (not when bypassed)
                 if use_cache:
-                    # Get existing cache data or create new
                     cached_data = self._get_cached_user_data(user_id) or {}
                     cached_data['credits'] = credits
                     self._cache_user_data(user_id, cached_data)
@@ -459,7 +458,7 @@ class SupabaseService:
             else:
                 logger.warning(f"💎 No credits record found for user {user_id}")
                 
-                # **NEW: Recovery logic - try to initialize credits for existing user**
+                # Try to initialize credits for existing user
                 if auth_token:
                     logger.info(f"💎 Attempting to initialize credits for user {user_id}")
                     initialized = self.initialize_user_credits(user_id, 100, auth_token)
@@ -471,33 +470,13 @@ class SupabaseService:
             
         except Exception as e:
             logger.error(f"❌ Error fetching user credits for {user_id}: {e}")
-            logger.error(f"❌ Error type: {type(e).__name__}")
             
-            # **NEW: Try cache fallback on database error**
+            # FIXED: Only use cache fallback when cache is enabled
             if use_cache:
                 cached_data = self._get_cached_user_data(user_id)
                 if cached_data and 'credits' in cached_data:
                     logger.warning(f"💎 Database error, using stale cache for {user_id}: {cached_data['credits']}")
                     return cached_data['credits']
-            
-            # **NEW: Enhanced error recovery**
-            if "authentication" in str(e).lower() or "rls" in str(e).lower():
-                logger.error(f"❌ Authentication/RLS error for credits fetch: {user_id}")
-                # This suggests a server restart - we should retry with proper auth
-                if auth_token:
-                    logger.info(f"💎 Retrying credits fetch with fresh authentication: {user_id}")
-                    try:
-                        # Force re-authentication and retry
-                        if hasattr(self.client, 'postgrest'):
-                            self.client.postgrest.auth(auth_token)
-                        
-                        result = self.client.table('user_credits').select('credits').eq('user_id', user_id).execute()
-                        if result.data and len(result.data) > 0:
-                            credits = result.data[0]['credits']
-                            logger.info(f"💎 Retry successful - credits fetched for {user_id}: {credits}")
-                            return credits
-                    except Exception as retry_error:
-                        logger.error(f"❌ Retry failed for credits fetch: {retry_error}")
             
             return 0
     
@@ -534,8 +513,8 @@ class SupabaseService:
             return False
             
         try:
-            # Get current credits
-            current_credits = self.get_user_credits(user_id)
+            # Get current credits (bypass cache to ensure we have fresh data)
+            current_credits = self.get_user_credits(user_id, use_cache=False)
             new_credits = max(0, current_credits + credit_change)  # Prevent negative credits
             
             result = self.client.table('user_credits').update({
@@ -544,6 +523,11 @@ class SupabaseService:
             }).eq('user_id', user_id).execute()
             
             if result.data:
+                # CRITICAL FIX: Clear cache after successful database update
+                if user_id in self._user_init_cache:
+                    del self._user_init_cache[user_id]
+                    logger.debug(f"💎 Cache cleared for user {user_id} after credit update")
+                
                 logger.info(f"✅ Credits updated for user {user_id}: {current_credits} → {new_credits}")
                 return True
             return False
