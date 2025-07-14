@@ -14,6 +14,7 @@ import { initializeTableOfContents, cleanupTableOfContents } from './tableOfCont
 import { tempAuthManager } from './tempAuth.js';
 import { initializeCreditsDisplay, updateUserCredits } from './appUI.js';
 import './profileModal.js';
+import { initializeCreditCosts } from './creditConfig.js';
 
 let isInitialized = false;
 
@@ -308,6 +309,15 @@ async function initializeModules() {
     
     // Credit system is already initialized in appUI.init() - skip duplicate initialization
     console.log('✅ Credit system already initialized via appUI.init()');
+    
+    // Initialize credit costs configuration
+    console.log('💎 Initializing credit costs configuration...');
+    try {
+        await initializeCreditCosts();
+        console.log('✅ Credit costs configuration loaded');
+    } catch (error) {
+        console.warn('⚠️ Failed to initialize credit costs:', error);
+    }
     
     console.log('All modules initialized');
 }

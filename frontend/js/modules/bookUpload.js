@@ -7,6 +7,7 @@ import { showError } from './notifications.js';
 import { clearFormatting } from './formattingState.js';
 import { apiFetch } from './api.js';
 import { checkCreditsForAction, updateUserCredits, consumeTestCredits } from './appUI.js';
+import { getCreditCost } from './creditConfig.js';
 
 // File validation constants
 const MAX_FILE_SIZE_TXT = 10 * 1024 * 1024; // 10MB for TXT
@@ -542,7 +543,8 @@ console.log(`✅ DOCX processed: ${formattingData.ranges.length} formatting rang
             console.log('📄 Processing TXT file');
             
             // Check credits before processing TXT
-            const hasCredits = await checkCreditsForAction(3, 'Text file upload');
+            const txtCost = getCreditCost('txt_upload');
+            const hasCredits = await checkCreditsForAction(txtCost, 'Text file upload');
             if (!hasCredits) {
                 hideLoading();
                 return;

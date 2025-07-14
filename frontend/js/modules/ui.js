@@ -4,6 +4,7 @@ import { chapters, currentColorIndex, getNextColor } from './state.js';
 import { calculateChapterDuration } from './chapters.js';
 import { initializeDragAndDrop } from './sections.js';
 import { formatDuration, getAccentColor } from '../utils/helpers.js';
+import { getAllCreditCosts } from './creditConfig.js';
 
 // UI Updates - preserving exact logic from original
 export function updateChaptersList() {
@@ -189,6 +190,9 @@ export async function showLowCreditsModal() {
     // Create modal if it doesn't exist
     let modal = document.getElementById('lowCreditsModal');
     if (!modal) {
+        // Get dynamic credit costs
+        const costs = getAllCreditCosts();
+        
         const modalHTML = `
             <div id="lowCreditsModal" class="low-credits-modal" style="display: none;">
                 <div class="modal-content">
@@ -196,10 +200,10 @@ export async function showLowCreditsModal() {
                     <h2>Need More Credits?</h2>
                     <p>You're running low on credits. Credits are used for:</p>
                     <ul>
-                        <li><span class="emoji">📄</span> DOCX processing (5 credits per document)</li>
-                        <li><span class="emoji">🎵</span> Audio file upload (2 credits per file)</li>
-                        <li><span class="emoji">🗣️</span> Text-to-speech (50 credits per 10k chars)</li>
-                        <li><span class="emoji">📤</span> Premium exports (20 credits per export)</li>
+                        <li><span class="emoji">📄</span> DOCX processing (${costs.docx_processing} credits per document)</li>
+                        <li><span class="emoji">🎵</span> Audio file upload (${costs.audio_upload} credits per file)</li>
+                        <li><span class="emoji">📄</span> Text file upload (${costs.txt_upload} credits per file)</li>
+                        <li><span class="emoji">📤</span> Premium exports (${costs.premium_export} credits per export)</li>
                     </ul>
                     <div id="creditPurchaseContent">
                         <div class="loading-packages">

@@ -5,6 +5,7 @@ import { hideExportModal } from './ui.js';
 import { createDownloadLink } from '../utils/dom.js';
 import { showError } from './notifications.js';
 import { apiFetch } from './api.js';
+import { getCreditCost } from './creditConfig.js';
 
 // Update preview when export options change
 function updateExportPreview() {
@@ -47,7 +48,7 @@ function updateExportPreview() {
     let exportType = "basic export";
     
     if ((exportAudio || mergeAudio) && chaptersWithAudio > 0) {
-        creditCost = 15; // Premium audio export (computational work)
+        creditCost = getCreditCost('premium_export'); // Get from config
         exportType = "premium audio export";
     } else {
         creditCost = 0;  // Data exports are free (same as project save)
@@ -156,7 +157,7 @@ export async function startExport() {
     let exportType = "basic export";
     
     if (exportAudio || mergeAudio) {
-        creditCost = 15; // Premium audio export
+        creditCost = getCreditCost('premium_export'); // Get from config
         exportType = "premium audio export";
     } else {
         creditCost = 0;  // Data exports are free

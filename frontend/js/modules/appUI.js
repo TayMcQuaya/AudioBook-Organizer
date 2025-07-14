@@ -590,7 +590,13 @@ export async function updateUserCredits(retryCount = 0) {
                 delete window._creditRefreshNeeded;
             }
             
-            const credits = await window.authModule.getUserCredits(shouldForceRefresh);
+            // Always force refresh on first attempt to avoid stale cache after navigation/refresh
+            const forceRefresh = shouldForceRefresh || retryCount === 0;
+            if (forceRefresh && !shouldForceRefresh) {
+                console.log('💎 Force refreshing credits on first attempt to avoid cache...');
+            }
+            
+            const credits = await window.authModule.getUserCredits(forceRefresh);
             console.log(`💎 Credits fetched: ${credits}`);
             
             // Detect potential session invalidation issue

@@ -28,7 +28,14 @@ def create_auth_routes() -> Blueprint:
                 'supabase_url': Config.SUPABASE_URL,
                 'supabase_anon_key': Config.SUPABASE_ANON_KEY,
                 'recaptcha_enabled': Config.RECAPTCHA['ENABLED'],
-                'recaptcha_site_key': Config.RECAPTCHA['SITE_KEY'] if Config.RECAPTCHA['ENABLED'] else None
+                'recaptcha_site_key': Config.RECAPTCHA['SITE_KEY'] if Config.RECAPTCHA['ENABLED'] else None,
+                # Add credit costs from environment variables
+                'credit_costs': {
+                    'audio_upload': Config.CREDIT_COST_AUDIO_UPLOAD,
+                    'txt_upload': Config.CREDIT_COST_TXT_UPLOAD,
+                    'docx_processing': Config.CREDIT_COST_DOCX_PROCESSING,
+                    'premium_export': Config.CREDIT_COST_PREMIUM_EXPORT
+                }
             }
             
             # Check if Supabase is properly configured
