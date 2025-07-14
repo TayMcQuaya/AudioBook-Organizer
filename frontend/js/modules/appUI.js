@@ -51,8 +51,12 @@ class AppUIManager {
             console.log('💎 Initializing credits display on app page...');
             initializeCreditsDisplay();
             
-            // Check for gift notifications
-            this.checkGiftNotification();
+            // Check for gift notifications (non-blocking, after initialization)
+            setTimeout(() => {
+                this.checkGiftNotification().catch(error => {
+                    console.log('Gift notification check failed silently:', error.message);
+                });
+            }, 100);
         }
         
         this.isInitialized = true;
@@ -468,6 +472,8 @@ class AppUIManager {
             }
         } catch (error) {
             console.error('Error checking gift notification:', error);
+            // Silently fail to prevent blocking app initialization
+            // Gift notification is a nice-to-have feature, not critical
         }
     }
     
@@ -531,9 +537,22 @@ export default appUI;
 export function initializeCreditsDisplay() {
     createCreditsDisplay();
     
-    // Update credits immediately if user is authenticated
+    // Update credits if user is authenticated
     if (window.authModule && window.authModule.isAuthenticated()) {
-        updateUserCredits();
+        // Detect page refresh scenario and add delay for session restoration
+        const isPageRefresh = window.performance && window.performance.navigation && 
+                             window.performance.navigation.type === 1;
+        const hasSessionStorage = !!sessionStorage.getItem('supabase.auth.token');
+        
+        if (isPageRefresh || hasSessionStorage) {
+            console.log('💎 Page refresh detected - adding delay for session restoration...');
+            // Add delay to ensure session is fully restored after refresh
+            setTimeout(() => {
+                updateUserCredits();
+            }, 300);
+        } else {
+            updateUserCredits();
+        }
     }
 }
 

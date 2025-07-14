@@ -898,7 +898,7 @@ def create_auth_routes() -> Blueprint:
     
     @auth_bp.route('/check-gift', methods=['GET'])
     @require_auth
-    def check_gift_notification():
+    def check_gift_notification(*args, **kwargs):
         """Check if user has unacknowledged gift credits"""
         try:
             user_id = g.user_id

@@ -658,11 +658,21 @@ export async function loadFromDatabase() {
             return loadFromLocalStorage();
         }
         
-        // Get auth token for API call (normal mode)
-        const authToken = window.authModule?.getAuthToken();
+        // Get auth token for API call (normal mode) with retry logic
+        let authToken = window.authModule?.getAuthToken();
         if (!authToken) {
-            console.log('👤 User not authenticated, skipping auto-restore');
-            return false;
+            console.log('📂 No auth token found, attempting retry for project restoration...');
+            
+            // Wait a bit for session restoration to complete
+            await new Promise(resolve => setTimeout(resolve, 200));
+            authToken = window.authModule?.getAuthToken();
+            
+            if (!authToken) {
+                console.log('👤 User not authenticated after retry, skipping auto-restore');
+                return false;
+            } else {
+                console.log('📂 Auth token found after retry, proceeding with project restoration');
+            }
         }
         
         // Make API call to get latest project using authenticated request

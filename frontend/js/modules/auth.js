@@ -1167,14 +1167,32 @@ class AuthModule {
             headers: {}
         };
 
-        // Get the latest auth token from Supabase
+        // Get the latest auth token from Supabase with retry logic
+        let sessionToken = null;
         try {
             const { data: { session } } = await supabaseClient.auth.getSession();
+            console.log('💎 API Request - Session check:', session ? 'Found' : 'NULL', endpoint);
+            
             if (session && session.access_token) {
-                defaultOptions.headers['Authorization'] = `Bearer ${session.access_token}`;
+                sessionToken = session.access_token;
+                defaultOptions.headers['Authorization'] = `Bearer ${sessionToken}`;
+            } else {
+                console.warn('💎 API Request - No session found, attempting retry...', endpoint);
+                
+                // Wait a bit and try again (session recovery might still be in progress)
+                await new Promise(resolve => setTimeout(resolve, 100));
+                const { data: { session: retrySession } } = await supabaseClient.auth.getSession();
+                
+                if (retrySession && retrySession.access_token) {
+                    sessionToken = retrySession.access_token;
+                    defaultOptions.headers['Authorization'] = `Bearer ${sessionToken}`;
+                    console.log('💎 API Request - Retry successful:', endpoint);
+                } else {
+                    console.warn('💎 API Request - No token after retry, request may fail:', endpoint);
+                }
             }
         } catch (error) {
-            console.warn('Failed to get session for API request:', error);
+            console.warn('💎 API Request - Session retrieval failed:', error, endpoint);
         }
 
         const mergedOptions = {

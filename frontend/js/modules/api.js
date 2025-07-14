@@ -122,13 +122,14 @@ export async function apiFetch(endpoint, options = {}) {
         },
     };
 
+    console.log('🌐 API Request:', url, finalOptions.method || 'GET');
+    
     try {
         const response = await fetch(url, finalOptions);
-
-        // Silent error handling - no console logs in production
+        console.log('🌐 API Response:', url, response.status);
         return response;
     } catch (error) {
-        // Re-throw the error to be handled by the calling function
+        console.error('🌐 API Error:', url, error.message);
         throw error;
     }
 }
