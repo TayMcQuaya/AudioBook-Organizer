@@ -1066,6 +1066,9 @@ class Router {
                     landingScript.remove();
                 }
                 
+                // Ensure scroll position is reset BEFORE changing body class to prevent layout shift
+                window.scrollTo(0, 0);
+                
                 // Set the correct body class while preserving important classes
                 document.body.className = 'app-body layout-ready';
             }
@@ -1252,6 +1255,9 @@ class Router {
             }
             
             console.log('📱 App loaded successfully');
+            
+            // Scroll to top to ensure consistent positioning regardless of where user clicked from
+            window.scrollTo(0, 0);
             
         } catch (error) {
             console.error('Error loading app:', error);
