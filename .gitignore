@@ -98,5 +98,9 @@ forme.txt
 .claude/
 
 ENV_COMPLETE_GUIDE.md
+
+# Debug and test files (contain sensitive data)
+debug_rls.py
+test_supabase_auth.py
 PRODUCTION_DEPLOYMENT_CHECKLIST.md
 SESSION_SUMMARY.md

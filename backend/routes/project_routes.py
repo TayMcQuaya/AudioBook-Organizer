@@ -44,6 +44,12 @@ def save_project(current_user):
         if not supabase or not supabase.is_configured():
             return jsonify({'error': 'Database service not available'}), 503
         
+        # FIX: Authenticate the postgrest client with user's token for RLS
+        from ..middleware.auth_middleware import extract_token_from_header
+        token = extract_token_from_header()
+        if token and hasattr(supabase.client, 'postgrest'):
+            supabase.client.postgrest.auth(token)
+        
         # Generate project title from bookText (first 50 characters or default)
         book_text = project_data.get('bookText', '')
         project_title = 'Auto-saved Project'
@@ -115,6 +121,12 @@ def get_latest_project(current_user):
         if not supabase or not supabase.is_configured():
             logger.error("❌ Supabase service not configured or not available")
             return jsonify({'error': 'Database service not available'}), 503
+        
+        # FIX: Authenticate the postgrest client with user's token for RLS
+        from ..middleware.auth_middleware import extract_token_from_header
+        token = extract_token_from_header()
+        if token and hasattr(supabase.client, 'postgrest'):
+            supabase.client.postgrest.auth(token)
         
         # Query for user's latest project
         result = supabase.client.table('audiobook_projects')\
