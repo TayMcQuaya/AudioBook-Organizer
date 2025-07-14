@@ -490,7 +490,31 @@ reCAPTCHA score too low: 0.3 < 0.5
 - Check for bot-like behavior (automated scripts, extensions)
 - Verify site key matches domain
 
-#### 3. Token Verification Failures
+#### 3. Domain Configuration Error (Production)
+**Symptoms**: "Ungültige Domain für Website" or "Invalid domain for website" error
+- reCAPTCHA badge shows error message instead of logo
+- Works on localhost but not production
+
+**Solution**:
+1. Go to [Google reCAPTCHA Admin Console](https://www.google.com/recaptcha/admin)
+2. Find your site (matching your site key)
+3. Edit the domain settings
+4. Add your production domain:
+   ```
+   audiobookorganizer.com
+   ```
+   - Do NOT include `https://` or `www.`
+   - Single domain `audiobookorganizer.com` covers all subdomains including www
+5. Keep `localhost` for development
+6. Save changes and wait 5-10 minutes for propagation
+7. Clear browser cache (Ctrl+Shift+R) and test
+
+**Important Notes**:
+- Google treats `audiobookorganizer.com` as covering `www.audiobookorganizer.com`
+- Changes take 5-10 minutes to propagate globally
+- No redeployment needed - this is configured on Google's side
+
+#### 4. Token Verification Failures
 **Symptoms**: Backend logs show verification errors
 ```python
 reCAPTCHA verification failed: ['timeout-or-duplicate']
