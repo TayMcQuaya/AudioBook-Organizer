@@ -78,7 +78,8 @@ def create_export_routes(app, upload_folder, export_folder):
                 from ..services.supabase_service import get_supabase_service
                 
                 supabase_service = get_supabase_service()
-                current_credits = supabase_service.get_user_credits(g.user_id)
+                # CRITICAL FIX: Always get fresh credits for pre-action checks
+                current_credits = supabase_service.get_user_credits(g.user_id, use_cache=False)
                 if current_credits < credit_cost:
                     return jsonify({
                         'error': 'Insufficient credits',

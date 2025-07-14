@@ -64,7 +64,8 @@ def create_upload_routes(app, upload_folder):
             
             # Check credits (configurable cost for audio upload)
             required_credits = current_app.config['CREDIT_COST_AUDIO_UPLOAD']
-            current_credits = supabase_service.get_user_credits(user['id'])
+            # CRITICAL FIX: Always get fresh credits for pre-action checks
+            current_credits = supabase_service.get_user_credits(user['id'], use_cache=False)
             if current_credits < required_credits:
                 return jsonify({
                     'error': 'Insufficient credits',
@@ -191,7 +192,8 @@ def create_upload_routes(app, upload_folder):
             
             # Check credits (configurable cost for text upload)
             required_credits = current_app.config['CREDIT_COST_TXT_UPLOAD']
-            current_credits = supabase_service.get_user_credits(user['id'])
+            # CRITICAL FIX: Always get fresh credits for pre-action checks
+            current_credits = supabase_service.get_user_credits(user['id'], use_cache=False)
             if current_credits < required_credits:
                 return jsonify({
                     'error': 'Insufficient credits',

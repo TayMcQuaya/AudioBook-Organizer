@@ -205,7 +205,8 @@ def require_credits(min_credits: int = 1):
                 supabase_service = get_supabase_service()
                 
                 # Check user's credit balance
-                current_credits = supabase_service.get_user_credits(user_id)
+                # CRITICAL FIX: Always get fresh credits for pre-action checks
+                current_credits = supabase_service.get_user_credits(user_id, use_cache=False)
                 
                 if current_credits < min_credits:
                     return jsonify({

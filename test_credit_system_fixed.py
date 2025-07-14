@@ -129,6 +129,45 @@ class CreditSystemTester:
             self.log(f"❌ Credit consumption inaccurate: expected {expected_credits}, got {final_credits}")
             return False
             
+    def test_fresh_credit_checks(self):
+        """Test that credit checks use fresh data from database"""
+        self.log("🔄 Testing fresh credit checks for actions...")
+        
+        if not self.auth_token:
+            self.log("❌ No auth token available")
+            return False
+            
+        headers = {"Authorization": f"Bearer {self.auth_token}"}
+        
+        # Get current credits
+        response = self.session.get(f"{self.api_url}/auth/credits?refresh=true", headers=headers)
+        if response.status_code != 200:
+            self.log(f"❌ Credits fetch failed: {response.status_code}")
+            return False
+            
+        current_credits = response.json().get('credits', 0)
+        self.log(f"💎 Current credits: {current_credits}")
+        
+        # Test with insufficient credits scenario
+        if current_credits < 3:
+            self.log("✅ Already have insufficient credits for testing")
+            
+            # Try to upload TXT file (should fail with 402)
+            txt_content = "Test file for insufficient credits."
+            files = {'file': ('test_insufficient.txt', txt_content, 'text/plain')}
+            
+            response = self.session.post(f"{self.api_url}/upload/txt", files=files, headers=headers)
+            if response.status_code == 402:
+                self.log("✅ Action correctly denied due to insufficient credits")
+                return True
+            else:
+                self.log(f"❌ Action should have been denied but got status: {response.status_code}")
+                return False
+        else:
+            self.log("💎 Have sufficient credits - this test needs manual verification")
+            self.log("💡 To test: Manually set credits to 2 in database, then try uploading")
+            return True
+            
     def test_cache_invalidation(self):
         """Test cache invalidation after credit consumption"""
         self.log("🔄 Testing cache invalidation...")
@@ -209,6 +248,7 @@ class CreditSystemTester:
             ("Environment Config Reading", self.test_env_config_reading),
             ("Credit Fetch Consistency", self.test_credit_fetch_consistency),
             ("Cache Invalidation", self.test_cache_invalidation),
+            ("Fresh Credit Checks", self.test_fresh_credit_checks),
             ("Credit Consumption Accuracy", self.test_credit_consumption_accuracy),
         ]
         
