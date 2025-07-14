@@ -1,4 +1,12 @@
 # Quick Reference Guide for AudioBook Organizer
+**Last Updated: July 14, 2025**
+
+## 🚨 CURRENT ISSUES (July 14, 2025)
+- **Gift Credits System**: Backend API endpoints failing with 500 errors
+- **Location**: `/api/auth/check-gift` endpoint in `backend/routes/auth_routes.py`
+- **Impact**: Gift notifications not working, credit display not updating after gifts
+- **Status**: Under investigation - JSONB metadata query issues suspected
+- **Workaround**: SQL script works fine, gifts appear in history, just notifications broken
 
 ## 🚀 Common Tasks & Where to Find Code
 

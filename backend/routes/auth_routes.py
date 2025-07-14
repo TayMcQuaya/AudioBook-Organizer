@@ -896,6 +896,70 @@ def create_auth_routes() -> Blueprint:
             'message': 'You do not have permission to access this resource'
         }), 403
     
+    @auth_bp.route('/check-gift', methods=['GET'])
+    @require_auth
+    def check_gift_notification():
+        """Check if user has unacknowledged gift credits"""
+        try:
+            user_id = g.user_id
+            supabase_service = get_supabase_service()
+            
+            # Check for unacknowledged gifts in credit_transactions
+            result = supabase_service.client.table('credit_transactions').select('*').eq(
+                'user_id', user_id
+            ).eq('transaction_type', 'bonus').eq(
+                'metadata->>acknowledged', False
+            ).order('created_at.desc').limit(1).execute()
+            
+            if result.data and len(result.data) > 0:
+                gift = result.data[0]
+                return jsonify({
+                    'has_gift': True,
+                    'gift': {
+                        'id': gift['id'],
+                        'amount': gift['credits_amount'],
+                        'reason': gift['metadata'].get('reason', 'Gift from us!'),
+                        'date': gift['created_at']
+                    }
+                })
+            
+            return jsonify({'has_gift': False})
+        except Exception as e:
+            logger.error(f"Error checking gift notification: {e}")
+            return jsonify({'has_gift': False})
+    
+    @auth_bp.route('/acknowledge-gift/<gift_id>', methods=['POST'])
+    @require_auth
+    def acknowledge_gift(gift_id):
+        """Mark gift notification as acknowledged"""
+        try:
+            user_id = g.user_id
+            supabase_service = get_supabase_service()
+            
+            # First get the current metadata
+            result = supabase_service.client.table('credit_transactions').select('metadata').eq(
+                'id', gift_id
+            ).eq('user_id', user_id).single().execute()
+            
+            if result.data:
+                # Update metadata to mark as acknowledged
+                current_metadata = result.data.get('metadata', {})
+                current_metadata['acknowledged'] = True
+                
+                # Update the record
+                update_result = supabase_service.client.table('credit_transactions').update({
+                    'metadata': current_metadata
+                }).eq('id', gift_id).eq('user_id', user_id).execute()
+                
+                if update_result.data:
+                    return jsonify({'success': True})
+            
+            return jsonify({'error': 'Gift not found'}), 404
+            
+        except Exception as e:
+            logger.error(f"Error acknowledging gift: {e}")
+            return jsonify({'error': str(e)}), 500
+    
     @auth_bp.errorhandler(429)
     def rate_limit_exceeded(error):
         return jsonify({

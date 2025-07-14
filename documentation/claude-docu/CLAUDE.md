@@ -41,6 +41,20 @@ python deploy-setup.py --backend-url https://your-backend.ondigitalocean.app
 # Any fields after that don't matter as long as you don't use past dates
 ```
 
+### Gift Credits System
+```bash
+# Status: PARTIALLY IMPLEMENTED (July 14, 2025)
+# SQL Script: sql/gift_credits_to_all_users.sql (WORKING)
+# Frontend: frontend/js/modules/appUI.js (IMPLEMENTED)
+# Backend: backend/routes/auth_routes.py (500 ERROR - DEBUGGING NEEDED)
+
+# To test gift system:
+# 1. Modify sql/gift_credits_to_all_users.sql (lines 10-12)
+# 2. Run SQL script in Supabase
+# 3. Check /api/auth/check-gift endpoint (currently failing)
+# 4. Issues: JSONB metadata queries, credit display caching
+```
+
 ### Docker Commands
 ```bash
 # Build Docker image

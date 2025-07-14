@@ -305,6 +305,7 @@ class ProfileModal {
                     <option value="txt_upload" ${this.actionFilter === 'txt_upload' ? 'selected' : ''}>TXT Upload</option>
                     <option value="premium_audio_export" ${this.actionFilter === 'premium_audio_export' ? 'selected' : ''}>Premium Export</option>
                     <option value="credit_purchase" ${this.actionFilter === 'credit_purchase' ? 'selected' : ''}>Credit Purchase</option>
+                    <option value="gift_credits" ${this.actionFilter === 'gift_credits' ? 'selected' : ''}>Gifts Received</option>
                 </select>
             </div>
         `;
@@ -322,13 +323,14 @@ class ProfileModal {
             });
 
             const action = this.formatActionName(entry.action);
-            // For purchases, show positive. For consumption, show negative
+            // For purchases and gifts, show positive. For consumption, show negative
             const isPurchase = entry.action === 'credit_purchase' || entry.action === 'credits_purchase';
+            const isGift = entry.action === 'gift_credits';
             
-            // Handle credit display - purchases should show positive values
+            // Handle credit display - purchases and gifts should show positive values
             let credits, creditDisplay, creditClass;
-            if (isPurchase) {
-                // For purchases, credits_used should be positive (amount purchased)
+            if (isPurchase || isGift) {
+                // For purchases and gifts, credits_used should be positive (amount received)
                 credits = Math.abs(entry.credits_used);
                 creditDisplay = `+${credits} 💎`;
                 creditClass = 'positive';
@@ -443,7 +445,8 @@ class ProfileModal {
             'docx_processing': 'DOCX Processing',
             'txt_upload': 'TXT Upload',
             'premium_export': 'Premium Export',
-            'credit_purchase': 'Credit Purchase'
+            'credit_purchase': 'Credit Purchase',
+            'gift_credits': 'Gift from us'
         };
         return actionNames[action] || action.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
     }

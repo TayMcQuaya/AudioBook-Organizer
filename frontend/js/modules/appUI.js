@@ -50,6 +50,9 @@ class AppUIManager {
         if (window.location.pathname === '/app') {
             console.log('💎 Initializing credits display on app page...');
             initializeCreditsDisplay();
+            
+            // Check for gift notifications
+            this.checkGiftNotification();
         }
         
         this.isInitialized = true;
@@ -428,6 +431,89 @@ class AppUIManager {
                user.name ||
                user.email?.split('@')[0] ||
                'User';
+    }
+    
+    /**
+     * Check for gift notifications on app initialization
+     */
+    async checkGiftNotification() {
+        try {
+            console.log('🎁 Checking for gift notifications...');
+            
+            // Import apiFetch from api module
+            const { apiFetch } = await import('./api.js');
+            
+            const response = await apiFetch('/auth/check-gift');
+            if (!response.ok) {
+                console.error('Failed to check gift notification');
+                return;
+            }
+            
+            const data = await response.json();
+            
+            if (data.has_gift) {
+                const gift = data.gift;
+                const notificationKey = `gift_acknowledged_${gift.id}`;
+                
+                // Check if already acknowledged in localStorage
+                if (!localStorage.getItem(notificationKey)) {
+                    console.log('🎁 New gift detected:', gift);
+                    // Show special gift notification
+                    this.showGiftNotification(gift);
+                } else {
+                    console.log('🎁 Gift already acknowledged:', gift.id);
+                }
+            } else {
+                console.log('🎁 No unacknowledged gifts');
+            }
+        } catch (error) {
+            console.error('Error checking gift notification:', error);
+        }
+    }
+    
+    /**
+     * Show gift notification to user
+     */
+    async showGiftNotification(gift) {
+        try {
+            const { showNotification } = await import('./notifications.js');
+            const { apiFetch } = await import('./api.js');
+            
+            // Create custom gift notification with enhanced styling
+            const message = `
+                <div style="text-align: center; padding: 10px;">
+                    <h3 style="margin: 0 0 15px 0; font-size: 24px;">🎁 You've received a gift!</h3>
+                    <p style="margin: 10px 0; font-size: 16px; color: #666;">${gift.reason}</p>
+                    <p style="font-size: 36px; font-weight: bold; color: #4CAF50; margin: 20px 0;">
+                        +${gift.amount} 💎
+                    </p>
+                    <p style="margin: 10px 0; color: #888; font-size: 14px;">Credits have been added to your account</p>
+                    <button class="notification-btn notification-btn-confirm" 
+                            style="margin-top: 15px; padding: 12px 24px; font-size: 16px;"
+                            onclick="window.closeNotification()">
+                        Awesome, thanks! 🎉
+                    </button>
+                </div>
+            `;
+            
+            // Show notification with no auto-close (0 duration)
+            showNotification(message, 'success', 0);
+            
+            // Mark as acknowledged locally
+            localStorage.setItem(`gift_acknowledged_${gift.id}`, 'true');
+            
+            // Also acknowledge on server (fire and forget)
+            apiFetch(`/auth/acknowledge-gift/${gift.id}`, { method: 'POST' })
+                .catch(err => console.error('Failed to acknowledge gift on server:', err));
+            
+            // Force refresh credits display to show new balance
+            console.log('🎁 Refreshing credits after gift...');
+            window._creditRefreshNeeded = true;
+            updateUserCredits(0);
+            
+        } catch (error) {
+            console.error('Error showing gift notification:', error);
+        }
     }
 }
 
