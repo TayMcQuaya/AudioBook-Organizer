@@ -49,7 +49,9 @@ class AppUIManager {
         // Initialize credits display (if on app page)
         if (window.location.pathname === '/app') {
             console.log('💎 Initializing credits display on app page...');
-            initializeCreditsDisplay();
+            // Create the credits display element but DON'T fetch credits yet
+            // Let the project restoration complete first
+            createCreditsDisplay();
             
             // Check for gift notifications (non-blocking, after initialization)
             setTimeout(() => {
@@ -77,8 +79,11 @@ class AppUIManager {
             
             // Detect authentication recovery after restart
             if (!lastAuthState && currentAuthState && hasToken) {
-                console.log('💎 Authentication recovered - refreshing credits...');
-                updateUserCredits(0); // Start fresh retry cycle
+                console.log('💎 Authentication recovered - scheduling credits refresh...');
+                // Delay credit fetch to avoid conflicts with restoration
+                setTimeout(() => {
+                    updateUserCredits(0); // Start fresh retry cycle
+                }, 2000);
             }
             
             // Update tracking state
@@ -217,7 +222,7 @@ class AppUIManager {
             userNav.className = 'user-nav';
             userNav.innerHTML = `
                 <div class="user-menu">
-                    <button class="user-btn" onclick="window.appUI.toggleUserDropdown()">
+                    <button class="user-btn" onclick="window.safeToggleUserDropdown()">
                         <span class="user-name">${this.getUserDisplayName(user)}</span>
                         <span class="user-icon">👤</span>
                         <span class="dropdown-arrow">▼</span>
@@ -228,7 +233,7 @@ class AppUIManager {
                             <span class="item-icon">🚀</span>
                             Open App
                         </button>` : ''}
-                        <button class="dropdown-item" onclick="window.appUI.openProfile()">
+                        <button class="dropdown-item" onclick="window.safeOpenProfile()">
                             <span class="item-icon">👤</span>
                             Profile
                         </button>
@@ -301,7 +306,7 @@ class AppUIManager {
                 <span class="mobile-user-name">${this.getUserDisplayName(user)}</span>
             </div>
             ${window.location.pathname === '/' ? `<button class="mobile-link" onclick="window.navigateToApp && window.navigateToApp()">Open App</button>` : ''}
-            <button class="mobile-link" onclick="window.appUI.openProfile()">Profile</button>
+            <button class="mobile-link" onclick="window.safeOpenProfile()">Profile</button>
             <button class="mobile-link logout-btn" onclick="window.sessionManager.signOut()">
                 Sign Out
             </button>
@@ -562,8 +567,56 @@ class AppUIManager {
 // Create and export singleton instance
 const appUI = new AppUIManager();
 
-// Make it globally available
+// CRITICAL: Make appUI globally available immediately to prevent race conditions
 window.appUI = appUI;
+
+// Safe global wrapper functions for HTML onclick handlers
+// These prevent errors when modules aren't loaded yet after page refresh
+window.safeOpenProfile = function() {
+    console.log('🔐 Safe profile open called');
+    if (window.appUI && typeof window.appUI.openProfile === 'function') {
+        window.appUI.openProfile();
+    } else {
+        console.error('AppUI not ready, retrying in 500ms...');
+        setTimeout(() => {
+            if (window.appUI && typeof window.appUI.openProfile === 'function') {
+                window.appUI.openProfile();
+            } else {
+                console.error('AppUI still not available');
+                // Last resort: try to load the module
+                import('./appUI.js').then(module => {
+                    if (window.appUI && typeof window.appUI.openProfile === 'function') {
+                        window.appUI.openProfile();
+                    }
+                }).catch(err => console.error('Failed to load appUI:', err));
+            }
+        }, 500);
+    }
+};
+
+window.safeToggleUserDropdown = function() {
+    console.log('🔐 Safe dropdown toggle called');
+    if (window.appUI && typeof window.appUI.toggleUserDropdown === 'function') {
+        window.appUI.toggleUserDropdown();
+    } else {
+        console.error('AppUI not ready for dropdown toggle');
+    }
+};
+
+// Safe wrapper for opening credits purchase modal
+window.safeOpenCreditsModal = async function() {
+    console.log('🔐 Safe open credits modal called');
+    try {
+        const { showLowCreditsModal } = await import('./ui.js');
+        await showLowCreditsModal();
+    } catch (error) {
+        console.error('Failed to open credits modal:', error);
+        // Try to show a basic error message
+        if (window.showError) {
+            window.showError('Failed to open credits purchase. Please refresh the page and try again.');
+        }
+    }
+};
 
 export default appUI;
 
@@ -573,24 +626,13 @@ export default appUI;
 export function initializeCreditsDisplay() {
     createCreditsDisplay();
     
-    // Update credits if user is authenticated
-    if (window.authModule && window.authModule.isAuthenticated()) {
-        // Detect page refresh scenario and add delay for session restoration
-        const isPageRefresh = window.performance && window.performance.navigation && 
-                             window.performance.navigation.type === 1;
-        const hasSessionStorage = !!sessionStorage.getItem('supabase.auth.token');
-        
-        if (isPageRefresh || hasSessionStorage) {
-            console.log('💎 Page refresh detected - adding delay for session restoration...');
-            // Add delay to ensure session is fully restored after refresh
-            setTimeout(() => {
-                updateUserCredits();
-            }, 300);
-        } else {
-            updateUserCredits();
-        }
-    }
+    // Don't automatically fetch credits here - let the app initialization handle it
+    // This prevents duplicate API calls during startup
+    console.log('💎 Credits display created, waiting for app to trigger credit fetch...');
 }
+
+// Flag to prevent concurrent credit fetches
+let creditsFetchInProgress = false;
 
 /**
  * Update user credits display with retry logic and authentication recovery
@@ -598,6 +640,14 @@ export function initializeCreditsDisplay() {
 export async function updateUserCredits(retryCount = 0) {
     const MAX_RETRIES = 3;
     const RETRY_DELAY = 1000; // 1 second
+    
+    // Prevent concurrent fetches
+    if (creditsFetchInProgress && retryCount === 0) {
+        console.log('💎 Credits fetch already in progress, skipping duplicate request');
+        return;
+    }
+    
+    creditsFetchInProgress = true;
     
     try {
         // Check if we're in testing mode first
@@ -697,6 +747,11 @@ export async function updateUserCredits(retryCount = 0) {
         // Final fallback after all retries failed
         updateCreditsDisplay(0);
         console.error(`❌ Credit fetching failed after ${MAX_RETRIES} retries`);
+    } finally {
+        // Always reset the flag when done
+        if (retryCount === 0 || retryCount >= MAX_RETRIES) {
+            creditsFetchInProgress = false;
+        }
     }
 }
 

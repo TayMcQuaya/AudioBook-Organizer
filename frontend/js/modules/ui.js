@@ -177,7 +177,17 @@ export function createCreditsDisplay() {
         const creditsDisplay = document.getElementById('creditsDisplay');
         if (creditsDisplay) {
             creditsDisplay.addEventListener('click', async () => {
-                await showLowCreditsModal();
+                // Use safe wrapper to open credits modal
+                if (window.safeOpenCreditsModal) {
+                    window.safeOpenCreditsModal();
+                } else {
+                    // Fallback if safe wrapper not available yet
+                    try {
+                        await showLowCreditsModal();
+                    } catch (error) {
+                        console.error('Failed to open credits modal:', error);
+                    }
+                }
             });
             console.log('💎 Credits display created and click handler added');
         } else {
@@ -275,7 +285,7 @@ export async function showLowCreditsModal() {
                 </div>
                 <p><em>Payment system is currently being configured.<br>Please contact support for additional credits.</em></p>
                 <div class="modal-button-container">
-                    <button onclick="hideLowCreditsModal()" class="btn btn-primary">Got it</button>
+                    <button onclick="window.safeHideLowCreditsModal()" class="btn btn-primary">Got it</button>
                 </div>
             `;
         }
@@ -290,7 +300,22 @@ export function hideLowCreditsModal() {
     }
 }
 
-// Make hideLowCreditsModal globally available for onclick handlers
+// Safe wrapper for hiding credits modal
+window.safeHideLowCreditsModal = function() {
+    console.log('🔐 Safe hide credits modal called');
+    if (typeof hideLowCreditsModal === 'function') {
+        hideLowCreditsModal();
+    } else {
+        // Fallback: manually hide the modal
+        const modal = document.getElementById('lowCreditsModal');
+        if (modal) {
+            modal.style.display = 'none';
+            document.body.style.overflow = '';
+        }
+    }
+};
+
+// Make hideLowCreditsModal globally available for onclick handlers (legacy support)
 window.hideLowCreditsModal = hideLowCreditsModal;
 
 // Modal functions - preserving exact logic from original

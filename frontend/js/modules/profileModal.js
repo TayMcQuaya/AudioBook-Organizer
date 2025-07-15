@@ -18,7 +18,17 @@ class ProfileModal {
     }
 
     async open() {
-        if (this.isOpen) return;
+        // Check if modal is already open AND exists in DOM
+        if (this.isOpen) {
+            const existingModal = document.querySelector('.profile-modal');
+            if (!existingModal) {
+                console.warn('Modal marked as open but not in DOM, resetting...');
+                this.isOpen = false;
+            } else {
+                console.log('Modal already open and in DOM');
+                return;
+            }
+        }
         
         try {
             // Show modal immediately with loading state
@@ -36,6 +46,8 @@ class ProfileModal {
             this.isLoading = false;
             console.error('Failed to load profile data:', error);
             showError('Failed to load profile data');
+            // Clean up on error
+            this.close();
         }
     }
 
@@ -111,6 +123,13 @@ class ProfileModal {
                 this.currentPage = 1;
                 this.actionFilter = null;
             }, 300);
+        } else {
+            // If modal elements not found, reset state anyway
+            console.warn('Modal elements not found during close, resetting state');
+            this.isOpen = false;
+            this.currentTab = 'profile';
+            this.currentPage = 1;
+            this.actionFilter = null;
         }
     }
 
@@ -131,6 +150,8 @@ class ProfileModal {
     }
 
     createModal() {
+        console.log('Creating profile modal...');
+        
         // Remove existing modal
         this.removeModal();
 
@@ -141,10 +162,18 @@ class ProfileModal {
 
         const modal = document.createElement('div');
         modal.className = 'profile-modal';
-        modal.innerHTML = this.getModalHTML();
+        
+        try {
+            modal.innerHTML = this.getModalHTML();
+        } catch (error) {
+            console.error('Error generating modal HTML:', error);
+            modal.innerHTML = '<div class="error">Error loading profile modal</div>';
+        }
 
         document.body.appendChild(backdrop);
         document.body.appendChild(modal);
+        
+        console.log('Modal added to DOM');
 
         // Setup event listeners
         this.setupEventListeners();
@@ -153,6 +182,7 @@ class ProfileModal {
         setTimeout(() => {
             backdrop.classList.add('show');
             modal.classList.add('show');
+            console.log('Modal show classes added');
         }, 10);
     }
 
@@ -160,7 +190,7 @@ class ProfileModal {
         return `
             <div class="profile-modal-header">
                 <h2>Profile</h2>
-                <button class="profile-modal-close" onclick="window.profileModal.close()">×</button>
+                <button class="profile-modal-close" onclick="window.safeProfileClose()">×</button>
             </div>
             
             <div class="profile-modal-tabs">
@@ -298,7 +328,7 @@ class ProfileModal {
         const filterOptions = `
             <div class="history-filters">
                 <label for="action-filter">Filter by action:</label>
-                <select id="action-filter" onchange="window.profileModal.handleFilterChange(this.value)">
+                <select id="action-filter" onchange="window.safeProfileHandleFilterChange(this.value)">
                     <option value="">All actions</option>
                     <option value="audio_upload" ${this.actionFilter === 'audio_upload' ? 'selected' : ''}>Audio Upload</option>
                     <option value="docx_processed" ${this.actionFilter === 'docx_processed' ? 'selected' : ''}>DOCX Processing</option>
@@ -392,7 +422,7 @@ class ProfileModal {
         return `
             <div class="settings-section">
                 <h3>Profile Information</h3>
-                <form id="profile-form" onsubmit="window.profileModal.handleProfileUpdate(event)">
+                <form id="profile-form" onsubmit="window.safeProfileHandleUpdate(event)">
                     <div class="form-group">
                         <label for="profile-name">Full Name</label>
                         <input type="text" id="profile-name" name="full_name" value="${profile.full_name || ''}" required>
@@ -407,7 +437,7 @@ class ProfileModal {
                     <p><strong>Email:</strong> ${profile.email}</p>
                     <p class="help-text">Password reset emails will be sent to this address.</p>
                 </div>
-                <button class="btn btn-secondary" onclick="window.profileModal.handlePasswordReset()">
+                <button class="btn btn-secondary" onclick="window.safeProfileHandlePasswordReset()">
                     Reset Password
                 </button>
                 <p class="help-text">
@@ -431,7 +461,7 @@ class ProfileModal {
                         <li>Your credit balance (${this.userData.credits || 0} credits)</li>
                         <li>Your usage history</li>
                     </ul>
-                    <button class="btn btn-danger" onclick="window.profileModal.showDeleteAccountDialog()">
+                    <button class="btn btn-danger" onclick="window.safeProfileShowDeleteDialog()">
                         Delete Account
                     </button>
                 </div>
@@ -461,18 +491,18 @@ class ProfileModal {
 
         // Previous button
         if (page > 1) {
-            paginationHTML += `<button onclick="window.profileModal.changePage(${page - 1})">Previous</button>`;
+            paginationHTML += `<button onclick="window.safeProfileChangePage(${page - 1})">Previous</button>`;
         }
 
         // Page numbers
         for (let i = Math.max(1, page - 2); i <= Math.min(pages, page + 2); i++) {
             const activeClass = i === page ? 'active' : '';
-            paginationHTML += `<button class="${activeClass}" onclick="window.profileModal.changePage(${i})">${i}</button>`;
+            paginationHTML += `<button class="${activeClass}" onclick="window.safeProfileChangePage(${i})">${i}</button>`;
         }
 
         // Next button
         if (page < pages) {
-            paginationHTML += `<button onclick="window.profileModal.changePage(${page + 1})">Next</button>`;
+            paginationHTML += `<button onclick="window.safeProfileChangePage(${page + 1})">Next</button>`;
         }
 
         paginationHTML += '</div>';
@@ -654,7 +684,7 @@ class ProfileModal {
             }
 
             // Show loading state
-            const resetButton = document.querySelector('button[onclick="window.profileModal.handlePasswordReset()"]');
+            const resetButton = document.querySelector('button[onclick="window.safeProfileHandlePasswordReset()"]');
             if (resetButton) {
                 resetButton.disabled = true;
                 resetButton.textContent = 'Sending Reset Email...';
@@ -682,7 +712,7 @@ class ProfileModal {
             }
         } finally {
             // Reset button state
-            const resetButton = document.querySelector('button[onclick="window.profileModal.handlePasswordReset()"]');
+            const resetButton = document.querySelector('button[onclick="window.safeProfileHandlePasswordReset()"]');
             if (resetButton) {
                 resetButton.disabled = false;
                 resetButton.textContent = 'Reset Password';
@@ -948,7 +978,65 @@ class ProfileModal {
 
 // Create global instance
 const profileModal = new ProfileModal();
+
+// CRITICAL: Make profileModal globally available immediately to prevent race conditions
 window.profileModal = profileModal;
+
+// Safe wrapper functions for HTML onclick handlers
+window.safeProfileClose = function() {
+    console.log('🔐 Safe profile close called');
+    if (window.profileModal && typeof window.profileModal.close === 'function') {
+        window.profileModal.close();
+    } else {
+        console.error('Profile modal not ready for close');
+    }
+};
+
+window.safeProfileChangePage = function(page) {
+    console.log('🔐 Safe profile page change called:', page);
+    if (window.profileModal && typeof window.profileModal.changePage === 'function') {
+        window.profileModal.changePage(page);
+    } else {
+        console.error('Profile modal not ready for page change');
+    }
+};
+
+window.safeProfileHandleFilterChange = function(value) {
+    console.log('🔐 Safe profile filter change called:', value);
+    if (window.profileModal && typeof window.profileModal.handleFilterChange === 'function') {
+        window.profileModal.handleFilterChange(value);
+    } else {
+        console.error('Profile modal not ready for filter change');
+    }
+};
+
+window.safeProfileHandleUpdate = function(event) {
+    console.log('🔐 Safe profile update called');
+    if (window.profileModal && typeof window.profileModal.handleProfileUpdate === 'function') {
+        window.profileModal.handleProfileUpdate(event);
+    } else {
+        console.error('Profile modal not ready for profile update');
+        event.preventDefault();
+    }
+};
+
+window.safeProfileHandlePasswordReset = function() {
+    console.log('🔐 Safe password reset called');
+    if (window.profileModal && typeof window.profileModal.handlePasswordReset === 'function') {
+        window.profileModal.handlePasswordReset();
+    } else {
+        console.error('Profile modal not ready for password reset');
+    }
+};
+
+window.safeProfileShowDeleteDialog = function() {
+    console.log('🔐 Safe delete dialog called');
+    if (window.profileModal && typeof window.profileModal.showDeleteAccountDialog === 'function') {
+        window.profileModal.showDeleteAccountDialog();
+    } else {
+        console.error('Profile modal not ready for delete dialog');
+    }
+};
 
 // Clean up event listeners when page unloads
 window.addEventListener('beforeunload', () => {

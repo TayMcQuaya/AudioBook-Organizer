@@ -15,6 +15,7 @@ import { tempAuthManager } from './tempAuth.js';
 import { initializeCreditsDisplay, updateUserCredits } from './appUI.js';
 import './profileModal.js';
 import { initializeCreditCosts } from './creditConfig.js';
+import { showError } from './notifications.js';
 
 let isInitialized = false;
 
@@ -462,6 +463,10 @@ export async function initApp() {
         // User liked the blocking message, just wanted it faster
         console.log('📂 Starting project restoration (blocking as requested)...');
         await restoreLatestProject();
+        
+        // After project restoration, update credits display
+        console.log('💎 Project restored, updating credits display...');
+        updateUserCredits();
         
         // Initialize Table of Contents
         console.log('📋 Initializing Table of Contents...');

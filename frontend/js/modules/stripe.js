@@ -440,7 +440,7 @@ class StripeService {
                     </div>
                 </div>
                 
-                <button class="package-button" onclick="(window.stripeService || stripeService)?.purchaseCredits?.('${packageData.id}')">
+                <button class="package-button" onclick="window.safePurchaseCredits('${packageData.id}')">
                     <span class="button-text">Purchase Credits</span>
                     <span class="button-icon">→</span>
                 </button>
@@ -463,7 +463,7 @@ class StripeService {
                     <div class="error-state">
                         <div class="error-icon">⚠️</div>
                         <p>Failed to load credit packages</p>
-                        <button onclick="window.stripeService?.loadPackages?.() || stripeService?.loadPackages?.()">Retry</button>
+                        <button onclick="window.safeLoadPackages()">Retry</button>
                     </div>
                 `;
                 return;
@@ -482,7 +482,7 @@ class StripeService {
                     <div class="error-state">
                         <div class="error-icon">❌</div>
                         <p>Error loading packages</p>
-                        <button onclick="window.stripeService?.loadPackages?.() || stripeService?.loadPackages?.()">Retry</button>
+                        <button onclick="window.safeLoadPackages()">Retry</button>
                     </div>
                 `;
             }
@@ -506,7 +506,7 @@ class StripeService {
                 return `
                     <div class="transactions-error">
                         <p>Failed to load transaction history</p>
-                        <button onclick="(window.stripeService || stripeService)?.refreshTransactions?.()">Retry</button>
+                        <button onclick="window.safeRefreshTransactions()">Retry</button>
                     </div>
                 `;
             }
@@ -546,7 +546,7 @@ class StripeService {
                 <div class="transactions-list">
                     <div class="transactions-header">
                         <h4>Recent Transactions</h4>
-                        <button class="refresh-btn" onclick="(window.stripeService || stripeService)?.refreshTransactions?.()">
+                        <button class="refresh-btn" onclick="window.safeRefreshTransactions()">
                             <span class="refresh-icon">🔄</span>
                             Refresh
                         </button>
@@ -579,8 +579,67 @@ class StripeService {
 // Create global instance
 const stripeService = new StripeService();
 
-// Make available globally for onclick handlers
+// CRITICAL: Make stripeService globally available immediately to prevent race conditions
 window.stripeService = stripeService;
+
+// Safe wrapper function for purchase button onclick handlers
+window.safePurchaseCredits = function(packageId) {
+    console.log('🔐 Safe purchase credits called for package:', packageId);
+    
+    if (window.stripeService && typeof window.stripeService.purchaseCredits === 'function') {
+        window.stripeService.purchaseCredits(packageId);
+    } else {
+        console.error('Stripe service not ready, attempting to initialize...');
+        
+        // Try to initialize and retry
+        import('./stripe.js').then(async (module) => {
+            const service = module.default || window.stripeService;
+            if (service) {
+                console.log('✅ Stripe service loaded, initializing...');
+                try {
+                    await service.init();
+                    if (service.isAvailable()) {
+                        service.purchaseCredits(packageId);
+                    } else {
+                        import('./notifications.js').then(({ showError }) => {
+                            showError('Payment system is not available. Please try again later.');
+                        });
+                    }
+                } catch (error) {
+                    console.error('Failed to initialize Stripe:', error);
+                    import('./notifications.js').then(({ showError }) => {
+                        showError('Failed to load payment system. Please refresh the page and try again.');
+                    });
+                }
+            }
+        }).catch(err => {
+            console.error('Failed to load Stripe module:', err);
+            import('./notifications.js').then(({ showError }) => {
+                showError('Payment system could not be loaded. Please refresh the page.');
+            });
+        });
+    }
+};
+
+// Safe wrapper for loading packages
+window.safeLoadPackages = function() {
+    console.log('🔐 Safe load packages called');
+    if (window.stripeService && typeof window.stripeService.loadPackages === 'function') {
+        window.stripeService.loadPackages();
+    } else {
+        console.error('Stripe service not ready for loading packages');
+    }
+};
+
+// Safe wrapper for refreshing transactions
+window.safeRefreshTransactions = function() {
+    console.log('🔐 Safe refresh transactions called');
+    if (window.stripeService && typeof window.stripeService.refreshTransactions === 'function') {
+        window.stripeService.refreshTransactions();
+    } else {
+        console.error('Stripe service not ready for refreshing transactions');
+    }
+};
 
 /**
  * Ensure stripeService is globally available
