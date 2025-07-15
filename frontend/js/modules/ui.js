@@ -260,7 +260,7 @@ export async function showLowCreditsModal() {
             
             // If Stripe is properly configured, load packages
             if (stripeService.isAvailable()) {
-                await stripeService.loadPackages();
+                await stripeService.loadPackages(false); // Use cached packages, don't force refresh
             }
         }
         

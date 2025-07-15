@@ -506,15 +506,150 @@ onclick="hideLowCreditsModal()"
 onclick="window.safeHideLowCreditsModal()"
 ```
 
+4. Update Stripe service loading to use cached packages:
+
+```javascript
+// In showLowCreditsModal function, change:
+await stripeService.loadPackages();
+// TO:
+await stripeService.loadPackages(false); // Use cached packages, don't force refresh
+```
+
+### Step 12: Implement Package Caching System
+
+**File: `frontend/js/modules/stripe.js`**
+
+The package caching system is already implemented with these features:
+
+1. **Cached Storage**: `this.cachedPackages` stores packages after first load
+2. **Immediate Display**: `createPurchaseUI()` shows cached packages instantly
+3. **Smart Loading**: `loadPackages(forceRefresh)` uses cache by default
+4. **Cache Logging**: Console shows when cached packages are being used
+
+The system automatically:
+- Shows cached packages immediately when modal opens
+- Only reloads packages when `forceRefresh=true` (retry button)
+- Provides visual feedback about cache usage
+
+### Step 13: Optimize Modal Viewport Fitting
+
+**File: `frontend/css/main.css`**
+
+Update modal styles for better viewport fitting:
+
+```css
+.modal-content {
+    max-height: 85vh; /* Reduced from 96vh to prevent scrolling */
+    padding: 1.5rem; /* Reduced from 2rem to save space */
+}
+
+.modal-content ul {
+    margin: 0.75rem 0 1.5rem 0; /* Reduced margins */
+    gap: 0.75rem; /* Reduced gap */
+}
+
+.modal-content li {
+    padding: 1rem 1.25rem; /* Reduced padding */
+    height: 50px; /* Reduced from 60px for more compact design */
+}
+```
+
+**File: `frontend/css/stripe.css`**
+
+Update Stripe purchase section for more compact design:
+
+```css
+.credit-purchase-section {
+    padding: 1.5rem; /* Reduced from 2rem */
+}
+
+.section-header {
+    margin-bottom: 1.5rem; /* Reduced from 2rem */
+}
+
+.credit-packages {
+    gap: 1.25rem; /* Reduced from 1.5rem */
+    margin-bottom: 1.5rem; /* Reduced from 2rem */
+}
+
+.package-card {
+    padding: 1.25rem; /* Reduced from 1.5rem */
+}
+
+.package-header {
+    margin-bottom: 1.25rem; /* Reduced from 1.5rem */
+}
+
+.package-details {
+    margin-bottom: 1.25rem; /* Reduced from 1.5rem */
+}
+```
+
+## Additional Optimizations (Package Caching & Modal Viewport)
+
+### Package Caching System
+
+The implementation includes an intelligent package caching system that:
+
+1. **Caches Packages**: Stores credit packages in `this.cachedPackages` after first load
+2. **Instant Display**: Shows cached packages immediately when modal opens
+3. **Smart Loading**: Uses cache by default, only reloads when forced
+4. **Console Logging**: Provides clear feedback about cache usage
+
+**Key Features:**
+- Packages appear instantly on modal open
+- Reduces API calls and improves performance
+- Only reloads when retry button is clicked
+- Maintains data freshness when needed
+
+### Modal Viewport Optimization
+
+The modal has been optimized to fit perfectly in the viewport without scrolling:
+
+**CSS Optimizations:**
+- Reduced modal height from 96vh to 85vh
+- Reduced padding throughout for space efficiency
+- Smaller list item heights (50px instead of 60px)
+- Compact Stripe package cards with tighter spacing
+- Better responsive design for all screen sizes
+
+**User Experience Improvements:**
+- No scrolling required to see all content
+- Better space utilization
+- Consistent design across devices
+- Faster visual processing
+
+### Implementation Details
+
+**Cache Management:**
+```javascript
+// Cached packages are stored and used immediately
+if (this.cachedPackages && this.cachedPackages.length > 0) {
+    console.log('💳 Showing cached packages immediately');
+    packagesContent = this.cachedPackages.map(pkg => this.createPackageCard(pkg)).join('');
+}
+```
+
+**Viewport Optimization:**
+```css
+.modal-content {
+    max-height: 85vh; /* Optimized for viewport */
+    padding: 1.5rem; /* Reduced padding */
+}
+```
+
 ## Verification Steps
 
 1. Clear browser cache and refresh the page
 2. Check console for these messages:
    - "✅ Stripe service pre-initialized and globally available"
    - "✅ Profile modal pre-loaded and globally available"
+   - "💳 Showing cached packages immediately" (on credits modal)
 3. Click Profile button immediately after refresh
 4. Should see: "🔐 Safe profile open called"
 5. Profile modal should open without errors
+6. Open credits modal and verify packages appear instantly
+7. Verify modal fits in viewport without scrolling
 
 ## Common Issues and Solutions
 
@@ -538,6 +673,9 @@ onclick="window.safeHideLowCreditsModal()"
 - [ ] No duplicate API calls in network tab
 - [ ] Console shows safe wrapper messages
 - [ ] Modal state resets properly on close
+- [ ] Credit packages load instantly from cache on modal open
+- [ ] Modal fits in viewport without scrolling
+- [ ] Packages only reload when retry button is clicked
 
 ## Rollback Instructions
 

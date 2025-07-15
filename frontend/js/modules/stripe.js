@@ -29,6 +29,8 @@ class StripeService {
         this.isInitialized = false;
         this.config = null;
         this.packages = null;
+        this.cachedPackages = null; // Cache packages to avoid reloading
+        this.packagesLoaded = false;
     }
 
     /**
@@ -382,6 +384,19 @@ class StripeService {
             `;
         }
 
+        // Check if we have cached packages to show immediately
+        let packagesContent = '';
+        if (this.cachedPackages && this.cachedPackages.length > 0) {
+            packagesContent = this.cachedPackages.map(pkg => this.createPackageCard(pkg)).join('');
+        } else {
+            packagesContent = `
+                <div class="loading-packages">
+                    <div class="spinner"></div>
+                    <p>Loading packages...</p>
+                </div>
+            `;
+        }
+
         return `
             <div class="credit-purchase-section">
                 <div class="section-header">
@@ -390,10 +405,7 @@ class StripeService {
                 </div>
                 
                 <div class="credit-packages" id="creditPackages">
-                    <div class="loading-packages">
-                        <div class="spinner"></div>
-                        <p>Loading packages...</p>
-                    </div>
+                    ${packagesContent}
                 </div>
                 
                 <div class="purchase-info">
@@ -451,10 +463,28 @@ class StripeService {
     /**
      * Load and display packages
      */
-    async loadPackages() {
+    async loadPackages(forceRefresh = false) {
         try {
             const packagesContainer = document.getElementById('creditPackages');
             if (!packagesContainer) return;
+
+            // Use cached packages if available and not forcing refresh
+            if (this.cachedPackages && !forceRefresh) {
+                console.log('💳 Using cached credit packages');
+                const packagesHTML = this.cachedPackages.map(pkg => this.createPackageCard(pkg)).join('');
+                packagesContainer.innerHTML = packagesHTML;
+                return;
+            }
+
+            // Show loading state only if we don't have cached packages
+            if (!this.cachedPackages) {
+                packagesContainer.innerHTML = `
+                    <div class="loading-packages">
+                        <div class="spinner"></div>
+                        <p>Loading packages...</p>
+                    </div>
+                `;
+            }
 
             const response = await this.getPackages();
             
@@ -463,15 +493,17 @@ class StripeService {
                     <div class="error-state">
                         <div class="error-icon">⚠️</div>
                         <p>Failed to load credit packages</p>
-                        <button onclick="window.safeLoadPackages()">Retry</button>
+                        <button onclick="window.safeLoadPackages(true)">Retry</button>
                     </div>
                 `;
                 return;
             }
 
-            const packages = response.packages;
-            const packagesHTML = packages.map(pkg => this.createPackageCard(pkg)).join('');
+            // Cache the packages
+            this.cachedPackages = response.packages;
+            this.packagesLoaded = true;
             
+            const packagesHTML = this.cachedPackages.map(pkg => this.createPackageCard(pkg)).join('');
             packagesContainer.innerHTML = packagesHTML;
 
         } catch (error) {
@@ -482,7 +514,7 @@ class StripeService {
                     <div class="error-state">
                         <div class="error-icon">❌</div>
                         <p>Error loading packages</p>
-                        <button onclick="window.safeLoadPackages()">Retry</button>
+                        <button onclick="window.safeLoadPackages(true)">Retry</button>
                     </div>
                 `;
             }
@@ -622,10 +654,10 @@ window.safePurchaseCredits = function(packageId) {
 };
 
 // Safe wrapper for loading packages
-window.safeLoadPackages = function() {
-    console.log('🔐 Safe load packages called');
+window.safeLoadPackages = function(forceRefresh = false) {
+    console.log('🔐 Safe load packages called', forceRefresh ? '(force refresh)' : '(using cache if available)');
     if (window.stripeService && typeof window.stripeService.loadPackages === 'function') {
-        window.stripeService.loadPackages();
+        window.stripeService.loadPackages(forceRefresh);
     } else {
         console.error('Stripe service not ready for loading packages');
     }
