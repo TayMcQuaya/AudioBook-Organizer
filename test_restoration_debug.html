@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Restoration Debug Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .debug-panel {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border-left: 4px solid #007bff;
+        }
+        .status {
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .success { background-color: #d4edda; color: #155724; }
+        .warning { background-color: #fff3cd; color: #856404; }
+        .error { background-color: #f8d7da; color: #721c24; }
+        .info { background-color: #d1ecf1; color: #0c5460; }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        #log {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            padding: 15px;
+            border-radius: 4px;
+            max-height: 400px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 12px;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔍 Restoration Debug Test</h1>
+    
+    <div class="debug-panel">
+        <h2>Debug Information</h2>
+        <div id="debugInfo">
+            <p>This page helps debug why the "restoring your project" message might not be showing.</p>
+        </div>
+    </div>
+    
+    <div class="debug-panel">
+        <h2>Actions</h2>
+        <button onclick="checkAuthStatus()">Check Auth Status</button>
+        <button onclick="checkExistingContent()">Check Existing Content</button>
+        <button onclick="simulateRestoration()">Simulate Restoration</button>
+        <button onclick="clearLog()">Clear Log</button>
+    </div>
+    
+    <div class="debug-panel">
+        <h2>Console Log</h2>
+        <div id="log"></div>
+    </div>
+
+    <script>
+        let logElement = document.getElementById('log');
+        
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const logMessage = `[${timestamp}] ${message}\n`;
+            logElement.textContent += logMessage;
+            logElement.scrollTop = logElement.scrollHeight;
+            
+            console.log(message);
+        }
+        
+        function clearLog() {
+            logElement.textContent = '';
+        }
+        
+        function checkAuthStatus() {
+            log('🔍 Checking authentication status...', 'info');
+            
+            // Check temp auth
+            const tempAuth = window.tempAuthManager?.isAuthenticated;
+            log(`Temp Auth: ${tempAuth ? 'Authenticated' : 'Not authenticated'}`);
+            
+            // Check regular auth
+            const regularAuth = window.authModule?.isAuthenticated?.();
+            log(`Regular Auth: ${regularAuth ? 'Authenticated' : 'Not authenticated'}`);
+            
+            // Check session manager
+            const sessionAuth = window.sessionManager?.isAuthenticated;
+            log(`Session Manager: ${sessionAuth ? 'Authenticated' : 'Not authenticated'}`);
+            
+            // Overall result
+            const isAuthenticated = tempAuth || regularAuth || sessionAuth;
+            log(`Overall Authentication: ${isAuthenticated ? 'YES' : 'NO'}`);
+            
+            if (!isAuthenticated) {
+                log('❌ Not authenticated - this is why restoration message doesn\'t show!', 'error');
+                log('💡 Try logging in first', 'info');
+            } else {
+                log('✅ Authenticated - restoration should proceed', 'success');
+            }
+        }
+        
+        function checkExistingContent() {
+            log('🔍 Checking for existing content...', 'info');
+            
+            // Check chapters
+            const chapters = window.chapters || [];
+            log(`Chapters count: ${chapters.length}`);
+            
+            // Check content element
+            const contentElement = document.getElementById('bookContent');
+            const hasContent = contentElement?.textContent?.trim();
+            log(`Book content element: ${contentElement ? 'Found' : 'Not found'}`);
+            log(`Has content: ${hasContent ? 'Yes' : 'No'}`);
+            
+            if (chapters.length > 0 || hasContent) {
+                log('❌ Existing content found - this is why restoration message doesn\'t show!', 'error');
+                log('💡 This prevents overwriting your current work', 'info');
+            } else {
+                log('✅ No existing content - restoration should proceed', 'success');
+            }
+        }
+        
+        function simulateRestoration() {
+            log('🔄 Simulating restoration process...', 'info');
+            
+            // Check auth first
+            const tempAuth = window.tempAuthManager?.isAuthenticated;
+            const regularAuth = window.authModule?.isAuthenticated?.();
+            const sessionAuth = window.sessionManager?.isAuthenticated;
+            const isAuthenticated = tempAuth || regularAuth || sessionAuth;
+            
+            if (!isAuthenticated) {
+                log('❌ Cannot simulate - not authenticated', 'error');
+                return;
+            }
+            
+            // Check existing content
+            const chapters = window.chapters || [];
+            const contentElement = document.getElementById('bookContent');
+            const hasContent = contentElement?.textContent?.trim();
+            
+            if (chapters.length > 0 || hasContent) {
+                log('❌ Cannot simulate - existing content detected', 'error');
+                return;
+            }
+            
+            // Simulate the restoration message
+            log('📢 This is when you would see: "Restoring your project..."', 'success');
+            log('⏱️ Message would show for at least 800ms', 'info');
+            log('🔄 Database restoration would happen in background', 'info');
+            log('✅ Message would then disappear', 'success');
+            
+            log('💡 If you\'re not seeing this message, check the conditions above', 'info');
+        }
+        
+        // Initialize
+        log('🚀 Restoration Debug Test initialized', 'info');
+        log('📝 Use the buttons above to check why restoration message isn\'t showing', 'info');
+    </script>
+</body>
+</html> 

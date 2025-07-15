@@ -10,10 +10,10 @@ const defaultConfig = {
     moduleRetryAttempts: 3,
     moduleRetryDelay: 1000,
     
-    // Initialization timing
-    initializationDelay: 800,
-    cssApplicationDelay: 200,
-    domReadyDelay: 300,
+    // Initialization timing - OPTIMIZED for better UX
+    initializationDelay: 200,        // Reduced from 800ms
+    cssApplicationDelay: 50,         // Reduced from 200ms
+    domReadyDelay: 100,              // Reduced from 300ms
     
     // UI timing
     notificationDuration: 3000,
@@ -28,9 +28,9 @@ const defaultConfig = {
     testingModeDelay: 500,
     testingModeRetries: 5,
     
-    // Layout and CSS
-    layoutStabilizationDelay: 400,
-    cssLoadWaitTime: 500,
+    // Layout and CSS - OPTIMIZED for immediate application
+    layoutStabilizationDelay: 100,   // Reduced from 400ms
+    cssLoadWaitTime: 50,             // Reduced from 500ms - CSS should apply immediately
     
     // Debug settings
     enableDetailedLogging: false,
@@ -42,25 +42,25 @@ const defaultConfig = {
  */
 const environmentConfigs = {
     'flask-dev': {
-        // **OPTIMIZED: Reduced delays for better performance**
+        // **OPTIMIZED: Further reduced delays for development**
         moduleLoadTimeout: 12000,
-        initializationDelay: 300,  // Reduced from 1200ms
-        cssApplicationDelay: 100,  // Reduced from 400ms  
-        domReadyDelay: 100,        // Reduced from 500ms
-        layoutStabilizationDelay: 200, // Reduced from 600ms
-        cssLoadWaitTime: 300,      // Reduced from 800ms
+        initializationDelay: 100,      // Reduced from 300ms
+        cssApplicationDelay: 25,       // Reduced from 100ms  
+        domReadyDelay: 50,             // Reduced from 100ms
+        layoutStabilizationDelay: 50,  // Reduced from 200ms
+        cssLoadWaitTime: 25,           // Reduced from 300ms
         enableDetailedLogging: true,
         logModuleLoadTimes: true
     },
     
     'gunicorn-prod': {
-        // Gunicorn is faster but more consistent
+        // **OPTIMIZED: Production optimizations for immediate CSS**
         moduleLoadTimeout: 6000,
-        initializationDelay: 300,  // Reduced from 600ms
-        cssApplicationDelay: 50,   // Reduced from 150ms
-        domReadyDelay: 100,        // Reduced from 200ms
-        layoutStabilizationDelay: 150, // Reduced from 300ms
-        cssLoadWaitTime: 200,      // Reduced from 400ms
+        initializationDelay: 150,      // Reduced from 300ms
+        cssApplicationDelay: 25,       // Reduced from 50ms
+        domReadyDelay: 50,             // Reduced from 100ms
+        layoutStabilizationDelay: 50,  // Reduced from 150ms
+        cssLoadWaitTime: 25,           // Reduced from 200ms - immediate CSS
         enableDetailedLogging: false,
         logModuleLoadTimes: false
     }
@@ -70,23 +70,23 @@ const environmentConfigs = {
  * Testing mode specific overrides
  */
 const testingModeConfig = {
-    // More conservative timing for testing mode
-    initializationDelay: 400,     // Reduced from 1000ms
-    testingModeDelay: 200,        // Reduced from 300ms
-    cssApplicationDelay: 150,     // Reduced from 300ms
-    layoutStabilizationDelay: 250 // Reduced from 500ms
+    // **OPTIMIZED: Reduced timing for testing mode**
+    initializationDelay: 100,         // Reduced from 400ms
+    testingModeDelay: 100,            // Reduced from 200ms
+    cssApplicationDelay: 25,          // Reduced from 150ms
+    layoutStabilizationDelay: 50      // Reduced from 250ms
 };
 
 /**
  * Fast refresh mode for page refresh scenarios
  */
 const fastRefreshConfig = {
-    // Minimal delays when app is already loaded
-    initializationDelay: 50,
-    cssApplicationDelay: 25,
-    domReadyDelay: 25,
-    layoutStabilizationDelay: 50,
-    cssLoadWaitTime: 100
+    // **OPTIMIZED: Minimal delays for immediate response**
+    initializationDelay: 25,          // Reduced from 50ms
+    cssApplicationDelay: 10,          // Reduced from 25ms
+    domReadyDelay: 10,                // Reduced from 25ms
+    layoutStabilizationDelay: 25,     // Reduced from 50ms
+    cssLoadWaitTime: 10               // Reduced from 100ms
 };
 
 /**

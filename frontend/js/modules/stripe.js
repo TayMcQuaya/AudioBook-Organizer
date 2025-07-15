@@ -32,11 +32,12 @@ class StripeService {
     }
 
     /**
-     * Wait for Stripe.js to be available
+     * Wait for Stripe.js to be available - OPTIMIZED
      */
     async waitForStripeScript() {
         // If Stripe is already available, return immediately
         if (typeof window.Stripe !== 'undefined') {
+            console.log('✅ Stripe.js already available');
             return true;
         }
 
@@ -48,102 +49,43 @@ class StripeService {
 
         console.log('⏳ Waiting for Stripe.js to load...');
         
-        // First, try waiting for the existing script to load
-        const maxWaitTime = 5000; // Reduced to 5 seconds for first attempt
+        // **OPTIMIZED: Simplified waiting with reasonable timeout**
+        const maxWaitTime = 3000; // Reduced from 5000ms
         const checkInterval = 100;
         let waitTime = 0;
 
-        const waitForExistingScript = () => {
-            return new Promise((resolve) => {
-                const checkStripe = () => {
-                    // Check for successful load flag
-                    if (window.stripeJsLoaded && typeof window.Stripe !== 'undefined') {
-                        console.log('✅ Stripe.js loaded from existing script');
-                        resolve(true);
-                        return;
-                    }
-
-                    // Check for error flag
-                    if (window.stripeJsLoadError) {
-                        console.error('❌ Stripe.js load error detected');
-                        resolve(false);
-                        return;
-                    }
-
-                    waitTime += checkInterval;
-                    if (waitTime >= maxWaitTime) {
-                        console.warn('⚠️ Existing Stripe.js script taking too long, trying dynamic load...');
-                        resolve(false);
-                        return;
-                    }
-
-                    setTimeout(checkStripe, checkInterval);
-                };
-
-                checkStripe();
-            });
-        };
-
-        // Try waiting for existing script first
-        const existingScriptLoaded = await waitForExistingScript();
-        if (existingScriptLoaded) {
-            return true;
-        }
-
-        // If existing script didn't load, try dynamic loading as fallback
-        console.log('🔄 Attempting to load Stripe.js dynamically...');
-        return this.loadStripeScriptDynamically();
-    }
-
-    /**
-     * Dynamically load Stripe.js script as fallback
-     */
-    async loadStripeScriptDynamically() {
         return new Promise((resolve, reject) => {
-            // Check if script already exists
-            const existingScript = document.querySelector('script[src*="js.stripe.com"]');
-            if (existingScript) {
-                console.log('📄 Stripe.js script already exists in DOM, waiting for it...');
-                // Wait a bit more for the existing script
-                setTimeout(() => {
-                    if (typeof window.Stripe !== 'undefined') {
-                        resolve(true);
-                    } else {
-                        reject(new Error('Existing Stripe script failed to load'));
-                    }
-                }, 2000);
-                return;
-            }
-
-            // Create new script element
-            const script = document.createElement('script');
-            script.src = 'https://js.stripe.com/v3/';
-            script.async = true;
-
-            script.onload = () => {
-                if (typeof window.Stripe !== 'undefined') {
-                    console.log('✅ Stripe.js loaded dynamically');
+            const checkStripe = () => {
+                // Check for successful load
+                if (window.stripeJsLoaded && typeof window.Stripe !== 'undefined') {
+                    console.log('✅ Stripe.js loaded successfully');
                     resolve(true);
-                } else {
-                    reject(new Error('Stripe.js loaded but not available'));
+                    return;
                 }
+
+                // Check for error
+                if (window.stripeJsLoadError) {
+                    console.error('❌ Stripe.js load error detected');
+                    reject(new Error('Stripe.js load error'));
+                    return;
+                }
+
+                waitTime += checkInterval;
+                if (waitTime >= maxWaitTime) {
+                    console.warn('⚠️ Stripe.js loading timeout - may not be available');
+                    reject(new Error('Stripe.js loading timeout'));
+                    return;
+                }
+
+                setTimeout(checkStripe, checkInterval);
             };
 
-            script.onerror = () => {
-                reject(new Error('Failed to load Stripe.js dynamically'));
-            };
-
-            // Set timeout for dynamic loading
-            setTimeout(() => {
-                reject(new Error('Dynamic Stripe.js load timeout'));
-            }, 10000);
-
-            document.head.appendChild(script);
+            checkStripe();
         });
     }
 
     /**
-     * Initialize Stripe with publishable key
+     * Initialize Stripe with publishable key - OPTIMIZED
      */
     async init() {
         try {
@@ -154,19 +96,21 @@ class StripeService {
                 return false;
             }
 
-            // **FIX: Wait for Stripe.js script to be available**
+            // **OPTIMIZED: Simplified Stripe.js availability check**
             try {
                 await this.waitForStripeScript();
             } catch (error) {
                 console.error('Failed to load Stripe.js script:', error);
+                this.isInitialized = false;
                 return false;
             }
 
-            // Get Stripe configuration from backend
+            // **PARALLEL: Get Stripe configuration while script loads**
             const response = await apiCall('/stripe/config');
             
             if (!response.success) {
                 console.error('Failed to get Stripe config:', response.error);
+                this.isInitialized = false;
                 return false;
             }
 
@@ -192,17 +136,19 @@ class StripeService {
             // Initialize Stripe (we know it's available now)
             if (!response.publishable_key) {
                 console.error('No Stripe publishable key provided');
+                this.isInitialized = false;
                 return false;
             }
 
-            this.stripe = Stripe(response.publishable_key);
+            this.stripe = window.Stripe(response.publishable_key);
             this.isInitialized = true;
-
-            console.log('✅ Stripe initialized successfully');
+            
+            console.log('✅ Stripe service initialized successfully');
             return true;
 
         } catch (error) {
-            console.error('Failed to initialize Stripe:', error);
+            console.error('Stripe initialization failed:', error);
+            this.isInitialized = false;
             return false;
         }
     }

@@ -209,12 +209,21 @@ class SecurityService:
             oldest_attempt = attempts[0] if attempts else current_time
             time_remaining = int(window - (current_time - oldest_attempt))
             
+            # **IMPROVED: Better error message for development**
+            minutes_remaining = time_remaining // 60
+            seconds_remaining = time_remaining % 60
+            
+            if minutes_remaining > 0:
+                time_str = f"{minutes_remaining}m {seconds_remaining}s"
+            else:
+                time_str = f"{seconds_remaining}s"
+            
             return {
                 'allowed': False,
                 'failed_attempts': failed_attempts,
                 'max_attempts': max_attempts,
                 'time_remaining': time_remaining,
-                'reason': f'Too many failed login attempts. Try again in {time_remaining} seconds.'
+                'reason': f'Too many failed login attempts ({failed_attempts}/{max_attempts}). Try again in {time_str}.'
             }
         
         return {

@@ -91,6 +91,96 @@
             margin: 0 auto;
         }
         
+        /* **NEW: Skeleton loading states for better UX** */
+        .skeleton-ui {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: #f8f9fa;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease-in-out;
+            z-index: 9998;
+        }
+        
+        .skeleton-header {
+            height: 60px;
+            background: #fff;
+            border-bottom: 1px solid #e9ecef;
+            display: flex;
+            align-items: center;
+            padding: 0 1rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .skeleton-brand {
+            width: 200px;
+            height: 32px;
+            background: linear-gradient(90deg, #e9ecef 25%, #f8f9fa 50%, #e9ecef 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s infinite;
+            border-radius: 4px;
+        }
+        
+        .skeleton-nav {
+            margin-left: auto;
+            display: flex;
+            gap: 1rem;
+        }
+        
+        .skeleton-nav-item {
+            width: 80px;
+            height: 32px;
+            background: linear-gradient(90deg, #e9ecef 25%, #f8f9fa 50%, #e9ecef 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s infinite;
+            border-radius: 4px;
+        }
+        
+        .skeleton-main {
+            display: flex;
+            height: calc(100vh - 60px);
+            padding: 1rem;
+            gap: 1rem;
+        }
+        
+        .skeleton-column {
+            flex: 1;
+            background: #fff;
+            border-radius: 8px;
+            padding: 1rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .skeleton-content {
+            width: 100%;
+            height: 20px;
+            background: linear-gradient(90deg, #e9ecef 25%, #f8f9fa 50%, #e9ecef 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s infinite;
+            border-radius: 4px;
+            margin-bottom: 1rem;
+        }
+        
+        .skeleton-content:nth-child(2) { width: 80%; }
+        .skeleton-content:nth-child(3) { width: 60%; }
+        .skeleton-content:nth-child(4) { width: 90%; }
+        .skeleton-content:nth-child(5) { width: 70%; }
+        
+        /* Show skeleton when CSS is loaded but app not ready */
+        .css-loaded:not(.app-ready) .skeleton-ui {
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        /* Hide skeleton when app is ready */
+        .app-ready .skeleton-ui {
+            opacity: 0;
+            visibility: hidden;
+        }
+        
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(20px); }
             to { opacity: 1; transform: translateY(0); }
@@ -107,6 +197,11 @@
             100% { transform: rotate(360deg); }
         }
         
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+        
         /* Hide loading when app is ready */
         .app-ready .app-loading {
             opacity: 0;
@@ -114,10 +209,15 @@
             transition: all 0.5s ease-in-out;
         }
         
-        /* Hide app container initially to prevent FOUC */
+        /* **OPTIMIZED: Immediate CSS application** */
         #appContainer {
+            opacity: 1; /* Changed from 0 to 1 for immediate display */
+            transition: opacity 0.3s ease-in-out;
+        }
+        
+        /* Hide container only during initial loading */
+        .app-initializing #appContainer {
             opacity: 0;
-            transition: opacity 0.5s ease-in-out;
         }
     </style>
 </head>
@@ -129,6 +229,34 @@
             <h1 class="loading-title">AudioBook Organizer</h1>
             <p class="loading-subtitle">Loading your digital library...</p>
             <div class="loading-spinner"></div>
+        </div>
+    </div>
+    
+    <!-- **NEW: Skeleton UI for better loading experience** -->
+    <div class="skeleton-ui" id="skeletonUI">
+        <div class="skeleton-header">
+            <div class="skeleton-brand"></div>
+            <div class="skeleton-nav">
+                <div class="skeleton-nav-item"></div>
+                <div class="skeleton-nav-item"></div>
+                <div class="skeleton-nav-item"></div>
+            </div>
+        </div>
+        <div class="skeleton-main">
+            <div class="skeleton-column">
+                <div class="skeleton-content"></div>
+                <div class="skeleton-content"></div>
+                <div class="skeleton-content"></div>
+                <div class="skeleton-content"></div>
+                <div class="skeleton-content"></div>
+            </div>
+            <div class="skeleton-column">
+                <div class="skeleton-content"></div>
+                <div class="skeleton-content"></div>
+                <div class="skeleton-content"></div>
+                <div class="skeleton-content"></div>
+                <div class="skeleton-content"></div>
+            </div>
         </div>
     </div>
     
@@ -190,6 +318,36 @@
                 console.log('🎨 Step 5: Waiting for DOM stability...');
                 await appConfig.delay('cssLoadWaitTime');
                 
+                // **NEW: Transition from loading to skeleton UI**
+                console.log('🎨 Step 5.5: Transitioning to skeleton UI...');
+                const loadingScreen = document.getElementById('appLoading');
+                const skeletonUI = document.getElementById('skeletonUI');
+                
+                if (loadingScreen && skeletonUI) {
+                    // Hide loading screen
+                    loadingScreen.style.opacity = '0';
+                    
+                    // **FIXED: Only show skeleton UI for initial app page load, not page transitions**
+                    const isNavigatingToApp = window.location.pathname === '/app' || window.location.pathname === '/';
+                    
+                    if (isNavigatingToApp) {
+                        // Show skeleton UI only for app page
+                        setTimeout(() => {
+                            loadingScreen.style.display = 'none';
+                            document.body.classList.add('css-loaded');
+                            skeletonUI.style.opacity = '1';
+                            skeletonUI.style.visibility = 'visible';
+                        }, 300);
+                    } else {
+                        // For other pages, skip skeleton UI completely
+                        setTimeout(() => {
+                            loadingScreen.style.display = 'none';
+                            document.body.classList.add('css-loaded');
+                            // Keep skeleton hidden for non-app pages
+                        }, 300);
+                    }
+                }
+                
                 // STEP 6: Initialize router system
                 console.log('🌐 Step 6: Initializing router...');
                 await router.init();
@@ -197,18 +355,34 @@
                 // STEP 7: Complete UI transition
                 console.log('✨ Step 7: Completing UI transition...');
                 
-                // Remove loading screen and show app
-                const loadingScreen = document.getElementById('appLoading');
+                // **OPTIMIZED: Transition from skeleton to final app**
                 const appContainer = document.getElementById('appContainer');
-                
-                if (loadingScreen && appContainer) {
-                    loadingScreen.style.opacity = '0';
-                    appContainer.style.opacity = '1';
+
+                if (skeletonUI && appContainer) {
+                    // **FIXED: Only transition skeleton if it was actually shown**
+                    const skeletonIsVisible = skeletonUI.style.opacity === '1' && skeletonUI.style.visibility === 'visible';
                     
-                    setTimeout(() => {
-                        loadingScreen.style.display = 'none';
+                    if (skeletonIsVisible) {
+                        // Hide skeleton UI and show app
+                        skeletonUI.style.opacity = '0';
+                        appContainer.style.opacity = '1';
+                        
+                        setTimeout(() => {
+                            skeletonUI.style.display = 'none';
+                            document.body.classList.add('app-ready');
+                            document.body.classList.remove('css-loaded');
+                        }, 300);
+                    } else {
+                        // No skeleton was shown, just ensure app is visible
+                        appContainer.style.opacity = '1';
                         document.body.classList.add('app-ready');
-                    }, 500);
+                        document.body.classList.remove('css-loaded');
+                    }
+                } else if (appContainer) {
+                    // Fallback: just ensure app container is visible
+                    appContainer.style.opacity = '1';
+                    document.body.classList.add('app-ready');
+                    document.body.classList.remove('css-loaded');
                 }
                 
                 // **SECURITY FIX: Removed timing information to prevent system profiling**
@@ -268,11 +442,11 @@
                 <div class="loading-icon">⚠️</div>
                 <h1 class="loading-title">Browser Not Supported</h1>
                 <p class="loading-subtitle">
-                    AudioBook Organizerrequires a modern browser with ES6 module support.<br>
+                    AudioBook Organizer requires a modern browser with ES6 module support.<br>
                     Please update your browser or use Chrome, Firefox, Safari, or Edge.
                 </p>
             </div>
         `;
     </script>
 </body>
-</html> 
+</html>

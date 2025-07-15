@@ -61,7 +61,8 @@ class Config:
         'PASSWORD_REQUIRE_LOWERCASE': True,
         'PASSWORD_REQUIRE_NUMBERS': True,
         'PASSWORD_REQUIRE_SPECIAL': True,
-        'MAX_LOGIN_ATTEMPTS': 5,
+        # **DEVELOPMENT: Increased limits for testing**
+        'MAX_LOGIN_ATTEMPTS': 20 if DEBUG else 5,  # 20 attempts in development, 5 in production
         'LOGIN_ATTEMPT_WINDOW': 900,  # 15 minutes in seconds
     }
 

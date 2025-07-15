@@ -1037,6 +1037,9 @@ class Router {
         try {
             console.log('📱 Loading main application...');
             
+            // **REVERTED: Keep router-based approach but eliminate CSS flash**
+            // This maintains all existing navigation patterns while fixing the CSS issue
+            
             // **FIX: Handle case where we're already on app page (no appContainer needed)**
             const appContainer = document.getElementById('appContainer');
             const isAlreadyOnAppPage = document.body.classList.contains('app-body') && 
@@ -1050,6 +1053,77 @@ class Router {
                 console.log('✅ Already on app page, skipping HTML injection');
                 // If we're already on the app page, we don't need to load HTML
                 // Just ensure auth and initialize
+            }
+
+            // **OPTIMIZED: Pre-load CSS to eliminate flash**
+            if (!isAlreadyOnAppPage) {
+                console.log('🎨 Pre-loading app CSS to prevent flash...');
+                
+                // **FIXED: Simplified CSS loading to prevent hangs**
+                const requiredCSS = [
+                    '/css/main.css',
+                    '/css/components.css', 
+                    '/css/themes.css',
+                    '/css/table-of-contents.css',
+                    '/css/formatting.css'
+                ];
+                
+                const cssPromises = requiredCSS.map(href => {
+                    return new Promise((resolve) => {
+                        // Check if already loaded and working
+                        const existingLink = document.querySelector(`link[href="${href}"]`);
+                        if (existingLink && existingLink.sheet && existingLink.sheet.cssRules) {
+                            console.log(`✅ CSS already loaded: ${href}`);
+                            resolve();
+                            return;
+                        }
+                        
+                        // Always create a new link element to avoid race conditions
+                        const link = document.createElement('link');
+                        link.rel = 'stylesheet';
+                        link.href = href;
+                        
+                        const onLoad = () => {
+                            console.log(`✅ CSS loaded: ${href}`);
+                            resolve();
+                        };
+                        
+                        const onError = () => {
+                            console.warn(`⚠️ Failed to load CSS: ${href}`);
+                            resolve(); // Don't block on CSS load failures
+                        };
+                        
+                        link.addEventListener('load', onLoad, { once: true });
+                        link.addEventListener('error', onError, { once: true });
+                        
+                        // Set a timeout fallback
+                        setTimeout(() => {
+                            console.warn(`⏰ CSS load timeout: ${href}`);
+                            resolve();
+                        }, 3000);
+                        
+                        document.head.appendChild(link);
+                    });
+                });
+                
+                // Wait for all CSS to load with overall timeout
+                try {
+                    await Promise.race([
+                        Promise.all(cssPromises),
+                        new Promise(resolve => setTimeout(resolve, 5000)) // 5 second max wait
+                    ]);
+                } catch (error) {
+                    console.warn('⚠️ CSS loading error:', error);
+                }
+                
+                // **IMPROVED: Add extra delay for local development CSS processing**
+                const isLocalDev = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+                if (isLocalDev) {
+                    console.log('🔧 Local development detected, adding CSS processing delay...');
+                    await new Promise(resolve => setTimeout(resolve, 100));
+                }
+                
+                console.log('✅ App CSS pre-loaded successfully');
             }
 
             // Check if we need to load the app HTML shell first (only if not already on app page)
@@ -1069,54 +1143,50 @@ class Router {
                 // Ensure scroll position is reset BEFORE changing body class to prevent layout shift
                 window.scrollTo(0, 0);
                 
-                // Set the correct body class while preserving important classes
+                // **CRITICAL: Apply CSS classes BEFORE content injection**
                 document.body.className = 'app-body layout-ready';
+                
+                // Small delay to ensure CSS is applied
+                await new Promise(resolve => setTimeout(resolve, 50));
             }
 
             // Only load app HTML if not already loaded (and we have an appContainer)
             if (appContainer && !appContainer.querySelector('.main-container')) {
                 console.log('🔧 Loading app HTML structure...');
+                
                 // Fetch and inject the actual app UI
                 const response = await fetch('/pages/app/app.html');
                 if (!response.ok) throw new Error(`Failed to fetch app page: ${response.status}`);
                 const appHtml = await response.text();
-                console.log('✅ App HTML fetched successfully, length:', appHtml.length);
+                console.log('✅ App HTML fetched successfully');
                 
                 // Parse the HTML and extract only the body content
                 const parser = new DOMParser();
                 const doc = parser.parseFromString(appHtml, 'text/html');
                 const bodyContent = doc.body.innerHTML;
                 
-                // Inject only the body content, not the full HTML
+                // **IMPROVED: Inject content with CSS already loaded and ensure proper styling**
                 appContainer.innerHTML = bodyContent;
-                console.log('✅ App HTML injected, container now has content length:', appContainer.innerHTML.length);
                 
                 // Ensure critical layout classes are applied
                 document.body.classList.add('layout-ready');
                 if (tempAuthManager.isTestingMode) {
                     document.body.classList.add('testing-mode');
                 }
-                console.log('✅ Layout classes applied:', document.body.className);
                 
-                // Verify main elements exist
-                const mainContainer = appContainer.querySelector('.main-container');
-                const bookContent = appContainer.querySelector('#bookContent');
-                console.log('🔍 DOM verification:', {
-                    mainContainer: !!mainContainer,
-                    bookContent: !!bookContent,
-                    containerClasses: appContainer.className,
-                    bodyClasses: document.body.className
-                });
+                // **PERFORMANCE: Force immediate layout calculation**
+                appContainer.offsetHeight; // Trigger reflow
                 
-                // Debug: Check main container visibility
-                if (mainContainer) {
-                    const styles = window.getComputedStyle(mainContainer);
-                    console.log('🔍 Main container styles:', {
-                        opacity: styles.opacity,
-                        display: styles.display,
-                        visibility: styles.visibility
-                    });
+                // **IMPROVED: Additional delay for CSS application in local development**
+                const isLocalDev = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+                if (isLocalDev) {
+                    console.log('🔧 Local development: allowing extra time for CSS application...');
+                    await new Promise(resolve => setTimeout(resolve, 50));
+                    // Force another layout calculation after delay
+                    appContainer.offsetHeight;
                 }
+                
+                console.log('✅ App HTML injected with CSS pre-loaded - no flash!');
             } else {
                 console.log('✅ App HTML already loaded, skipping injection');
             }
@@ -1194,10 +1264,6 @@ class Router {
             // Initialize app if not already initialized
             if (!window.isAppInitialized) {
                 console.log('🔧 App not initialized yet, starting initialization...');
-                console.log('🔍 Debug: window.isAppInitialized =', window.isAppInitialized);
-                console.log('🔍 Debug: window.isFrameworkInitialized =', window.isFrameworkInitialized);
-                console.log('🔍 Debug: window.authModule available =', !!window.authModule);
-                console.log('🔍 Debug: authentication state =', isAuthenticatedNow);
                 
                 try {
                     // In testing mode, wait a moment to ensure auth status is properly set
@@ -1228,12 +1294,11 @@ class Router {
                     
                     console.log('🔧 Starting dynamic import of main.js...');
                     
-                    // Use the new robust module loader
+                    // Use the robust module loader
                     const { moduleLoader } = await import('./moduleLoader.js');
                     const appModule = await moduleLoader.loadMainApp();
                     
                     console.log(`✅ App module loaded via ${appModule.loadMethod}`);
-                    console.log('📊 Module loader stats:', moduleLoader.getStats());
                     
                     // Initialize the app
                     await appModule.initialize();
@@ -1242,16 +1307,10 @@ class Router {
                     console.log('✅ App initialization complete');
                 } catch (error) {
                     console.error('❌ Error initializing app:', error);
-                    console.error('❌ Error details:', {
-                        message: error.message,
-                        stack: error.stack,
-                        name: error.name
-                    });
                     window.isAppInitialized = false;
                 }
             } else {
                 console.log('✅ App already initialized, skipping initialization');
-                console.log('🔍 Debug: window.isAppInitialized =', window.isAppInitialized);
             }
             
             console.log('📱 App loaded successfully');

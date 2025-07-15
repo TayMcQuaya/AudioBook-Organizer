@@ -2296,22 +2296,7 @@ body.app-initializing::before {
     pointer-events: all;
 }
 
-body.app-initializing::after {
-    content: 'Initializing...';
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    background: var(--primary-color);
-    color: white;
-    padding: 12px 24px;
-    border-radius: 8px;
-    font-family: system-ui, sans-serif;
-    font-size: 14px;
-    font-weight: 500;
-    z-index: 9999;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-}
+
 
 /* Fully ready state */
 body.app-ready .nav-links {
@@ -2328,29 +2313,7 @@ body.app-error .nav-links {
     opacity: 0.7;
 }
 
-body.app-error::after {
-    content: 'App initialization failed. Please refresh.';
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    background: #e53e3e;
-    color: white;
-    padding: 12px 24px;
-    border-radius: 8px;
-    font-family: system-ui, sans-serif;
-    font-size: 14px;
-    font-weight: 500;
-    z-index: 9999;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-}
-
 /* Dark mode support for initialization states */
 [data-theme="dark"] body.app-initializing::before {
     background: rgba(45, 55, 72, 0.8);
-}
-
-[data-theme="dark"] body.app-initializing::after {
-    background: var(--primary-color);
-    color: white;
 }

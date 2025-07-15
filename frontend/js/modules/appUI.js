@@ -382,45 +382,81 @@ class AppUIManager {
      */
     openProfile() {
         try {
+            // **OPTIMIZED: Check for profile modal availability with better error handling**
             if (window.profileModal && typeof window.profileModal.open === 'function') {
+                console.log('✅ Opening profile modal (already loaded)');
                 window.profileModal.open();
-            } else if (window.profileModal) {
-                console.warn('🚨 profileModal exists but open method not available');
-                // Fallback: try to import the module dynamically
-                this.fallbackOpenProfile();
-            } else {
-                console.warn('🚨 profileModal not available, attempting to load...');
-                // Try to load the profile modal module
-                this.fallbackOpenProfile();
+                return;
             }
+            
+            // **ENHANCED: If profile modal isn't available, try immediate import**
+            console.log('🔄 Profile modal not ready, attempting immediate load...');
+            this.loadAndOpenProfile();
+            
         } catch (error) {
             console.error('🚨 Error opening profile modal:', error);
             // Fallback navigation to profile page
-            window.location.href = '/profile';
+            this.showProfileFallback();
         }
     }
 
     /**
-     * Fallback method to load and open profile modal
+     * Load and open profile modal immediately
      */
-    async fallbackOpenProfile() {
+    async loadAndOpenProfile() {
         try {
-            console.log('🔄 Loading profile modal module...');
-            const profileModule = await import('./profileModal.js');
+            // Check if module is already in module cache
+            if (window.profileModal) {
+                console.log('✅ Profile modal found in cache, opening...');
+                window.profileModal.open();
+                return;
+            }
             
-            // Wait a moment for module to initialize
-            await new Promise(resolve => setTimeout(resolve, 100));
+            // Dynamic import with timeout
+            const importPromise = import('./profileModal.js');
+            const timeoutPromise = new Promise((_, reject) => 
+                setTimeout(() => reject(new Error('Profile modal import timeout')), 3000)
+            );
+            
+            await Promise.race([importPromise, timeoutPromise]);
+            
+            // Small delay to ensure module is fully initialized
+            await new Promise(resolve => setTimeout(resolve, 50));
             
             if (window.profileModal && typeof window.profileModal.open === 'function') {
+                console.log('✅ Profile modal loaded successfully, opening...');
                 window.profileModal.open();
             } else {
-                throw new Error('Profile modal still not available after loading');
+                throw new Error('Profile modal not available after loading');
             }
+            
         } catch (error) {
             console.error('🚨 Failed to load profile modal:', error);
-            // Final fallback: navigate to profile page
-            window.location.href = '/profile';
+            this.showProfileFallback();
         }
+    }
+
+    /**
+     * Show fallback when profile modal fails
+     */
+    showProfileFallback() {
+        console.log('🔄 Using profile fallback navigation');
+        // Show a brief message and navigate
+        if (window.showInfo) {
+            showInfo('Loading profile page...');
+        }
+        setTimeout(() => {
+            window.location.href = '/profile';
+        }, 500);
+    }
+
+    /**
+     * Fallback method to load and open profile modal
+     * @deprecated - kept for backward compatibility
+     */
+    async fallbackOpenProfile() {
+        // Redirect to new method
+        await this.loadAndOpenProfile();
     }
 
     /**
