@@ -79,7 +79,7 @@ class Config:
     RATE_LIMITING = {
         'ENABLED': os.getenv('RATE_LIMITING_ENABLED', 'true').lower() == 'true',
         'AUTH_ATTEMPTS_PER_MINUTE': int(os.getenv('AUTH_ATTEMPTS_PER_MINUTE', '5')),
-        'AUTH_ATTEMPTS_PER_HOUR': int(os.getenv('AUTH_ATTEMPTS_PER_HOUR', '20')),
+        'AUTH_ATTEMPTS_PER_HOUR': int(os.getenv('AUTH_ATTEMPTS_PER_HOUR', '5')),
     }
 
     # Credit System Configuration
