@@ -1,0 +1,88 @@
+/* Skeleton UI Styles - Only loaded for app page */
+
+.skeleton-ui {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: #f8f9fa;
+    opacity: 1;
+    visibility: visible;
+    transition: all 0.3s ease-in-out;
+    z-index: 9998;
+}
+
+.skeleton-ui.hiding {
+    opacity: 0;
+    visibility: hidden;
+}
+
+.skeleton-header {
+    height: 60px;
+    background: #fff;
+    border-bottom: 1px solid #e9ecef;
+    display: flex;
+    align-items: center;
+    padding: 0 1rem;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.skeleton-brand {
+    width: 200px;
+    height: 32px;
+    background: linear-gradient(90deg, #e9ecef 25%, #f8f9fa 50%, #e9ecef 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+    border-radius: 4px;
+}
+
+.skeleton-nav {
+    margin-left: auto;
+    display: flex;
+    gap: 1rem;
+}
+
+.skeleton-nav-item {
+    width: 80px;
+    height: 32px;
+    background: linear-gradient(90deg, #e9ecef 25%, #f8f9fa 50%, #e9ecef 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+    border-radius: 4px;
+}
+
+.skeleton-main {
+    display: flex;
+    height: calc(100vh - 60px);
+    padding: 1rem;
+    gap: 1rem;
+}
+
+.skeleton-column {
+    flex: 1;
+    background: #fff;
+    border-radius: 8px;
+    padding: 1rem;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.skeleton-content {
+    width: 100%;
+    height: 20px;
+    background: linear-gradient(90deg, #e9ecef 25%, #f8f9fa 50%, #e9ecef 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+    border-radius: 4px;
+    margin-bottom: 1rem;
+}
+
+.skeleton-content:nth-child(2) { width: 80%; }
+.skeleton-content:nth-child(3) { width: 60%; }
+.skeleton-content:nth-child(4) { width: 90%; }
+.skeleton-content:nth-child(5) { width: 70%; }
+
+@keyframes shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+}

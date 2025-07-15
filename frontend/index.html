@@ -232,33 +232,6 @@
         </div>
     </div>
     
-    <!-- **NEW: Skeleton UI for better loading experience** -->
-    <div class="skeleton-ui" id="skeletonUI">
-        <div class="skeleton-header">
-            <div class="skeleton-brand"></div>
-            <div class="skeleton-nav">
-                <div class="skeleton-nav-item"></div>
-                <div class="skeleton-nav-item"></div>
-                <div class="skeleton-nav-item"></div>
-            </div>
-        </div>
-        <div class="skeleton-main">
-            <div class="skeleton-column">
-                <div class="skeleton-content"></div>
-                <div class="skeleton-content"></div>
-                <div class="skeleton-content"></div>
-                <div class="skeleton-content"></div>
-                <div class="skeleton-content"></div>
-            </div>
-            <div class="skeleton-column">
-                <div class="skeleton-content"></div>
-                <div class="skeleton-content"></div>
-                <div class="skeleton-content"></div>
-                <div class="skeleton-content"></div>
-                <div class="skeleton-content"></div>
-            </div>
-        </div>
-    </div>
     
     <!-- Main App Container -->
     <div id="appContainer">
@@ -318,34 +291,18 @@
                 console.log('🎨 Step 5: Waiting for DOM stability...');
                 await appConfig.delay('cssLoadWaitTime');
                 
-                // **NEW: Transition from loading to skeleton UI**
-                console.log('🎨 Step 5.5: Transitioning to skeleton UI...');
+                // **UPDATED: Direct transition from loading to content**
+                console.log('🎨 Step 5.5: Transitioning from loading screen...');
                 const loadingScreen = document.getElementById('appLoading');
-                const skeletonUI = document.getElementById('skeletonUI');
                 
-                if (loadingScreen && skeletonUI) {
+                if (loadingScreen) {
                     // Hide loading screen
                     loadingScreen.style.opacity = '0';
                     
-                    // **FIXED: Only show skeleton UI for initial app page load, not page transitions**
-                    const isNavigatingToApp = window.location.pathname === '/app' || window.location.pathname === '/';
-                    
-                    if (isNavigatingToApp) {
-                        // Show skeleton UI only for app page
-                        setTimeout(() => {
-                            loadingScreen.style.display = 'none';
-                            document.body.classList.add('css-loaded');
-                            skeletonUI.style.opacity = '1';
-                            skeletonUI.style.visibility = 'visible';
-                        }, 300);
-                    } else {
-                        // For other pages, skip skeleton UI completely
-                        setTimeout(() => {
-                            loadingScreen.style.display = 'none';
-                            document.body.classList.add('css-loaded');
-                            // Keep skeleton hidden for non-app pages
-                        }, 300);
-                    }
+                    setTimeout(() => {
+                        loadingScreen.style.display = 'none';
+                        document.body.classList.add('css-loaded');
+                    }, 300);
                 }
                 
                 // STEP 6: Initialize router system
@@ -355,31 +312,11 @@
                 // STEP 7: Complete UI transition
                 console.log('✨ Step 7: Completing UI transition...');
                 
-                // **OPTIMIZED: Transition from skeleton to final app**
+                // **OPTIMIZED: Direct transition to final app**
                 const appContainer = document.getElementById('appContainer');
 
-                if (skeletonUI && appContainer) {
-                    // **FIXED: Only transition skeleton if it was actually shown**
-                    const skeletonIsVisible = skeletonUI.style.opacity === '1' && skeletonUI.style.visibility === 'visible';
-                    
-                    if (skeletonIsVisible) {
-                        // Hide skeleton UI and show app
-                        skeletonUI.style.opacity = '0';
-                        appContainer.style.opacity = '1';
-                        
-                        setTimeout(() => {
-                            skeletonUI.style.display = 'none';
-                            document.body.classList.add('app-ready');
-                            document.body.classList.remove('css-loaded');
-                        }, 300);
-                    } else {
-                        // No skeleton was shown, just ensure app is visible
-                        appContainer.style.opacity = '1';
-                        document.body.classList.add('app-ready');
-                        document.body.classList.remove('css-loaded');
-                    }
-                } else if (appContainer) {
-                    // Fallback: just ensure app container is visible
+                if (appContainer) {
+                    // Show app container directly
                     appContainer.style.opacity = '1';
                     document.body.classList.add('app-ready');
                     document.body.classList.remove('css-loaded');

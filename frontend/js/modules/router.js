@@ -1053,6 +1053,10 @@ class Router {
                 console.log('✅ Already on app page, skipping HTML injection');
                 // If we're already on the app page, we don't need to load HTML
                 // Just ensure auth and initialize
+            } else {
+                // **NEW: Inject skeleton UI before loading actual content**
+                console.log('🦴 Injecting app skeleton UI...');
+                this.injectAppSkeleton();
             }
 
             // **OPTIMIZED: Pre-load CSS to eliminate flash**
@@ -1065,7 +1069,8 @@ class Router {
                     '/css/components.css', 
                     '/css/themes.css',
                     '/css/table-of-contents.css',
-                    '/css/formatting.css'
+                    '/css/formatting.css',
+                    '/css/skeleton.css'  // Add skeleton CSS for app page
                 ];
                 
                 const cssPromises = requiredCSS.map(href => {
@@ -1166,6 +1171,10 @@ class Router {
                 const bodyContent = doc.body.innerHTML;
                 
                 // **IMPROVED: Inject content with CSS already loaded and ensure proper styling**
+                // First, remove skeleton if present
+                this.removeAppSkeleton();
+                
+                // Then inject the actual content
                 appContainer.innerHTML = bodyContent;
                 
                 // Ensure critical layout classes are applied
@@ -2423,6 +2432,65 @@ class Router {
         return sessionManager.user;
     }
 
+    /**
+     * NEW: Inject app skeleton UI while loading
+     */
+    injectAppSkeleton() {
+        const appContainer = document.getElementById('appContainer');
+        if (!appContainer) return;
+        
+        // Create skeleton HTML matching app structure
+        const skeletonHTML = `
+            <div class="skeleton-ui" id="appSkeletonUI">
+                <div class="skeleton-header">
+                    <div class="skeleton-brand"></div>
+                    <div class="skeleton-nav">
+                        <div class="skeleton-nav-item"></div>
+                        <div class="skeleton-nav-item"></div>
+                        <div class="skeleton-nav-item"></div>
+                    </div>
+                </div>
+                <div class="skeleton-main">
+                    <div class="skeleton-column">
+                        <div class="skeleton-content"></div>
+                        <div class="skeleton-content"></div>
+                        <div class="skeleton-content"></div>
+                        <div class="skeleton-content"></div>
+                        <div class="skeleton-content"></div>
+                    </div>
+                    <div class="skeleton-column">
+                        <div class="skeleton-content"></div>
+                        <div class="skeleton-content"></div>
+                        <div class="skeleton-content"></div>
+                        <div class="skeleton-content"></div>
+                        <div class="skeleton-content"></div>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        // Inject skeleton
+        appContainer.innerHTML = skeletonHTML;
+        console.log('🦴 App skeleton UI injected');
+    }
+    
+    /**
+     * NEW: Remove app skeleton UI before injecting real content
+     */
+    removeAppSkeleton() {
+        const skeleton = document.getElementById('appSkeletonUI');
+        if (skeleton) {
+            // Add hiding class for smooth transition
+            skeleton.classList.add('hiding');
+            
+            // Remove after transition
+            setTimeout(() => {
+                skeleton.remove();
+                console.log('🦴 App skeleton UI removed');
+            }, 300);
+        }
+    }
+    
     /**
      * NEW: Clean up resources of the current page before navigating away
      */
