@@ -1100,6 +1100,26 @@ body.mobile-layout .main-container .column:last-child {
     border-top: 1px solid var(--border-color);
 }
 
+/* Export status message styling */
+#status {
+    color: var(--text-primary);
+    font-weight: 500;
+    padding: 8px 12px;
+    border-radius: 6px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    margin-right: 12px;
+    min-width: 200px;
+    text-align: center;
+}
+
+/* Dark mode support for export status */
+html[data-theme="dark"] #status {
+    background: var(--bg-secondary) !important;
+    border-color: var(--border-color) !important;
+    color: var(--text-primary) !important;
+}
+
 /* Force vertical layout for export options */
 #exportModal .export-options {
     display: flex !important;
@@ -1611,6 +1631,18 @@ main {
 .credits-display.low-credits:hover {
     background: #f39c12;
     color: white;
+}
+
+/* Dark mode support for low credits display */
+html[data-theme="dark"] .credits-display.low-credits {
+    background: rgba(255, 193, 7, 0.2) !important;
+    border-color: #ffc107 !important;
+    color: #ffc107 !important;
+}
+
+html[data-theme="dark"] .credits-display.low-credits:hover {
+    background: rgba(255, 193, 7, 0.3) !important;
+    color: #ffffff !important;
 }
 
 .credits-icon {
@@ -2267,6 +2299,29 @@ main {
     margin-right: 0.75rem !important;
     flex-shrink: 0 !important;
   }
+
+/* Ensure all credit modal list items have consistent styling */
+#lowCreditsModal .modal-content ul li {
+    background: var(--bg-secondary) !important;
+    border: 1px solid var(--border-color) !important;
+    color: var(--text-primary) !important;
+    font-weight: 500 !important;
+    opacity: 1 !important;
+}
+
+/* Dark mode support for credit modal list items */
+html[data-theme="dark"] #lowCreditsModal .modal-content ul li {
+    background: var(--bg-secondary) !important;
+    border-color: var(--border-color) !important;
+    color: var(--text-primary) !important;
+}
+
+/* Ensure hover states are consistent */
+#lowCreditsModal .modal-content ul li:hover {
+    background: rgba(102, 126, 234, 0.06) !important;
+    border-color: var(--primary-color) !important;
+    transform: translateY(-1px) !important;
+}
 
 /* ============================================================================
    APPLICATION INITIALIZATION STATES
