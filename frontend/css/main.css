@@ -1616,9 +1616,16 @@ main {
 
 .credits-display:hover {
     background: var(--accent-color);
-    color: white;
     transform: translateY(-1px);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* Ensure all text inside credits display is white on hover */
+.credits-display:hover,
+.credits-display:hover .credits-icon,
+.credits-display:hover .credits-value,
+.credits-display:hover .credits-label {
+    color: white !important;
 }
 
 .credits-display.low-credits {

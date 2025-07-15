@@ -124,7 +124,7 @@
 }
 
 .tab-btn:hover {
-    color: var(--text-primary, #2d3748);
+    color: white !important; /* White text on hover for better contrast */
 }
 
 .tab-btn.active {
@@ -134,7 +134,8 @@
 
 /* Fix hover state for active tab to maintain readability */
 .tab-btn.active:hover {
-    color: var(--accent-color, #667eea);
+    color: white !important; /* White text on blue background for better contrast */
+    background: var(--accent-color-dark, #5a67d8); /* Slightly darker blue on hover */
 }
 
 /* Content */
