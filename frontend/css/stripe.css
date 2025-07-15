@@ -111,6 +111,27 @@
     letter-spacing: 0.5px;
 }
 
+/* Best Value badge with green color */
+.best-value-badge {
+    position: absolute;
+    top: -1px;
+    right: 20px;
+    background: linear-gradient(135deg, #10b981, #059669);
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 0 0 8px 8px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Style for best-value card */
+.package-card.best-value {
+    border-color: #10b981;
+    background: linear-gradient(135deg, var(--card-background) 0%, rgba(16, 185, 129, 0.05) 100%);
+}
+
 .package-header {
     text-align: center;
     margin-bottom: 1.25rem; /* Reduced margin for more compact design */
@@ -181,8 +202,8 @@
     color: white;
     border: none;
     border-radius: 8px;
-    padding: 1rem 1.5rem;
-    font-size: 1rem;
+    padding: 1.2rem 2rem; /* Increased padding for larger button */
+    font-size: 1.1rem; /* Increased font size */
     font-weight: 600;
     cursor: pointer;
     transition: all 0.3s ease;

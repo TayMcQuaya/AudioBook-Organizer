@@ -430,11 +430,13 @@ class StripeService {
      * Create package card HTML
      */
     createPackageCard(packageData) {
-        const isPopular = packageData.id === 'professional';
+        const isPopular = packageData.id === 'creator';
+        const isBestValue = packageData.id === 'professional';
         
         return `
-            <div class="package-card ${isPopular ? 'popular' : ''}" data-package-id="${packageData.id}">
+            <div class="package-card ${isPopular ? 'popular' : ''} ${isBestValue ? 'best-value' : ''}" data-package-id="${packageData.id}">
                 ${isPopular ? '<div class="popular-badge">Most Popular</div>' : ''}
+                ${isBestValue ? '<div class="best-value-badge">Best Value</div>' : ''}
                 
                 <div class="package-header">
                     <h4>${packageData.name}</h4>

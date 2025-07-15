@@ -1167,6 +1167,17 @@ html {
     font-weight: 600;
 }
 
+/* Best Value badge with green/success color */
+.pricing-badge.best-value-badge {
+    background: #10b981; /* Green for best value */
+    background: linear-gradient(135deg, #10b981, #059669);
+}
+
+/* Optional: Add subtle styling to best-value card */
+.pricing-card.best-value {
+    position: relative;
+}
+
 .pricing-header {
     margin-bottom: 1.5rem;
 }
@@ -1219,6 +1230,9 @@ html {
 .pricing-btn {
     width: 100%;
     justify-content: center;
+    padding: 1.2rem 2.2rem; /* Further increased padding for larger button */
+    font-size: 1.1rem; /* Larger font size to match credits modal */
+    font-weight: 600;
 }
 
 /* Integrated Trust Signals */
@@ -1262,6 +1276,15 @@ html {
     text-transform: uppercase;
     letter-spacing: 1px;
     margin-top: 0.25rem;
+}
+
+/* Ensure credits display text maintains original colors on card hover */
+.pricing-card:hover .credits-amount {
+    color: var(--primary-color) !important; /* Keep the blue color */
+}
+
+.pricing-card:hover .credits-label {
+    color: var(--text-secondary) !important; /* Keep the gray color */
 }
 
 /* Pricing Value Text */
