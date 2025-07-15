@@ -313,30 +313,34 @@ class ProfileModal {
 
         const { data, pagination } = this.usageHistory;
 
-        // Current balance display
+        // Current balance display - compact version
         const currentCredits = this.userData?.credits ?? 0;
         const balanceDisplay = `
-            <div class="current-balance">
-                <h3>Current Balance</h3>
-                <div class="balance-display">
-                    ${currentCredits} <span class="credit-icon">💎</span>
-                </div>
+            <div class="current-balance compact">
+                <h3>Balance: ${currentCredits} 💎</h3>
             </div>
         `;
 
-        // Filter options
+        // Get pagination HTML early to include in header
+        const paginationHTML = this.getPaginationHTML(pagination);
+        
+        // Combined filter and pagination header
         const filterOptions = `
-            <div class="history-filters">
-                <label for="action-filter">Filter by action:</label>
-                <select id="action-filter" onchange="window.safeProfileHandleFilterChange(this.value)">
-                    <option value="">All actions</option>
-                    <option value="audio_upload" ${this.actionFilter === 'audio_upload' ? 'selected' : ''}>Audio Upload</option>
-                    <option value="docx_processed" ${this.actionFilter === 'docx_processed' ? 'selected' : ''}>DOCX Processing</option>
-                    <option value="txt_upload" ${this.actionFilter === 'txt_upload' ? 'selected' : ''}>TXT Upload</option>
-                    <option value="premium_audio_export" ${this.actionFilter === 'premium_audio_export' ? 'selected' : ''}>Premium Export</option>
-                    <option value="credit_purchase" ${this.actionFilter === 'credit_purchase' ? 'selected' : ''}>Credit Purchase</option>
-                    <option value="gift_credits" ${this.actionFilter === 'gift_credits' ? 'selected' : ''}>Gifts Received</option>
-                </select>
+            <div class="history-controls">
+                <div class="history-filters compact">
+                    <select id="action-filter" onchange="window.safeProfileHandleFilterChange(this.value)">
+                        <option value="">All actions</option>
+                        <option value="audio_upload" ${this.actionFilter === 'audio_upload' ? 'selected' : ''}>Audio Upload</option>
+                        <option value="docx_processed" ${this.actionFilter === 'docx_processed' ? 'selected' : ''}>DOCX Processing</option>
+                        <option value="txt_upload" ${this.actionFilter === 'txt_upload' ? 'selected' : ''}>TXT Upload</option>
+                        <option value="premium_audio_export" ${this.actionFilter === 'premium_audio_export' ? 'selected' : ''}>Premium Export</option>
+                        <option value="credit_purchase" ${this.actionFilter === 'credit_purchase' ? 'selected' : ''}>Credit Purchase</option>
+                        <option value="gift_credits" ${this.actionFilter === 'gift_credits' ? 'selected' : ''}>Gifts Received</option>
+                    </select>
+                </div>
+                <div class="history-pagination-inline">
+                    ${paginationHTML}
+                </div>
             </div>
         `;
 
@@ -392,24 +396,30 @@ class ProfileModal {
         }).join('');
 
         const table = `
-            <table class="history-table">
-                <thead>
-                    <tr>
-                        <th>Date & Time</th>
-                        <th>Action</th>
-                        <th>Credits</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    ${tableRows || '<tr><td colspan="3">No usage history found</td></tr>'}
-                </tbody>
-            </table>
+            <div class="history-table-wrapper">
+                <table class="history-table">
+                    <thead>
+                        <tr>
+                            <th>Date & Time</th>
+                            <th>Action</th>
+                            <th>Credits</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${tableRows || '<tr><td colspan="3">No usage history found</td></tr>'}
+                    </tbody>
+                </table>
+            </div>
         `;
 
-        // Pagination
-        const paginationHTML = this.getPaginationHTML(pagination);
-
-        return balanceDisplay + filterOptions + table + paginationHTML;
+        // Wrap everything in a container for better layout control
+        return `
+            <div class="history-tab-container">
+                ${balanceDisplay}
+                ${filterOptions}
+                ${table}
+            </div>
+        `;
     }
 
     getSettingsTabHTML() {
@@ -451,16 +461,6 @@ class ProfileModal {
                     <p class="danger-warning">
                         Once you delete your account, there is no going back. This action cannot be undone.
                     </p>
-                    <p class="danger-info">
-                        This will permanently delete:
-                    </p>
-                    <ul class="danger-list">
-                        <li>Your profile and all personal data</li>
-                        <li>All your audiobook projects</li>
-                        <li>All uploaded audio files</li>
-                        <li>Your credit balance (${this.userData.credits || 0} credits)</li>
-                        <li>Your usage history</li>
-                    </ul>
                     <button class="btn btn-danger" onclick="window.safeProfileShowDeleteDialog()">
                         Delete Account
                     </button>
