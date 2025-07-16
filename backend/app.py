@@ -172,9 +172,11 @@ def create_app(config_name=None):
     @app.route('/debug/config', methods=['GET'])
     def debug_config():
         """Provide configuration information for frontend environment detection"""
+        flask_env = os.environ.get('FLASK_ENV', 'development')
         return jsonify({
             'testing_mode': app.config.get('TESTING_MODE', False),
             'environment': 'development' if app.config.get('DEBUG') else 'production',
+            'flask_env': flask_env,  # Add the actual FLASK_ENV value
             'temporary_password_configured': bool(app.config.get('TEMPORARY_PASSWORD')),
             'server_type': 'flask-dev' if app.config.get('DEBUG') else 'gunicorn-prod',
             'timestamp': datetime.now().isoformat()

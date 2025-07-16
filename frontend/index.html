@@ -272,6 +272,7 @@
         import { showError } from '/js/modules/notifications.js';
         import envManager from '/js/modules/envManager.js';
         import appConfig from '/js/config/appConfig.js';
+        import logger, { enableSecureLogging } from '/js/utils/logger.js';
         
         // Global app state
         window.isFrameworkInitialized = false;
@@ -293,6 +294,9 @@
             const startTime = Date.now();
             
             try {
+                // STEP 0: Enable secure logging if in production
+                enableSecureLogging();
+                
                 console.log('🚀 Starting AudioBook Organizer initialization...');
                 
                 // STEP 1: Initialize environment manager first (critical)

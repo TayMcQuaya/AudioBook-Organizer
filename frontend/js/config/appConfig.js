@@ -102,7 +102,10 @@ class AppConfig {
      * Initialize configuration based on environment
      */
     init(serverType = 'flask-dev', isTestingMode = false) {
-        console.log(`🔧 Initializing app config for ${serverType} (testing: ${isTestingMode})`);
+        // Hide server type in production logs
+        const isProduction = window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1';
+        const logServerType = isProduction ? '[server]' : serverType;
+        console.log(`🔧 Initializing app config for ${logServerType} (testing: ${isTestingMode})`);
         
         // Start with default config
         this.config = { ...defaultConfig };

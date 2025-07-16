@@ -204,3 +204,42 @@ All password reset functionality edge cases have been thoroughly tested and reso
 - `/frontend/css/auth-skeleton.css` - Added reset password specific skeleton styles
 
 The password reset flow is now stable and should work consistently in both development and production environments.
+
+## Production-Specific Fixes (July 17, 2025)
+
+### 1. **"Link Expired" Error in Production**
+   - **Issue**: Password reset showed "link expired" even though recovery mode was activated
+   - **Cause**: URL hash fragments were lost during production redirects/routing
+   - **Symptoms**: 
+     - sessionManager detected recovery token initially
+     - handlePasswordRecoveryPage couldn't find token in URL later
+   - **Fix**: Modified auth.js to check both URL token AND sessionManager.isPasswordRecovery state
+   ```javascript
+   // Now accepts recovery mode even if token not in current URL
+   if (hasRecoveryToken || sessionManager.isPasswordRecovery) {
+       console.log('🔑 Recovery state detected, waiting for Supabase to process...');
+   }
+   ```
+
+### 2. **Features Card Scrollbar in Production**
+   - **Issue**: Auth features card showed scrollbar in production but not locally
+   - **Cause**: 
+     - CSS had `max-height` with `overflow-y: auto`
+     - Production font rendering/spacing differences triggered scrollbar
+   - **Fix**: Removed height constraints to show all content without scrolling
+   ```css
+   .auth-body .auth-features {
+       /* Removed: max-height: calc(100vh - var(--auth-nav-height) - 3rem); */
+       /* Changed: overflow-y: auto → overflow: visible */
+       height: fit-content;
+       overflow: visible;
+   }
+   ```
+
+### Key Production Considerations
+1. **URL Hash Handling**: Production routing may strip hash fragments more aggressively
+2. **Font Rendering**: Production servers may render fonts differently affecting layout
+3. **CDN/Proxy Effects**: Additional layers in production can affect URL handling
+4. **Browser Differences**: Production users may use different browsers than development
+
+These fixes ensure consistent behavior across development and production environments.

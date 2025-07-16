@@ -1,4 +1,8 @@
 import { initAuthPage as initialize, cleanupAuthPage as cleanup } from './auth.js';
+import { enableSecureLogging } from '/js/utils/logger.js';
+
+// Enable secure logging for auth pages
+enableSecureLogging();
 
 console.log('🚀 Auth main.js loaded');
 

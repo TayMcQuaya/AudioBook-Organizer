@@ -122,14 +122,20 @@ export async function apiFetch(endpoint, options = {}) {
         },
     };
 
-    console.log('🌐 API Request:', url, finalOptions.method || 'GET');
+    // Sanitize URL for logging - hide sensitive paths in production
+    const isProduction = window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1';
+    const sanitizedUrl = isProduction
+        ? url.replace(/\/api\/[^?]*/g, '/api/[endpoint]')  // Hide endpoint details in production
+        : url;  // Show full URL in development
+    
+    console.log('🌐 API Request:', sanitizedUrl, finalOptions.method || 'GET');
     
     try {
         const response = await fetch(url, finalOptions);
-        console.log('🌐 API Response:', url, response.status);
+        console.log('🌐 API Response:', sanitizedUrl, response.status);
         return response;
     } catch (error) {
-        console.error('🌐 API Error:', url, error.message);
+        console.error('🌐 API Error:', sanitizedUrl, error.message);
         throw error;
     }
 }
