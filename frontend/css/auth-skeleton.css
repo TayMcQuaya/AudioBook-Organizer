@@ -1,0 +1,388 @@
+/* Auth Pages Skeleton UI Styles - Matches actual auth page structure */
+
+.auth-skeleton-ui {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    /* Match the auth page gradient background */
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    opacity: 1;
+    visibility: visible;
+    transition: all 0.3s ease-in-out;
+    z-index: 9998;
+}
+
+.auth-skeleton-ui.hiding {
+    opacity: 0;
+    visibility: hidden;
+}
+
+/* Navigation skeleton - matches auth-nav */
+.auth-skeleton-nav {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 60px;
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    z-index: 10;
+}
+
+.auth-skeleton-nav-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 2rem;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.auth-skeleton-brand {
+    width: 200px;
+    height: 32px;
+    background: linear-gradient(90deg, rgba(255,255,255,0.3) 25%, rgba(255,255,255,0.2) 50%, rgba(255,255,255,0.3) 75%);
+    background-size: 200% 100%;
+    animation: authShimmer 1.5s infinite;
+    border-radius: 4px;
+}
+
+.auth-skeleton-nav-link {
+    width: 120px;
+    height: 24px;
+    background: linear-gradient(90deg, rgba(255,255,255,0.3) 25%, rgba(255,255,255,0.2) 50%, rgba(255,255,255,0.3) 75%);
+    background-size: 200% 100%;
+    animation: authShimmer 1.5s infinite;
+    border-radius: 4px;
+}
+
+/* Main content skeleton - matches auth-main */
+.auth-skeleton-main {
+    min-height: 100vh;
+    padding-top: 60px;
+    display: grid;
+    grid-template-columns: 1fr 300px;
+    gap: 1.5rem;
+    align-items: start;
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+/* Container skeleton - matches auth-container */
+.auth-skeleton-container {
+    width: 100%;
+    max-width: none;
+    margin: 1rem 0;
+    min-height: calc(100vh - 60px - 2rem);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Card skeleton - matches auth-card */
+.auth-skeleton-card {
+    width: 100%;
+    max-width: 380px;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(20px);
+    border-radius: 16px;
+    padding: 2rem;
+    box-shadow: 
+        0 15px 30px rgba(0, 0, 0, 0.1),
+        0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+/* Header skeleton */
+.auth-skeleton-header {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.auth-skeleton-title {
+    width: 180px;
+    height: 32px;
+    background: linear-gradient(90deg, #e9ecef 25%, #f8f9fa 50%, #e9ecef 75%);
+    background-size: 200% 100%;
+    animation: authShimmer 1.5s infinite;
+    border-radius: 4px;
+    margin: 0 auto 0.5rem;
+}
+
+.auth-skeleton-subtitle {
+    width: 280px;
+    height: 20px;
+    background: linear-gradient(90deg, #e9ecef 25%, #f8f9fa 50%, #e9ecef 75%);
+    background-size: 200% 100%;
+    animation: authShimmer 1.5s infinite;
+    border-radius: 4px;
+    margin: 0 auto;
+}
+
+/* Form skeleton */
+.auth-skeleton-form {
+    margin-top: 2rem;
+}
+
+.auth-skeleton-label {
+    width: 100px;
+    height: 16px;
+    background: linear-gradient(90deg, #e9ecef 25%, #f8f9fa 50%, #e9ecef 75%);
+    background-size: 200% 100%;
+    animation: authShimmer 1.5s infinite;
+    border-radius: 4px;
+    margin-bottom: 0.5rem;
+}
+
+.auth-skeleton-input {
+    width: 100%;
+    height: 44px;
+    background: linear-gradient(90deg, #e9ecef 25%, #f8f9fa 50%, #e9ecef 75%);
+    background-size: 200% 100%;
+    animation: authShimmer 1.5s infinite;
+    border-radius: 6px;
+    margin-bottom: 1.5rem;
+}
+
+/* Checkbox and link skeleton */
+.auth-skeleton-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin: 1rem 0;
+}
+
+.auth-skeleton-checkbox {
+    width: 120px;
+    height: 20px;
+    background: linear-gradient(90deg, #e9ecef 25%, #f8f9fa 50%, #e9ecef 75%);
+    background-size: 200% 100%;
+    animation: authShimmer 1.5s infinite;
+    border-radius: 4px;
+}
+
+.auth-skeleton-link {
+    width: 100px;
+    height: 20px;
+    background: linear-gradient(90deg, #e9ecef 25%, #f8f9fa 50%, #e9ecef 75%);
+    background-size: 200% 100%;
+    animation: authShimmer 1.5s infinite;
+    border-radius: 4px;
+}
+
+/* Button skeleton */
+.auth-skeleton-button {
+    width: 100%;
+    height: 48px;
+    background: linear-gradient(90deg, rgba(102,126,234,0.2) 25%, rgba(102,126,234,0.15) 50%, rgba(102,126,234,0.2) 75%);
+    background-size: 200% 100%;
+    animation: authShimmer 1.5s infinite;
+    border-radius: 12px;
+    margin-top: 1.5rem;
+}
+
+/* Divider skeleton */
+.auth-skeleton-divider {
+    display: flex;
+    align-items: center;
+    margin: 1.5rem 0;
+}
+
+.auth-skeleton-divider::before,
+.auth-skeleton-divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: #e9ecef;
+}
+
+.auth-skeleton-divider-text {
+    width: 30px;
+    height: 16px;
+    background: linear-gradient(90deg, #e9ecef 25%, #f8f9fa 50%, #e9ecef 75%);
+    background-size: 200% 100%;
+    animation: authShimmer 1.5s infinite;
+    border-radius: 4px;
+    margin: 0 1rem;
+}
+
+/* Google button skeleton */
+.auth-skeleton-google {
+    width: 100%;
+    height: 48px;
+    background: linear-gradient(90deg, #f5f5f5 25%, #fafafa 50%, #f5f5f5 75%);
+    background-size: 200% 100%;
+    animation: authShimmer 1.5s infinite;
+    border-radius: 12px;
+    border: 2px solid #e9ecef;
+}
+
+/* Footer skeleton */
+.auth-skeleton-footer {
+    text-align: center;
+    margin-top: 2rem;
+    padding-top: 1rem;
+    border-top: 1px solid #e9ecef;
+}
+
+.auth-skeleton-footer-text {
+    width: 200px;
+    height: 16px;
+    background: linear-gradient(90deg, #e9ecef 25%, #f8f9fa 50%, #e9ecef 75%);
+    background-size: 200% 100%;
+    animation: authShimmer 1.5s infinite;
+    border-radius: 4px;
+    margin: 0 auto;
+}
+
+@keyframes authShimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+}
+
+/* Features sidebar skeleton */
+.auth-skeleton-features {
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(20px);
+    border-radius: 16px;
+    padding: 1.5rem;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    align-self: start;
+    position: sticky;
+    top: calc(60px + 1rem);
+}
+
+.auth-skeleton-features-title {
+    width: 150px;
+    height: 28px;
+    background: linear-gradient(90deg, rgba(255,255,255,0.3) 25%, rgba(255,255,255,0.2) 50%, rgba(255,255,255,0.3) 75%);
+    background-size: 200% 100%;
+    animation: authShimmer 1.5s infinite;
+    border-radius: 4px;
+    margin: 0 auto 1.5rem;
+}
+
+.auth-skeleton-feature-item {
+    text-align: center;
+    padding: 1rem 0;
+}
+
+.auth-skeleton-feature-icon {
+    width: 40px;
+    height: 40px;
+    background: linear-gradient(90deg, rgba(255,255,255,0.3) 25%, rgba(255,255,255,0.2) 50%, rgba(255,255,255,0.3) 75%);
+    background-size: 200% 100%;
+    animation: authShimmer 1.5s infinite;
+    border-radius: 50%;
+    margin: 0 auto 0.5rem;
+}
+
+.auth-skeleton-feature-title {
+    width: 120px;
+    height: 20px;
+    background: linear-gradient(90deg, rgba(255,255,255,0.3) 25%, rgba(255,255,255,0.2) 50%, rgba(255,255,255,0.3) 75%);
+    background-size: 200% 100%;
+    animation: authShimmer 1.5s infinite;
+    border-radius: 4px;
+    margin: 0 auto 0.5rem;
+}
+
+.auth-skeleton-feature-desc {
+    width: 200px;
+    height: 16px;
+    background: linear-gradient(90deg, rgba(255,255,255,0.3) 25%, rgba(255,255,255,0.2) 50%, rgba(255,255,255,0.3) 75%);
+    background-size: 200% 100%;
+    animation: authShimmer 1.5s infinite;
+    border-radius: 4px;
+    margin: 0 auto;
+}
+
+/* Reset Password specific skeleton styles */
+.reset-password-skeleton .auth-skeleton-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 2rem;
+}
+
+.reset-password-skeleton .auth-skeleton-card {
+    max-width: 500px;
+    width: 100%;
+}
+
+.reset-password-skeleton .auth-skeleton-subtitle {
+    width: 320px !important;
+    height: 40px !important;
+    margin: 0 auto !important;
+}
+
+/* Password requirements skeleton */
+.auth-skeleton-requirements {
+    margin: 1.5rem 0;
+    padding: 1rem;
+    background: rgba(102, 126, 234, 0.05);
+    border-radius: 8px;
+    border: 1px solid rgba(102, 126, 234, 0.1);
+}
+
+.auth-skeleton-req-title {
+    width: 150px;
+    height: 20px;
+    background: linear-gradient(90deg, #e9ecef 25%, #f8f9fa 50%, #e9ecef 75%);
+    background-size: 200% 100%;
+    animation: authShimmer 1.5s infinite;
+    border-radius: 4px;
+    margin-bottom: 1rem;
+}
+
+.auth-skeleton-req-item {
+    width: 250px;
+    height: 16px;
+    background: linear-gradient(90deg, #e9ecef 25%, #f8f9fa 50%, #e9ecef 75%);
+    background-size: 200% 100%;
+    animation: authShimmer 1.5s infinite;
+    border-radius: 4px;
+    margin-bottom: 0.5rem;
+}
+
+.auth-skeleton-req-item:last-child {
+    margin-bottom: 0;
+}
+
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+    .auth-skeleton-main {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+        padding: 0.75rem;
+        padding-top: calc(60px + 0.75rem);
+    }
+    
+    .auth-skeleton-container {
+        margin: 0;
+        min-height: auto;
+    }
+    
+    .auth-skeleton-card {
+        padding: 1.5rem;
+        max-width: none;
+    }
+    
+    .auth-skeleton-nav-container {
+        padding: 0 1rem;
+    }
+    
+    .auth-skeleton-features {
+        display: none; /* Hide features on mobile */
+    }
+    
+    .reset-password-skeleton .auth-skeleton-container {
+        padding: 1rem;
+    }
+}

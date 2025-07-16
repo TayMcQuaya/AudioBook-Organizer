@@ -36,6 +36,68 @@
     position: relative !important;
 }
 
+/* App Container on Auth Pages */
+.auth-body #appContainer {
+    min-height: 100vh !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: transparent !important;
+}
+
+/* Reset Password Page Specific */
+.auth-body .auth-container:has(#resetCard) {
+    min-height: 100vh;
+    padding: 2rem;
+    box-sizing: border-box;
+}
+
+/* Ensure auth container is visible on reset password page */
+.auth-body > .auth-container,
+.auth-body #appContainer > .auth-container {
+    display: flex !important;
+}
+
+/* Fix auth container when nested in appContainer */
+.auth-body #appContainer .auth-container {
+    width: 100%;
+    max-width: none;
+    margin: 0;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    box-sizing: border-box;
+}
+
+/* Only show reset card on reset password page */
+.auth-body #appContainer #resetCard {
+    display: block !important;
+    width: 100%;
+    max-width: 500px;
+    margin: 0 auto;
+}
+
+/* Success cards should be controlled by JavaScript, not CSS */
+
+/* Ensure auth-container inside appContainer has proper layout */
+.auth-body #appContainer > .loading-overlay,
+.auth-body #appContainer > .auth-container {
+    position: relative;
+    width: 100%;
+    height: 100%;
+}
+
+/* Fix for reset password page structure */
+.auth-body #appContainer .loading-overlay + .auth-container {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
 /* Auth Background */
 .auth-body .auth-background {
     position: fixed;
@@ -714,6 +776,13 @@
     justify-content: center;
     z-index: 9999;
     backdrop-filter: blur(4px);
+}
+
+/* Ensure loading overlay is hidden when not needed */
+.auth-body .loading-overlay:not(.show) {
+    display: none !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
 }
 
 .auth-body .loading-overlay.show {

@@ -101,6 +101,7 @@ class Router {
         this.previousRoute = null;
         this.isInitialized = false;
         this.isLoading = false;
+        this.currentPath = null;
         
         // Bind methods
         this.navigate = this.navigate.bind(this);
@@ -505,6 +506,14 @@ class Router {
             return;
         }
         
+        // Prevent duplicate processing of password reset page
+        const requestedPath = path || window.location.pathname + window.location.search + window.location.hash;
+        const pathWithoutHash = requestedPath.split('#')[0];
+        if (pathWithoutHash === '/auth/reset-password' && this._processingResetPassword) {
+            console.log('🚫 Already processing password reset page, skipping duplicate');
+            return;
+        }
+        
         // **CRITICAL FIX: Prevent navigation away from password reset during recovery**
         if (sessionManager && sessionManager.isPasswordRecovery) {
             const currentPath = window.location.pathname;
@@ -522,11 +531,14 @@ class Router {
         
         // Extract pathname for route matching, but preserve full path for navigation
         const fullPath = path || window.location.pathname + window.location.search + window.location.hash;
+        this.currentPath = fullPath;
         let targetPath;
         
-        // Debug logging for path parsing
-        console.log('🔍 handleRoute - path input:', path);
-        console.log('🔍 handleRoute - fullPath:', fullPath);
+        // Debug logging for path parsing (sanitized to not expose tokens)
+        const sanitizedPath = path ? path.split('#')[0] : 'no path';
+        const sanitizedFullPath = fullPath.split('#')[0];
+        console.log('🔍 handleRoute - path input:', sanitizedPath);
+        console.log('🔍 handleRoute - fullPath:', sanitizedFullPath);
         
         if (path) {
             // If path contains #, we need to handle it specially
@@ -608,6 +620,11 @@ class Router {
             if (isPasswordRecovery && !route.requiresAuth && targetPath !== '/auth/reset-password') {
                 sessionManager.checkAndCleanupRecoveryState();
             }
+            
+            // Set processing flag for reset password page
+            if (targetPath === '/auth/reset-password') {
+                this._processingResetPassword = true;
+            }
 
             // Check authentication requirements
             if (route.requiresAuth && !isAuthenticated) {
@@ -664,6 +681,10 @@ class Router {
             showError('Failed to load page. Please try again.');
         } finally {
             this.isLoading = false;
+            // Clear processing flag for reset password page
+            if (targetPath === '/auth/reset-password') {
+                this._processingResetPassword = false;
+            }
         }
     }
     
@@ -1402,7 +1423,55 @@ class Router {
     // Load auth page
     async loadAuthPage() {
         try {
-            // **FIX: Ensure appContainer exists or create it for page transitions**
+            console.log('🔐 Loading auth page...');
+            
+            // Ensure all necessary CSS is loaded FIRST
+            const cssPromises = [];
+            
+            // Check and load main.css
+            if (!document.querySelector('link[href="/css/main.css"]')) {
+                const mainCSS = document.createElement('link');
+                mainCSS.rel = 'stylesheet';
+                mainCSS.href = '/css/main.css';
+                cssPromises.push(new Promise(resolve => {
+                    mainCSS.onload = resolve;
+                    mainCSS.onerror = resolve;
+                }));
+                document.head.appendChild(mainCSS);
+            }
+            
+            // Check and load auth.css
+            if (!document.querySelector('link[href="/css/auth.css"]')) {
+                const authCSS = document.createElement('link');
+                authCSS.rel = 'stylesheet';
+                authCSS.href = '/css/auth.css';
+                cssPromises.push(new Promise(resolve => {
+                    authCSS.onload = resolve;
+                    authCSS.onerror = resolve;
+                }));
+                document.head.appendChild(authCSS);
+            }
+            
+            // Check and load auth-skeleton.css
+            if (!document.querySelector('link[href="/css/auth-skeleton.css"]')) {
+                const skeletonCSS = document.createElement('link');
+                skeletonCSS.rel = 'stylesheet';
+                skeletonCSS.href = '/css/auth-skeleton.css';
+                cssPromises.push(new Promise(resolve => {
+                    skeletonCSS.onload = resolve;
+                    skeletonCSS.onerror = resolve;
+                }));
+                document.head.appendChild(skeletonCSS);
+            }
+            
+            // Wait for all CSS to load
+            if (cssPromises.length > 0) {
+                console.log('⏳ Waiting for CSS to load...');
+                await Promise.all(cssPromises);
+                console.log('✅ All CSS loaded');
+            }
+            
+            // Create or get appContainer
             let appContainer = document.getElementById('appContainer');
             if (!appContainer) {
                 console.log('🔧 Creating appContainer for auth page transition');
@@ -1411,17 +1480,14 @@ class Router {
                 appContainer.style.opacity = '0';
                 appContainer.style.transition = 'opacity 0.5s ease-in-out';
                 
-                // Replace the current page content with the container
+                // Clear body and add container
                 document.body.innerHTML = '';
                 document.body.appendChild(appContainer);
-                
-                // Restore necessary CSS links
-                if (!document.querySelector('link[href="/css/main.css"]')) {
-                    const mainCSS = document.createElement('link');
-                    mainCSS.rel = 'stylesheet';
-                    mainCSS.href = '/css/main.css';
-                    document.head.appendChild(mainCSS);
-                }
+                // Inject skeleton UI
+                this.injectAuthSkeleton();
+            } else {
+                // Inject skeleton into existing container
+                this.injectAuthSkeleton();
             }
 
             // Clean up app-specific resources only if actually leaving the app context
@@ -1480,6 +1546,12 @@ class Router {
             const scripts = doc.querySelectorAll('script');
             scripts.forEach(script => script.remove());
             
+            // Remove skeleton with fade effect
+            this.removeAuthSkeleton();
+            
+            // Wait a bit for skeleton to start fading
+            await new Promise(resolve => setTimeout(resolve, 100));
+            
             appContainer.innerHTML = doc.body.innerHTML;
 
             document.body.className = 'auth-body app-ready';
@@ -1504,7 +1576,14 @@ class Router {
     
     // Load password reset page
     async loadResetPasswordPage() {
+        // Prevent multiple loads of the same page
+        if (this._loadingResetPassword) {
+            console.log('⏳ Reset password page already loading, skipping duplicate load');
+            return;
+        }
+        
         try {
+            this._loadingResetPassword = true;
             console.log('🔐 Loading password reset page...');
             
             // First ensure all necessary CSS is loaded
@@ -1538,6 +1617,21 @@ class Router {
                 });
             }
             
+            // Load auth skeleton CSS
+            let authSkeletonCSS = document.querySelector('link[href="/css/auth-skeleton.css"]');
+            if (!authSkeletonCSS) {
+                console.log('📄 Loading auth-skeleton.css');
+                authSkeletonCSS = document.createElement('link');
+                authSkeletonCSS.rel = 'stylesheet';
+                authSkeletonCSS.href = '/css/auth-skeleton.css';
+                
+                await new Promise((resolve) => {
+                    authSkeletonCSS.onload = resolve;
+                    authSkeletonCSS.onerror = resolve;
+                    document.head.appendChild(authSkeletonCSS);
+                });
+            }
+            
             // **FIX: Create or get appContainer without clearing entire body**
             let appContainer = document.getElementById('appContainer');
             if (!appContainer) {
@@ -1552,12 +1646,18 @@ class Router {
                 document.body.innerHTML = '';
                 document.body.appendChild(appContainer);
                 
+                // Inject skeleton UI immediately
+                this.injectAuthSkeleton(true); // true for reset password skeleton
+                
                 // Restore scripts
                 scripts.forEach(script => {
                     if (!document.body.contains(script)) {
                         document.body.appendChild(script);
                     }
                 });
+            } else {
+                // Inject skeleton into existing container
+                this.injectAuthSkeleton(true); // true for reset password skeleton
             }
 
             // Set correct body class and remove conflicting assets
@@ -1577,6 +1677,12 @@ class Router {
             const doc = parser.parseFromString(html, 'text/html');
             const bodyContent = doc.body.innerHTML;
             
+            // Remove skeleton with fade effect
+            this.removeAuthSkeleton();
+            
+            // Wait a bit for skeleton to start fading
+            await new Promise(resolve => setTimeout(resolve, 100));
+            
             appContainer.innerHTML = bodyContent;
             
             // Fade in the content
@@ -1592,9 +1698,14 @@ class Router {
                 console.error("Auth module not initialized for password recovery page.");
                 showError("An error occurred. Please try again.");
             }
+            
+            // Reset the loading flag after successful load
+            this._loadingResetPassword = false;
         } catch (error) {
             console.error('Error loading reset password page:', error);
             showError('Failed to load the password reset page.');
+            // Reset the flag on error too
+            this._loadingResetPassword = false;
         }
     }
     
@@ -2520,6 +2631,13 @@ class Router {
         // CRITICAL FIX: Don't default to '/' if there's no state
         // This prevents unwanted navigation to landing page
         const path = event.state ? event.state.path : window.location.pathname + window.location.search + window.location.hash;
+        
+        // Prevent duplicate handling if we're already on the same path
+        if (this.isLoading || this.currentPath === path) {
+            console.log('🚫 Skipping popstate - already loading or same path');
+            return;
+        }
+        
         this.handleRoute(path, { ...(event.state || {}), isPopState: true });
     }
     
@@ -2605,6 +2723,141 @@ class Router {
             setTimeout(() => {
                 skeleton.remove();
                 console.log('🦴 App skeleton UI removed');
+            }, 300);
+        }
+    }
+    
+    /**
+     * Get auth skeleton HTML
+     */
+    getAuthSkeletonHTML() {
+        return `
+            <div class="auth-skeleton-ui" id="authSkeletonUI">
+                <div class="auth-skeleton-nav">
+                    <div class="auth-skeleton-nav-container">
+                        <div class="auth-skeleton-brand"></div>
+                        <div class="auth-skeleton-nav-link"></div>
+                    </div>
+                </div>
+                <div class="auth-skeleton-main">
+                    <div class="auth-skeleton-container">
+                        <div class="auth-skeleton-card">
+                            <div class="auth-skeleton-header">
+                                <div class="auth-skeleton-title"></div>
+                                <div class="auth-skeleton-subtitle"></div>
+                            </div>
+                            <div class="auth-skeleton-form">
+                                <div class="auth-skeleton-label"></div>
+                                <div class="auth-skeleton-input"></div>
+                                <div class="auth-skeleton-label"></div>
+                                <div class="auth-skeleton-input"></div>
+                                <div class="auth-skeleton-actions">
+                                    <div class="auth-skeleton-checkbox"></div>
+                                    <div class="auth-skeleton-link"></div>
+                                </div>
+                                <div class="auth-skeleton-button"></div>
+                                <div class="auth-skeleton-divider">
+                                    <div class="auth-skeleton-divider-text"></div>
+                                </div>
+                                <div class="auth-skeleton-google"></div>
+                            </div>
+                            <div class="auth-skeleton-footer">
+                                <div class="auth-skeleton-footer-text"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="auth-skeleton-features">
+                        <div class="auth-skeleton-features-title"></div>
+                        <div class="auth-skeleton-feature-item">
+                            <div class="auth-skeleton-feature-icon"></div>
+                            <div class="auth-skeleton-feature-title"></div>
+                            <div class="auth-skeleton-feature-desc"></div>
+                        </div>
+                        <div class="auth-skeleton-feature-item">
+                            <div class="auth-skeleton-feature-icon"></div>
+                            <div class="auth-skeleton-feature-title"></div>
+                            <div class="auth-skeleton-feature-desc"></div>
+                        </div>
+                        <div class="auth-skeleton-feature-item">
+                            <div class="auth-skeleton-feature-icon"></div>
+                            <div class="auth-skeleton-feature-title"></div>
+                            <div class="auth-skeleton-feature-desc"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+    
+    /**
+     * Get skeleton UI HTML for reset password page
+     */
+    getResetPasswordSkeletonHTML() {
+        return `
+            <div class="auth-skeleton-ui reset-password-skeleton" id="authSkeletonUI">
+                <div class="auth-skeleton-container centered">
+                    <div class="auth-skeleton-card">
+                        <div class="auth-skeleton-header">
+                            <div class="auth-skeleton-title"></div>
+                            <div class="auth-skeleton-subtitle" style="width: 320px; height: 40px; margin: 0 auto;"></div>
+                        </div>
+                        <div class="auth-skeleton-form">
+                            <div class="auth-skeleton-label"></div>
+                            <div class="auth-skeleton-input"></div>
+                            <div class="auth-skeleton-label"></div>
+                            <div class="auth-skeleton-input"></div>
+                            <!-- Password requirements skeleton -->
+                            <div class="auth-skeleton-requirements">
+                                <div class="auth-skeleton-req-title"></div>
+                                <div class="auth-skeleton-req-item"></div>
+                                <div class="auth-skeleton-req-item"></div>
+                                <div class="auth-skeleton-req-item"></div>
+                                <div class="auth-skeleton-req-item"></div>
+                                <div class="auth-skeleton-req-item"></div>
+                            </div>
+                            <div class="auth-skeleton-button"></div>
+                        </div>
+                        <div class="auth-skeleton-footer">
+                            <div class="auth-skeleton-footer-text"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+    
+    /**
+     * Inject auth skeleton UI
+     */
+    injectAuthSkeleton(isResetPassword = false) {
+        const appContainer = document.getElementById('appContainer');
+        if (!appContainer) return;
+        
+        // Check if skeleton already exists to prevent duplicates
+        if (document.getElementById('authSkeletonUI')) {
+            console.log('🦴 Auth skeleton already present, skipping injection');
+            return;
+        }
+        
+        appContainer.innerHTML = isResetPassword ? this.getResetPasswordSkeletonHTML() : this.getAuthSkeletonHTML();
+        console.log(`🦴 ${isResetPassword ? 'Reset password' : 'Auth'} skeleton UI injected`);
+    }
+    
+    /**
+     * Remove auth skeleton UI
+     */
+    removeAuthSkeleton() {
+        const skeleton = document.getElementById('authSkeletonUI');
+        if (skeleton) {
+            // Add hiding class for smooth transition
+            skeleton.classList.add('hiding');
+            
+            // Don't remove immediately, let the fade happen
+            setTimeout(() => {
+                if (skeleton.parentNode) {
+                    skeleton.remove();
+                }
+                console.log('🦴 Auth skeleton UI removed');
             }, 300);
         }
     }

@@ -225,4 +225,87 @@ Intercepts password reset tokens on the landing page and redirects to the correc
 - ✅ Recovery tokens are preserved through the redirect
 - ✅ No race conditions - early detection happens before any auth checks
 - ✅ Works with both hash fragments and query parameters
-- ✅ Handles both www and non-www domains correctly 
+- ✅ Handles both www and non-www domains correctly
+
+---
+
+## 🔧 **UI and Performance Fixes (July 17, 2025)**
+
+### 🚀 **New Issues Resolved**
+
+#### 1. **Skeleton UI Implementation**
+- **Problem**: CSS flashing during auth page transitions causing poor UX
+- **Solution**: 
+  - Created `auth-skeleton.css` with gradient backgrounds matching auth pages
+  - Implemented separate skeleton for reset password page (simpler structure)
+  - Added `getResetPasswordSkeletonHTML()` method in router.js
+
+#### 2. **Duplicate Page Loads**
+- **Problem**: Reset password page loading multiple times due to popstate events
+- **Fix**: 
+  ```javascript
+  // Track current path to prevent duplicate loads
+  this.currentPath = fullPath;
+  
+  // Prevent duplicate handling
+  if (this.isLoading || this.currentPath === path) {
+      console.log('🚫 Skipping popstate - already loading or same path');
+      return;
+  }
+  ```
+
+#### 3. **Reset Password UI Not Displaying**
+- **Problem**: Form loaded but not visible due to CSS issues
+- **Root Causes**:
+  - `.auth-card` had `display: none` by default
+  - Content injected into `#appContainer` lost styling context
+- **Fixes**:
+  ```css
+  /* Only show reset card on reset password page */
+  .auth-body #appContainer #resetCard {
+      display: block !important;
+      width: 100%;
+      max-width: 500px;
+      margin: 0 auto;
+  }
+  ```
+
+#### 4. **Sensitive Token Security**
+- **Problem**: Access tokens exposed in console logs
+- **Fix**: Sanitized all URL logging in router.js
+  ```javascript
+  const sanitizedPath = path ? path.split('#')[0] : 'no path';
+  console.log('🔍 handleRoute - path input:', sanitizedPath);
+  ```
+
+#### 5. **Success Card Showing on Wrong Pages**
+- **Problem**: "Check your email" message appearing on sign-in page
+- **Cause**: Overly broad CSS rules making all success cards visible
+- **Fix**: Removed broad rules, let JavaScript control visibility
+
+### 📊 **Performance Improvements**
+- Reduced duplicate page loads from 3 to 1
+- Eliminated CSS flash with proper skeleton UI
+- Faster perceived load time with skeleton placeholders
+
+### 🔐 **Security Enhancements**
+- No sensitive tokens in logs
+- Proper session state management during recovery
+- Cross-tab protection maintained
+
+### ✅ **Testing Confirmed**
+- Tested multiple times locally - consistent success
+- UI displays correctly with all fields visible
+- No duplicate loads or skeleton flashing
+- Password reset completes successfully
+
+### 🚀 **Production Readiness**
+The fixes should work in production with these considerations:
+1. **HTTPS Required**: Ensure production uses HTTPS
+2. **Domain Match**: Redirect URL must match exactly
+3. **CSP Headers**: May need adjustment for fonts/styles
+4. **Email Delays**: Production email may have different timing
+
+---
+
+**Current Status**: ✅ **FULLY FUNCTIONAL** - Password reset works reliably with improved UX and security

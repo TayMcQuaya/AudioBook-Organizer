@@ -231,20 +231,35 @@ function updateLandingPageForAuthenticatedUser(user) {
     // **SECURITY FIX: Removed email logging to prevent privacy exposure**
     console.log('🔄 Updating landing page for authenticated user');
     
+    // Check if user navigation already exists to prevent unnecessary recreation
+    const existingUserNav = document.querySelector('.user-navigation');
+    const existingCredits = document.getElementById('creditsDisplay');
+    
+    if (existingUserNav && existingCredits) {
+        console.log('✅ User navigation and credits already present, skipping recreation');
+        return;
+    }
+    
     // Create user navigation dropdown and initialize credits in the right order
     if (window.appUI && user) {
         // First initialize credit display to ensure it's positioned correctly
         import('../../js/modules/appUI.js').then(module => {
-            module.initializeCreditsDisplay();
-            console.log('💎 Credit display initialized for authenticated user on landing page');
+            if (!existingCredits) {
+                module.initializeCreditsDisplay();
+                console.log('💎 Credit display initialized for authenticated user on landing page');
+            }
             
             // Then create user navigation, which will position itself relative to credits
-            window.appUI.createUserNavigation(user);
-            console.log('👤 User navigation created after credits display');
+            if (!existingUserNav) {
+                window.appUI.createUserNavigation(user);
+                console.log('👤 User navigation created after credits display');
+            }
         }).catch(error => {
             console.error('Failed to initialize credit display:', error);
-            // Fallback: create user navigation anyway
-            window.appUI.createUserNavigation(user);
+            // Fallback: create user navigation anyway if not already present
+            if (!existingUserNav && window.appUI) {
+                window.appUI.createUserNavigation(user);
+            }
         });
     } else if (!window.appUI) {
         console.warn('⚠️ appUI not available, cannot create user navigation');
@@ -298,20 +313,45 @@ function updateLandingPageForUnauthenticatedUser() {
         console.log('💎 Credit display removed for unauthenticated user');
     }
     
-    // Restore primary action buttons to "Get Started"
-    const appButtons = document.querySelectorAll('a[href="/app"]');
-    appButtons.forEach(btn => {
-        btn.href = '/auth?mode=signup';
-        btn.innerHTML = '<span class="btn-icon">🚀</span>Get Started Free';
-        btn.style.display = 'inline-flex';
+    // Find all buttons that were converted to "Open App"
+    const convertedButtons = document.querySelectorAll('.btn-primary.get-started, a.btn-primary[href="/auth?mode=signup"]');
+    convertedButtons.forEach(btn => {
+        // Remove any click listeners that were added
+        const newBtn = btn.cloneNode(true);
+        btn.parentNode.replaceChild(newBtn, btn);
+        
+        // Restore the original attributes and content
+        if (newBtn.classList.contains('btn-large')) {
+            // This is the hero button
+            newBtn.href = '/auth?mode=signup';
+            newBtn.innerHTML = '<span class="btn-icon">🚀</span>Get Started Free';
+            newBtn.style.cursor = 'pointer';
+            newBtn.style.display = 'inline-flex';
+        }
+    });
+    
+    // Also check for any buttons that had href removed and were using click handlers
+    const openAppButtons = Array.from(document.querySelectorAll('.btn-primary')).filter(btn => 
+        btn.innerHTML.includes('Open App')
+    );
+    openAppButtons.forEach(btn => {
+        // Create a new anchor element to replace the button
+        const link = document.createElement('a');
+        link.href = '/auth?mode=signup';
+        link.className = btn.className;
+        link.innerHTML = '<span class="btn-icon">🚀</span>Get Started Free';
+        link.style.display = 'inline-flex';
+        btn.parentNode.replaceChild(link, btn);
     });
     
     // Show try demo buttons again and ensure correct text/action
-    const tryDemoButtons = document.querySelectorAll('.demo-btn');
+    const tryDemoButtons = document.querySelectorAll('.btn-secondary.btn-large');
     tryDemoButtons.forEach(btn => {
-        btn.style.display = 'inline-flex';
-        btn.innerHTML = '<span class="btn-icon">📚</span>Try Demo Now';
-        btn.setAttribute('onclick', 'tryAppDemo()');
+        if (btn.innerHTML.includes('Demo')) {
+            btn.style.display = 'inline-flex';
+            btn.innerHTML = '<span class="btn-icon">📚</span>Try Demo Now';
+            btn.setAttribute('onclick', 'tryAppDemo()');
+        }
     });
     
     // Show auth signup links again

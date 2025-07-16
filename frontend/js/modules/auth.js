@@ -1277,7 +1277,14 @@ class AuthModule {
     }
 
     handlePasswordRecoveryPage() {
+        // Prevent multiple initializations
+        if (this._passwordRecoveryPageInitialized) {
+            console.log("Password recovery page already initialized, skipping...");
+            return;
+        }
+        
         console.log("Setting up password recovery page...");
+        this._passwordRecoveryPageInitialized = true;
 
         const resetCard = document.getElementById('resetCard');
         const loadingOverlay = document.getElementById('loadingOverlay');
@@ -1286,24 +1293,71 @@ class AuthModule {
         if (!resetCard || !form) {
             console.error("Could not find required elements on the password reset page.");
             showError("An error occurred loading the page. Please try again.");
+            this._passwordRecoveryPageInitialized = false; // Reset on error
             return;
         }
 
         // Show loading overlay until we confirm recovery state
         loadingOverlay.classList.add('show');
         
-        // Wait for session manager to confirm recovery state
-        setTimeout(() => {
+        // Check if we have recovery token in URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const hashParams = new URLSearchParams(window.location.hash.substring(1));
+        const hasRecoveryToken = urlParams.get('type') === 'recovery' || 
+                               hashParams.get('type') === 'recovery' ||
+                               window.location.hash.includes('type=recovery');
+        
+        // If we're on the reset password page with a recovery token, immediately activate recovery mode
+        if (hasRecoveryToken && !sessionManager.isPasswordRecovery) {
+            console.log('🔑 Recovery token detected - forcing recovery mode activation');
+            sessionManager.activatePasswordRecovery();
+        }
+        
+        // Function to check and show reset form
+        const checkAndShowResetForm = () => {
             if (sessionManager.isPasswordRecovery) {
+                console.log('✅ Password recovery state confirmed, showing reset form');
                 loadingOverlay.classList.remove('show');
                 resetCard.style.display = 'block';
                 this.setupPasswordResetForm();
-            } else {
-                showError("Invalid or expired password reset link.");
-                // Redirect to login after a delay
-                setTimeout(() => window.router.navigate('/auth'), 3000);
+                return true;
             }
-        }, 500); // Shortened delay
+            return false;
+        };
+        
+        // If we have a recovery token, wait a bit longer for Supabase to process
+        if (hasRecoveryToken) {
+            console.log('🔑 Recovery token detected in URL, waiting for Supabase to process...');
+            
+            // Try multiple times with increasing delays
+            let attempts = 0;
+            const maxAttempts = 5;
+            
+            const tryShowForm = () => {
+                attempts++;
+                if (checkAndShowResetForm()) {
+                    return;
+                }
+                
+                if (attempts < maxAttempts) {
+                    console.log(`⏳ Attempt ${attempts}/${maxAttempts}: Waiting for recovery state...`);
+                    setTimeout(tryShowForm, 500 * attempts); // Exponential backoff
+                } else {
+                    console.error('❌ Failed to confirm recovery state after multiple attempts');
+                    showError("Failed to load password reset form. Please try refreshing the page.");
+                    loadingOverlay.classList.remove('show');
+                }
+            };
+            
+            // Start checking after initial delay
+            setTimeout(tryShowForm, 500);
+        } else {
+            // No recovery token, show error immediately
+            console.error('❌ No recovery token found in URL');
+            loadingOverlay.classList.remove('show');
+            showError("Invalid or expired password reset link.");
+            setTimeout(() => window.router.navigate('/auth'), 3000);
+        }
     }
     
     setupPasswordResetForm() {
