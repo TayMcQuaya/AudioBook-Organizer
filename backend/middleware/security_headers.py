@@ -17,7 +17,7 @@ def add_security_headers(response):
         "default-src 'self'; "
         "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com https://cdn.jsdelivr.net https://www.google.com https://www.gstatic.com https://unpkg.com; "
         "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
-        "font-src 'self' https://fonts.gstatic.com; "
+        "font-src 'self' https://fonts.gstatic.com data:; "
         "img-src 'self' data: https:; "
         f"connect-src 'self' https://api.stripe.com https://*.supabase.co {app_domain} https://www.google.com; "
         "frame-src https://js.stripe.com https://www.google.com; "

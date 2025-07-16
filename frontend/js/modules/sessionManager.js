@@ -519,6 +519,24 @@ class SessionManager {
         this.notifyStateChange();
     }
 
+    /**
+     * Check and cleanup expired recovery state when navigating to non-recovery pages
+     */
+    checkAndCleanupRecoveryState() {
+        if (!this.isPasswordRecovery) {
+            return;
+        }
+        
+        const globalRecoveryState = this.getGlobalRecoveryState();
+        if (globalRecoveryState && this.isRecoveryStateExpired(globalRecoveryState)) {
+            console.log('🚮 Cleaning up expired password recovery state during navigation');
+            this.clearPasswordRecoveryFlag();
+        } else if (this.isPasswordRecovery) {
+            console.log('🔑 Clearing recovery state - user navigated away from password reset');
+            this.clearPasswordRecoveryFlag();
+        }
+    }
+
     // **REMOVED: Cross-tab recovery handling - password reset should be tab-isolated**
 
     /**
