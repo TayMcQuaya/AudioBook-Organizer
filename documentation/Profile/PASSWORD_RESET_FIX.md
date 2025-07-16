@@ -154,4 +154,75 @@ All existing security features remain intact:
 ---
 
 **Status**: ✅ **FIXED** - Password recovery now works with full security protection maintained!
-**Security Level**: 🔐 **ENHANCED** - Eliminates false positives while preserving all real protections 
+**Security Level**: 🔐 **ENHANCED** - Eliminates false positives while preserving all real protections
+
+---
+
+## 🚀 **Production Deployment Fix (Digital Ocean)**
+
+### 🔍 **New Issue Discovered**
+Password reset worked locally but failed in production after moving from Vercel to Digital Ocean. Users clicking reset links were redirected to the landing page instead of the password reset page.
+
+### 🐛 **Root Cause**
+1. **Hash Fragment Loss**: Supabase sends recovery tokens as URL hash fragments (`#access_token=...&type=recovery`)
+2. **Server-Side Routing**: Hash fragments are NOT sent to servers - they're client-side only
+3. **Flask Routing**: When Flask serves `/auth/reset-password`, it returns `index.html` WITHOUT the hash fragment
+4. **Result**: Recovery token is lost before client-side JavaScript can process it
+
+### ✅ **Multi-Layer Fix Implemented**
+
+#### 1. **Domain Redirect Exception** (`backend/middleware/domain_redirect.py`)
+```python
+def redirect_to_www(self):
+    # Skip redirect for password reset routes to preserve hash fragments
+    if request.path == '/auth/reset-password':
+        return None
+```
+Prevents domain redirect from stripping hash fragments on password reset routes.
+
+#### 2. **Explicit Domain in Reset Emails** (`frontend/js/modules/auth.js`)
+```javascript
+// Use explicit www domain in production for password reset
+const redirectUrl = window.location.hostname === 'localhost' 
+    ? `${window.location.origin}/auth/reset-password`
+    : 'https://www.audiobookorganizer.com/auth/reset-password';
+```
+Ensures reset emails always use the correct production domain.
+
+#### 3. **Early Token Detection** (`frontend/index.html`)
+```javascript
+// Check for password reset token BEFORE any other initialization
+(function() {
+    const path = window.location.pathname;
+    const hash = window.location.hash;
+    const search = window.location.search;
+    
+    // Only check if we're on the root/landing page
+    if (path === '/' || path === '' || path === '/index.html') {
+        // Check for recovery token in hash or query params
+        if ((hash && (hash.includes('type=recovery') || hash.includes('type=email_change'))) ||
+            (search && (search.includes('type=recovery') || search.includes('type=email_change')))) {
+            // Redirect to password reset page with all parameters
+            window.location.replace('/auth/reset-password' + search + hash);
+        }
+    }
+})();
+```
+Intercepts password reset tokens on the landing page and redirects to the correct page immediately.
+
+### 📋 **Supabase Configuration Required**
+1. Go to Authentication → URL Configuration
+2. Set Site URL to: `https://www.audiobookorganizer.com`
+3. Add to Redirect URLs:
+   ```
+   https://www.audiobookorganizer.com/**
+   https://audiobookorganizer.com/**
+   http://localhost:3000/**
+   ```
+
+### 🎯 **Result**
+- ✅ Clicking reset link now redirects to password reset page
+- ✅ Recovery tokens are preserved through the redirect
+- ✅ No race conditions - early detection happens before any auth checks
+- ✅ Works with both hash fragments and query parameters
+- ✅ Handles both www and non-www domains correctly 

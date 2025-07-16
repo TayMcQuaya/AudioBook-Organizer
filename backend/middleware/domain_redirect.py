@@ -26,6 +26,10 @@ class DomainRedirectMiddleware:
         if os.getenv('FLASK_ENV', 'development') == 'development':
             return None
         
+        # Skip redirect for password reset routes to preserve hash fragments
+        if request.path == '/auth/reset-password':
+            return None
+        
         host = request.headers.get('Host', '').lower()
         
         # Check if request is to non-www audiobookorganizer.com

@@ -40,6 +40,26 @@
     <!-- **SECURITY FIX: Removed console logging to prevent system information exposure** -->
     <script src="https://js.stripe.com/v3/" onload="window.stripeJsLoaded = true;" onerror="window.stripeJsLoadError = true;"></script>
     
+    <!-- Password Reset Early Handler -->
+    <script>
+        // Check for password reset token BEFORE any other initialization
+        (function() {
+            const path = window.location.pathname;
+            const hash = window.location.hash;
+            const search = window.location.search;
+            
+            // Only check if we're on the root/landing page
+            if (path === '/' || path === '' || path === '/index.html') {
+                // Check for recovery token in hash or query params
+                if ((hash && (hash.includes('type=recovery') || hash.includes('type=email_change'))) ||
+                    (search && (search.includes('type=recovery') || search.includes('type=email_change')))) {
+                    // Redirect to password reset page with all parameters
+                    window.location.replace('/auth/reset-password' + search + hash);
+                }
+            }
+        })();
+    </script>
+    
     <!-- Critical inline styles for initial load -->
     <style>
         /* Critical loading styles */
