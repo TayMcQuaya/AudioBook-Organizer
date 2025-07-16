@@ -150,7 +150,9 @@ class Router {
             await appConfig.delay('initializationDelay');
             
             // STEP 10: Handle initial route
-            await this.handleRoute(window.location.pathname + window.location.search);
+            // **FIX: Include hash in initial route to preserve recovery tokens**
+            const initialPath = window.location.pathname + window.location.search + window.location.hash;
+            await this.handleRoute(initialPath);
             
             this.isInitialized = true;
             appConfig.logTiming('Router initialization', startTime);
@@ -465,6 +467,19 @@ class Router {
     
     // Navigate to a route
     async navigate(path, replace = false) {
+        // **CRITICAL FIX: Block navigation during password recovery**
+        if (sessionManager && sessionManager.isPasswordRecovery) {
+            const currentPath = window.location.pathname;
+            const targetPath = new URL(path, window.location.origin).pathname;
+            
+            // If we're on reset password page, block navigation to any other page
+            if (currentPath === '/auth/reset-password' && targetPath !== '/auth/reset-password') {
+                console.log('🚫 NAVIGATION BLOCKED: Cannot navigate away from password reset during recovery');
+                console.log(`🚫 Attempted: ${currentPath} → ${targetPath}`);
+                return;
+            }
+        }
+        
         // Extract pathname from URL for comparison
         const url = new URL(path, window.location.origin);
         const pathname = url.pathname;
@@ -2394,11 +2409,21 @@ class Router {
     
     // Handle popstate events
     handlePopState(event) {
-        // **FIX: Ignore popstate events during password recovery initialization**
-        // Supabase triggers popstate events when processing recovery URLs
-        if (sessionManager.isPasswordRecovery && window.location.pathname === '/auth/reset-password') {
-            console.log('🚫 Ignoring popstate event during password recovery initialization');
-            return;
+        // **ENHANCED FIX: More robust password recovery protection**
+        // Prevent ANY navigation away from reset password page during recovery
+        if (sessionManager && sessionManager.isPasswordRecovery) {
+            const currentPath = window.location.pathname;
+            const targetPath = event.state ? event.state.path : '/';
+            
+            // If we're on reset password page, block navigation to any other page
+            if (currentPath === '/auth/reset-password' && targetPath !== '/auth/reset-password') {
+                console.log('🚫 BLOCKED: Preventing navigation away from password reset page during recovery');
+                console.log(`🚫 Attempted navigation from ${currentPath} to ${targetPath}`);
+                return;
+            }
+            
+            // Log for debugging
+            console.log('🔑 Popstate during recovery - Current:', currentPath, 'Target:', targetPath);
         }
         
         const path = event.state ? event.state.path : '/';
