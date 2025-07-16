@@ -162,26 +162,31 @@ class AuthModule {
         }
 
         try {
-            // Try multiple CDNs for Supabase
-            let createClient;
+            // Use globally loaded Supabase if available
+            let createClient = window.supabaseCreateClient;
             
-            try {
-                // Try jsdelivr first
-                const supabaseModule = await import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm');
-                createClient = supabaseModule.createClient;
-                console.log('✅ Loaded Supabase from jsdelivr');
-            } catch (e1) {
+            if (!createClient) {
+                console.warn('⚠️ Supabase not loaded globally, attempting dynamic import...');
                 try {
-                    // Fallback to unpkg
-                    const supabaseModule = await import('https://unpkg.com/@supabase/supabase-js@2/dist/module/index.js');
+                    // Try jsdelivr as fallback
+                    const supabaseModule = await import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm');
                     createClient = supabaseModule.createClient;
-                    console.log('✅ Loaded Supabase from unpkg');
-                } catch (e2) {
-                    // Final fallback to skypack
-                    const supabaseModule = await import('https://cdn.skypack.dev/@supabase/supabase-js@2');
-                    createClient = supabaseModule.createClient;
-                    console.log('✅ Loaded Supabase from skypack');
+                    console.log('✅ Loaded Supabase from jsdelivr');
+                } catch (e1) {
+                    try {
+                        // Fallback to unpkg
+                        const supabaseModule = await import('https://unpkg.com/@supabase/supabase-js@2/dist/module/index.js');
+                        createClient = supabaseModule.createClient;
+                        console.log('✅ Loaded Supabase from unpkg');
+                    } catch (e2) {
+                        // Final fallback to skypack
+                        const supabaseModule = await import('https://cdn.skypack.dev/@supabase/supabase-js@2');
+                        createClient = supabaseModule.createClient;
+                        console.log('✅ Loaded Supabase from skypack');
+                    }
                 }
+            } else {
+                console.log('✅ Using globally loaded Supabase');
             }
             
             supabaseClient = createClient(
@@ -889,8 +894,13 @@ class AuthModule {
         }
 
         try {
-            // Remove redirectTo parameter to use Supabase default behavior
-            const { error } = await supabaseClient.auth.resetPasswordForEmail(email);
+            // Use current origin to ensure correct redirect
+            const { error } = await supabaseClient.auth.resetPasswordForEmail(
+                email,
+                {
+                    redirectTo: `${window.location.origin}/auth/reset-password`
+                }
+            );
 
             if (error) {
                 // Handle specific error cases for OAuth users

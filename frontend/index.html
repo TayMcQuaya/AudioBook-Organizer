@@ -40,6 +40,14 @@
     <!-- **SECURITY FIX: Removed console logging to prevent system information exposure** -->
     <script src="https://js.stripe.com/v3/" onload="window.stripeJsLoaded = true;" onerror="window.stripeJsLoadError = true;"></script>
     
+    <!-- Supabase Client -->
+    <script type="module">
+        // Load Supabase and make it globally available for auth module
+        import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+        window.supabaseCreateClient = createClient;
+        console.log('✅ Supabase loaded and available globally');
+    </script>
+    
     <!-- Password Reset Early Handler -->
     <script>
         // Check for password reset token BEFORE any other initialization
