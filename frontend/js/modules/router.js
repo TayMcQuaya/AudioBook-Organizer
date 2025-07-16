@@ -505,6 +505,19 @@ class Router {
             return;
         }
         
+        // **CRITICAL FIX: Prevent navigation away from password reset during recovery**
+        if (sessionManager && sessionManager.isPasswordRecovery) {
+            const currentPath = window.location.pathname;
+            const requestedPath = path || window.location.pathname;
+            const targetPath = requestedPath.split('?')[0].split('#')[0]; // Extract just the pathname
+            
+            if (currentPath === '/auth/reset-password' && targetPath !== '/auth/reset-password') {
+                console.log('🚫 BLOCKED handleRoute: Cannot navigate away from password reset during recovery');
+                console.log(`🚫 Current: ${currentPath}, Target: ${targetPath}, Requested: ${requestedPath}`);
+                return;
+            }
+        }
+        
         this.isLoading = true;
         
         // Extract pathname for route matching, but preserve full path for navigation
@@ -630,6 +643,8 @@ class Router {
     
     // Load route content
     async loadRoute(route) {
+        console.log(`📍 Loading route component: ${route.component} for path: ${window.location.pathname}`);
+        
         try {
             switch (route.component) {
                 case 'landing':
@@ -679,6 +694,16 @@ class Router {
     
     // Load landing page
     async loadLandingPage() {
+        console.log('🏠 loadLandingPage called - checking if this should happen...');
+        console.log(`🏠 Current path: ${window.location.pathname}`);
+        console.log(`🏠 Recovery mode: ${sessionManager?.isPasswordRecovery}`);
+        
+        // **SAFETY CHECK: Don't load landing page during password recovery**
+        if (sessionManager && sessionManager.isPasswordRecovery && window.location.pathname === '/auth/reset-password') {
+            console.log('🚫 BLOCKED: Cannot load landing page during password recovery on reset page');
+            return;
+        }
+        
         try {
             // **FIX: Ensure appContainer exists or create it for page transitions**
             let appContainer = document.getElementById('appContainer');
