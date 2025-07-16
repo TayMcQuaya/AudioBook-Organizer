@@ -42,6 +42,8 @@ class AuthModule {
         this.userInitialized = false; // Prevent multiple user initialization calls - SESSION PERSISTENT
         this.newUserCreditsShown = false; // Prevent multiple new user credit messages - SESSION PERSISTENT
         this.sessionId = null; // Track session ID for persistence
+        this.supabaseClient = null; // Store Supabase client instance
+        this.authConfig = null; // Store auth configuration
         this.initPasswordStrengthMeter();
         this.initPasswordVisibilityToggle();
         
@@ -112,7 +114,7 @@ class AuthModule {
                 await this.initSupabaseClient();
                 
                 // Only proceed with session/listener setup if Supabase initialized successfully
-                if (supabaseClient) {
+                if (this.supabaseClient) {
                     // Set up auth state listener, which handles all auth states including initial session
                     this.setupAuthListener();
                 } else {
@@ -142,10 +144,12 @@ class AuthModule {
             
             if (data.success && data.config) {
                 authConfig = data.config;
+                this.authConfig = data.config; // Store in class instance
                 console.log('✅ Authentication config loaded');
             } else {
                 console.warn('⚠️ No authentication config available');
                 authConfig = null;
+                this.authConfig = null;
             }
         } catch (error) {
             console.warn('⚠️ Failed to load auth config:', error);
@@ -189,7 +193,7 @@ class AuthModule {
                 console.log('✅ Using globally loaded Supabase');
             }
             
-            supabaseClient = createClient(
+            const client = createClient(
                 authConfig.supabase_url,
                 authConfig.supabase_anon_key,
                 {
@@ -201,6 +205,9 @@ class AuthModule {
                 }
             );
             
+            // Store in both places for compatibility
+            supabaseClient = client;
+            this.supabaseClient = client;
             console.log('✅ Supabase client initialized');
         } catch (error) {
             console.error('❌ Failed to initialize Supabase client:', error);
@@ -221,13 +228,13 @@ class AuthModule {
      * Set up authentication state listener
      */
     setupAuthListener() {
-        if (!supabaseClient) return;
+        if (!this.supabaseClient) return;
 
         let lastEvent = null;
         let lastEventTime = 0;
         const MIN_EVENT_INTERVAL = 500; // Minimum time between same events in ms
 
-        supabaseClient.auth.onAuthStateChange(async (event, session) => {
+        this.supabaseClient.auth.onAuthStateChange(async (event, session) => {
             // Prevent duplicate processing of the same event
             if (this.lastEventProcessed === event && (Date.now() - this.lastEventTime) < 1000) {
                 console.log('🔄 Ignoring duplicate auth event:', event);
@@ -292,7 +299,7 @@ class AuthModule {
                             // Don't sign out immediately for OAuth callbacks - give it time
                             setTimeout(async () => {
                                 // Check again after a delay
-                                const { data } = await supabaseClient.auth.getSession();
+                                const { data } = await this.supabaseClient.auth.getSession();
                                 if (!data.session) {
                                     console.log('⚠️ Still no session after OAuth delay, proceeding with sign out');
                                     await this.handleSignOut();
@@ -889,13 +896,13 @@ class AuthModule {
      * Reset password
      */
     async resetPassword(email) {
-        if (!supabaseClient) {
+        if (!this.supabaseClient) {
             throw new Error('Authentication not configured');
         }
 
         try {
             // Use current origin to ensure correct redirect
-            const { error } = await supabaseClient.auth.resetPasswordForEmail(
+            const { error } = await this.supabaseClient.auth.resetPasswordForEmail(
                 email,
                 {
                     redirectTo: `${window.location.origin}/auth/reset-password`
