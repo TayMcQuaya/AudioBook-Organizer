@@ -254,6 +254,18 @@ class AuthModule {
                 // **CRITICAL: Don't return here - let normal processing continue for session setup**
             }
 
+            // **CRITICAL SAFETY: Force recovery mode for any auth event on reset page**
+            // This prevents auto-login when Supabase incorrectly sends SIGNED_IN instead of PASSWORD_RECOVERY
+            if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && !sessionManager.isPasswordRecovery) {
+                if (this.isLikelyPasswordRecovery()) {
+                    console.log('🚨 FORCED RECOVERY MODE: Supabase sent ' + event + ' instead of PASSWORD_RECOVERY on reset page');
+                    sessionManager.activatePasswordRecovery();
+                    // **OVERRIDE EVENT**: Treat this as PASSWORD_RECOVERY to prevent auto-login
+                    event = 'PASSWORD_RECOVERY';
+                    console.log('🔄 Event overridden to PASSWORD_RECOVERY to prevent auto-login bug');
+                }
+            }
+
             // **ENHANCED: Modified recovery mode handling - allow processing but control behavior**
             if (sessionManager.isPasswordRecovery) {
                 switch (event) {
@@ -538,6 +550,32 @@ class AuthModule {
             console.error('Error during user initialization:', error);
             showError('Authentication successful, but failed to load user data');
         }
+    }
+
+    /**
+     * Detect if current URL is likely a password recovery that was missed by initial detection
+     */
+    isLikelyPasswordRecovery() {
+        const urlHash = window.location.hash;
+        const urlSearch = window.location.search;
+        const currentPath = window.location.pathname;
+        
+        // Check if we're on the reset password page
+        if (currentPath === '/auth/reset-password') {
+            return true;
+        }
+        
+        // Check if URL contains recovery-related parameters
+        if (urlHash.includes('type=recovery') || urlSearch.includes('type=recovery')) {
+            return true;
+        }
+        
+        // Check if we have access_token on reset-password page (common pattern)
+        if (currentPath === '/auth/reset-password' && urlHash.includes('access_token=')) {
+            return true;
+        }
+        
+        return false;
     }
 
     /**
@@ -901,6 +939,14 @@ class AuthModule {
         }
 
         try {
+            // **FIX: Clear any existing session first to prevent interference**
+            // This ensures Supabase sends PASSWORD_RECOVERY instead of SIGNED_IN
+            const currentSession = await this.supabaseClient.auth.getSession();
+            if (currentSession.data.session) {
+                console.log('🔄 Clearing existing session before password reset to prevent auto-login');
+                await this.supabaseClient.auth.signOut();
+            }
+
             // Use current origin to ensure correct redirect
             const { error } = await this.supabaseClient.auth.resetPasswordForEmail(
                 email,

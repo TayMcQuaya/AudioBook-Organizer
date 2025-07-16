@@ -60,10 +60,8 @@ class SessionManager {
                                     urlHash.includes('provider=google') ||
                                     (urlHash.includes('access_token=') && !urlHash.includes('type=recovery'));
         
-        // **FIX: Only detect actual password recovery, not Google OAuth callbacks**
-        const isRecoveryUrl = (urlHash.includes('type=recovery') || urlSearch.includes('type=recovery')) || 
-                             (currentPath === '/auth/reset-password') ||
-                             (urlHash.includes('access_token=') && urlHash.includes('type=recovery'));
+        // **FIX: More robust password recovery detection to prevent race conditions**
+        const isRecoveryUrl = this.isPasswordRecoveryUrl(urlHash, urlSearch, currentPath);
 
         if (isGoogleOAuthCallback) {
             console.log('🔑 Google OAuth callback detected - clearing any orphaned recovery state');
@@ -535,6 +533,44 @@ class SessionManager {
             console.log('🔑 Clearing recovery state - user navigated away from password reset');
             this.clearPasswordRecoveryFlag();
         }
+    }
+
+    /**
+     * Robust password recovery URL detection to prevent race conditions
+     */
+    isPasswordRecoveryUrl(urlHash, urlSearch, currentPath) {
+        // Method 1: Direct type=recovery parameter detection
+        if (urlHash.includes('type=recovery') || urlSearch.includes('type=recovery')) {
+            console.log('🔑 Recovery URL detected via type=recovery parameter');
+            return true;
+        }
+        
+        // Method 2: Path-based detection
+        if (currentPath === '/auth/reset-password') {
+            console.log('🔑 Recovery URL detected via reset-password path');
+            return true;
+        }
+        
+        // Method 3: Combined access_token + type=recovery detection with retry
+        if (urlHash.includes('access_token=')) {
+            // Parse the hash more carefully
+            const hashParams = new URLSearchParams(urlHash.substring(1));
+            const urlParams = new URLSearchParams(urlSearch);
+            
+            // Check both hash and search parameters for type=recovery
+            if (hashParams.get('type') === 'recovery' || urlParams.get('type') === 'recovery') {
+                console.log('🔑 Recovery URL detected via parsed parameters');
+                return true;
+            }
+            
+            // Method 4: Fallback - if we're on reset-password path with access_token, assume recovery
+            if (currentPath === '/auth/reset-password' && urlHash.includes('access_token=')) {
+                console.log('🔑 Recovery URL detected via path + access_token fallback');
+                return true;
+            }
+        }
+        
+        return false;
     }
 
     // **REMOVED: Cross-tab recovery handling - password reset should be tab-isolated**
