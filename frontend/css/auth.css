@@ -676,6 +676,14 @@
     height: fit-content;
     max-height: calc(100vh - var(--auth-nav-height) - 3rem);
     overflow-y: auto;
+    /* Hide scrollbar but keep functionality */
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE and Edge */
+}
+
+/* Hide scrollbar for Chrome, Safari and Opera */
+.auth-body .auth-features::-webkit-scrollbar {
+    display: none;
 }
 
 .auth-body .features-title {

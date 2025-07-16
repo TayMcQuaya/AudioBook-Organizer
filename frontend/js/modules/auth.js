@@ -1325,9 +1325,9 @@ class AuthModule {
             return false;
         };
         
-        // If we have a recovery token, wait a bit longer for Supabase to process
-        if (hasRecoveryToken) {
-            console.log('🔑 Recovery token detected in URL, waiting for Supabase to process...');
+        // If we have a recovery token OR recovery mode is already active, wait for Supabase
+        if (hasRecoveryToken || sessionManager.isPasswordRecovery) {
+            console.log('🔑 Recovery state detected, waiting for Supabase to process...');
             
             // Try multiple times with increasing delays
             let attempts = 0;
@@ -1352,8 +1352,8 @@ class AuthModule {
             // Start checking after initial delay
             setTimeout(tryShowForm, 500);
         } else {
-            // No recovery token, show error immediately
-            console.error('❌ No recovery token found in URL');
+            // No recovery token and no recovery mode, show error
+            console.error('❌ No recovery token found in URL and recovery mode not active');
             loadingOverlay.classList.remove('show');
             showError("Invalid or expired password reset link.");
             setTimeout(() => window.router.navigate('/auth'), 3000);
