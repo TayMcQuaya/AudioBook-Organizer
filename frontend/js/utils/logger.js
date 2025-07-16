@@ -7,6 +7,14 @@ class SecureLogger {
     constructor() {
         this.isProduction = false; // Default to development for safety
         this.isInitialized = false;
+        
+        // Store original console methods to avoid infinite recursion
+        this.originalConsole = {
+            log: console.log.bind(console),
+            error: console.error.bind(console),
+            warn: console.warn.bind(console)
+        };
+        
         this.sensitivePatterns = [
             // Supabase URLs
             { pattern: /https:\/\/[a-zA-Z0-9]+\.supabase\.co/g, replacement: '[SUPABASE_URL]' },
@@ -42,7 +50,7 @@ class SecureLogger {
             this.isProduction = await this.detectProductionEnvironment();
             this.isInitialized = true;
         } catch (error) {
-            console.warn('🔍 Failed to detect environment, defaulting to development');
+            this.originalConsole.warn('🔍 Failed to detect environment, defaulting to development');
             this.isProduction = false;
             this.isInitialized = true;
         }
@@ -67,7 +75,7 @@ class SecureLogger {
             }
         } catch (error) {
             // If backend is unreachable, fall back to frontend detection
-            console.warn('🔍 Backend config unavailable, using frontend detection');
+            this.originalConsole.warn('🔍 Backend config unavailable, using frontend detection');
         }
 
         // FALLBACK METHODS: When backend is unreachable
@@ -112,7 +120,7 @@ class SecureLogger {
 
         // Log the decision for debugging (only in development)
         if (!finalDecision) {
-            console.log('🔍 Environment Detection (Fallback):', {
+            this.originalConsole.log('🔍 Environment Detection (Fallback):', {
                 hostname,
                 isDevelopment,
                 isHTTPS,
@@ -146,7 +154,7 @@ class SecureLogger {
     log(...args) {
         // If not initialized yet, default to development behavior
         if (!this.isInitialized || !this.isProduction) {
-            console.log(...args);
+            this.originalConsole.log(...args);
             return;
         }
         
@@ -159,7 +167,7 @@ class SecureLogger {
             }
             return arg;
         });
-        console.log(...sanitizedArgs);
+        this.originalConsole.log(...sanitizedArgs);
     }
 
     /**
@@ -168,7 +176,7 @@ class SecureLogger {
     error(...args) {
         // If not initialized yet, default to development behavior
         if (!this.isInitialized || !this.isProduction) {
-            console.error(...args);
+            this.originalConsole.error(...args);
             return;
         }
         
@@ -180,7 +188,7 @@ class SecureLogger {
             }
             return arg;
         });
-        console.error(...sanitizedArgs);
+        this.originalConsole.error(...sanitizedArgs);
     }
 
     /**
@@ -189,7 +197,7 @@ class SecureLogger {
     warn(...args) {
         // If not initialized yet, default to development behavior
         if (!this.isInitialized || !this.isProduction) {
-            console.warn(...args);
+            this.originalConsole.warn(...args);
             return;
         }
         
@@ -201,7 +209,7 @@ class SecureLogger {
             }
             return arg;
         });
-        console.warn(...sanitizedArgs);
+        this.originalConsole.warn(...sanitizedArgs);
     }
 
     /**
@@ -248,7 +256,7 @@ class SecureLogger {
      */
     setEnvironment(isProduction) {
         this.isProduction = isProduction;
-        console.log(`🔧 Environment manually set to: ${isProduction ? 'PRODUCTION' : 'DEVELOPMENT'}`);
+        this.originalConsole.log(`🔧 Environment manually set to: ${isProduction ? 'PRODUCTION' : 'DEVELOPMENT'}`);
     }
 
     /**
@@ -273,13 +281,6 @@ export const isProductionEnvironment = () => logger.isProductionEnv();
 
 // Also export a function to override console methods globally
 export function enableSecureLogging() {
-    // Store original console methods
-    const originalConsole = {
-        log: console.log,
-        error: console.error,
-        warn: console.warn
-    };
-
     // Override console methods immediately (they handle production detection internally)
     console.log = (...args) => logger.log(...args);
     console.error = (...args) => logger.error(...args);
@@ -287,17 +288,17 @@ export function enableSecureLogging() {
 
     // Provide a way to restore original console if needed
     console.restoreOriginal = () => {
-        console.log = originalConsole.log;
-        console.error = originalConsole.error;
-        console.warn = originalConsole.warn;
+        console.log = logger.originalConsole.log;
+        console.error = logger.originalConsole.error;
+        console.warn = logger.originalConsole.warn;
     };
 
     // Wait for initialization to show confirmation message
     setTimeout(() => {
         if (logger.isProductionEnv()) {
-            console.log('🔒 Secure logging enabled for production environment');
+            logger.originalConsole.log('🔒 Secure logging enabled for production environment');
         } else {
-            console.log('🔧 Secure logging initialized (development mode - no sanitization)');
+            logger.originalConsole.log('🔧 Secure logging initialized (development mode - no sanitization)');
         }
     }, 100);
 }
