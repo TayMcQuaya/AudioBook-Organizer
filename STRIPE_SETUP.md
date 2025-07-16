@@ -43,6 +43,9 @@ Stripe Setup for Your New Account 💳
   4. Under "Select events", click "Select events" and choose:
     - ✅ payment_intent.succeeded
     - ✅ payment_intent.payment_failed
+    - ✅ payment_intent.canceled
+    - ✅ checkout.session.completed
+    - ✅ checkout.session.expired
   5. Click "Add endpoint"
   6. After creation, you'll see a Signing secret that starts with whsec_...
   7. Copy this and update in DigitalOcean:
