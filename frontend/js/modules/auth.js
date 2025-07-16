@@ -889,15 +889,8 @@ class AuthModule {
         }
 
         try {
-            // Use current origin to ensure it matches Supabase allowed URLs
-            const redirectUrl = `${window.location.origin}/auth/reset-password`;
-            
-            const { error } = await supabaseClient.auth.resetPasswordForEmail(
-                email,
-                {
-                    redirectTo: redirectUrl
-                }
-            );
+            // Remove redirectTo parameter to use Supabase default behavior
+            const { error } = await supabaseClient.auth.resetPasswordForEmail(email);
 
             if (error) {
                 // Handle specific error cases for OAuth users
