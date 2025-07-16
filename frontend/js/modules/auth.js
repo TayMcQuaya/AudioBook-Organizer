@@ -889,10 +889,8 @@ class AuthModule {
         }
 
         try {
-            // Use explicit www domain in production for password reset
-            const redirectUrl = window.location.hostname === 'localhost' 
-                ? `${window.location.origin}/auth/reset-password`
-                : 'https://www.audiobookorganizer.com/auth/reset-password';
+            // Use current origin to ensure it matches Supabase allowed URLs
+            const redirectUrl = `${window.location.origin}/auth/reset-password`;
             
             const { error } = await supabaseClient.auth.resetPasswordForEmail(
                 email,
