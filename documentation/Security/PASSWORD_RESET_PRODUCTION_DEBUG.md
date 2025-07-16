@@ -1,7 +1,11 @@
 # Password Reset Production Debug Session Summary
 
 ## Issue Description
-Password reset emails are not being sent in production, but work locally. User can click "Send Reset Email" button infinitely without rate limiting, indicating the Supabase API is never being called.
+Multiple issues with password reset flow:
+1. Password reset emails not being sent in production (RESOLVED)
+2. Cross-tab interference when opening main page during password reset (RESOLVED)
+3. Password reset link sometimes logs user in instead of showing reset page (RESOLVED)
+4. CSS not loading properly on reset password page (RESOLVED)
 
 ## Environment
 - **Local**: Works correctly with rate limiting
@@ -111,3 +115,45 @@ All issues have been resolved and the system is working correctly with proper er
 - `documentation/Profile/PASSWORD_RESET_FIX.md` - Security fixes for password recovery flow
 - `backend/routes/auth_routes.py` - Backend password reset endpoint
 - `frontend/pages/auth/auth.js` - Frontend auth page implementation
+
+## Recent Updates (January 16, 2025)
+
+### Additional Edge Case Issues Resolved
+
+1. **Cross-Tab Interference**
+   - **Issue**: Opening main page in new tab during password reset caused page load failure
+   - **Cause**: Missing `checkAndCleanupRecoveryState()` function in sessionManager
+   - **Fix**: Added the missing function to handle recovery state cleanup in sessionManager.js
+
+2. **Auto-Login Instead of Reset Page**
+   - **Issue**: Password reset link sometimes logged user in instead of showing reset page
+   - **Causes**: 
+     - Supabase sending SIGNED_IN event instead of PASSWORD_RECOVERY
+     - Session state interference with existing sessions
+     - Timing issues with recovery mode activation
+   - **Fixes**:
+     - Added session cleanup before password reset in auth.js
+     - Enhanced recovery URL detection in sessionManager.js
+     - Fixed popstate event handling to preserve current path in router.js
+
+3. **CSS Loading Issues**
+   - **Issue**: CSS not loading properly on reset password page
+   - **Cause**: Page loader clearing entire document body
+   - **Fix**: Improved page loading in router.js to preserve CSS and wait for styles to load
+
+4. **Router Navigation Issues**
+   - **Issue**: Router loading landing page component for reset-password path
+   - **Causes**:
+     - Popstate events defaulting to '/' when no state
+     - URL parsing issues with hash fragments
+   - **Fixes**:
+     - Enhanced URL parsing to handle hash fragments in router.js
+     - Fixed popstate handler to use current path instead of defaulting to '/'
+     - Added guards to prevent route not found redirects during recovery
+
+### Files Modified in Recent Update
+- `/frontend/js/modules/sessionManager.js` - Added missing recovery state cleanup function
+- `/frontend/js/modules/router.js` - Fixed popstate handling, URL parsing, and CSS loading
+- `/backend/middleware/security_headers.py` - Updated CSP to allow data: URLs for fonts
+
+All password reset functionality edge cases have been thoroughly tested and resolved.

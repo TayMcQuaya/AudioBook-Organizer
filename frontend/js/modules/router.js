@@ -521,13 +521,39 @@ class Router {
         this.isLoading = true;
         
         // Extract pathname for route matching, but preserve full path for navigation
-        const fullPath = path || window.location.pathname + window.location.search;
-        const targetPath = path ? new URL(path, window.location.origin).pathname : window.location.pathname;
+        const fullPath = path || window.location.pathname + window.location.search + window.location.hash;
+        let targetPath;
+        
+        // Debug logging for path parsing
+        console.log('🔍 handleRoute - path input:', path);
+        console.log('🔍 handleRoute - fullPath:', fullPath);
+        
+        if (path) {
+            // If path contains #, we need to handle it specially
+            if (path.includes('#')) {
+                // For paths like "/auth/reset-password#", extract just the pathname
+                targetPath = path.split('#')[0].split('?')[0];
+            } else {
+                targetPath = new URL(path, window.location.origin).pathname;
+            }
+        } else {
+            targetPath = window.location.pathname;
+        }
+        
+        console.log('🔍 handleRoute - targetPath:', targetPath);
         const route = routeConfig[targetPath];
         
         try {
             if (!route) {
                 console.warn(`Route not found: ${fullPath} (pathname: ${targetPath})`);
+                
+                // CRITICAL FIX: During password recovery, don't redirect to landing page
+                if (sessionManager && sessionManager.isPasswordRecovery && targetPath === '/auth/reset-password') {
+                    console.error('🚨 Route not found for reset-password during recovery mode! This should not happen.');
+                    this.isLoading = false;
+                    return;
+                }
+                
                 await this.navigate('/', true);
                 return;
             }
@@ -1479,55 +1505,88 @@ class Router {
     // Load password reset page
     async loadResetPasswordPage() {
         try {
-            // **FIX: Ensure appContainer exists or create it for page transitions**
+            console.log('🔐 Loading password reset page...');
+            
+            // First ensure all necessary CSS is loaded
+            // Keep main.css if it exists
+            if (!document.querySelector('link[href="/css/main.css"]')) {
+                const mainCSS = document.createElement('link');
+                mainCSS.rel = 'stylesheet';
+                mainCSS.href = '/css/main.css';
+                document.head.appendChild(mainCSS);
+            }
+            
+            // Ensure auth.css is loaded before we proceed
+            let authCSS = document.querySelector('link[href="/css/auth.css"]');
+            if (!authCSS) {
+                console.log('📄 Loading auth.css for reset password page');
+                authCSS = document.createElement('link');
+                authCSS.rel = 'stylesheet';
+                authCSS.href = '/css/auth.css';
+                
+                // Wait for CSS to load
+                await new Promise((resolve) => {
+                    authCSS.onload = () => {
+                        console.log('✅ auth.css loaded successfully');
+                        resolve();
+                    };
+                    authCSS.onerror = () => {
+                        console.error('❌ Failed to load auth.css');
+                        resolve(); // Continue anyway
+                    };
+                    document.head.appendChild(authCSS);
+                });
+            }
+            
+            // **FIX: Create or get appContainer without clearing entire body**
             let appContainer = document.getElementById('appContainer');
             if (!appContainer) {
-                console.log('🔧 Creating appContainer for password reset page transition');
+                console.log('🔧 Creating appContainer for password reset page');
                 appContainer = document.createElement('div');
                 appContainer.id = 'appContainer';
                 appContainer.style.opacity = '0';
                 appContainer.style.transition = 'opacity 0.5s ease-in-out';
                 
-                // Replace the current page content with the container
+                // Clear body content but preserve head and scripts
+                const scripts = Array.from(document.querySelectorAll('script'));
                 document.body.innerHTML = '';
                 document.body.appendChild(appContainer);
                 
-                // Restore necessary CSS links
-                if (!document.querySelector('link[href="/css/main.css"]')) {
-                    const mainCSS = document.createElement('link');
-                    mainCSS.rel = 'stylesheet';
-                    mainCSS.href = '/css/main.css';
-                    document.head.appendChild(mainCSS);
-                }
+                // Restore scripts
+                scripts.forEach(script => {
+                    if (!document.body.contains(script)) {
+                        document.body.appendChild(script);
+                    }
+                });
             }
 
-            // Ensure correct body class and remove conflicting assets
+            // Set correct body class and remove conflicting assets
             document.body.className = 'auth-body app-ready';
             const landingCSS = document.querySelector('link[href="/css/landing.css"]');
             if (landingCSS) landingCSS.remove();
             const landingScript = document.getElementById('landing-page-script');
             if (landingScript) landingScript.remove();
 
-            // Ensure auth page CSS is loaded for reset password page
-            let authCSS = document.querySelector('link[href="/css/auth.css"]');
-            if (!authCSS) {
-                authCSS = document.createElement('link');
-                authCSS.rel = 'stylesheet';
-                authCSS.href = '/css/auth.css';
-                document.head.appendChild(authCSS);
-            } else {
-                // Move existing auth CSS to the end to ensure priority
-                document.head.appendChild(authCSS);
-            }
-
             // Load reset password page HTML
             const response = await fetch('/pages/auth/reset-password.html');
             if (!response.ok) throw new Error(`Failed to fetch reset password page: ${response.status}`);
             
-            appContainer.innerHTML = await response.text();
+            // Parse HTML to extract body content only
+            const html = await response.text();
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            const bodyContent = doc.body.innerHTML;
+            
+            appContainer.innerHTML = bodyContent;
+            
+            // Fade in the content
+            requestAnimationFrame(() => {
+                appContainer.style.opacity = '1';
+            });
 
             // The auth module will handle the logic after this
             if (window.authModule) {
+                console.log('🔐 Initializing password recovery page logic');
                 window.authModule.handlePasswordRecoveryPage();
             } else {
                 console.error("Auth module not initialized for password recovery page.");
@@ -2434,11 +2493,18 @@ class Router {
     
     // Handle popstate events
     handlePopState(event) {
+        console.log('🔍 Popstate event triggered:', {
+            state: event.state,
+            currentPath: window.location.pathname,
+            hash: window.location.hash,
+            isPasswordRecovery: sessionManager?.isPasswordRecovery
+        });
+        
         // **ENHANCED FIX: More robust password recovery protection**
         // Prevent ANY navigation away from reset password page during recovery
         if (sessionManager && sessionManager.isPasswordRecovery) {
             const currentPath = window.location.pathname;
-            const targetPath = event.state ? event.state.path : '/';
+            const targetPath = event.state ? event.state.path : window.location.pathname; // Use current path if no state
             
             // If we're on reset password page, block navigation to any other page
             if (currentPath === '/auth/reset-password' && targetPath !== '/auth/reset-password') {
@@ -2451,7 +2517,9 @@ class Router {
             console.log('🔑 Popstate during recovery - Current:', currentPath, 'Target:', targetPath);
         }
         
-        const path = event.state ? event.state.path : '/';
+        // CRITICAL FIX: Don't default to '/' if there's no state
+        // This prevents unwanted navigation to landing page
+        const path = event.state ? event.state.path : window.location.pathname + window.location.search + window.location.hash;
         this.handleRoute(path, { ...(event.state || {}), isPopState: true });
     }
     
