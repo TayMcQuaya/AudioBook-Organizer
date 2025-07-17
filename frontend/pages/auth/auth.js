@@ -853,7 +853,14 @@ function handleAuthStateChange(event, session) {
  */
 function setLoading(loading) {
     isLoading = loading;
-    elements.loadingOverlay.style.display = loading ? 'flex' : 'none';
+    
+    // Use class manipulation instead of inline styles to match CSS
+    if (loading) {
+        elements.loadingOverlay.classList.add('show');
+    } else {
+        elements.loadingOverlay.classList.remove('show');
+    }
+    
     updateFormButtons(loading);
 }
 
