@@ -217,12 +217,19 @@ class SessionManager {
                             console.log('🔄 Starting immediate profile refresh...');
                             window.authModule.refreshUserData(true, false).then(() => {
                                 console.log('✅ Immediate profile refresh completed');
+                                
+                                // Update session manager's user object with refreshed data
+                                const refreshedUser = window.authModule.getCurrentUser();
+                                if (refreshedUser) {
+                                    this.user = refreshedUser;
+                                    console.log('✅ Session manager user object updated with fresh profile data');
+                                }
+                                
                                 // Update UI if available
                                 if (window.appUI && window.appUI.updateUI) {
-                                    const user = window.authModule.getCurrentUser();
                                     window.appUI.updateUI({ 
                                         isAuthenticated: true, 
-                                        user: user 
+                                        user: refreshedUser 
                                     });
                                 }
                                 window._profileRefreshStarted = false;

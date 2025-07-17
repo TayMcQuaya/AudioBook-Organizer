@@ -470,12 +470,13 @@ class AppUIManager {
     getUserDisplayName(user) {
         if (!user) return 'User';
         
-        return user.user_metadata?.full_name ||
-               user.user_metadata?.name ||
-               user.full_name ||
-               user.name ||
-               user.email?.split('@')[0] ||
-               'User';
+        // Prioritize profile table data over OAuth metadata for consistency
+        return user.full_name ||                    // Updated profile name (highest priority)
+               user.name ||                         // Alternative profile name
+               user.user_metadata?.full_name ||     // OAuth cached name (fallback)
+               user.user_metadata?.name ||          // Alternative OAuth name
+               user.email?.split('@')[0] ||         // Email prefix
+               'User';                              // Default
     }
     
     /**

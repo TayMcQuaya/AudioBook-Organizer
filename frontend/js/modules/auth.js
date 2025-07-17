@@ -478,10 +478,11 @@ class AuthModule {
             // And only if we haven't shown it for this session yet
             if ((authEvent === 'SIGNED_IN' || window.location.search.includes('from=google')) && !this.welcomeShownThisSession) {
                 // Use actual name if available, otherwise use email
-                const displayName = this.user.user_metadata?.full_name || 
-                                  this.user.user_metadata?.name || 
-                                  this.user.full_name || 
+                // Prioritize profile data over OAuth metadata
+                const displayName = this.user.full_name || 
                                   this.user.name || 
+                                  this.user.user_metadata?.full_name || 
+                                  this.user.user_metadata?.name || 
                                   this.user.email.split('@')[0];
                 showSuccess(`Welcome back, ${displayName}!`);
                 this.welcomeShownThisSession = true;
