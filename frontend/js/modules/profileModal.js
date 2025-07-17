@@ -653,6 +653,15 @@ class ProfileModal {
             
             showSuccess('Profile updated successfully!');
             
+            // Refresh user data in auth module and session manager
+            if (window.authModule && typeof window.authModule.refreshUserData === 'function') {
+                console.log('🔄 Profile updated, refreshing user data...');
+                await window.authModule.refreshUserData();
+                console.log('✅ User data refreshed, navbar should update');
+            } else {
+                console.warn('⚠️ Auth module not available or refreshUserData method missing');
+            }
+            
             // Refresh the profile tab content
             if (this.currentTab === 'profile') {
                 const content = document.querySelector('.profile-modal-content');

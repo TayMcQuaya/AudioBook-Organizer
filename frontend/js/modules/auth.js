@@ -448,6 +448,32 @@ class AuthModule {
             // **SECURITY FIX: Sanitized user data logging to prevent exposure of sensitive information**
             console.log('✅ User initialized successfully');
             
+            // **FIX: Refresh user data to get latest profile information**
+            // Detect if this is a real login vs session restoration
+            const isPageLoad = performance.now() < 5000; // Within 5 seconds of page load
+            const isRealLogin = isLogin && authEvent === 'SIGNED_IN' && !isPageLoad;
+            const isGoogleCallback = window.location.search.includes('from=google');
+            
+            if (isRealLogin || isGoogleCallback) {
+                console.log('🔄 User logged in, refreshing profile data...');
+                // Small delay to ensure auth state is stable
+                await new Promise(resolve => setTimeout(resolve, 100));
+                
+                // Refresh with events for actual login
+                await this.refreshUserData(true, true);
+            } else if (authEvent === 'INITIAL_SESSION') {
+                // Supabase's own session restoration (rare)
+                console.log('🔄 Initial session detected, refreshing profile data...');
+                await new Promise(resolve => setTimeout(resolve, 100));
+                
+                // Refresh without events to avoid disruption
+                await this.refreshUserData(true, false);
+            } else if (isLogin && authEvent === 'SIGNED_IN' && isPageLoad) {
+                // This is a SIGNED_IN event during page load (session restoration)
+                console.log('🔄 Session restoration detected, skipping immediate refresh');
+                // The router will handle the refresh after recovery completes
+            }
+            
             // Welcome message logic: Show ONLY on actual login (SIGNED_IN event), not session restoration
             // And only if we haven't shown it for this session yet
             if ((authEvent === 'SIGNED_IN' || window.location.search.includes('from=google')) && !this.welcomeShownThisSession) {
@@ -1169,6 +1195,98 @@ class AuthModule {
         } catch (error) {
             console.error('💎 getUserCredits: Error fetching credits:', error);
             return 0;
+        }
+    }
+
+    /**
+     * Refresh user data from backend
+     * Fetches the latest user profile data and updates the local user object
+     */
+    async refreshUserData(forceRefresh = false, dispatchEvents = true) {
+        // During initial session setup, we might not pass isAuthenticated() check yet
+        // but we know we have a valid session, so allow force refresh
+        if (!forceRefresh && !this.isAuthenticated()) {
+            console.log('🔄 refreshUserData: Not authenticated, skipping');
+            return null;
+        }
+
+        try {
+            console.log('🔄 refreshUserData: Fetching latest profile data...');
+            
+            // Add timeout to prevent hanging
+            const timeoutPromise = new Promise((_, reject) => 
+                setTimeout(() => reject(new Error('Profile fetch timeout')), 10000)
+            );
+            
+            const response = await Promise.race([
+                this.apiRequest('/auth/profile'),
+                timeoutPromise
+            ]);
+            
+            console.log('🔄 refreshUserData: Got response:', response.status);
+            
+            if (!response.ok) {
+                console.error('🔄 refreshUserData: Failed to fetch profile', response.status);
+                return null;
+            }
+
+            const data = await response.json();
+            console.log('🔄 refreshUserData: Profile data received:', data);
+            
+            if (data.success && data.profile) {
+                // Update the user object with fresh profile data
+                if (this.user) {
+                    // Update user_metadata for OAuth users
+                    if (!this.user.user_metadata) {
+                        this.user.user_metadata = {};
+                    }
+                    
+                    // Update full_name in user_metadata (for OAuth compatibility)
+                    if (data.profile.full_name) {
+                        this.user.user_metadata.full_name = data.profile.full_name;
+                    }
+                    
+                    // Also update profile data directly on user object
+                    this.user.full_name = data.profile.full_name;
+                    this.user.username = data.profile.username;
+                    this.user.avatar_url = data.profile.avatar_url;
+                    
+                    // Update the global currentUser reference
+                    currentUser = this.user;
+                    
+                    console.log('🔄 refreshUserData: User object updated with fresh data');
+                    
+                    // Only dispatch events if requested (to avoid disrupting session recovery)
+                    if (dispatchEvents) {
+                        // Dispatch auth state change event to notify all listeners
+                        window.dispatchEvent(new CustomEvent('auth-state-changed', {
+                            detail: {
+                                isAuthenticated: true,
+                                user: this.user,
+                                session: this.session,
+                                event: 'USER_UPDATED'
+                            }
+                        }));
+                        
+                        // Also notify direct auth listeners
+                        this.notifyAuthListeners('USER_UPDATED', this.session);
+                    }
+                    
+                    return data.profile;
+                }
+            }
+            
+            console.warn('🔄 refreshUserData: No profile data in response');
+            return null;
+            
+        } catch (error) {
+            console.error('🔄 refreshUserData: Error fetching profile:', error.message || error);
+            console.error('🔄 refreshUserData: Error details:', {
+                name: error.name,
+                message: error.message,
+                stack: error.stack?.split('\n')[0]
+            });
+            return null;
         }
     }
 

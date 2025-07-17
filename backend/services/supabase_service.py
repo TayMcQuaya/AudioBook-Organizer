@@ -230,12 +230,17 @@ class SupabaseService:
     
     # User Profile Methods
     
-    def get_user_profile(self, user_id: str) -> Optional[Dict[str, Any]]:
+    def get_user_profile(self, user_id: str, auth_token: str = None) -> Optional[Dict[str, Any]]:
         """Get user profile from profiles table"""
         if not self.client:
             return None
             
         try:
+            # FIX: Authenticate the postgrest client with user's token for RLS
+            if auth_token and hasattr(self.client, 'postgrest'):
+                self.client.postgrest.auth(auth_token)
+                logger.debug("✅ Authenticated Supabase client for profile fetch RLS operations")
+            
             result = self.client.table('profiles').select('*').eq('id', user_id).execute()
             
             if result.data and len(result.data) > 0:
@@ -282,12 +287,17 @@ class SupabaseService:
             logger.error(f"Error creating user profile: {e}")
             return False
     
-    def update_user_profile(self, user_id: str, updates: Dict[str, Any]) -> bool:
+    def update_user_profile(self, user_id: str, updates: Dict[str, Any], auth_token: str = None) -> bool:
         """Update user profile"""
         if not self.client:
             return False
             
         try:
+            # FIX: Authenticate the postgrest client with user's token for RLS
+            if auth_token and hasattr(self.client, 'postgrest'):
+                self.client.postgrest.auth(auth_token)
+                logger.debug("✅ Authenticated Supabase client for profile update RLS operations")
+            
             updates['updated_at'] = datetime.datetime.utcnow().isoformat()
             
             result = self.client.table('profiles').update(updates).eq('id', user_id).execute()
@@ -299,6 +309,28 @@ class SupabaseService:
             
         except Exception as e:
             logger.error(f"Error updating user profile: {e}")
+            return False
+    
+    def update_user_metadata(self, user_id: str, metadata: Dict[str, Any], auth_token: str = None) -> bool:
+        """Update user metadata in Supabase Auth"""
+        if not self.client:
+            return False
+            
+        try:
+            # Use the auth admin API to update user metadata
+            # This requires the service role key which we have
+            result = self.client.auth.admin.update_user_by_id(
+                user_id,
+                {"user_metadata": metadata}
+            )
+            
+            if result:
+                logger.info(f"✅ User metadata updated for {user_id}")
+                return True
+            return False
+            
+        except Exception as e:
+            logger.error(f"Error updating user metadata: {e}")
             return False
     
     def initialize_user(self, user_id: str, email: str, user_data: Dict[str, Any] = None, auth_token: str = None) -> Dict[str, Any]:
@@ -320,7 +352,7 @@ class SupabaseService:
             
             # Use concurrent queries to reduce latency
             with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
-                profile_future = executor.submit(self.get_user_profile, user_id)
+                profile_future = executor.submit(self.get_user_profile, user_id, auth_token)
                 credits_future = executor.submit(self.get_user_credits, user_id)
                 
                 # Get results
@@ -352,7 +384,7 @@ class SupabaseService:
                 
                 # Get the newly created data
                 with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
-                    profile_future = executor.submit(self.get_user_profile, user_id)
+                    profile_future = executor.submit(self.get_user_profile, user_id, auth_token)
                     credits_future = executor.submit(self.get_user_credits, user_id)
                     
                     profile = profile_future.result()

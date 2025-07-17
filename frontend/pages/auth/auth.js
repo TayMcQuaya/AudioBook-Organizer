@@ -447,12 +447,15 @@ async function handleLoginSubmit(e) {
 
         if (result.success) {
             console.log('✅ Sign in successful');
+            // Keep loading state active - it will be cleared when navigation occurs
             // The onAuthStateChange listener in auth.js will handle the rest,
             // including navigation. No need to call handleAuthSuccess directly.
+            return; // Exit without clearing loading state
         } else {
             // showError is called inside signIn, so just log here
             // **SECURITY FIX: Removed result.error to prevent API details exposure**
-        console.error('Sign in failed from form handler');
+            console.error('Sign in failed from form handler');
+            setLoading(false); // Clear loading on failure
         }
     } catch (error) {
         console.error('❌ Sign in failed:', error);
@@ -467,8 +470,7 @@ async function handleLoginSubmit(e) {
         } else {
             showFieldError(emailInput, 'An unknown error occurred during sign in.');
         }
-    } finally {
-        setLoading(false);
+        setLoading(false); // Clear loading on error
     }
 }
 
@@ -548,15 +550,18 @@ async function handleSignupSubmit(e) {
                     }
                 }));
                 
+                // Keep loading state while navigating
                 // Navigate to app
                 if (window.router) {
                     window.router.navigate('/app');
                 } else {
                     window.location.href = '/app';
                 }
+                return; // Exit without clearing loading state
             } else {
                 // Email confirmation required - show success card
                 switchForm('success');
+                setLoading(false); // Clear loading when showing success card
             }
         } else {
             throw new Error(result.message || 'Signup failed');

@@ -101,6 +101,10 @@ class Router {
         this.previousRoute = null;
         this.isInitialized = false;
         this.isLoading = false;
+        
+        // Clear any lingering profile refresh flags
+        window._profileRefreshScheduled = false;
+        window._profileRefreshStarted = false;
         this.currentPath = null;
         
         // Bind methods
@@ -247,6 +251,9 @@ class Router {
                     
                     if (window.sessionManager.isAuthenticated) {
                         console.log('✅ Session manager recovery successful');
+                        
+                        // Profile refresh is now handled immediately in sessionManager
+                        
                         return true;
                     }
                 }
@@ -274,6 +281,9 @@ class Router {
                         }
                         
                         console.log('✅ Session recovery completed successfully');
+                        
+                        // Profile refresh is now handled immediately in sessionManager
+                        
                         return true;
                     } else {
                         console.log('🚫 No valid Supabase session found:', error?.message || 'Unknown error');

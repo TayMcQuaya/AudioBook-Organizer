@@ -352,8 +352,14 @@ def create_auth_routes() -> Blueprint:
             # Get Supabase service
             supabase_service = get_supabase_service()
             
-            # Get user profile
-            profile = supabase_service.get_user_profile(user_id)
+            # Get auth token from request headers for RLS
+            auth_header = request.headers.get('Authorization')
+            auth_token = None
+            if auth_header and auth_header.startswith('Bearer '):
+                auth_token = auth_header[7:]
+            
+            # Get user profile with auth token for RLS
+            profile = supabase_service.get_user_profile(user_id, auth_token)
             
             if not profile:
                 return jsonify({
@@ -392,8 +398,14 @@ def create_auth_routes() -> Blueprint:
             # Get Supabase service
             supabase_service = get_supabase_service()
             
-            # Update profile
-            success = supabase_service.update_user_profile(user_id, data)
+            # Get auth token from request headers for RLS
+            auth_header = request.headers.get('Authorization')
+            auth_token = None
+            if auth_header and auth_header.startswith('Bearer '):
+                auth_token = auth_header[7:]
+            
+            # Update profile with auth token for RLS
+            success = supabase_service.update_user_profile(user_id, data, auth_token)
             
             if not success:
                 return jsonify({
@@ -401,8 +413,19 @@ def create_auth_routes() -> Blueprint:
                     'message': 'Failed to update profile'
                 }), 500
             
-            # Get updated profile
-            updated_profile = supabase_service.get_user_profile(user_id)
+            # Also update user metadata if full_name is being updated
+            # This keeps the cached session data in sync with profile data
+            if 'full_name' in data and auth_token:
+                try:
+                    # Update the user's metadata in Supabase Auth
+                    supabase_service.update_user_metadata(user_id, {'full_name': data['full_name']}, auth_token)
+                    logger.info(f"Updated user metadata for {user_id}")
+                except Exception as e:
+                    logger.warning(f"Failed to update user metadata: {e}")
+                    # Don't fail the request if metadata update fails
+            
+            # Get updated profile with auth token for RLS
+            updated_profile = supabase_service.get_user_profile(user_id, auth_token)
             
             return jsonify({
                 'success': True,

@@ -211,6 +211,27 @@ class SessionManager {
                             localStorage.setItem('auth_token', token);
                         }
                         
+                        // **FIX: Immediately start profile refresh on page load**
+                        if (!window._profileRefreshStarted && window.authModule && typeof window.authModule.refreshUserData === 'function') {
+                            window._profileRefreshStarted = true;
+                            console.log('🔄 Starting immediate profile refresh...');
+                            window.authModule.refreshUserData(true, false).then(() => {
+                                console.log('✅ Immediate profile refresh completed');
+                                // Update UI if available
+                                if (window.appUI && window.appUI.updateUI) {
+                                    const user = window.authModule.getCurrentUser();
+                                    window.appUI.updateUI({ 
+                                        isAuthenticated: true, 
+                                        user: user 
+                                    });
+                                }
+                                window._profileRefreshStarted = false;
+                            }).catch(error => {
+                                console.error('❌ Immediate profile refresh failed:', error);
+                                window._profileRefreshStarted = false;
+                            });
+                        }
+                        
                         // Notify other components
                         this.notifyStateChange();
                         return;
