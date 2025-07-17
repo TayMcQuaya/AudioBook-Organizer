@@ -308,6 +308,54 @@ class ProfileModal {
         return null;
     }
 
+    /**
+     * Check if user is authenticated via OAuth (Google, etc)
+     */
+    isOAuthUser() {
+        // Check if user has OAuth provider metadata
+        if (window.sessionManager && window.sessionManager.user) {
+            const user = window.sessionManager.user;
+            
+            // Check for OAuth provider in various possible locations
+            // 1. Check app_metadata for provider
+            if (user.app_metadata?.provider === 'google' || user.app_metadata?.provider === 'oauth') {
+                console.log('🔑 OAuth user detected via app_metadata');
+                return true;
+            }
+            
+            // 2. Check user_metadata for OAuth indicators
+            if (user.user_metadata?.provider_id || user.user_metadata?.iss || user.user_metadata?.picture) {
+                console.log('🔑 OAuth user detected via user_metadata');
+                return true;
+            }
+            
+            // 3. Check identities array (Supabase stores OAuth identities here)
+            if (user.identities && Array.isArray(user.identities)) {
+                const hasOAuthIdentity = user.identities.some(identity => 
+                    identity.provider === 'google' || identity.provider === 'oauth'
+                );
+                if (hasOAuthIdentity) {
+                    console.log('🔑 OAuth user detected via identities array');
+                    return true;
+                }
+            }
+            
+            // 4. Check for email provider in app_metadata
+            if (user.app_metadata?.providers && Array.isArray(user.app_metadata.providers)) {
+                const hasOAuthProvider = user.app_metadata.providers.some(provider => 
+                    provider === 'google' || provider === 'oauth'
+                );
+                if (hasOAuthProvider) {
+                    console.log('🔑 OAuth user detected via providers array');
+                    return true;
+                }
+            }
+        }
+        
+        console.log('📧 Regular email/password user detected');
+        return false;
+    }
+
     getHistoryTabHTML() {
         if (!this.usageHistory || !this.usageHistory.data) {
             return '<div class="loading">Loading usage history...</div>';
@@ -735,6 +783,9 @@ class ProfileModal {
      * Show account deletion confirmation dialog
      */
     showDeleteAccountDialog() {
+        // Check if user is OAuth authenticated
+        const isOAuthUser = this.isOAuthUser();
+        
         // Create custom modal overlay with higher z-index
         const overlay = document.createElement('div');
         overlay.className = 'profile-modal-backdrop delete-account-backdrop';
@@ -744,6 +795,23 @@ class ProfileModal {
         modal.className = 'profile-modal delete-account-modal';
         modal.style.maxWidth = '500px';
         modal.style.zIndex = '10002';
+        
+        // Generate appropriate input field based on auth type
+        const authInputHTML = isOAuthUser ? `
+                    <div class="form-group">
+                        <label for="delete-email">Enter your email address:</label>
+                        <input type="email" id="delete-email" class="form-control" required 
+                               placeholder="Enter your account email address">
+                        <div class="form-error" id="delete-email-error"></div>
+                    </div>
+        ` : `
+                    <div class="form-group">
+                        <label for="delete-password">Enter your password:</label>
+                        <input type="password" id="delete-password" class="form-control" required 
+                               placeholder="Enter your current password">
+                        <div class="form-error" id="delete-password-error"></div>
+                    </div>
+        `;
         
         modal.innerHTML = `
             <div class="profile-modal-header danger-header">
@@ -759,12 +827,7 @@ class ProfileModal {
                 </p>
                 
                 <form id="delete-account-form" style="margin-top: 20px;">
-                    <div class="form-group">
-                        <label for="delete-password">Enter your password:</label>
-                        <input type="password" id="delete-password" class="form-control" required 
-                               placeholder="Enter your current password">
-                        <div class="form-error" id="delete-password-error"></div>
-                    </div>
+                    ${authInputHTML}
                     
                     <div class="form-group">
                         <label for="delete-confirmation">Type <strong>DELETE</strong> to confirm:</label>
@@ -811,12 +874,19 @@ class ProfileModal {
         }, 10);
         
         // Add input event listeners to clear errors when user starts typing
-        const passwordInput = document.getElementById('delete-password');
         const confirmationInput = document.getElementById('delete-confirmation');
         
-        passwordInput.addEventListener('input', () => {
-            this.clearPasswordError();
-        });
+        if (isOAuthUser) {
+            const emailInput = document.getElementById('delete-email');
+            emailInput.addEventListener('input', () => {
+                this.clearEmailError();
+            });
+        } else {
+            const passwordInput = document.getElementById('delete-password');
+            passwordInput.addEventListener('input', () => {
+                this.clearPasswordError();
+            });
+        }
         
         confirmationInput.addEventListener('input', () => {
             this.clearConfirmationError();
@@ -844,8 +914,20 @@ class ProfileModal {
                 return;
             }
             
-            const password = passwordInput.value;
             const confirmation = confirmationInput.value;
+            let authValue = '';
+            let authType = '';
+            
+            // Get the appropriate auth value based on user type
+            if (isOAuthUser) {
+                const emailInput = document.getElementById('delete-email');
+                authValue = emailInput.value;
+                authType = 'email';
+            } else {
+                const passwordInput = document.getElementById('delete-password');
+                authValue = passwordInput.value;
+                authType = 'password';
+            }
             
             // Clear any existing errors
             this.clearDeleteAccountErrors();
@@ -856,10 +938,20 @@ class ProfileModal {
                 return; // Don't show loading for validation errors
             }
             
-            // Validate password is not empty
-            if (!password.trim()) {
-                this.showPasswordError('Password is required.');
+            // Validate auth value is not empty
+            if (!authValue.trim()) {
+                if (isOAuthUser) {
+                    this.showEmailError('Email address is required.');
+                } else {
+                    this.showPasswordError('Password is required.');
+                }
                 return; // Don't show loading for validation errors
+            }
+            
+            // For OAuth users, validate email format
+            if (isOAuthUser && !this.isValidEmail(authValue)) {
+                this.showEmailError('Please enter a valid email address.');
+                return;
             }
             
             // Set flags to prevent multiple submissions
@@ -867,7 +959,7 @@ class ProfileModal {
             this.lastDeleteAttempt = now;
             
             try {
-                await this.handleAccountDeletion(password, confirmation);
+                await this.handleAccountDeletion(authValue, confirmation, authType);
             } catch (error) {
                 // Hide loading overlay on error and reset flags
                 this.hideDeleteAccountLoading();
@@ -967,10 +1059,39 @@ class ProfileModal {
     }
 
     /**
+     * Show error message for email field
+     */
+    showEmailError(message) {
+        const emailInput = document.getElementById('delete-email');
+        const errorDiv = document.getElementById('delete-email-error');
+        
+        if (emailInput && errorDiv) {
+            emailInput.classList.add('is-invalid');
+            errorDiv.textContent = message;
+            errorDiv.classList.add('show');
+        }
+    }
+
+    /**
+     * Clear email field error
+     */
+    clearEmailError() {
+        const emailInput = document.getElementById('delete-email');
+        const errorDiv = document.getElementById('delete-email-error');
+        
+        if (emailInput && errorDiv) {
+            emailInput.classList.remove('is-invalid');
+            errorDiv.textContent = '';
+            errorDiv.classList.remove('show');
+        }
+    }
+
+    /**
      * Clear all delete account form errors
      */
     clearDeleteAccountErrors() {
         this.clearPasswordError();
+        this.clearEmailError();
         this.clearConfirmationError();
     }
 
@@ -1011,31 +1132,52 @@ class ProfileModal {
     }
 
     /**
+     * Validate email format
+     */
+    isValidEmail(email) {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        return emailRegex.test(email);
+    }
+
+    /**
      * Handle account deletion
      */
-    async handleAccountDeletion(password, confirmationText) {
+    async handleAccountDeletion(authValue, confirmationText, authType = 'password') {
         try {
             // Clear any existing errors
             this.clearDeleteAccountErrors();
 
             // Basic client-side validation (no API calls)
-            if (!password || !password.trim()) {
-                this.showPasswordError('Password is required.');
-                return; // Don't show loading for empty password
+            if (!authValue || !authValue.trim()) {
+                if (authType === 'email') {
+                    this.showEmailError('Email address is required.');
+                } else {
+                    this.showPasswordError('Password is required.');
+                }
+                return; // Don't show loading for empty values
             }
 
             // Show loading only when we're actually making the API call
             this.showDeleteAccountLoading();
+
+            // Prepare request body based on auth type
+            const requestBody = {
+                confirmation_text: confirmationText
+            };
+
+            if (authType === 'email') {
+                requestBody.email = authValue;
+                requestBody.is_oauth_user = true;
+            } else {
+                requestBody.password = authValue;
+            }
 
             const response = await apiFetch('/auth/account', {
                 method: 'DELETE',
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({
-                    password: password,
-                    confirmation_text: confirmationText
-                })
+                body: JSON.stringify(requestBody)
             });
 
             if (!response.ok) {
@@ -1044,6 +1186,8 @@ class ProfileModal {
                 // Handle specific errors
                 if (error.message === 'Invalid password' || error.message === 'Authentication failed') {
                     this.showPasswordError('Invalid password. Please enter your current password.');
+                } else if (error.message === 'Invalid email' || error.message === 'Email does not match') {
+                    this.showEmailError('Email does not match your account email address.');
                 } else if (error.message === 'Please type DELETE to confirm account deletion') {
                     this.showConfirmationError('Please type DELETE in capital letters to confirm.');
                 } else if (response.status === 429) {

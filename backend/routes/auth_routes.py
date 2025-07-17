@@ -737,20 +737,32 @@ def create_auth_routes() -> Blueprint:
                 }), 400
             
             password = data.get('password')
+            email = data.get('email')
+            is_oauth_user = data.get('is_oauth_user', False)
             confirmation_text = data.get('confirmation_text')
             
-            # Validate inputs
-            if not password:
-                return jsonify({
-                    'error': 'Password required',
-                    'message': 'Current password is required for account deletion'
-                }), 400
-            
+            # Validate confirmation text first
             if confirmation_text != 'DELETE':
                 return jsonify({
                     'error': 'Invalid confirmation',
                     'message': 'Please type DELETE to confirm account deletion'
                 }), 400
+            
+            # Validate auth method based on user type
+            if is_oauth_user:
+                # OAuth users verify with email
+                if not email:
+                    return jsonify({
+                        'error': 'Email required',
+                        'message': 'Email address is required for account deletion'
+                    }), 400
+            else:
+                # Regular users verify with password
+                if not password:
+                    return jsonify({
+                        'error': 'Password required',
+                        'message': 'Current password is required for account deletion'
+                    }), 400
             
             # Get security service for rate limiting
             security_service = get_security_service()
@@ -772,28 +784,40 @@ def create_auth_routes() -> Blueprint:
             # Get Supabase service
             supabase_service = get_supabase_service()
             
-            # Verify password by attempting to sign in
-            email = current_user.get('email')
-            if not email:
+            # Get user's email from current user or profile
+            user_email = current_user.get('email')
+            if not user_email:
                 # Get email from profile if not in token
                 profile = supabase_service.get_user_profile(user_id)
                 if profile:
-                    email = profile.get('email')
+                    user_email = profile.get('email')
                 
-            if not email:
+            if not user_email:
                 return jsonify({
                     'error': 'Account error',
                     'message': 'Unable to verify account email'
                 }), 500
             
-            # Verify password
-            auth_result = supabase_service.sign_in_with_password(email, password)
-            if not auth_result['success']:
-                logger.warning(f"Failed account deletion attempt for user {user_id} - invalid password")
-                return jsonify({
-                    'error': 'Authentication failed',
-                    'message': 'Invalid password'
-                }), 401
+            # Verify authentication based on user type
+            if is_oauth_user:
+                # For OAuth users, verify the provided email matches the account email
+                if email.lower() != user_email.lower():
+                    logger.warning(f"Failed account deletion attempt for OAuth user {user_id} - email mismatch")
+                    return jsonify({
+                        'error': 'Authentication failed',
+                        'message': 'Email does not match'
+                    }), 401
+                logger.info(f"OAuth user {user_id} verified with email for account deletion")
+            else:
+                # For regular users, verify password by attempting to sign in
+                auth_result = supabase_service.sign_in_with_password(user_email, password)
+                if not auth_result['success']:
+                    logger.warning(f"Failed account deletion attempt for user {user_id} - invalid password")
+                    return jsonify({
+                        'error': 'Authentication failed',
+                        'message': 'Invalid password'
+                    }), 401
+                logger.info(f"Regular user {user_id} verified with password for account deletion")
             
             # Get list of user's uploaded files before deletion
             try:

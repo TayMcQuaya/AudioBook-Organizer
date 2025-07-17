@@ -207,6 +207,15 @@ The deletion process logs each step:
   - Shows 8-second success notification: "Your account has been successfully deleted. Thank you for using AudioBook Organizer!"
   - URL is cleaned after showing notification to prevent re-display
 
+#### 5. OAuth User Support (July 18, 2025 - Latest)
+- **Problem Solved**: OAuth users (Google sign-in) don't have passwords to verify deletion
+- **Solution**: OAuth users confirm deletion with their email address instead
+- **Implementation**:
+  - Frontend detects OAuth users via `user_metadata` checks
+  - Shows email input field instead of password field for OAuth users
+  - Backend accepts both password and email verification
+  - All other behaviors (loading, errors, rate limiting) remain identical
+
 ### Technical Implementation Details
 
 #### State Management
@@ -253,6 +262,32 @@ this.showDeleteAccountLoading();
 }
 ```
 
+### OAuth User Detection
+```javascript
+isOAuthUser() {
+    const user = window.sessionManager?.user;
+    // Check multiple locations for OAuth indicators:
+    // 1. app_metadata.provider
+    // 2. user_metadata (provider_id, iss, picture)
+    // 3. identities array
+    // 4. app_metadata.providers array
+}
+```
+
+### Backend OAuth Handling
+```python
+if is_oauth_user:
+    # Verify email matches account email
+    if email.lower() != user_email.lower():
+        return jsonify({
+            'error': 'Authentication failed',
+            'message': 'Email does not match'
+        }), 401
+else:
+    # Regular password verification for non-OAuth users
+    auth_result = supabase_service.sign_in_with_password(user_email, password)
+```
+
 ## Testing Checklist
 
 - [x] Password verification works correctly
@@ -271,6 +306,9 @@ this.showDeleteAccountLoading();
 - [x] Rate limiting countdown works
 - [x] Success notification appears on landing page
 - [x] Multiple rapid clicks are prevented
+- [x] OAuth users can delete with email confirmation
+- [x] Regular users still use password confirmation
+- [x] Email validation works for OAuth users
 
 ## How to Verify Deletion
 
