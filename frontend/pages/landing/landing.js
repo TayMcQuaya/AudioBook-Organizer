@@ -53,6 +53,9 @@ function init() {
     
     // Handle hash navigation on page load
     handleHashNavigation();
+    
+    // Check for account deletion success notification
+    checkAccountDeletionSuccess();
 }
 
 /**
@@ -158,6 +161,29 @@ function handleHashNavigation() {
                 });
             }
         }, 300);
+    }
+}
+
+/**
+ * Check for account deletion success notification
+ */
+function checkAccountDeletionSuccess() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const deleted = urlParams.get('deleted');
+    
+    if (deleted === 'true') {
+        console.log('✅ Account deletion success detected');
+        
+        // Show success notification
+        setTimeout(() => {
+            showSuccess('Your account has been successfully deleted. Thank you for using AudioBook Organizer!', 8000);
+        }, 1000); // Small delay to ensure page is fully loaded
+        
+        // Remove the query parameter from the URL to prevent showing the notification again
+        if (window.history && window.history.replaceState) {
+            const newUrl = window.location.origin + window.location.pathname;
+            window.history.replaceState(null, null, newUrl);
+        }
     }
 }
 

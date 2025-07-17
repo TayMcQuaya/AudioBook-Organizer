@@ -54,7 +54,7 @@ July 13, 2025
   - Sends DELETE request to API
   - Clears local/session storage on success
   - Shows success message
-  - Redirects to landing page
+  - Redirects to landing page with `?deleted=true` parameter
 
 ### 4. CSS Styling
 - **Location**: `frontend/css/profile-modal.css` (lines 671-797)
@@ -112,10 +112,19 @@ Note: Due to Supabase's protection of the auth.users table, the auth record may 
 3. Clicks red "Delete Account" button
 4. Confirmation dialog appears
 5. User enters password and types "DELETE"
-6. Clicks "Delete My Account"
-7. Account data is deleted
-8. User sees success message
-9. Redirected to landing page after 2 seconds
+6. If password is wrong:
+   - Red error message appears below password field
+   - NO loading overlay shown
+   - User can immediately try again
+7. If "DELETE" is not typed correctly:
+   - Red error message appears below confirmation field
+   - NO loading overlay shown
+8. If all validation passes:
+   - Loading overlay shows "Processing account deletion..."
+   - Account data is deleted
+9. User sees success message in modal
+10. Redirected to landing page after 2 seconds
+11. Landing page shows farewell notification for 8 seconds
 
 ## Error Handling
 
@@ -164,6 +173,86 @@ The deletion process logs each step:
    - Include all projects and settings
    - Compliance with data portability
 
+## Recent Improvements (July 18, 2025)
+
+### Enhanced User Experience Updates
+
+#### 1. Field-Specific Error Messages
+- **Implementation**: Added dedicated error divs below password and confirmation inputs
+- **Features**:
+  - Red error text appears directly below the invalid field
+  - Input field gets red border with shake animation
+  - Errors clear automatically when user starts typing
+  - Matches login form error style for consistency
+
+#### 2. Loading State Management
+- **Problem Fixed**: Loading overlay was showing even for validation errors
+- **Solution**: 
+  - Client-side validation happens BEFORE showing loading
+  - Loading overlay only appears when making actual API call
+  - No more "flash" of loading for wrong password
+  - Immediate error feedback without processing delay
+
+#### 3. Rate Limiting Protection
+- **Client-Side Protection**:
+  - 5-second cooldown between deletion attempts
+  - Prevents button spam and multiple rapid submissions
+  - Shows countdown message: "Please wait X seconds before trying again"
+  - `isDeleting` flag prevents concurrent deletion attempts
+  
+#### 4. Success Notification
+- **Landing Page Integration**:
+  - Redirect includes `?deleted=true` query parameter
+  - Landing page checks for this parameter on load
+  - Shows 8-second success notification: "Your account has been successfully deleted. Thank you for using AudioBook Organizer!"
+  - URL is cleaned after showing notification to prevent re-display
+
+### Technical Implementation Details
+
+#### State Management
+```javascript
+class ProfileModal {
+    constructor() {
+        // ... existing properties
+        this.isDeleting = false; // Prevent multiple deletion attempts
+        this.lastDeleteAttempt = 0; // Track last attempt timestamp
+    }
+}
+```
+
+#### Validation Flow
+```javascript
+// 1. Client-side validation (no loading)
+if (confirmation !== 'DELETE') {
+    this.showConfirmationError('Please type DELETE in capital letters to confirm.');
+    return; // No loading shown
+}
+
+if (!password.trim()) {
+    this.showPasswordError('Password is required.');
+    return; // No loading shown
+}
+
+// 2. Only show loading for actual API call
+this.showDeleteAccountLoading();
+```
+
+#### Error Styling
+```css
+.delete-account-modal .form-error {
+    color: var(--error-color, #dc3545);
+    font-size: 0.875rem;
+    margin-top: 0.25rem;
+    display: none;
+    animation: errorSlideIn 0.3s ease;
+}
+
+.delete-account-modal .form-control.is-invalid {
+    border-color: var(--error-color, #dc3545);
+    animation: shake 0.3s ease-in-out;
+}
+```
+
 ## Testing Checklist
 
 - [x] Password verification works correctly
@@ -177,6 +266,11 @@ The deletion process logs each step:
 - [x] Theme compatibility (light/dark mode)
 - [x] Auth record successfully deleted from Supabase
 - [x] Complete data removal verified in production
+- [x] Field-specific error messages display correctly
+- [x] Loading only shows for actual API calls
+- [x] Rate limiting countdown works
+- [x] Success notification appears on landing page
+- [x] Multiple rapid clicks are prevented
 
 ## How to Verify Deletion
 

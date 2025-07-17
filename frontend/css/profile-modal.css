@@ -850,6 +850,86 @@
     color: white;
 }
 
+/* Form error styles for delete account modal */
+.delete-account-modal .form-error {
+    color: var(--error-color, #dc3545);
+    font-size: 0.875rem;
+    margin-top: 0.25rem;
+    display: none;
+    animation: errorSlideIn 0.3s ease;
+}
+
+.delete-account-modal .form-error.show {
+    display: block;
+}
+
+/* Invalid input styles for delete account modal */
+.delete-account-modal .form-control.is-invalid {
+    border-color: var(--error-color, #dc3545);
+    animation: shake 0.3s ease-in-out;
+}
+
+@keyframes errorSlideIn {
+    0% {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-5px); }
+    75% { transform: translateX(5px); }
+}
+
+/* Loading overlay for delete account modal */
+.delete-account-modal .loading-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.7);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 10003;
+    backdrop-filter: blur(8px);
+    flex-direction: column;
+    gap: 1rem;
+    border-radius: 16px;
+}
+
+.delete-account-modal .loading-overlay.show {
+    display: flex;
+}
+
+.delete-account-modal .loading-overlay .loading-spinner {
+    width: 48px;
+    height: 48px;
+    border: 4px solid rgba(255, 255, 255, 0.3);
+    border-top: 4px solid white;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+.delete-account-modal .loading-overlay p {
+    color: white;
+    font-size: 1.1rem;
+    font-weight: 500;
+    margin: 0;
+    text-align: center;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
 .danger-notice {
     background-color: rgba(220, 53, 69, 0.1);
     color: var(--error-color, #dc3545);

@@ -15,6 +15,8 @@ class ProfileModal {
         this.currentPage = 1;
         this.actionFilter = null;
         this.isLoading = false;
+        this.isDeleting = false; // Prevent multiple deletion attempts
+        this.lastDeleteAttempt = 0; // Track last attempt timestamp
     }
 
     async open() {
@@ -761,6 +763,7 @@ class ProfileModal {
                         <label for="delete-password">Enter your password:</label>
                         <input type="password" id="delete-password" class="form-control" required 
                                placeholder="Enter your current password">
+                        <div class="form-error" id="delete-password-error"></div>
                     </div>
                     
                     <div class="form-group">
@@ -769,6 +772,7 @@ class ProfileModal {
                                placeholder="Type DELETE in capital letters"
                                pattern="DELETE"
                                autocomplete="off">
+                        <div class="form-error" id="delete-confirmation-error"></div>
                     </div>
                     
                     <div class="delete-warning">
@@ -788,6 +792,12 @@ class ProfileModal {
                         </button>
                     </div>
                 </form>
+                
+                <!-- Loading overlay for delete account process -->
+                <div class="loading-overlay" id="delete-loading-overlay">
+                    <div class="loading-spinner"></div>
+                    <p>Processing account deletion...</p>
+                </div>
             </div>
         `;
         
@@ -800,30 +810,68 @@ class ProfileModal {
             modal.classList.add('show');
         }, 10);
         
+        // Add input event listeners to clear errors when user starts typing
+        const passwordInput = document.getElementById('delete-password');
+        const confirmationInput = document.getElementById('delete-confirmation');
+        
+        passwordInput.addEventListener('input', () => {
+            this.clearPasswordError();
+        });
+        
+        confirmationInput.addEventListener('input', () => {
+            this.clearConfirmationError();
+        });
+
         // Handle form submission
         const form = document.getElementById('delete-account-form');
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
             
-            const password = document.getElementById('delete-password').value;
-            const confirmation = document.getElementById('delete-confirmation').value;
-            
-            if (confirmation !== 'DELETE') {
-                showError('Please type DELETE to confirm account deletion');
+            // Prevent multiple rapid submissions
+            if (this.isDeleting) {
+                console.log('🔒 Delete already in progress, ignoring submission');
                 return;
             }
             
-            // Show loading state
-            const deleteBtn = document.getElementById('deleteConfirmBtn');
-            deleteBtn.disabled = true;
-            deleteBtn.textContent = 'Deleting Account...';
+            // Rate limiting protection
+            const now = Date.now();
+            const timeSinceLastAttempt = now - this.lastDeleteAttempt;
+            const RATE_LIMIT_DELAY = 5000; // 5 seconds between attempts
+            
+            if (timeSinceLastAttempt < RATE_LIMIT_DELAY) {
+                const remainingTime = Math.ceil((RATE_LIMIT_DELAY - timeSinceLastAttempt) / 1000);
+                showError(`Please wait ${remainingTime} seconds before trying again.`);
+                return;
+            }
+            
+            const password = passwordInput.value;
+            const confirmation = confirmationInput.value;
+            
+            // Clear any existing errors
+            this.clearDeleteAccountErrors();
+            
+            // Validate confirmation text BEFORE showing loading
+            if (confirmation !== 'DELETE') {
+                this.showConfirmationError('Please type DELETE in capital letters to confirm.');
+                return; // Don't show loading for validation errors
+            }
+            
+            // Validate password is not empty
+            if (!password.trim()) {
+                this.showPasswordError('Password is required.');
+                return; // Don't show loading for validation errors
+            }
+            
+            // Set flags to prevent multiple submissions
+            this.isDeleting = true;
+            this.lastDeleteAttempt = now;
             
             try {
                 await this.handleAccountDeletion(password, confirmation);
             } catch (error) {
-                // Reset button on error
-                deleteBtn.disabled = false;
-                deleteBtn.textContent = 'Delete My Account';
+                // Hide loading overlay on error and reset flags
+                this.hideDeleteAccountLoading();
+                this.isDeleting = false;
             }
         });
         
@@ -853,6 +901,9 @@ class ProfileModal {
         overlay.classList.remove('show');
         modal.classList.remove('show');
         
+        // Reset deletion flags when closing dialog
+        this.isDeleting = false;
+        
         setTimeout(() => {
             overlay.remove();
             modal.remove();
@@ -860,10 +911,122 @@ class ProfileModal {
     }
 
     /**
+     * Show error message for password field
+     */
+    showPasswordError(message) {
+        const passwordInput = document.getElementById('delete-password');
+        const errorDiv = document.getElementById('delete-password-error');
+        
+        if (passwordInput && errorDiv) {
+            passwordInput.classList.add('is-invalid');
+            errorDiv.textContent = message;
+            errorDiv.classList.add('show');
+        }
+    }
+
+    /**
+     * Clear password field error
+     */
+    clearPasswordError() {
+        const passwordInput = document.getElementById('delete-password');
+        const errorDiv = document.getElementById('delete-password-error');
+        
+        if (passwordInput && errorDiv) {
+            passwordInput.classList.remove('is-invalid');
+            errorDiv.textContent = '';
+            errorDiv.classList.remove('show');
+        }
+    }
+
+    /**
+     * Show error message for confirmation field
+     */
+    showConfirmationError(message) {
+        const confirmationInput = document.getElementById('delete-confirmation');
+        const errorDiv = document.getElementById('delete-confirmation-error');
+        
+        if (confirmationInput && errorDiv) {
+            confirmationInput.classList.add('is-invalid');
+            errorDiv.textContent = message;
+            errorDiv.classList.add('show');
+        }
+    }
+
+    /**
+     * Clear confirmation field error
+     */
+    clearConfirmationError() {
+        const confirmationInput = document.getElementById('delete-confirmation');
+        const errorDiv = document.getElementById('delete-confirmation-error');
+        
+        if (confirmationInput && errorDiv) {
+            confirmationInput.classList.remove('is-invalid');
+            errorDiv.textContent = '';
+            errorDiv.classList.remove('show');
+        }
+    }
+
+    /**
+     * Clear all delete account form errors
+     */
+    clearDeleteAccountErrors() {
+        this.clearPasswordError();
+        this.clearConfirmationError();
+    }
+
+    /**
+     * Show loading overlay for delete account process
+     */
+    showDeleteAccountLoading() {
+        const loadingOverlay = document.getElementById('delete-loading-overlay');
+        const form = document.getElementById('delete-account-form');
+        
+        if (loadingOverlay) {
+            loadingOverlay.classList.add('show');
+        }
+        
+        // Disable form to prevent interaction
+        if (form) {
+            form.style.pointerEvents = 'none';
+            form.style.opacity = '0.5';
+        }
+    }
+
+    /**
+     * Hide loading overlay for delete account process
+     */
+    hideDeleteAccountLoading() {
+        const loadingOverlay = document.getElementById('delete-loading-overlay');
+        const form = document.getElementById('delete-account-form');
+        
+        if (loadingOverlay) {
+            loadingOverlay.classList.remove('show');
+        }
+        
+        // Re-enable form
+        if (form) {
+            form.style.pointerEvents = '';
+            form.style.opacity = '';
+        }
+    }
+
+    /**
      * Handle account deletion
      */
     async handleAccountDeletion(password, confirmationText) {
         try {
+            // Clear any existing errors
+            this.clearDeleteAccountErrors();
+
+            // Basic client-side validation (no API calls)
+            if (!password || !password.trim()) {
+                this.showPasswordError('Password is required.');
+                return; // Don't show loading for empty password
+            }
+
+            // Show loading only when we're actually making the API call
+            this.showDeleteAccountLoading();
+
             const response = await apiFetch('/auth/account', {
                 method: 'DELETE',
                 headers: {
@@ -877,6 +1040,18 @@ class ProfileModal {
 
             if (!response.ok) {
                 const error = await response.json();
+                
+                // Handle specific errors
+                if (error.message === 'Invalid password' || error.message === 'Authentication failed') {
+                    this.showPasswordError('Invalid password. Please enter your current password.');
+                } else if (error.message === 'Please type DELETE to confirm account deletion') {
+                    this.showConfirmationError('Please type DELETE in capital letters to confirm.');
+                } else if (response.status === 429) {
+                    showError('Too many deletion attempts. Please wait a few minutes before trying again.');
+                } else {
+                    showError(error.message || 'Failed to delete account. Please try again.');
+                }
+                
                 throw new Error(error.message || 'Failed to delete account');
             }
 
@@ -887,15 +1062,17 @@ class ProfileModal {
             localStorage.clear();
             sessionStorage.clear();
             
+            // Reset deletion flags on success
+            this.isDeleting = false;
+            
             // Close modal and redirect after a short delay
             setTimeout(() => {
-                window.location.href = '/';
+                window.location.href = '/?deleted=true';
             }, 2000);
             
         } catch (error) {
             console.error('Account deletion error:', error);
-            showError(error.message || 'Failed to delete account. Please try again.');
-            throw error; // Re-throw to reset button state
+            throw error; // Re-throw to reset form state
         }
     }
 
