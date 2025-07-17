@@ -548,7 +548,7 @@ function setupScrollAnimations() {
 }
 
 function setupSmoothScrolling() {
-    const navLinks = document.querySelectorAll('.nav-link, .mobile-link');
+    const navLinks = document.querySelectorAll('.nav-link, .mobile-link, .footer-link');
     
     navLinks.forEach(link => {
         link.addEventListener('click', (e) => {

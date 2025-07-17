@@ -1722,7 +1722,6 @@ html[data-theme="dark"] .credits-display.low-credits:hover {
     width: fit-content; /* Fit content width */
     max-width: 95vw; /* Prevent overflow on small screens */
     min-width: 750px; /* Increased minimum width for 2x2 grid */
-    max-height: 85vh; /* Reduced height to prevent scrolling */
     overflow-y: auto;
     box-shadow: 0 25px 80px rgba(0, 0, 0, 0.25);
     border: 1px solid var(--border-color);
