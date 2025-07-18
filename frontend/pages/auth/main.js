@@ -4,14 +4,14 @@ import { enableSecureLogging } from '/js/utils/logger.js';
 // Enable secure logging for auth pages
 enableSecureLogging();
 
-console.log('🚀 Auth main.js loaded');
+// Auth main.js loaded
 
 function init() {
-    console.log('🔐 Initializing auth page...');
+    // Initializing auth page
     // Get the auth module from the global scope (provided by the router)
     const authModule = window.authModule;
     if (authModule) {
-        console.log('✅ Using existing auth module from router');
+        // Using existing auth module from router
         initialize(authModule);
     } else {
         console.error('❌ Auth module not available!');

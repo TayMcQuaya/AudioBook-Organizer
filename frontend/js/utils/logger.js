@@ -149,10 +149,107 @@ class SecureLogger {
     }
 
     /**
-     * Safe console.log that sanitizes in production
+     * Safe console.log that sanitizes in production and filters verbose logs
      */
     log(...args) {
-        // If not initialized yet, default to development behavior
+        // Filter out verbose logs even in development
+        const firstArg = args[0];
+        if (typeof firstArg === 'string') {
+            // Skip verbose initialization and status logs
+            const verbosePatterns = [
+                /^🚀/,  // Rocket - initialization
+                /^✅/,  // Checkmark - success messages
+                /^🔧/,  // Wrench - configuration
+                /^🌐/,  // Globe - API requests
+                /^📋/,  // Clipboard - steps
+                /^🎨/,  // Palette - UI
+                /^🎯/,  // Target - settings
+                /^⏱️/,  // Timer - delays
+                /^🔐/,  // Lock - auth init
+                /^🔑/,  // Key - auth operations
+                /^💎/,  // Diamond - credits
+                /^🔄/,  // Refresh - state changes
+                /^🔍/,  // Magnifying glass - checks
+                /^📡/,  // Satellite - events
+                /^⏳/,  // Hourglass - waiting
+                /^📍/,  // Pin - routing
+                /^🏠/,  // House - landing
+                /^✨/,  // Sparkles - effects
+                /^👤/,  // User - profile
+                /^📊/,  // Chart - tracking
+                /^🌟/,  // Star - features
+                /^📐/,  // Triangle ruler - layout
+                /^📂/,  // Folder - project
+                /^🎵/,  // Music note - audio
+                /^📭/,  // Empty mailbox
+                /^📁/,  // File folder
+                /^🧹/,  // Broom - cleanup
+                /^🎁/,  // Gift
+                /^⚠️/,  // Warning
+                /^❌/,  // Error X
+                /^🔒/,  // Lock
+                /^📱/,  // Mobile
+                /^🌈/,  // Rainbow
+                /^🔊/,  // Speaker
+                /^📢/,  // Megaphone
+                /Step \d+:/,
+                /initialized/i,
+                /initializing/i,
+                // /API Request:/,  // Keep API requests visible for debugging
+                // /API Response:/,  // Keep API responses visible for debugging
+                /auth state/i,
+                /session.*recovery/i,
+                /credits.*display/i,
+                /router.*init/i,
+                /UI.*manager/i,
+                /DEBUG:/i,
+                /loaded.*successfully/i,
+                /loading.*module/i,
+                /applied.*theme/i,
+                /restored.*from.*database/i,
+                /formatting.*data/i,
+                /navigation.*tracked/i,
+                /environment.*config/i,
+                /app.*config/i,
+                /Supabase.*loaded/i,
+                /auth.*check/i,
+                /session.*manager/i,
+                /TOC.*init/i,
+                /table.*of.*contents/i,
+                /Validation.*passed/i,
+                /module.*loaded/i,
+                /credits.*fetched/i,
+                /^ℹ️/,  // Info symbol
+                /^🦴/,  // Skeleton
+                /^🆕/,  // New
+                /^👋/,  // Wave
+                /^📸/,  // Camera
+                /^⏰/,  // Alarm clock
+                /skeleton.*UI/i,
+                /auth.*skeleton/i,
+                /Welcome.*message/i,
+                /Selection.*guide/i,
+                /Edit.*mode.*updated/i,
+                /Edit.*protection/i,
+                /stored.*auth.*found/i,
+                /session.*cleared/i,
+                /profile.*picture/i,
+                /CSS.*load.*timeout/i,
+                /restoring.*highlight/i,
+                /Multiple.*listeners/i,
+                /Project.*load.*completed/i,
+                /Successfully.*restored/i,
+                /Found.*last.*section/i,
+                /Normal.*mode.*final/i
+            ];
+            
+            // Check if this is a verbose log to skip
+            if (verbosePatterns.some(pattern => pattern.test(firstArg))) {
+                return; // Skip this log entirely
+            }
+        }
+        
+        // If not initialized yet or in production, apply sanitization
         if (!this.isInitialized || !this.isProduction) {
             this.originalConsole.log(...args);
             return;
@@ -171,9 +268,24 @@ class SecureLogger {
     }
 
     /**
-     * Safe console.error that sanitizes in production
+     * Safe console.error that sanitizes in production and filters non-critical errors
      */
     error(...args) {
+        // Filter out non-critical errors
+        const firstArg = args[0];
+        if (typeof firstArg === 'string') {
+            const nonCriticalErrorPatterns = [
+                /Failed to initialize user/i,
+                /API response error/i,
+                /Profile fetch timeout/i,
+                /refreshUserData.*Error/i
+            ];
+            
+            if (nonCriticalErrorPatterns.some(pattern => pattern.test(firstArg))) {
+                return; // Skip non-critical errors
+            }
+        }
+        
         // If not initialized yet, default to development behavior
         if (!this.isInitialized || !this.isProduction) {
             this.originalConsole.error(...args);
@@ -192,9 +304,31 @@ class SecureLogger {
     }
 
     /**
-     * Safe console.warn that sanitizes in production
+     * Safe console.warn that sanitizes in production and filters verbose warnings
      */
     warn(...args) {
+        // Filter out verbose warnings similar to log filtering
+        const firstArg = args[0];
+        if (typeof firstArg === 'string') {
+            // Skip verbose warnings
+            const verboseWarnPatterns = [
+                /^⚠️/,  // Warning emoji
+                /^🚨/,  // Siren - security
+                /^⏰/,  // Alarm clock - timeouts
+                /Supabase.*failed/i,
+                /Authentication.*not configured/i,
+                /Failed to.*session flags/i,
+                /auth config/i,
+                /Running without Supabase/i,
+                /CSS load timeout/i,
+                /Unhandled auth event/i
+            ];
+            
+            if (verboseWarnPatterns.some(pattern => pattern.test(firstArg))) {
+                return; // Skip this warning entirely
+            }
+        }
+        
         // If not initialized yet, default to development behavior
         if (!this.isInitialized || !this.isProduction) {
             this.originalConsole.warn(...args);
@@ -293,12 +427,5 @@ export function enableSecureLogging() {
         console.warn = logger.originalConsole.warn;
     };
 
-    // Wait for initialization to show confirmation message
-    setTimeout(() => {
-        if (logger.isProductionEnv()) {
-            logger.originalConsole.log('🔒 Secure logging enabled for production environment');
-        } else {
-            logger.originalConsole.log('🔧 Secure logging initialized (development mode - no sanitization)');
-        }
-    }, 100);
+    // Logger initialized silently
 }

@@ -251,6 +251,10 @@
 
     <!-- Application Initialization Script -->
     <script type="module">
+        // Enable secure logging early to filter verbose logs
+        import { enableSecureLogging } from '/js/utils/logger.js';
+        enableSecureLogging();
+        
         import { showError } from '/js/modules/notifications.js';
         import envManager from '/js/modules/envManager.js';
         import appConfig from '/js/config/appConfig.js';
@@ -261,44 +265,44 @@
             const startTime = Date.now();
             
             try {
-                console.log('🚀 Starting app page initialization...');
+                // Starting app page initialization
                 
                 // STEP 1: Initialize environment manager first
-                console.log('🔧 Step 1: Initializing environment manager...');
+                // Step 1: Initializing environment manager
                 await envManager.init();
                 
                 // STEP 2: Initialize app configuration based on environment
-                console.log('📋 Step 2: Initializing app configuration...');
+                // Step 2: Initializing app configuration
                 const envConfig = envManager.getConfig();
                 appConfig.init(envConfig.server_type, envConfig.testing_mode);
                 
                 // **PERFORMANCE: Enable fast refresh mode if appropriate**
                 if (appConfig.shouldUseFastRefresh()) {
                     appConfig.enableFastRefresh();
-                    console.log('🚀 Fast refresh mode enabled - optimized timing');
+                    // Fast refresh mode enabled
                 }
                 
                 // STEP 3: Apply environment settings immediately
-                console.log('🎯 Step 3: Applying environment settings...');
+                // Step 3: Applying environment settings
                 envManager.applyEnvironmentSettings();
                 
                 // STEP 4: Wait for DOM and CSS stability
-                console.log('🎨 Step 4: Waiting for DOM stability...');
+                // Step 4: Waiting for DOM stability
                 await appConfig.delay('cssLoadWaitTime');
                 
                 // STEP 5: Apply layout consistency fixes
-                console.log('📐 Step 5: Applying layout fixes...');
+                // Step 5: Applying layout fixes
                 await applyLayoutFixes(envConfig);
                 
                 // STEP 6-8: Run authentication, testing UI, and stability delays in parallel
-                console.log('🔐 Step 6-8: Starting parallel initialization...');
+                // Step 6-8: Starting parallel initialization
                 
                 const authPromise = ensureAuthenticationReady(envConfig);
                 const domReadyPromise = appConfig.delay('domReadyDelay');
                 
                 let testingUIPromise = Promise.resolve();
                 if (envConfig.testing_mode) {
-                    console.log('🧪 Including testing mode UI in parallel initialization...');
+                    // Including testing mode UI in parallel initialization
                     testingUIPromise = testingModeUI.init();
                 }
                 
@@ -309,22 +313,22 @@
                     testingUIPromise
                 ]);
                 
-                console.log('✅ Parallel initialization complete');
+                // Parallel initialization complete
                 
                 // STEP 9: Initialize the main app (only if not already done by router)
-                console.log('🎯 Step 9: Initializing main application...');
+                // Step 9: Initializing main application
                 if (!window.isAppInitialized) {
                     const { initialize } = await import('/js/main.js');
                     await initialize();
                 } else {
-                    console.log('✅ App already initialized by router, skipping duplicate initialization');
+                    // App already initialized by router
                 }
                 
                 // STEP 10: Mark as ready and complete transition
                 document.body.classList.add('layout-ready', 'app-ready');
                 
                 // **SECURITY FIX: Removed timing information to prevent system profiling**
-                console.log('✅ App page initialized successfully');
+                // App page initialized successfully
                 
             } catch (error) {
                 console.error('❌ Failed to initialize app page:', error);
@@ -339,7 +343,7 @@
             try {
                 // **CRITICAL FIX: If router isn't initialized, initialize it first**
                 if (!window.router || !window.isFrameworkInitialized) {
-                    console.log('🔧 Router not found, initializing router and authentication...');
+                    // Router not found, initializing
                     
                     // Import and initialize the router
                     const { router } = await import('/js/modules/router.js');
@@ -348,56 +352,57 @@
                     window.router = router;
                     
                     // Initialize the router (this will set up auth modules)
-                    await router.init();
+                    // Pass skipInitialRoute to prevent circular initialization
+                    await router.init(true);
                     
                     // Mark framework as initialized
                     window.isFrameworkInitialized = true;
                     
-                    console.log('✅ Router and authentication modules initialized');
+                    // Router and authentication modules initialized
                     return;
                 }
                 
                 // Check if auth modules are already initialized by the router
                 if (window.authModule && window.sessionManager) {
-                    console.log('✅ Auth modules already initialized by router');
+                    // Auth modules already initialized
                     return;
                 }
                 
                 // Check if we're in testing mode
                 if (envConfig.testing_mode) {
-                    console.log('🧪 Testing mode - checking temp auth manager');
+                    // Testing mode check
                     
                     // Verify temp auth is available (should be initialized by router)
                     if (!window.tempAuthManager) {
                         console.warn('⚠️ Temp auth manager not found, router initialization may have failed');
                     } else {
-                        console.log('✅ Temp auth manager available');
+                        // Temp auth manager available
                     }
                     return;
                 }
                 
                 // Normal mode - check if router has initialized auth modules
-                console.log('🔑 Normal mode - checking auth module availability...');
+                // Normal mode - checking auth
                 
                 // Wait briefly for router auth initialization to complete
                 let attempts = 0;
                 const maxAttempts = 10;
                 
                 while ((!window.authModule || !window.sessionManager) && attempts < maxAttempts) {
-                    console.log(`⏳ Waiting for router auth initialization... (${attempts + 1}/${maxAttempts})`);
+                    // Waiting for router auth initialization
                     await new Promise(resolve => setTimeout(resolve, 200));
                     attempts++;
                 }
                 
                 if (window.authModule && window.sessionManager) {
-                    console.log('✅ Auth modules found - router initialization successful');
+                    // Auth modules found
                 } else {
                     console.warn('⚠️ Auth modules not available after waiting - router initialization may have failed');
                     console.warn('⚠️ App will continue with limited functionality');
                 }
                 
                 // **SECURITY FIX: Removed timing information to prevent system profiling**
-                console.log('✅ Authentication check completed');
+                // Authentication check completed
                 
             } catch (error) {
                 console.error('❌ Failed to verify authentication availability:', error);
@@ -419,7 +424,7 @@
             // Ensure layout stabilization
             await appConfig.delay('layoutStabilizationDelay');
             
-            console.log('🔧 Layout fixes applied - maintaining two-column layout');
+            // Layout fixes applied
         }
         
         // Ensure proper column order: Book Content (left), Book Sections (right)
@@ -441,7 +446,7 @@
                 // Ensure book content is first (left), sections is second (right)
                 mainContainer.appendChild(bookContentColumn);
                 mainContainer.appendChild(sectionsColumn);
-                console.log('📐 Column order verified: Book Content (left), Sections (right)');
+                // Column order verified
             }
         }
         

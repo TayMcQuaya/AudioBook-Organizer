@@ -214,7 +214,7 @@ function checkAuthenticationState() {
     
     const user = window.sessionManager?.user || window.authModule?.getCurrentUser?.();
     
-    console.log(`Initial auth check on landing page. SessionManager: ${sessionAuth}, AuthModule: ${authModuleAuth}, Final: ${isAuthenticated}`);
+    // Initial auth check performed silently
 
     if (isAuthenticated && user) {
         updateLandingPageForAuthenticatedUser(user);

@@ -115,7 +115,7 @@ class Router {
         Router.instance = this;
     }
     
-    async init() {
+    async init(skipInitialRoute = false) {
         if (this.isInitialized) return;
         
         console.log('🌐 Starting router initialization...');
@@ -154,10 +154,14 @@ class Router {
             // **PERFORMANCE: Reduce final initialization delay**
             await appConfig.delay('initializationDelay');
             
-            // STEP 10: Handle initial route
-            // **FIX: Include hash in initial route to preserve recovery tokens**
-            const initialPath = window.location.pathname + window.location.search + window.location.hash;
-            await this.handleRoute(initialPath);
+            // STEP 10: Handle initial route (unless skipped to prevent circular initialization)
+            if (!skipInitialRoute) {
+                // **FIX: Include hash in initial route to preserve recovery tokens**
+                const initialPath = window.location.pathname + window.location.search + window.location.hash;
+                await this.handleRoute(initialPath);
+            } else {
+                console.log('⏭️ Skipping initial route handling (app.html will handle it)');
+            }
             
             this.isInitialized = true;
             appConfig.logTiming('Router initialization', startTime);

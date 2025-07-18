@@ -31,7 +31,7 @@ class TempAuth {
                 if (mutation.type === 'childList') {
                     const tempForm = document.getElementById('tempAuthForm');
                     if (tempForm && !this.form) {
-                        console.log('🔧 Temp auth form detected via MutationObserver');
+                        // Temp auth form detected
                         observer.disconnect();
                         this.setupFormElements();
                     }
@@ -53,15 +53,10 @@ class TempAuth {
     
     setupFormElements() {
         // Separate method for setting up form elements once they're found
-        console.log('🔧 Attempting to find temp auth form elements...');
+        // Attempting to find temp auth form elements
         
         // Debug: Check what's actually in the DOM
-        console.log('🔧 Current DOM state:');
-        console.log('  - Document ready state:', document.readyState);
-        console.log('  - appContainer exists:', !!document.getElementById('appContainer'));
-        console.log('  - appContainer innerHTML length:', document.getElementById('appContainer')?.innerHTML?.length || 0);
-        console.log('  - All forms in document:', document.querySelectorAll('form').length);
-        console.log('  - Form with tempAuthForm ID:', !!document.getElementById('tempAuthForm'));
+        // DOM state checked
         
         this.form = document.getElementById('tempAuthForm');
         this.passwordInput = document.getElementById('password');
@@ -70,7 +65,7 @@ class TempAuth {
         this.loadingIndicator = document.getElementById('loadingIndicator');
         
         if (this.form) {
-            console.log('✅ All temp auth form elements found successfully');
+            // All temp auth form elements found
             
             // Add event listeners
             this.form.addEventListener('submit', (e) => this.handleSubmit(e));
@@ -85,15 +80,10 @@ class TempAuth {
             // Focus on password field
             this.passwordInput.focus();
             
-            console.log('✅ Temp auth form initialized successfully');
+            // Temp auth form initialized
             return true;
         } else {
-            console.log('❌ Temp auth form not found. Elements found:');
-            console.log('  - form (tempAuthForm):', !!this.form);
-            console.log('  - passwordInput (password):', !!this.passwordInput);
-            console.log('  - submitBtn (submitBtn):', !!this.submitBtn);
-            console.log('  - errorMessage (errorMessage):', !!this.errorMessage);
-            console.log('  - loadingIndicator (loadingIndicator):', !!this.loadingIndicator);
+            // Temp auth form not found
         }
         return false;
     }
@@ -114,7 +104,7 @@ class TempAuth {
             }
             
             retryCount++;
-            console.log(`🔧 Waiting for temp auth form to be available... (attempt ${retryCount}/${maxRetries})`);
+            // Waiting for temp auth form
             
             if (retryCount >= maxRetries) {
                 console.error('❌ Failed to find temp auth form after maximum retries');

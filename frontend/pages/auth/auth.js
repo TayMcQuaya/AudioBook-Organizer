@@ -45,7 +45,7 @@ let authStateChangeHandler = null;
  * @param {object} auth - The authentication module instance
  */
 export async function initAuthPage(auth) {
-    console.log('🔐 Initializing authentication page...');
+    // Initializing authentication page
     authModule = auth;
 
     try {
@@ -58,13 +58,13 @@ export async function initAuthPage(auth) {
         }
 
         // Initialize reCAPTCHA service
-        console.log('🔐 Initializing reCAPTCHA service...');
+        // Initializing reCAPTCHA service
         await recaptcha.init();
 
         // Check if this is a Google OAuth callback
         const params = new URLSearchParams(window.location.search);
         if (params.get('from') === 'google') {
-            console.log('📱 Detected Google OAuth callback');
+            // Detected Google OAuth callback
             showInfo('Completing Google sign-in...');
             
             // Wait for Supabase to process the OAuth session
@@ -74,7 +74,7 @@ export async function initAuthPage(auth) {
             const waitForOAuthSession = async () => {
                 while (attempts < maxAttempts) {
                     if (authModule.isAuthenticated()) {
-                        console.log('✅ Google OAuth session established');
+                        // Google OAuth session established
                         showSuccess('Google sign-in successful! Redirecting...');
                         
                         // Navigate to app after successful OAuth
@@ -105,7 +105,7 @@ export async function initAuthPage(auth) {
 
         // Check if user is already authenticated
         if (authModule.isAuthenticated && authModule.isAuthenticated()) {
-            console.log('User already authenticated, redirecting to app...');
+            // User already authenticated, redirecting
             const returnUrl = params.get('return') || '/app';
             window.location.href = returnUrl;
             return;
@@ -128,7 +128,7 @@ export async function initAuthPage(auth) {
         // Show initial form based on URL parameters
         handleInitialRoute();
         
-        console.log('✅ Authentication page initialized');
+        // Authentication page initialized
         
     } catch (error) {
         console.error('❌ Failed to initialize auth page:', error);
@@ -139,7 +139,7 @@ export async function initAuthPage(auth) {
  * Get all DOM elements
  */
 function getDOMElements() {
-    console.log('🔍 Getting DOM elements...');
+    // Getting DOM elements
     
     // Cards
     elements.loginCard = document.getElementById('loginCard');
@@ -171,7 +171,7 @@ function getDOMElements() {
         if (!elements[elementName]) {
             console.error(`❌ Critical element not found: ${elementName}`);
         } else {
-            console.log(`✅ Found element: ${elementName}`);
+            // Element found
         }
     });
 }
@@ -180,12 +180,12 @@ function getDOMElements() {
  * Set up event listeners
  */
 function setupEventListeners() {
-    console.log('🎯 Setting up event listeners...');
+    // Setting up event listeners
     
     // Form switching using event delegation for robustness
     const authContainer = document.querySelector('.auth-container');
     if (authContainer) {
-        console.log('✅ Auth container found, setting up button event delegation');
+        // Auth container found
         authContainer.addEventListener('click', (e) => {
             const button = e.target.closest('button');
             if (!button) return;
@@ -193,18 +193,18 @@ function setupEventListeners() {
             let actionHandled = false;
             switch (button.id) {
                 case 'showSignupBtn':
-                    console.log('📝 Switching to signup form');
+                    // Switching to signup form
                     switchForm('signup');
                     actionHandled = true;
                     break;
                 case 'showLoginBtn':
                 case 'backToLoginBtn':
-                    console.log('🔐 Switching to login form');
+                    // Switching to login form
                     switchForm('login');
                     actionHandled = true;
                     break;
                 case 'forgotPasswordBtn':
-                    console.log('🔑 Switching to forgot password form');
+                    // Switching to forgot password form
                     switchForm('forgot');
                     actionHandled = true;
                     break;
@@ -219,21 +219,21 @@ function setupEventListeners() {
     
     // Form submissions (these are reliable as they are on form elements)
     if (elements.loginForm) {
-        console.log('✅ Adding login form submit listener');
+        // Adding login form submit listener
         elements.loginForm.addEventListener('submit', handleLoginSubmit);
     } else {
         console.error('❌ Login form not found!');
     }
     
     if (elements.signupForm) {
-        console.log('✅ Adding signup form submit listener');
+        // Adding signup form submit listener
         elements.signupForm.addEventListener('submit', handleSignupSubmit);
     } else {
         console.error('❌ Signup form not found!');
     }
     
     if (elements.forgotPasswordForm) {
-        console.log('✅ Adding forgot password form submit listener');
+        // Adding forgot password form submit listener
         elements.forgotPasswordForm.addEventListener('submit', handleForgotPasswordSubmit);
     } else {
         console.error('❌ Forgot password form not found!');
@@ -250,7 +250,7 @@ function setupEventListeners() {
     
     // Auth state listener (optional)
     if (authModule && typeof authModule.addAuthListener === 'function') {
-        console.log('✅ Adding auth state listener');
+        // Adding auth state listener
         authStateChangeHandler = (event, session) => handleAuthStateChange(event, session);
         authModule.addAuthListener(authStateChangeHandler);
     } else {
@@ -336,12 +336,12 @@ function updatePasswordStrength(indicator, strength) {
  * Set up social authentication
  */
 function setupSocialAuth() {
-    console.log('🌐 Setting up social auth buttons...');
+    // Setting up social auth buttons
     const googleSignInBtn = document.getElementById('googleSignInBtn');
     const googleSignUpBtn = document.getElementById('googleSignUpBtn');
     
     const handleGoogleAuth = async (action) => {
-        console.log(`🔍 Google ${action} button clicked`);
+        // Google button clicked
         
         if (!authModule) {
             console.error('❌ Auth module not available');
@@ -350,7 +350,7 @@ function setupSocialAuth() {
         }
 
         if (isLoading) {
-            console.log('⏳ Already loading, ignoring Google auth request');
+            // Already loading, ignoring request
             return;
         }
 

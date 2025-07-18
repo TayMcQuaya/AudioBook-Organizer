@@ -692,10 +692,7 @@ export async function loadFromDatabase() {
                 // Show restore notification
                 showSuccess(`📂 Project restored! Last saved: ${new Date(result.metadata.updated_at).toLocaleString()}`);
                 
-                console.log('✅ Project restored from database:', {
-                    title: result.metadata.title,
-                    updated_at: result.metadata.updated_at
-                });
+                console.log('✅ Project restored from database');
                 
                 return true;
             } else {

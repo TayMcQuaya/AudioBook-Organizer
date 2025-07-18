@@ -69,7 +69,7 @@ async function handleFormSubmit(event) {
 
 // Submit form data to backend
 async function submitToBackend(formData) {
-    console.log('Submitting contact form:', formData);
+    // Removed console.log to prevent exposing user contact info
     
     const response = await fetch('/api/contact', {
         method: 'POST',

@@ -572,7 +572,7 @@ async function processTextFile(file) {
     formData.append('file', file);
 
     try {
-        console.log('📡 Sending TXT file to backend: /api/upload/txt');
+        // **SECURITY FIX: Removed API endpoint logging**
         const response = await apiFetch('/upload/txt', {
             method: 'POST',
             body: formData,

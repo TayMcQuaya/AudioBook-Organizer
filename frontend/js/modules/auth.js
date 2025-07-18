@@ -67,11 +67,7 @@ class AuthModule {
                     this.userInitialized = data.userInitialized || false;
                     this.newUserCreditsShown = data.newUserCreditsShown || false;
                     this.sessionId = data.sessionId;
-                    console.log('🔄 Restored session flags:', { 
-                        welcomeShown: this.welcomeShownThisSession, 
-                        userInit: this.userInitialized,
-                        creditsShown: this.newUserCreditsShown 
-                    });
+                    // Session flags restored silently
                 }
             }
         } catch (error) {
@@ -170,12 +166,12 @@ class AuthModule {
             let createClient = window.supabaseCreateClient;
             
             if (!createClient) {
-                console.warn('⚠️ Supabase not loaded globally, attempting dynamic import...');
+                // Supabase not loaded globally, attempting dynamic import
                 try {
                     // Try jsdelivr as fallback
                     const supabaseModule = await import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm');
                     createClient = supabaseModule.createClient;
-                    console.log('✅ Loaded Supabase from jsdelivr');
+                    // Loaded Supabase from jsdelivr
                 } catch (e1) {
                     try {
                         // Fallback to unpkg
@@ -517,10 +513,9 @@ class AuthModule {
                     if (window.location.hash) {
                         // **SECURITY FIX: Removed URL exposure to prevent privacy leak**
             console.log('🚫 Preventing navigation from landing page - user specifically navigated here');
-                        console.log('✅ User chose landing page with hash, respecting their choice (e.g., pricing section)');
+                        // User chose landing page with hash
                     } else {
-                        console.log('🚫 Preventing navigation from landing page during refresh/session restoration');
-                        console.log('✅ User chose to be on landing page, respecting their choice');
+                        // Preventing navigation - user chose landing page
                     }
                 } else if (currentPath.startsWith('/payment/')) {
                     // **CRITICAL FIX: Don't navigate away from any payment pages**
@@ -796,7 +791,7 @@ class AuthModule {
                 this.saveSessionFlags();
             } else {
                 // **SECURITY FIX: Removed data object to prevent backend structure exposure**
-            console.error('Failed to initialize user: API response error');
+            // Failed to initialize user - API response error
             }
         } catch (error) {
             console.error('Error initializing user:', error);
@@ -1184,10 +1179,10 @@ class AuthModule {
             const response = await this.apiRequest(endpoint);
 
             const data = await response.json();
-            console.log('💎 getUserCredits: API response:', data);
+            // **SECURITY FIX: Removed API response logging to prevent credit exposure**
             
             if (data.success) {
-                console.log(`💎 getUserCredits: Returning ${data.credits} credits`);
+                // **SECURITY FIX: Removed credit value logging**
                 return data.credits;
             }
             
@@ -1232,7 +1227,7 @@ class AuthModule {
             }
 
             const data = await response.json();
-            console.log('🔄 refreshUserData: Profile data received:', data);
+            // **SECURITY FIX: Removed profile data logging to prevent user ID and info exposure**
             
             if (data.success && data.profile) {
                 // Update the user object with fresh profile data
@@ -1277,16 +1272,11 @@ class AuthModule {
                 }
             }
             
-            console.warn('🔄 refreshUserData: No profile data in response');
+            // No profile data in response
             return null;
             
         } catch (error) {
-            console.error('🔄 refreshUserData: Error fetching profile:', error.message || error);
-            console.error('🔄 refreshUserData: Error details:', {
-                name: error.name,
-                message: error.message,
-                stack: error.stack?.split('\n')[0]
-            });
+            // Profile refresh error - handled silently
             return null;
         }
     }
@@ -1349,13 +1339,13 @@ class AuthModule {
         let sessionToken = null;
         try {
             const { data: { session } } = await supabaseClient.auth.getSession();
-            console.log('💎 API Request - Session check:', session ? 'Found' : 'NULL', endpoint);
+            // **SECURITY FIX: Removed endpoint logging**
             
             if (session && session.access_token) {
                 sessionToken = session.access_token;
                 defaultOptions.headers['Authorization'] = `Bearer ${sessionToken}`;
             } else {
-                console.warn('💎 API Request - No session found, attempting retry...', endpoint);
+                console.warn('💎 API Request - No session found, attempting retry...');
                 
                 // Wait a bit and try again (session recovery might still be in progress)
                 await new Promise(resolve => setTimeout(resolve, 100));
@@ -1364,7 +1354,7 @@ class AuthModule {
                 if (retrySession && retrySession.access_token) {
                     sessionToken = retrySession.access_token;
                     defaultOptions.headers['Authorization'] = `Bearer ${sessionToken}`;
-                    console.log('💎 API Request - Retry successful:', endpoint);
+                    console.log('💎 API Request - Retry successful');
                 } else {
                     console.warn('💎 API Request - No token after retry, request may fail:', endpoint);
                 }
