@@ -330,15 +330,34 @@
                 // **SECURITY FIX: Removed timing information to prevent system profiling**
                 // App page initialized successfully
                 
-                // IMPORTANT: Re-attach event listeners for navigation if router exists
-                if (window.router && window.router._setupEventListeners) {
+                // IMPORTANT: Ensure navigation works by making router methods globally accessible
+                if (window.router) {
+                    // Make navigate method globally accessible for inline onclick handlers
+                    window.routerNavigate = (path) => {
+                        console.log(`🔗 Navigation requested to: ${path}`);
+                        return window.router.navigate(path);
+                    };
+                    
+                    // Fix data-link navigation by ensuring event delegation works
                     setTimeout(() => {
-                        // Remove existing listeners to avoid duplicates
-                        document.removeEventListener('click', window.router.handleLinkClick);
-                        // Re-attach to ensure they work
-                        document.addEventListener('click', window.router.handleLinkClick);
-                        console.log('📡 Re-attached navigation event listeners for app page');
-                    }, 100);
+                        const links = document.querySelectorAll('a[data-link]');
+                        console.log(`🔗 Found ${links.length} navigation links to fix`);
+                        
+                        // Add explicit click handlers as backup
+                        links.forEach(link => {
+                            if (!link._routerClickHandler) {
+                                link._routerClickHandler = (e) => {
+                                    e.preventDefault();
+                                    const href = link.getAttribute('href');
+                                    if (href && window.router) {
+                                        console.log(`🔗 Direct navigation to: ${href}`);
+                                        window.router.navigate(href);
+                                    }
+                                };
+                                link.addEventListener('click', link._routerClickHandler);
+                            }
+                        });
+                    }, 1000); // Wait for DOM to be fully ready
                 }
                 
             } catch (error) {
@@ -371,12 +390,35 @@
                     
                     // Router and authentication modules initialized
                     
-                    // IMPORTANT: Trigger profile refresh when loading app directly
+                    // IMPORTANT: Fix user data and navigation when loading app directly
                     if (window.authModule && window.authModule.isAuthenticated()) {
                         console.log('🔄 Triggering profile refresh for direct app load...');
-                        window.authModule.refreshUserData(true, false).catch(err => {
+                        try {
+                            await window.authModule.refreshUserData(true, false);
+                            console.log('✅ Profile data refreshed');
+                            
+                            // Force UI update with fresh data after refresh completes
+                            setTimeout(async () => {
+                                // Wait for appUI to be available (it's initialized later)
+                                let attempts = 0;
+                                while (!window.appUI && attempts < 20) {
+                                    await new Promise(resolve => setTimeout(resolve, 200));
+                                    attempts++;
+                                }
+                                
+                                if (window.appUI && window.appUI.createUserNavigation) {
+                                    const user = window.authModule.getCurrentUser();
+                                    if (user) {
+                                        console.log('🔄 Updating UI with fresh user data...');
+                                        window.appUI.createUserNavigation(user);
+                                    }
+                                } else {
+                                    console.warn('⚠️ Could not update UI - appUI not available');
+                                }
+                            }, 1000); // Initial delay to let app start initializing
+                        } catch (err) {
                             console.warn('Failed to refresh user data:', err);
-                        });
+                        }
                     }
                     
                     return;

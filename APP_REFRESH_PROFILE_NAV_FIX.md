@@ -1,4 +1,4 @@
-# App Refresh Profile & Navigation Fix
+# App Refresh Profile & Navigation Fix (Complete Solution)
 
 ## Issues After Initial Fix
 After fixing the circular initialization, two new issues appeared when refreshing directly on `/app`:
@@ -6,46 +6,70 @@ After fixing the circular initialization, two new issues appeared when refreshin
 1. **Old nickname displayed** instead of current profile name
 2. **Navigation links not working** (can't go back to landing page)
 
-## Root Cause
+## Root Cause Analysis
 When `router.init(true)` skips initial route handling:
 - Profile refresh wasn't triggered for authenticated users
-- Navigation event listeners might not be properly attached in some edge cases
+- Navigation event listeners attached by router weren't working due to timing/context issues
+- appUI module wasn't available when trying to update the UI
 
-## Solution
+## Complete Solution
 
-### 1. Profile Refresh Fix
-Added explicit profile refresh when router is initialized from app.html:
+### 1. Profile Refresh & UI Update Fix
+Wait for profile refresh and then update UI when appUI is available:
 
 ```javascript
 // In app.html, after router.init(true)
 if (window.authModule && window.authModule.isAuthenticated()) {
-    console.log('🔄 Triggering profile refresh for direct app load...');
-    window.authModule.refreshUserData(true, false).catch(err => {
-        console.warn('Failed to refresh user data:', err);
-    });
+    await window.authModule.refreshUserData(true, false);
+    
+    // Wait for appUI to be available and update UI
+    setTimeout(async () => {
+        let attempts = 0;
+        while (!window.appUI && attempts < 20) {
+            await new Promise(resolve => setTimeout(resolve, 200));
+            attempts++;
+        }
+        
+        if (window.appUI && window.appUI.createUserNavigation) {
+            const user = window.authModule.getCurrentUser();
+            if (user) {
+                window.appUI.createUserNavigation(user);
+            }
+        }
+    }, 1000);
 }
 ```
 
-### 2. Navigation Event Listeners Fix
-Re-attach event listeners after app initialization to ensure they work:
+### 2. Navigation Fix with Direct Click Handlers
+Add explicit click handlers to navigation links as backup:
 
 ```javascript
-// At the end of app initialization
-if (window.router && window.router._setupEventListeners) {
-    setTimeout(() => {
-        document.removeEventListener('click', window.router.handleLinkClick);
-        document.addEventListener('click', window.router.handleLinkClick);
-        console.log('📡 Re-attached navigation event listeners for app page');
-    }, 100);
-}
+// Make router globally accessible
+window.routerNavigate = (path) => window.router.navigate(path);
+
+// Add direct click handlers to all data-link elements
+setTimeout(() => {
+    const links = document.querySelectorAll('a[data-link]');
+    links.forEach(link => {
+        link.addEventListener('click', (e) => {
+            e.preventDefault();
+            const href = link.getAttribute('href');
+            if (href && window.router) {
+                window.router.navigate(href);
+            }
+        });
+    });
+}, 1000);
 ```
 
 ## Why This Works
-- Profile refresh ensures latest user data is loaded when accessing app directly
-- Re-attaching event listeners ensures navigation links (`data-link` attributes) work properly
-- Small timeout allows DOM to stabilize before re-attaching listeners
+- Profile refresh completes before UI update
+- Waiting for appUI ensures the module is ready
+- Direct click handlers bypass any event delegation issues
+- Global routerNavigate provides fallback navigation method
 
 ## Testing
-1. Log in normally → Navigate to app → Refresh page
-2. Check that correct nickname appears
-3. Check that clicking brand logo or back arrow returns to landing page
+1. Log in → Navigate to app → Refresh page
+2. Verify correct nickname appears (may take 1-2 seconds)
+3. Verify navigation links work (logo, back arrow)
+4. Check browser console for any errors
