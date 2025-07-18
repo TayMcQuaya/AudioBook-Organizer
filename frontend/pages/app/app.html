@@ -330,6 +330,17 @@
                 // **SECURITY FIX: Removed timing information to prevent system profiling**
                 // App page initialized successfully
                 
+                // IMPORTANT: Re-attach event listeners for navigation if router exists
+                if (window.router && window.router._setupEventListeners) {
+                    setTimeout(() => {
+                        // Remove existing listeners to avoid duplicates
+                        document.removeEventListener('click', window.router.handleLinkClick);
+                        // Re-attach to ensure they work
+                        document.addEventListener('click', window.router.handleLinkClick);
+                        console.log('📡 Re-attached navigation event listeners for app page');
+                    }, 100);
+                }
+                
             } catch (error) {
                 console.error('❌ Failed to initialize app page:', error);
                 showError('Failed to initialize the application. Please refresh the page.');
@@ -359,6 +370,15 @@
                     window.isFrameworkInitialized = true;
                     
                     // Router and authentication modules initialized
+                    
+                    // IMPORTANT: Trigger profile refresh when loading app directly
+                    if (window.authModule && window.authModule.isAuthenticated()) {
+                        console.log('🔄 Triggering profile refresh for direct app load...');
+                        window.authModule.refreshUserData(true, false).catch(err => {
+                            console.warn('Failed to refresh user data:', err);
+                        });
+                    }
+                    
                     return;
                 }
                 
