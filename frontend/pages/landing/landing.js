@@ -816,7 +816,14 @@ async function navigateToCredits(packageType = null) {
  */
 function navigateToContact(reason = 'enterprise') {
     console.log(`📞 Navigating to contact page with subject: ${reason}`);
-    window.location.href = `/contact?subject=${reason}`;
+    
+    // Use router if available for SPA navigation
+    if (window.router && typeof window.router.navigate === 'function') {
+        window.router.navigate(`/contact?subject=${reason}`);
+    } else {
+        // Fallback to direct navigation
+        window.location.href = `/contact?subject=${reason}`;
+    }
 }
 
 // Make functions globally available for HTML onclick handlers

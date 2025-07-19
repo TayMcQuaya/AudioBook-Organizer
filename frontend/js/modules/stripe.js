@@ -493,7 +493,7 @@ class StripeService {
                                 <span class="value-amount">Priority support, custom invoicing</span>
                             </div>
                         </div>
-                        <button class="package-button" onclick="window.location.href='/contact?subject=enterprise'">
+                        <button class="package-button" onclick="window.navigateToContactFromModal()">
                             <span class="button-text">Contact Sales</span>
                             <span class="button-icon">→</span>
                         </button>
@@ -551,7 +551,7 @@ class StripeService {
                             <span class="value-amount">Priority support, custom invoicing</span>
                         </div>
                     </div>
-                    <button class="package-button" onclick="window.location.href='/contact?subject=enterprise'">
+                    <button class="package-button" onclick="window.navigateToContactFromModal()">
                         <span class="button-text">Contact Sales</span>
                         <span class="button-icon">→</span>
                     </button>
@@ -738,6 +738,33 @@ export function ensureStripeServiceGlobal() {
     }
     return window.stripeService;
 }
+
+/**
+ * Navigate to contact page from modal
+ */
+window.navigateToContactFromModal = function() {
+    console.log('📞 Navigating to contact page from modal with enterprise subject');
+    
+    // Close the low credits modal
+    const modal = document.getElementById('lowCreditsModal');
+    if (modal) {
+        modal.style.display = 'none';
+        document.body.style.overflow = ''; // Restore scrolling
+    }
+    
+    // Also try the safer method
+    if (window.hideLowCreditsModal) {
+        window.hideLowCreditsModal();
+    }
+    
+    // Use router if available, otherwise direct navigation
+    if (window.router && typeof window.router.navigate === 'function') {
+        window.router.navigate('/contact?subject=enterprise');
+    } else {
+        // Force a full page navigation to break out of SPA context
+        window.location.replace('/contact?subject=enterprise');
+    }
+};
 
 /**
  * Safe wrapper for calling stripeService methods from HTML onclick handlers

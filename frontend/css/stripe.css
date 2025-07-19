@@ -89,12 +89,12 @@
     border: 2px solid var(--border-color);
     border-radius: 12px;
     padding: 1.25rem; /* Reduced padding for more compact design */
-    padding-top: 2rem; /* Extra top padding to accommodate badges */
+    padding-top: 1.75rem; /* Extra top padding to accommodate badges */
     transition: all 0.3s ease;
     cursor: pointer;
     overflow: visible; /* Changed to visible so badges aren't cut off */
     animation: fadeIn 0.5s ease-out;
-    min-height: 380px;
+    min-height: 360px;
     display: flex;
     flex-direction: column;
 }

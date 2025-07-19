@@ -208,7 +208,7 @@ export async function showLowCreditsModal() {
                 <div class="modal-content">
                     <span class="close" onclick="hideLowCreditsModal()">&times;</span>
                     <h2>Need More Credits?</h2>
-                    <p>You're running low on credits. Credits are used for:</p>
+                    <p>Buy more if you are low on credits. Credits are used for:</p>
                     <ul>
                         <li><span class="emoji">📄</span> <strong>DOCX processing (${costs.docx_processing} credits per document)</strong></li>
                         <li><span class="emoji">🎵</span> <strong>Audio file upload (${costs.audio_upload} credits per file)</strong></li>
