@@ -175,8 +175,9 @@ enableSecureLogging();
             
             // Import and expose the required functions
             const { uploadBook } = await import('/js/modules/bookUpload.js');
-            const { performSmartSelect, resetSmartSelect } = await import('/js/modules/smartSelect.js');
-            const { hideSelectionTools } = await import('/js/modules/selectionTools.js');
+            const { performSmartSelect, resetSmartSelect, highlightSmartSelection } = await import('/js/modules/smartSelect.js');
+            const { showSelectionTools, hideSelectionTools, clearTextSelection } = await import('/js/modules/selectionTools.js');
+            const { showSuccess } = await import('/js/modules/notifications.js');
             const { showExportModal, hideExportModal } = await import('/js/modules/ui.js');
             const { startExport } = await import('/js/modules/export.js');
             const { createNewChapter, updateChapterName, toggleChapter, deleteChapter, toggleChapterPlayback, seekChapterAudio } = await import('/js/modules/chapters.js');
@@ -186,24 +187,32 @@ enableSecureLogging();
             const { createSection, attachAudio, updateSectionName, deleteSection, navigateToSection, removeAudio, clearMissingAudio, copySectionText } = await import('/js/modules/sections.js');
             const { toggleTableOfContents } = await import('/js/modules/tableOfContents.js');
             
-            // Create wrapper functions like in main.js
+            // Smart Select function - automatically selects configurable character chunks ending on periods
             window.smartSelect = function() {
+                // Perform the smart selection
                 const selection = performSmartSelect();
+                
                 if (selection) {
-                    const smartSelectBtn = document.getElementById('smartSelectBtn');
-                    if (smartSelectBtn) {
-                        smartSelectBtn.textContent = 'Next Selection';
+                    // Highlight the selected text
+                    const highlighted = highlightSmartSelection(selection);
+                    console.log(`Highlighting result: ${highlighted}`);
+                    
+                    // Show selection tools using dedicated module
+                    showSelectionTools(selection);
+                    
+                    // Log warning if highlighting failed but tools are still shown
+                    if (!highlighted) {
+                        console.warn('Text highlighting failed, but selection tools are still available');
                     }
                 }
             };
             
+            // Reset smart select position function
             window.resetSmartSelectPosition = function() {
                 resetSmartSelect();
                 hideSelectionTools();
-                const smartSelectBtn = document.getElementById('smartSelectBtn');
-                if (smartSelectBtn) {
-                    smartSelectBtn.textContent = 'Smart Select';
-                }
+                clearTextSelection();
+                showSuccess('Smart selection position reset to the beginning!');
             };
             
             // Make functions globally available
@@ -288,8 +297,10 @@ The app.html uses inline onclick handlers that expect global functions:
 - Functions are normally exposed by main.js
 - During refresh, main.js isn't loaded
 - Must manually import and expose each function to window object
-- Some functions (smartSelect, resetSmartSelectPosition) are wrapper functions that need to be recreated
+- Some functions (smartSelect, resetSmartSelectPosition) are wrapper functions that need to be recreated exactly as in main.js
 - Wrapper functions combine multiple module functions and handle UI updates
+- Must import all dependencies: `highlightSmartSelection`, `showSelectionTools`, `clearTextSelection`, `showSuccess`
+- Be careful about which module exports which function (e.g., `clearTextSelection` is in selectionTools.js)
 - Includes ALL interactive functions:
   - Book/Audio upload: `uploadBook`, `attachAudio`
   - Smart selection: `smartSelect`, `resetSmartSelectPosition`
@@ -339,3 +350,4 @@ If issues persist after implementation:
 5. **Profile data old:** Check if `authModule.refreshUserData()` runs
 6. **Onclick handlers undefined:** Check if all functions are imported and exposed to window
 7. **Function not a function errors:** Some functions may be wrappers - check main.js for the actual implementation
+8. **Import errors:** Check which module exports the function - e.g., `clearTextSelection` is in selectionTools.js not textSelection.js

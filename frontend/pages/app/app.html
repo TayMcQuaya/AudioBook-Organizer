@@ -308,8 +308,9 @@
                 
                 // Import and expose the required functions
                 const { uploadBook } = await import('/js/modules/bookUpload.js');
-                const { performSmartSelect, resetSmartSelect } = await import('/js/modules/smartSelect.js');
-                const { hideSelectionTools } = await import('/js/modules/selectionTools.js');
+                const { performSmartSelect, resetSmartSelect, highlightSmartSelection } = await import('/js/modules/smartSelect.js');
+                const { showSelectionTools, hideSelectionTools, clearTextSelection } = await import('/js/modules/selectionTools.js');
+                const { showSuccess } = await import('/js/modules/notifications.js');
                 const { showExportModal, hideExportModal } = await import('/js/modules/ui.js');
                 const { startExport } = await import('/js/modules/export.js');
                 const { createNewChapter, updateChapterName, toggleChapter, deleteChapter, toggleChapterPlayback, seekChapterAudio } = await import('/js/modules/chapters.js');
@@ -319,24 +320,32 @@
                 const { createSection, attachAudio, updateSectionName, deleteSection, navigateToSection, removeAudio, clearMissingAudio, copySectionText } = await import('/js/modules/sections.js');
                 const { toggleTableOfContents } = await import('/js/modules/tableOfContents.js');
                 
-                // Create wrapper functions like in main.js
+                // Smart Select function - automatically selects configurable character chunks ending on periods
                 window.smartSelect = function() {
+                    // Perform the smart selection
                     const selection = performSmartSelect();
+                    
                     if (selection) {
-                        const smartSelectBtn = document.getElementById('smartSelectBtn');
-                        if (smartSelectBtn) {
-                            smartSelectBtn.textContent = 'Next Selection';
+                        // Highlight the selected text
+                        const highlighted = highlightSmartSelection(selection);
+                        console.log(`Highlighting result: ${highlighted}`);
+                        
+                        // Show selection tools using dedicated module
+                        showSelectionTools(selection);
+                        
+                        // Log warning if highlighting failed but tools are still shown
+                        if (!highlighted) {
+                            console.warn('Text highlighting failed, but selection tools are still available');
                         }
                     }
                 };
                 
+                // Reset smart select position function
                 window.resetSmartSelectPosition = function() {
                     resetSmartSelect();
                     hideSelectionTools();
-                    const smartSelectBtn = document.getElementById('smartSelectBtn');
-                    if (smartSelectBtn) {
-                        smartSelectBtn.textContent = 'Smart Select';
-                    }
+                    clearTextSelection();
+                    showSuccess('Smart selection position reset to the beginning!');
                 };
                 
                 // Make functions globally available
