@@ -127,7 +127,7 @@ function init() {
 }
 
 // Handle URL parameters to pre-fill form
-function handleUrlParameters() {
+async function handleUrlParameters() {
     const urlParams = new URLSearchParams(window.location.search);
     const subject = urlParams.get('subject');
     
@@ -145,6 +145,49 @@ function handleUrlParameters() {
                     messageTextarea.value = 'I am interested in enterprise/custom pricing for AudioBook Organizer. Please provide information about bulk credit packages and volume discounts.';
                 }
             }
+        }
+    }
+    
+    // Pre-fill name and email for authenticated users
+    if (checkMultipleAuthSources()) {
+        try {
+            let userEmail = null;
+            let userName = null;
+            
+            // Get user data from session
+            if (window.sessionManager && window.sessionManager.getSession) {
+                const session = window.sessionManager.getSession();
+                if (session?.user) {
+                    userEmail = session.user.email;
+                    // Get the profile name (this is updated when user changes it in profile)
+                    userName = session.user.full_name || session.user.user_metadata?.full_name;
+                }
+            }
+            
+            // If we still need data, check auth module
+            if (!userName || !userEmail) {
+                if (window.authModule && window.authModule.getCurrentUser) {
+                    const currentUser = window.authModule.getCurrentUser();
+                    if (currentUser) {
+                        userEmail = userEmail || currentUser.email;
+                        userName = userName || currentUser.full_name || currentUser.user_metadata?.full_name;
+                    }
+                }
+            }
+            
+            // Pre-fill the form
+            const emailInput = document.getElementById('email');
+            if (emailInput && !emailInput.value && userEmail) {
+                emailInput.value = userEmail;
+            }
+            
+            const nameInput = document.getElementById('name');
+            if (nameInput && !nameInput.value && userName) {
+                nameInput.value = userName;
+            }
+            
+        } catch (error) {
+            // Silent fail
         }
     }
 }
