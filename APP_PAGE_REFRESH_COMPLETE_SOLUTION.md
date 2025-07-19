@@ -175,7 +175,8 @@ enableSecureLogging();
             
             // Import and expose the required functions
             const { uploadBook } = await import('/js/modules/bookUpload.js');
-            const { smartSelect, resetSmartSelectPosition } = await import('/js/modules/smartSelect.js');
+            const { performSmartSelect, resetSmartSelect } = await import('/js/modules/smartSelect.js');
+            const { hideSelectionTools } = await import('/js/modules/selectionTools.js');
             const { showExportModal, hideExportModal } = await import('/js/modules/ui.js');
             const { startExport } = await import('/js/modules/export.js');
             const { createNewChapter, updateChapterName, toggleChapter, deleteChapter, toggleChapterPlayback, seekChapterAudio } = await import('/js/modules/chapters.js');
@@ -185,10 +186,28 @@ enableSecureLogging();
             const { createSection, attachAudio, updateSectionName, deleteSection, navigateToSection, removeAudio, clearMissingAudio, copySectionText } = await import('/js/modules/sections.js');
             const { toggleTableOfContents } = await import('/js/modules/tableOfContents.js');
             
+            // Create wrapper functions like in main.js
+            window.smartSelect = function() {
+                const selection = performSmartSelect();
+                if (selection) {
+                    const smartSelectBtn = document.getElementById('smartSelectBtn');
+                    if (smartSelectBtn) {
+                        smartSelectBtn.textContent = 'Next Selection';
+                    }
+                }
+            };
+            
+            window.resetSmartSelectPosition = function() {
+                resetSmartSelect();
+                hideSelectionTools();
+                const smartSelectBtn = document.getElementById('smartSelectBtn');
+                if (smartSelectBtn) {
+                    smartSelectBtn.textContent = 'Smart Select';
+                }
+            };
+            
             // Make functions globally available
             window.uploadBook = uploadBook;
-            window.smartSelect = smartSelect;
-            window.resetSmartSelectPosition = resetSmartSelectPosition;
             window.showExportModal = showExportModal;
             window.hideExportModal = hideExportModal;
             window.startExport = startExport;
@@ -269,6 +288,8 @@ The app.html uses inline onclick handlers that expect global functions:
 - Functions are normally exposed by main.js
 - During refresh, main.js isn't loaded
 - Must manually import and expose each function to window object
+- Some functions (smartSelect, resetSmartSelectPosition) are wrapper functions that need to be recreated
+- Wrapper functions combine multiple module functions and handle UI updates
 - Includes ALL interactive functions:
   - Book/Audio upload: `uploadBook`, `attachAudio`
   - Smart selection: `smartSelect`, `resetSmartSelectPosition`
@@ -317,3 +338,4 @@ If issues persist after implementation:
 4. **Credits missing:** Verify `initApp()` is being called
 5. **Profile data old:** Check if `authModule.refreshUserData()` runs
 6. **Onclick handlers undefined:** Check if all functions are imported and exposed to window
+7. **Function not a function errors:** Some functions may be wrappers - check main.js for the actual implementation
