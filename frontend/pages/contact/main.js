@@ -121,6 +121,32 @@ function init() {
     if (window.themeManager) {
         window.themeManager.init();
     }
+    
+    // Handle URL parameters
+    handleUrlParameters();
+}
+
+// Handle URL parameters to pre-fill form
+function handleUrlParameters() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const subject = urlParams.get('subject');
+    
+    if (subject) {
+        const subjectSelect = document.getElementById('subject');
+        if (subjectSelect) {
+            // Pre-select the subject dropdown
+            subjectSelect.value = subject;
+            console.log(`📋 Pre-selected subject: ${subject}`);
+            
+            // If it's enterprise, optionally pre-fill the message
+            if (subject === 'enterprise') {
+                const messageTextarea = document.getElementById('message');
+                if (messageTextarea && !messageTextarea.value) {
+                    messageTextarea.value = 'I am interested in enterprise/custom pricing for AudioBook Organizer. Please provide information about bulk credit packages and volume discounts.';
+                }
+            }
+        }
+    }
 }
 
 // 2. CLEANUP FUNCTION

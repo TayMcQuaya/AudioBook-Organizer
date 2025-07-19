@@ -1722,6 +1722,8 @@ html[data-theme="dark"] .credits-display.low-credits:hover {
     width: fit-content; /* Fit content width */
     max-width: 95vw; /* Prevent overflow on small screens */
     min-width: 750px; /* Increased minimum width for 2x2 grid */
+    max-height: 90vh; /* Prevent modal from exceeding viewport height */
+    overflow-y: auto; /* Allow scrolling if content is too tall */
     overflow-y: auto;
     box-shadow: 0 25px 80px rgba(0, 0, 0, 0.25);
     border: 1px solid var(--border-color);
@@ -1826,11 +1828,11 @@ html[data-theme="dark"] .credits-display.low-credits:hover {
 
 #creditPurchaseContent .credit-packages {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 1.5rem;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1.25rem;
     margin-bottom: 2rem;
     padding: 0;
-    max-width: 1000px;
+    max-width: 1200px;
     margin-left: auto;
     margin-right: auto;
 }
@@ -1839,16 +1841,18 @@ html[data-theme="dark"] .credits-display.low-credits:hover {
     margin-bottom: 0;
     flex-direction: column;
     justify-content: space-between;
-    max-width: 300px;
+    max-width: 260px;
     margin: 0 auto;
     background: var(--bg-primary);
     border: 2px solid var(--border-color);
     border-radius: 16px;
-    padding: 1.75rem;
+    padding: 1.25rem;
+    padding-top: 1.5rem;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     position: relative;
-    overflow: hidden;
+    overflow: visible;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    min-height: 340px;
 }
 
 #creditPurchaseContent .package-card:hover {
@@ -1860,28 +1864,57 @@ html[data-theme="dark"] .credits-display.low-credits:hover {
 #creditPurchaseContent .package-card.popular {
     border-color: var(--primary-color);
     background: linear-gradient(135deg, var(--bg-primary) 0%, rgba(102, 126, 234, 0.03) 100%);
-    transform: scale(1.02);
     box-shadow: 0 10px 30px rgba(102, 126, 234, 0.1);
 }
 
 #creditPurchaseContent .package-card.popular:hover {
-    transform: scale(1.02) translateY(-8px);
+    transform: translateY(-8px);
     box-shadow: 0 25px 50px rgba(102, 126, 234, 0.2);
+}
+
+#creditPurchaseContent .package-card.enterprise {
+    border-color: #6b7280;
+    background: linear-gradient(135deg, var(--bg-primary) 0%, rgba(107, 114, 128, 0.05) 100%);
+}
+
+#creditPurchaseContent .package-card.enterprise:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+    border-color: #4b5563;
 }
 
 #creditPurchaseContent .package-card .popular-badge {
     background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
     color: white;
-    padding: 0.5rem 1rem;
-    border-radius: 0 0 12px 12px;
-    font-size: 0.75rem;
-    font-weight: 700;
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.7rem;
+    font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.5px;
     position: absolute;
-    top: -2px;
-    right: 1.5rem;
-    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+    top: -12px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 10;
+    white-space: nowrap;
+}
+
+#creditPurchaseContent .package-card .best-value-badge {
+    background: linear-gradient(135deg, #10b981, #059669);
+    color: white;
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    position: absolute;
+    top: -12px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 10;
+    white-space: nowrap;
 }
 
 #creditPurchaseContent .package-header {
@@ -2101,11 +2134,10 @@ html[data-theme="dark"] .credits-display.low-credits:hover {
 }
 
 /* Responsive adjustments for enhanced modal */
-@media (max-width: 1024px) {
+@media (max-width: 1200px) {
     #creditPurchaseContent .credit-packages {
         grid-template-columns: repeat(2, 1fr);
         gap: 1.25rem;
-        max-width: 600px;
     }
     
     #creditPurchaseContent .package-card {

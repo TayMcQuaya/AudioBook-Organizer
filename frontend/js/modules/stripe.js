@@ -435,8 +435,8 @@ class StripeService {
         
         return `
             <div class="package-card ${isPopular ? 'popular' : ''} ${isBestValue ? 'best-value' : ''}" data-package-id="${packageData.id}">
-                ${isPopular ? '<div class="popular-badge">Most Popular</div>' : ''}
-                ${isBestValue ? '<div class="best-value-badge">Best Value</div>' : ''}
+                ${isPopular ? '<div class="popular-badge">MOST POPULAR</div>' : ''}
+                ${isBestValue ? '<div class="best-value-badge">BEST VALUE</div>' : ''}
                 
                 <div class="package-header">
                     <h4>${packageData.name}</h4>
@@ -474,7 +474,33 @@ class StripeService {
             if (this.cachedPackages && !forceRefresh) {
                 console.log('💳 Using cached credit packages');
                 const packagesHTML = this.cachedPackages.map(pkg => this.createPackageCard(pkg)).join('');
-                packagesContainer.innerHTML = packagesHTML;
+                
+                // Add Enterprise card
+                const enterpriseCard = `
+                    <div class="package-card enterprise" data-package-id="enterprise">
+                        <div class="enterprise-badge">Enterprise</div>
+                        <div class="package-header">
+                            <h4>Enterprise</h4>
+                            <div class="package-price">
+                                <span class="price">Custom</span>
+                                <span class="credits">Bulk credits</span>
+                            </div>
+                        </div>
+                        <div class="package-details">
+                            <p>Volume discounts for teams and businesses</p>
+                            <div class="package-value">
+                                <span class="value-label">Features:</span>
+                                <span class="value-amount">Priority support, custom invoicing</span>
+                            </div>
+                        </div>
+                        <button class="package-button" onclick="window.location.href='/contact?subject=enterprise'">
+                            <span class="button-text">Contact Sales</span>
+                            <span class="button-icon">→</span>
+                        </button>
+                    </div>
+                `;
+                
+                packagesContainer.innerHTML = packagesHTML + enterpriseCard;
                 return;
             }
 
@@ -506,7 +532,33 @@ class StripeService {
             this.packagesLoaded = true;
             
             const packagesHTML = this.cachedPackages.map(pkg => this.createPackageCard(pkg)).join('');
-            packagesContainer.innerHTML = packagesHTML;
+            
+            // Add Enterprise card
+            const enterpriseCard = `
+                <div class="package-card enterprise" data-package-id="enterprise">
+                    <div class="enterprise-badge">Enterprise</div>
+                    <div class="package-header">
+                        <h4>Enterprise</h4>
+                        <div class="package-price">
+                            <span class="price">Custom</span>
+                            <span class="credits">Bulk credits</span>
+                        </div>
+                    </div>
+                    <div class="package-details">
+                        <p>Volume discounts for teams and businesses</p>
+                        <div class="package-value">
+                            <span class="value-label">Features:</span>
+                            <span class="value-amount">Priority support, custom invoicing</span>
+                        </div>
+                    </div>
+                    <button class="package-button" onclick="window.location.href='/contact?subject=enterprise'">
+                        <span class="button-text">Contact Sales</span>
+                        <span class="button-icon">→</span>
+                    </button>
+                </div>
+            `;
+            
+            packagesContainer.innerHTML = packagesHTML + enterpriseCard;
 
         } catch (error) {
             console.error('Failed to load packages:', error);

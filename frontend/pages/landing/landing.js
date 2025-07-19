@@ -811,6 +811,14 @@ async function navigateToCredits(packageType = null) {
     }
 }
 
+/**
+ * Navigate to contact page with pre-selected subject
+ */
+function navigateToContact(reason = 'enterprise') {
+    console.log(`📞 Navigating to contact page with subject: ${reason}`);
+    window.location.href = `/contact?subject=${reason}`;
+}
+
 // Make functions globally available for HTML onclick handlers
 window.toggleMobileMenu = toggleMobileMenu;
 window.scrollToDemo = scrollToDemo;
@@ -819,6 +827,7 @@ window.contactSales = contactSales;
 window.navigateToApp = navigateToApp;
 window.tryAppDemo = tryAppDemo;
 window.navigateToCredits = navigateToCredits;
+window.navigateToContact = navigateToContact;
 window.handleHashNavigation = handleHashNavigation;
 
 // Export for module use
