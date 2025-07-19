@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AudioBook Organizer</title>
     
+    
     <!-- Favicons -->
     <link rel="icon" href="/public/icons/favicon.ico" type="image/x-icon">
     <link rel="icon" type="image/png" sizes="16x16" href="/public/icons/favicon-16x16.png">
@@ -249,283 +250,71 @@
         <span id="charCount">0</span> characters
     </div>
 
-    <!-- Application Initialization Script -->
+    <!-- App Page Initialization Script -->
     <script type="module">
-        // Enable secure logging early to filter verbose logs
+        // Enable secure logging with verbose filtering first
         import { enableSecureLogging } from '/js/utils/logger.js';
         enableSecureLogging();
         
-        import { showError } from '/js/modules/notifications.js';
-        import envManager from '/js/modules/envManager.js';
-        import appConfig from '/js/config/appConfig.js';
-        import testingModeUI from '/js/modules/testingModeUI.js';
-        
-        // Initialize the app page with deterministic behavior
+        // Initialize app page when loaded directly (refresh)
         async function initializeAppPage() {
-            const startTime = Date.now();
+            // Prevent double initialization
+            if (window._appPageInitialized) {
+                return;
+            }
+            window._appPageInitialized = true;
+            
+            console.log('🚀 Initializing app page...');
             
             try {
-                console.log('📱 Loading main application (refresh)...');
-                
-                // Mark that we're already on app page
-                const isAlreadyOnAppPage = true;
-                
-                // STEP 1: Initialize environment manager first
-                await envManager.init();
-                
-                // STEP 2: Initialize app configuration based on environment
-                const envConfig = envManager.getConfig();
-                appConfig.init(envConfig.server_type, envConfig.testing_mode);
-                
-                // Enable fast refresh mode if appropriate
-                if (appConfig.shouldUseFastRefresh()) {
-                    appConfig.enableFastRefresh();
-                }
-                
-                // STEP 3: Apply environment settings immediately
-                envManager.applyEnvironmentSettings();
-                
-                // STEP 4: Apply body classes early (like navigation does)
-                document.body.className = 'app-body layout-ready';
-                if (window.tempAuthManager?.isTestingMode) {
-                    document.body.classList.add('testing-mode');
-                }
-                
-                // STEP 5: Ensure router and auth are ready
-                await ensureAuthenticationReady(envConfig);
-                
-                // STEP 6: Session recovery (matching navigation flow)
-                if (!window.tempAuthManager?.isTestingMode) {
-                    console.log('🔄 Ensuring session recovery before app load...');
-                    
-                    const hasStoredAuth = hasAnyStoredAuth();
-                    const isCurrentlyAuthenticated = window.sessionManager?.isAuthenticated || window.authModule?.isAuthenticated?.();
-                    
-                    if (hasStoredAuth && !isCurrentlyAuthenticated) {
-                        console.log('🔄 Found stored auth but not currently authenticated - forcing session recovery...');
-                        const recoverySuccess = await attemptSessionRecovery();
-                        
-                        if (recoverySuccess) {
-                            console.log('✅ Session recovery completed before app load');
-                            await new Promise(resolve => setTimeout(resolve, 100));
-                        } else {
-                            console.log('⚠️ Session recovery failed, proceeding as unauthenticated');
-                        }
-                    } else if (isCurrentlyAuthenticated) {
-                        console.log('✅ Already authenticated, no recovery needed');
-                    } else {
-                        console.log('ℹ️ No stored auth found');
-                    }
-                }
-                
-                // STEP 7: Check app reuse (matching navigation flow)
-                const isAuthenticatedNow = window.authModule?.isAuthenticated?.() || 
-                                         window.sessionManager?.isAuthenticated || 
-                                         window.tempAuthManager?.shouldBypassAuth?.();
-                
-                if (window.isAppInitialized && isAuthenticatedNow) {
-                    console.log('✅ App already initialized and user authenticated, reusing existing app state');
-                    
-                    try {
-                        // Ensure the UI is properly updated for the current user
-                        if (window.appUI && window.appUI.getComprehensiveAuthState) {
-                            const authState = window.appUI.getComprehensiveAuthState();
-                            if (authState.isAuthenticated && authState.user) {
-                                console.log('🔄 Refreshing UI with current auth state');
-                                window.appUI.updateUI(authState);
-                            } else {
-                                console.log('⚠️ Auth state incomplete, forcing UI refresh');
-                                await window.appUI.init();
-                            }
-                        }
-                        
-                        // Initialize/refresh essential features
-                        if (window.router?.refreshEssentialFeatures) {
-                            await window.router.refreshEssentialFeatures();
-                        }
-                        
-                        console.log('📱 App reused successfully - skipping full initialization');
-                        setupNavigationHandlers();
-                        return;
-                        
-                    } catch (error) {
-                        console.error('❌ Error refreshing app features:', error);
-                        window.isAppInitialized = false;
-                        console.log('🔄 Falling back to full initialization due to refresh error');
-                    }
-                } else if (window.isAppInitialized && !isAuthenticatedNow) {
-                    console.log('⚠️ App was initialized but user is no longer authenticated - full reinit needed');
-                    window.isAppInitialized = false;
-                }
-                
-                // STEP 8: Initialize app if needed (matching navigation flow)
-                if (!window.isAppInitialized) {
-                    console.log('🔧 App not initialized yet, starting initialization...');
-                    
-                    try {
-                        // Testing mode check (matching navigation)
-                        if (window.tempAuthManager?.isTestingMode) {
-                            console.log('🧪 Testing mode: Waiting for auth status to be properly set...');
-                            
-                            await new Promise((resolve) => {
-                                const timeout = setTimeout(resolve, 500);
-                                
-                                const handleAuthSuccess = () => {
-                                    clearTimeout(timeout);
-                                    window.removeEventListener('temp-auth-success', handleAuthSuccess);
-                                    resolve();
-                                };
-                                
-                                if (window.tempAuthManager.isAuthenticated) {
-                                    clearTimeout(timeout);
-                                    resolve();
-                                } else {
-                                    window.addEventListener('temp-auth-success', handleAuthSuccess);
-                                }
-                            });
-                            
-                            console.log('🧪 Testing mode: Auth status check complete, proceeding with app init');
-                            await testingModeUI.init();
-                        }
-                        
-                        console.log('🔧 Starting dynamic import of main.js...');
-                        
-                        // Use module loader if available (matching navigation)
-                        if (window.moduleLoader || (await import('/js/modules/moduleLoader.js')).moduleLoader) {
-                            const { moduleLoader } = await import('/js/modules/moduleLoader.js');
-                            const appModule = await moduleLoader.loadMainApp();
-                            console.log(`✅ App module loaded via ${appModule.loadMethod}`);
-                            await appModule.initialize();
-                            window.cleanupApp = appModule.cleanup;
-                        } else {
-                            // Fallback to direct import
-                            const { initialize, cleanup } = await import('/js/main.js');
-                            await initialize();
-                            window.cleanupApp = cleanup;
-                        }
-                        
-                        window.isAppInitialized = true;
-                        console.log('✅ App initialization complete');
-                    } catch (error) {
-                        console.error('❌ Error initializing app:', error);
-                        window.isAppInitialized = false;
-                        throw error;
-                    }
-                } else {
-                    console.log('✅ App already initialized, skipping initialization');
-                }
-                
-                // STEP 9: Setup navigation handlers
-                setupNavigationHandlers();
-                
-                // STEP 10: Mark as ready
-                document.body.classList.add('app-ready');
-                
-                console.log('📱 App loaded successfully (refresh)');
-                
-                // Ensure proper positioning
-                window.scrollTo(0, 0);
-                
-            } catch (error) {
-                console.error('❌ Failed to initialize app page:', error);
-                showError('Failed to initialize the application. Please refresh the page.');
-            }
-        }
-        
-        // Helper functions to match router functionality
-        function hasAnyStoredAuth() {
-            return !!(
-                localStorage.getItem('supabase.auth.token') ||
-                localStorage.getItem('sb-auth-token') ||
-                sessionStorage.getItem('supabase.auth.token') ||
-                sessionStorage.getItem('sb-auth-token')
-            );
-        }
-        
-        async function attemptSessionRecovery() {
-            if (!window.authModule?.checkAuthStatus) {
-                return false;
-            }
-            
-            try {
-                const authStatus = await window.authModule.checkAuthStatus();
-                return authStatus.authenticated;
-            } catch (error) {
-                console.error('Session recovery error:', error);
-                return false;
-            }
-        }
-        
-        function setupNavigationHandlers() {
-            if (window.router) {
-                // Make navigate method globally accessible
-                window.routerNavigate = (path) => {
-                    console.log(`🔗 Navigation requested to: ${path}`);
-                    return window.router.navigate(path);
-                };
-                
-                // Setup navigation event delegation (no timeout needed)
-                const handleNavClick = (e) => {
-                    const link = e.target.closest('a[data-link]');
-                    if (link) {
-                        e.preventDefault();
-                        const href = link.getAttribute('href');
-                        if (href && window.router) {
-                            console.log(`🔗 Direct navigation to: ${href}`);
-                            window.router.navigate(href);
-                        }
-                    }
-                };
-                
-                // Remove any existing listener before adding
-                document.removeEventListener('click', handleNavClick);
-                document.addEventListener('click', handleNavClick);
-            }
-        }
-        
-        // Ensure authentication module is available
-        async function ensureAuthenticationReady(envConfig) {
-            try {
-                // If router isn't initialized, initialize it first
-                if (!window.router || !window.isFrameworkInitialized) {
-                    console.log('📦 Initializing router...');
-                    
+                // Initialize router first
+                if (!window.router) {
                     const { router } = await import('/js/modules/router.js');
                     window.router = router;
+                    await router.init(true); // Skip initial route to prevent circular loading
                     
-                    // Pass skipInitialRoute to prevent circular initialization
-                    await router.init(true);
-                    window.isFrameworkInitialized = true;
+                    // CRITICAL: Update router state after skipping initial route
+                    // The router needs to know we're on /app for navigation to work
+                    window.router.currentRoute = '/app';
+                    window.router.currentPath = '/app';
                     
-                    console.log('✅ Router and authentication modules initialized');
+                    // Also update the previousRoute to avoid any edge cases
+                    window.router.previousRoute = null;
+                    
+                }
+                
+                // Check if app is already initialized
+                if (window.isAppInitialized) {
+                    console.log('✅ App already initialized by router, skipping duplicate initialization');
+                    
+                    // Router already handles navigation, no need for custom handlers
+                    window.routerNavigate = (path) => window.router.navigate(path);
                     return;
                 }
                 
-                // Check if auth modules are already initialized
-                if (window.authModule && window.sessionManager) {
-                    return;
-                }
+                // Initialize app modules (this handles everything)
+                console.log('🔧 Initializing app modules...');
+                const { initApp } = await import('/js/modules/appInitialization.js');
+                await initApp();
                 
-                // Wait briefly for router auth initialization to complete
-                let attempts = 0;
-                const maxAttempts = 10;
+                // No need for additional initialization - initApp handles:
+                // - Profile refresh
+                // - Credits display
+                // - Project restoration
+                // - User navigation
                 
-                while ((!window.authModule || !window.sessionManager) && attempts < maxAttempts) {
-                    await new Promise(resolve => setTimeout(resolve, 200));
-                    attempts++;
-                }
+                // Make router globally accessible for navigation
+                window.routerNavigate = (path) => window.router.navigate(path);
                 
-                if (!window.authModule || !window.sessionManager) {
-                    console.warn('⚠️ Auth modules not available after waiting');
-                }
+                console.log('✅ App page initialization complete');
                 
             } catch (error) {
-                console.error('❌ Failed to verify authentication availability:', error);
-                console.warn('⚠️ Continuing with limited functionality');
+                console.error('❌ App page initialization failed:', error);
             }
         }
         
-        // Start initialization when DOM is ready
+        
+        // Run initialization when DOM is ready
         if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', initializeAppPage);
         } else {

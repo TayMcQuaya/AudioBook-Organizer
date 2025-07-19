@@ -19,7 +19,8 @@ const outsideClickListener = (event) => handleOutsideClick(event);
 function init() {
     console.log('🚀 Landing page initialized');
     
-    // Setup all interactive components
+    
+    // Normal landing page initialization
     setupScrollAnimations();
     setupSmoothScrolling();
     setupMobileMenu();
