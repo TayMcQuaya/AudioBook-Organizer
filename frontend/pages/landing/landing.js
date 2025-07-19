@@ -773,10 +773,10 @@ async function navigateToCredits(packageType = null) {
         // User is authenticated, directly trigger Stripe payment
         console.log('✅ User authenticated, triggering direct Stripe payment');
         
-        // Show loading while processing
-        if (loadingOverlay) {
-            loadingOverlay.style.display = 'flex';
-        }
+        // Don't show loading overlay - Stripe will show its own loading state
+        // if (loadingOverlay) {
+        //     loadingOverlay.style.display = 'flex';
+        // }
         
                 // Import and initialize Stripe service
         const { default: stripeService } = await import('/js/modules/stripe.js');
@@ -785,10 +785,10 @@ async function navigateToCredits(packageType = null) {
         // Directly call Stripe purchase (same as credit module)
         const result = await stripeService.purchaseCredits(packageType);
         
-        // Hide loading overlay after Stripe call
-        if (loadingOverlay) {
-            loadingOverlay.style.display = 'none';
-        }
+        // No need to hide loading overlay since we're not showing it
+        // if (loadingOverlay) {
+        //     loadingOverlay.style.display = 'none';
+        // }
         
         if (!result.success) {
             // **SECURITY FIX: Removed result.error to prevent API details exposure**
@@ -801,10 +801,10 @@ async function navigateToCredits(packageType = null) {
     } catch (error) {
         console.error('❌ Error processing payment:', error);
         
-        // Hide loading
-        if (loadingOverlay) {
-            loadingOverlay.style.display = 'none';
-        }
+        // No need to hide loading since we're not showing it
+        // if (loadingOverlay) {
+        //     loadingOverlay.style.display = 'none';
+        // }
         
         // Show error message
         showError('Payment system error. Please try again.');
