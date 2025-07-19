@@ -303,6 +303,53 @@
                 // - Project restoration
                 // - User navigation
                 
+                // Expose required functions to window for onclick handlers
+                console.log('🔧 Exposing functions for onclick handlers...');
+                
+                // Import and expose the required functions
+                const { uploadBook } = await import('/js/modules/bookUpload.js');
+                const { smartSelect, resetSmartSelectPosition } = await import('/js/modules/smartSelect.js');
+                const { showExportModal, hideExportModal } = await import('/js/modules/ui.js');
+                const { startExport } = await import('/js/modules/export.js');
+                const { createNewChapter, updateChapterName, toggleChapter, deleteChapter, toggleChapterPlayback, seekChapterAudio } = await import('/js/modules/chapters.js');
+                const { showReorderModal, hideReorderModal, applyReorderChanges, cancelReorderChanges } = await import('/js/modules/reorder.js');
+                const { saveProgress, loadProgress } = await import('/js/modules/storage.js');
+                const { toggleEditMode, refreshEditModeState, getEditMode } = await import('/js/modules/editMode.js');
+                const { createSection, attachAudio, updateSectionName, deleteSection, navigateToSection, removeAudio, clearMissingAudio, copySectionText } = await import('/js/modules/sections.js');
+                const { toggleTableOfContents } = await import('/js/modules/tableOfContents.js');
+                
+                // Make functions globally available
+                window.uploadBook = uploadBook;
+                window.smartSelect = smartSelect;
+                window.resetSmartSelectPosition = resetSmartSelectPosition;
+                window.showExportModal = showExportModal;
+                window.hideExportModal = hideExportModal;
+                window.startExport = startExport;
+                window.createNewChapter = createNewChapter;
+                window.updateChapterName = updateChapterName;
+                window.toggleChapter = toggleChapter;
+                window.deleteChapter = deleteChapter;
+                window.toggleChapterPlayback = toggleChapterPlayback;
+                window.seekChapterAudio = seekChapterAudio;
+                window.showReorderModal = showReorderModal;
+                window.hideReorderModal = hideReorderModal;
+                window.applyReorderChanges = applyReorderChanges;
+                window.cancelReorderChanges = cancelReorderChanges;
+                window.saveProgress = saveProgress;
+                window.loadProgress = loadProgress;
+                window.toggleEditMode = toggleEditMode;
+                window.refreshEditModeState = refreshEditModeState;
+                window.getEditMode = getEditMode;
+                window.createSection = createSection;
+                window.attachAudio = attachAudio;
+                window.updateSectionName = updateSectionName;
+                window.deleteSection = deleteSection;
+                window.navigateToSection = navigateToSection;
+                window.removeAudio = removeAudio;
+                window.clearMissingAudio = clearMissingAudio;
+                window.copySectionText = copySectionText;
+                window.toggleTableOfContents = toggleTableOfContents;
+                
                 // Make router globally accessible for navigation
                 window.routerNavigate = (path) => window.router.navigate(path);
                 

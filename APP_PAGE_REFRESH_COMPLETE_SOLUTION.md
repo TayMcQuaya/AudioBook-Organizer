@@ -11,6 +11,7 @@ When users refreshed the app page directly (F5 or browser refresh on `/app`):
 4. **Credits display missing** - Credits disappeared on refresh
 5. **Project not restored** - User's saved project wasn't loaded
 6. **Verbose logs in console** - All initialization logs appeared despite environment settings
+7. **Onclick handlers broken** - All button functions (uploadBook, smartSelect, etc.) undefined
 
 ## Root Cause Analysis
 
@@ -169,6 +170,53 @@ enableSecureLogging();
             const { initApp } = await import('/js/modules/appInitialization.js');
             await initApp();
             
+            // Expose required functions to window for onclick handlers
+            console.log('🔧 Exposing functions for onclick handlers...');
+            
+            // Import and expose the required functions
+            const { uploadBook } = await import('/js/modules/bookUpload.js');
+            const { smartSelect, resetSmartSelectPosition } = await import('/js/modules/smartSelect.js');
+            const { showExportModal, hideExportModal } = await import('/js/modules/ui.js');
+            const { startExport } = await import('/js/modules/export.js');
+            const { createNewChapter, updateChapterName, toggleChapter, deleteChapter, toggleChapterPlayback, seekChapterAudio } = await import('/js/modules/chapters.js');
+            const { showReorderModal, hideReorderModal, applyReorderChanges, cancelReorderChanges } = await import('/js/modules/reorder.js');
+            const { saveProgress, loadProgress } = await import('/js/modules/storage.js');
+            const { toggleEditMode, refreshEditModeState, getEditMode } = await import('/js/modules/editMode.js');
+            const { createSection, attachAudio, updateSectionName, deleteSection, navigateToSection, removeAudio, clearMissingAudio, copySectionText } = await import('/js/modules/sections.js');
+            const { toggleTableOfContents } = await import('/js/modules/tableOfContents.js');
+            
+            // Make functions globally available
+            window.uploadBook = uploadBook;
+            window.smartSelect = smartSelect;
+            window.resetSmartSelectPosition = resetSmartSelectPosition;
+            window.showExportModal = showExportModal;
+            window.hideExportModal = hideExportModal;
+            window.startExport = startExport;
+            window.createNewChapter = createNewChapter;
+            window.updateChapterName = updateChapterName;
+            window.toggleChapter = toggleChapter;
+            window.deleteChapter = deleteChapter;
+            window.toggleChapterPlayback = toggleChapterPlayback;
+            window.seekChapterAudio = seekChapterAudio;
+            window.showReorderModal = showReorderModal;
+            window.hideReorderModal = hideReorderModal;
+            window.applyReorderChanges = applyReorderChanges;
+            window.cancelReorderChanges = cancelReorderChanges;
+            window.saveProgress = saveProgress;
+            window.loadProgress = loadProgress;
+            window.toggleEditMode = toggleEditMode;
+            window.refreshEditModeState = refreshEditModeState;
+            window.getEditMode = getEditMode;
+            window.createSection = createSection;
+            window.attachAudio = attachAudio;
+            window.updateSectionName = updateSectionName;
+            window.deleteSection = deleteSection;
+            window.navigateToSection = navigateToSection;
+            window.removeAudio = removeAudio;
+            window.clearMissingAudio = clearMissingAudio;
+            window.copySectionText = copySectionText;
+            window.toggleTableOfContents = toggleTableOfContents;
+            
             // Make router globally accessible for navigation
             window.routerNavigate = (path) => window.router.navigate(path);
             
@@ -216,6 +264,21 @@ The logger has built-in verbose filtering but only when using its methods:
 - `enableSecureLogging()` overrides global console methods
 - Must be called before any other imports
 
+### 5. Onclick Handler Functions
+The app.html uses inline onclick handlers that expect global functions:
+- Functions are normally exposed by main.js
+- During refresh, main.js isn't loaded
+- Must manually import and expose each function to window object
+- Includes ALL interactive functions:
+  - Book/Audio upload: `uploadBook`, `attachAudio`
+  - Smart selection: `smartSelect`, `resetSmartSelectPosition`
+  - Export/Save: `showExportModal`, `startExport`, `saveProgress`, `loadProgress`
+  - Chapter management: `createNewChapter`, `updateChapterName`, `toggleChapter`, `deleteChapter`
+  - Section management: `createSection`, `updateSectionName`, `deleteSection`, `navigateToSection`
+  - Audio controls: `toggleChapterPlayback`, `seekChapterAudio`, `removeAudio`, `clearMissingAudio`
+  - UI controls: `toggleEditMode`, `toggleTableOfContents`, `copySectionText`
+  - Reorder functions: `showReorderModal`, `applyReorderChanges`, `cancelReorderChanges`
+
 ## Testing Checklist
 After implementing these changes, verify:
 - [ ] Refresh on `/app` loads correctly
@@ -225,6 +288,16 @@ After implementing these changes, verify:
 - [ ] Navigation links work (header logo, back arrow)
 - [ ] No verbose logs in console
 - [ ] No double initialization
+- [ ] All button functions work:
+  - [ ] Upload Book button
+  - [ ] Smart Select button
+  - [ ] Export/Save/Load buttons
+  - [ ] Create/Edit/Delete chapters
+  - [ ] Create/Edit/Delete sections
+  - [ ] Audio upload for sections
+  - [ ] Audio playback controls
+  - [ ] Toggle edit mode
+  - [ ] Toggle table of contents
 - [ ] No errors in console
 
 ## Related Files Modified
@@ -243,3 +316,4 @@ If issues persist after implementation:
 3. **Double initialization:** Check all initialization flags in console
 4. **Credits missing:** Verify `initApp()` is being called
 5. **Profile data old:** Check if `authModule.refreshUserData()` runs
+6. **Onclick handlers undefined:** Check if all functions are imported and exposed to window
