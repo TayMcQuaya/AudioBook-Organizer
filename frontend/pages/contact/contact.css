@@ -1,51 +1,61 @@
 /* Contact Page Styles */
 
 .contact-body {
-    min-height: 100vh;
+    height: 100vh;
+    overflow: hidden;
     background: var(--bg-primary);
     color: var(--text-primary);
+    display: flex;
+    flex-direction: column;
 }
 
 .contact-content {
-    padding: 80px 0;
-    min-height: calc(100vh - 160px);
+    padding: 70px 0 0 0;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
 }
 
 .contact-title {
-    font-size: 2.5rem;
+    font-size: 1.9rem;
     font-weight: 600;
-    margin-bottom: 1rem;
+    margin-bottom: 0.4rem;
     color: var(--text-primary);
     text-align: center;
+    padding-top: 5px;
 }
 
 .contact-subtitle {
     text-align: center;
     color: var(--text-secondary);
-    margin-bottom: 3rem;
-    font-size: 1.1rem;
+    margin-bottom: 1.25rem;
+    font-size: 0.9rem;
+    line-height: 1.4;
 }
 
 .contact-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 3rem;
+    gap: 1.5rem;
     max-width: 1200px;
-    margin: 0 auto;
+    margin: 0 auto 1rem auto;
+    align-items: stretch;
+    width: 100%;
 }
 
 /* Contact Form */
 .contact-form-section {
     background: var(--surface-primary);
-    padding: 2.5rem;
+    padding: 1.75rem;
     border-radius: 12px;
+    border: 1px solid rgba(0, 0, 0, 0.1);
     box-shadow: var(--shadow-sm);
 }
 
 .contact-form {
     display: flex;
     flex-direction: column;
-    gap: 1.5rem;
+    gap: 1rem;
 }
 
 .form-group {
@@ -82,11 +92,13 @@
 
 .form-textarea {
     resize: vertical;
-    min-height: 120px;
+    min-height: 85px;
+    max-height: 300px;
+    transition: height 0.2s ease;
 }
 
 .form-actions {
-    margin-top: 1rem;
+    margin-top: 0.75rem;
 }
 
 .form-actions .btn {
@@ -120,26 +132,29 @@
 .contact-info-section {
     display: flex;
     flex-direction: column;
-    gap: 1.5rem;
+    gap: 1rem;
+    height: 100%;
 }
 
 .info-card {
     background: var(--surface-primary);
-    padding: 2rem;
+    padding: 1.25rem;
     border-radius: 12px;
+    border: 1px solid rgba(0, 0, 0, 0.1);
     box-shadow: var(--shadow-sm);
 }
 
 .info-card h3 {
-    font-size: 1.25rem;
+    font-size: 1.1rem;
     font-weight: 600;
-    margin-bottom: 0.75rem;
+    margin-bottom: 0.4rem;
     color: var(--text-primary);
 }
 
 .info-card p {
     color: var(--text-secondary);
-    line-height: 1.6;
+    line-height: 1.5;
+    font-size: 0.95rem;
 }
 
 .info-card.warning {
@@ -157,9 +172,10 @@
 }
 
 .faq-list li {
-    margin-bottom: 1.5rem;
+    margin-bottom: 1rem;
     color: var(--text-secondary);
-    line-height: 1.6;
+    line-height: 1.4;
+    font-size: 0.9rem;
 }
 
 .faq-list strong {
@@ -195,10 +211,29 @@
 
 .legal-actions {
     text-align: center;
-    margin-top: 3rem;
+    margin-top: 1.5rem;
+    display: none; /* Remove redundant back button */
 }
 
+/* Make last info card stretch to match form height */
+.info-card:last-child {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.info-card:last-child .faq-list {
+    flex: 1;
+}
+
+/* Footer remains standard from landing.css */
+
 /* Dark mode support */
+[data-theme="dark"] .contact-form-section,
+[data-theme="dark"] .info-card {
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
 [data-theme="dark"] .form-input,
 [data-theme="dark"] .form-select,
 [data-theme="dark"] .form-textarea {
