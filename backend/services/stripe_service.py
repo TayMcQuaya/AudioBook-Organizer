@@ -294,9 +294,16 @@ class StripeService:
                     user_result = supabase.auth.admin.get_user_by_id(user_id)
                     if user_result and user_result.user:
                         user_email = user_result.user.email
-                        user_name = (user_result.user.user_metadata.get('full_name') or 
-                                   user_result.user.user_metadata.get('name') or 
-                                   user_email.split('@')[0])
+                        
+                        # Get display name from profiles table
+                        profile_result = supabase.table('profiles').select('full_name').eq('id', user_id).execute()
+                        if profile_result.data and profile_result.data[0].get('full_name'):
+                            user_name = profile_result.data[0]['full_name']
+                        else:
+                            # Fallback to user metadata or email prefix
+                            user_name = (user_result.user.user_metadata.get('full_name') or 
+                                       user_result.user.user_metadata.get('name') or 
+                                       user_email.split('@')[0])
                         
                         # Get transaction details
                         transaction_id = session.get('payment_intent', session_id)
