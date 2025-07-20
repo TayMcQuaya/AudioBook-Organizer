@@ -11,6 +11,7 @@ from datetime import datetime
 import json
 
 from ..services.supabase_service import get_supabase_service
+from ..services.email_service import get_email_service
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -286,6 +287,50 @@ class StripeService:
                         'transaction_type': 'purchase'
                     }
                 )
+                
+                # Send purchase confirmation email
+                try:
+                    # Get user details for email
+                    user_result = supabase.auth.admin.get_user_by_id(user_id)
+                    if user_result and user_result.user:
+                        user_email = user_result.user.email
+                        user_name = (user_result.user.user_metadata.get('full_name') or 
+                                   user_result.user.user_metadata.get('name') or 
+                                   user_email.split('@')[0])
+                        
+                        # Get transaction details
+                        transaction_id = session.get('payment_intent', session_id)
+                        purchase_date = datetime.utcnow().strftime('%B %d, %Y at %I:%M %p UTC')
+                        payment_method = 'Credit Card'  # Stripe typically uses cards
+                        
+                        # Send appropriate email based on package type
+                        email_service = get_email_service()
+                        if email_service.is_configured():
+                            if package_type == 'starter':
+                                email_service.send_starter_purchase_confirmation(
+                                    user_email, user_name, transaction_id, 
+                                    purchase_date, payment_method
+                                )
+                            elif package_type == 'creator':
+                                email_service.send_creator_purchase_confirmation(
+                                    user_email, user_name, transaction_id,
+                                    purchase_date, payment_method
+                                )
+                            elif package_type == 'professional':
+                                email_service.send_professional_purchase_confirmation(
+                                    user_email, user_name, transaction_id,
+                                    purchase_date, payment_method
+                                )
+                            logger.info(f"Purchase confirmation email sent to {user_email}")
+                        else:
+                            logger.warning("Email service not configured, skipping purchase confirmation email")
+                    else:
+                        logger.warning(f"Could not fetch user details for email: {user_id}")
+                        
+                except Exception as email_error:
+                    # Log email error but don't fail the payment
+                    logger.error(f"Failed to send purchase confirmation email: {email_error}")
+                    # Continue - payment was successful even if email failed
                 
                 logger.info(f"Successfully processed payment: {credits_to_add} credits added to user {user_id}")
                 return True, None

@@ -892,12 +892,13 @@ def create_auth_routes() -> Blueprint:
             
             # Send account deletion confirmation email
             try:
-                from backend.services.email_service import get_email_service
+                from ..services.email_service import get_email_service
                 email_service = get_email_service()
                 
                 if email_service.is_configured():
-                    user_email = user.get('email', '')
-                    user_name = user.get('user_metadata', {}).get('full_name', 'User')
+                    # We already have user_email from earlier in the function
+                    # Get user name from current_user or use email prefix as fallback
+                    user_name = current_user.get('user_metadata', {}).get('full_name') or current_user.get('user_metadata', {}).get('name') or user_email.split('@')[0]
                     
                     if user_email:
                         email_result = email_service.send_account_deletion_confirmation(user_email, user_name)

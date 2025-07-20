@@ -233,7 +233,7 @@ This is an automated confirmation email. Please do not reply to this message.
     
     def send_account_deletion_confirmation(self, user_email: str, user_name: str) -> Dict[str, Any]:
         """
-        Send account deletion confirmation email
+        Send account deletion confirmation email using the styled template
         
         Args:
             user_email: User's email address
@@ -242,65 +242,198 @@ This is an automated confirmation email. Please do not reply to this message.
         Returns:
             Dict with success status and message
         """
-        subject = "AudioBook Organizer - Account Deletion Confirmation"
+        template_path = os.path.join(os.path.dirname(__file__), '..', '..', 
+                                   'email_templates_supabase', 'account_deletion.html')
         
-        body = f"""
-Dear {user_name},
+        try:
+            with open(template_path, 'r', encoding='utf-8') as f:
+                html_template = f.read()
+            
+            # The template doesn't have placeholders for name/email, so we'll use it as is
+            # It's already professionally designed
+            subject = "Account Deletion Confirmation - AudioBook Organizer"
+            
+            body = f"""
+Dear Valued User,
 
-Your AudioBook Organizer account has been successfully deleted.
+This email confirms that your AudioBook Organizer account has been successfully deleted as requested.
 
-All your data has been permanently removed from our systems, including:
-- Your profile information
-- All uploaded files and projects
-- Credit history and transactions
-- Audio files stored on our servers
+What has been deleted:
+- Your account information and profile
+- All uploaded books and documents
+- Audio files and narrations
+- Usage history and preferences
+- Remaining credits (if any)
 
-If you deleted your account by mistake or have any questions, please contact us at {self.contact_email} within 30 days.
+What happens next:
+- All your data has been permanently removed from our servers
+- You will no longer receive emails from AudioBook Organizer
+- Any active subscriptions have been cancelled
+- This action cannot be undone
+
+If you deleted your account by mistake or have any questions, please contact our support team immediately at help@audiobookorganizer.com.
 
 Thank you for using AudioBook Organizer.
 
+© 2025 AudioBook Organizer. All rights reserved.
+            """.strip()
+            
+            return self.send_email(user_email, subject, body, html_template)
+            
+        except Exception as e:
+            logger.error(f"📧 Failed to load account deletion template: {e}")
+            # Fallback to simple version
+            return self.send_email(user_email, 
+                                 "Account Deletion Confirmation - AudioBook Organizer",
+                                 "Your AudioBook Organizer account has been successfully deleted. All your data has been permanently removed from our systems.",
+                                 None)
+    
+    def send_starter_purchase_confirmation(self, user_email: str, user_name: str, 
+                                          transaction_id: str, purchase_date: str,
+                                          payment_method: str) -> Dict[str, Any]:
+        """Send Starter Pack purchase confirmation email"""
+        template_path = os.path.join(os.path.dirname(__file__), '..', '..', 
+                                   'email_templates_supabase', 'starter_purchase.html')
+        
+        try:
+            with open(template_path, 'r', encoding='utf-8') as f:
+                html_template = f.read()
+            
+            # Replace template variables
+            html_body = html_template.replace('{{customer_name}}', user_name)
+            html_body = html_body.replace('{{customer_email}}', user_email)
+            html_body = html_body.replace('{{transaction_id}}', transaction_id)
+            html_body = html_body.replace('{{purchase_date}}', purchase_date)
+            html_body = html_body.replace('{{payment_method}}', payment_method)
+            
+            subject = "Starter Pack Purchase Confirmed - AudioBook Organizer"
+            
+            body = f"""
+Dear {user_name},
+
+Your Starter Pack purchase has been successfully processed!
+
+Purchase Details:
+- Package: Starter Pack
+- Credits Added: 500 Credits
+- Amount Paid: $4.99
+- Transaction ID: {transaction_id}
+- Date: {purchase_date}
+
+Your credits have been automatically added to your account.
+
+Thank you for choosing AudioBook Organizer!
+
 Best regards,
 The AudioBook Organizer Team
+            """.strip()
+            
+            return self.send_email(user_email, subject, body, html_body)
+            
+        except Exception as e:
+            logger.error(f"📧 Failed to send starter purchase email: {e}")
+            return self.send_email(user_email, 
+                                 "Purchase Confirmation - AudioBook Organizer",
+                                 f"Thank you for your Starter Pack purchase! Your 500 credits have been added to your account.",
+                                 None)
+    
+    def send_creator_purchase_confirmation(self, user_email: str, user_name: str, 
+                                         transaction_id: str, purchase_date: str,
+                                         payment_method: str) -> Dict[str, Any]:
+        """Send Creator Pack purchase confirmation email"""
+        template_path = os.path.join(os.path.dirname(__file__), '..', '..', 
+                                   'email_templates_supabase', 'creator_purchase.html')
+        
+        try:
+            with open(template_path, 'r', encoding='utf-8') as f:
+                html_template = f.read()
+            
+            # Replace template variables
+            html_body = html_template.replace('{{customer_name}}', user_name)
+            html_body = html_body.replace('{{customer_email}}', user_email)
+            html_body = html_body.replace('{{transaction_id}}', transaction_id)
+            html_body = html_body.replace('{{purchase_date}}', purchase_date)
+            html_body = html_body.replace('{{payment_method}}', payment_method)
+            
+            subject = "Creator Pack Purchase Confirmed - AudioBook Organizer"
+            
+            body = f"""
+Dear {user_name},
 
----
-This is an automated notification. Please do not reply to this message.
-        """.strip()
+Your Creator Pack purchase has been successfully processed!
+
+Purchase Details:
+- Package: Creator Pack (Most Popular)
+- Credits Added: 5,000 Credits
+- Amount Paid: $19.99
+- Transaction ID: {transaction_id}
+- Date: {purchase_date}
+
+Your credits have been automatically added to your account.
+
+Thank you for choosing AudioBook Organizer!
+
+Best regards,
+The AudioBook Organizer Team
+            """.strip()
+            
+            return self.send_email(user_email, subject, body, html_body)
+            
+        except Exception as e:
+            logger.error(f"📧 Failed to send creator purchase email: {e}")
+            return self.send_email(user_email, 
+                                 "Purchase Confirmation - AudioBook Organizer",
+                                 f"Thank you for your Creator Pack purchase! Your 5,000 credits have been added to your account.",
+                                 None)
+    
+    def send_professional_purchase_confirmation(self, user_email: str, user_name: str, 
+                                              transaction_id: str, purchase_date: str,
+                                              payment_method: str) -> Dict[str, Any]:
+        """Send Professional Pack purchase confirmation email"""
+        template_path = os.path.join(os.path.dirname(__file__), '..', '..', 
+                                   'email_templates_supabase', 'professional_purchase.html')
         
-        html_body = f"""
-        <html>
-        <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
-            <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
-                <h2 style="color: #e74c3c;">Account Deletion Confirmation</h2>
-                
-                <p>Dear {user_name},</p>
-                
-                <p>Your AudioBook Organizer account has been <strong>successfully deleted</strong>.</p>
-                
-                <div style="background-color: #f8f9fa; border-left: 4px solid #e74c3c; padding: 15px; margin: 20px 0;">
-                    <h3 style="margin-top: 0;">All your data has been permanently removed:</h3>
-                    <ul>
-                        <li>Your profile information</li>
-                        <li>All uploaded files and projects</li>
-                        <li>Credit history and transactions</li>
-                        <li>Audio files stored on our servers</li>
-                    </ul>
-                </div>
-                
-                <p>If you deleted your account by mistake or have any questions, please contact us at <a href="mailto:{self.contact_email}">{self.contact_email}</a> within 30 days.</p>
-                
-                <p>Thank you for using AudioBook Organizer.</p>
-                
-                <p>Best regards,<br>
-                The AudioBook Organizer Team</p>
-                
-                <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
-                <p style="color: #666; font-size: 12px;">This is an automated notification. Please do not reply to this message.</p>
-            </div>
-        </body>
-        </html>
-        """
-        
-        return self.send_email(user_email, subject, body, html_body)
+        try:
+            with open(template_path, 'r', encoding='utf-8') as f:
+                html_template = f.read()
+            
+            # Replace template variables
+            html_body = html_template.replace('{{customer_name}}', user_name)
+            html_body = html_body.replace('{{customer_email}}', user_email)
+            html_body = html_body.replace('{{transaction_id}}', transaction_id)
+            html_body = html_body.replace('{{purchase_date}}', purchase_date)
+            html_body = html_body.replace('{{payment_method}}', payment_method)
+            
+            subject = "Professional Pack Purchase Confirmed - AudioBook Organizer"
+            
+            body = f"""
+Dear {user_name},
+
+Your Professional Pack purchase has been successfully processed!
+
+Purchase Details:
+- Package: Professional Pack (Best Value)
+- Credits Added: 25,000 Credits
+- Amount Paid: $49.99
+- Transaction ID: {transaction_id}
+- Date: {purchase_date}
+
+Your credits have been automatically added to your account.
+
+Thank you for choosing AudioBook Organizer!
+
+Best regards,
+The AudioBook Organizer Team
+            """.strip()
+            
+            return self.send_email(user_email, subject, body, html_body)
+            
+        except Exception as e:
+            logger.error(f"📧 Failed to send professional purchase email: {e}")
+            return self.send_email(user_email, 
+                                 "Purchase Confirmation - AudioBook Organizer",
+                                 f"Thank you for your Professional Pack purchase! Your 25,000 credits have been added to your account.",
+                                 None)
 
 # Global email service instance
 _email_service = None
