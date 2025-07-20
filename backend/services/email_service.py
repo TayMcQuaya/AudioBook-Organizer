@@ -10,6 +10,7 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from typing import Optional, Dict, Any
 import time
+from datetime import datetime
 
 logger = logging.getLogger(__name__)
 
@@ -180,56 +181,66 @@ Sent from AudioBook Organizer Contact Form
         
         return self.send_email(self.contact_email, subject, body, html_body)
     
-    def send_contact_form_confirmation(self, user_email: str, user_name: str) -> Dict[str, Any]:
+    def send_contact_form_confirmation(self, user_email: str, user_name: str, form_data: Dict[str, str] = None) -> Dict[str, Any]:
         """
-        Send confirmation email to user who submitted contact form
+        Send confirmation email to user who submitted contact form using the beautiful template
         
         Args:
             user_email: User's email address
             user_name: User's name
+            form_data: Optional form data for additional context
             
         Returns:
             Dict with success status and message
         """
-        subject = "Thank you for contacting AudioBook Organizer"
+        template_path = os.path.join(os.path.dirname(__file__), '..', '..', 
+                                   'email_templates_supabase', 'auto_respond.html')
         
-        body = f"""
+        try:
+            with open(template_path, 'r', encoding='utf-8') as f:
+                html_template = f.read()
+            
+            # Replace template variables
+            timestamp = datetime.utcnow().strftime('%B %d, %Y at %I:%M %p UTC')
+            
+            html_body = html_template.replace('{{name}}', user_name)
+            html_body = html_body.replace('{{email}}', user_email)
+            if form_data:
+                html_body = html_body.replace('{{subject}}', form_data.get('subject', 'General Inquiry'))
+            else:
+                html_body = html_body.replace('{{subject}}', 'General Inquiry')
+            html_body = html_body.replace('{{timestamp}}', timestamp)
+            
+            subject = "We Received Your Message - AudioBook Organizer"
+            
+            body = f"""
 Dear {user_name},
 
-Thank you for contacting AudioBook Organizer! We have received your message and will get back to you as soon as possible.
+We have successfully received your message and want to thank you for reaching out to AudioBook Organizer.
 
-If your inquiry is urgent, please don't hesitate to reach out to us directly at {self.contact_email}.
+What happens next?
+- Our support team will review your message carefully
+- We'll respond within 24-48 hours on business days
+- You'll receive a detailed response from our team
 
-Best regards,
-The AudioBook Organizer Team
+Business Hours: Monday - Friday, 9:00 AM - 6:00 PM (EST)
+Response Time: 24-48 hours on business days
 
----
-This is an automated confirmation email. Please do not reply to this message.
-        """.strip()
-        
-        html_body = f"""
-        <html>
-        <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
-            <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
-                <h2 style="color: #2c3e50;">Thank you for contacting AudioBook Organizer!</h2>
-                
-                <p>Dear {user_name},</p>
-                
-                <p>Thank you for contacting AudioBook Organizer! We have received your message and will get back to you as soon as possible.</p>
-                
-                <p>If your inquiry is urgent, please don't hesitate to reach out to us directly at <a href="mailto:{self.contact_email}">{self.contact_email}</a>.</p>
-                
-                <p>Best regards,<br>
-                The AudioBook Organizer Team</p>
-                
-                <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
-                <p style="color: #666; font-size: 12px;">This is an automated confirmation email. Please do not reply to this message.</p>
-            </div>
-        </body>
-        </html>
-        """
-        
-        return self.send_email(user_email, subject, body, html_body)
+Thank you for choosing AudioBook Organizer!
+
+© 2025 AudioBook Organizer. All rights reserved.
+This is an automated confirmation message.
+            """.strip()
+            
+            return self.send_email(user_email, subject, body, html_body)
+            
+        except Exception as e:
+            logger.error(f"📧 Failed to load auto-response template: {e}")
+            # Fallback to simple version
+            return self.send_email(user_email, 
+                                 "Thank you for contacting AudioBook Organizer",
+                                 f"Dear {user_name}, Thank you for contacting us! We'll get back to you soon.",
+                                 None)
     
     def send_account_deletion_confirmation(self, user_email: str, user_name: str) -> Dict[str, Any]:
         """

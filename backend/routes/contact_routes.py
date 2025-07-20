@@ -19,12 +19,11 @@ def submit_contact_form():
         # Get security service for rate limiting
         security_service = get_security_service()
         
-        # Rate limiting check
+        # Rate limiting check (5 submissions per hour)
+        client_ip = security_service._get_client_ip()
         rate_limit_result = security_service.check_rate_limit(
-            request.remote_addr, 
-            'contact_form',
-            max_requests=5,
-            window_minutes=60
+            client_ip, 
+            'contact'  # Use standard rate limit type
         )
         
         if not rate_limit_result['allowed']:
@@ -32,6 +31,9 @@ def submit_contact_form():
                 'error': 'Rate limit exceeded',
                 'message': 'Too many contact form submissions. Please try again later.'
             }), 429
+        
+        # Record the attempt
+        security_service.record_attempt(client_ip, 'contact')
         
         # Get form data
         data = request.get_json()
@@ -103,7 +105,8 @@ def submit_contact_form():
         # Send confirmation email to user (optional - don't fail if this fails)
         confirmation_result = email_service.send_contact_form_confirmation(
             data['email'], 
-            data['name']
+            data['name'],
+            data  # Pass the full form data for template
         )
         
         if notification_result['success']:
