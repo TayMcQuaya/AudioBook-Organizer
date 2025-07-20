@@ -29,6 +29,24 @@ AudioBook Organizer uses two separate email systems:
    - **Sender name**: AudioBook Organizer
 6. Click **Save**
 
+### Configure Rate Limits (IMPORTANT!)
+Even with custom SMTP, Supabase enforces rate limits. Configure them properly:
+
+1. Go to **Authentication → Rate Limits** in Supabase Dashboard
+2. Adjust these settings:
+   - **Rate limit for sending emails**: Set to **10-20** (default is only 2!)
+   - **Rate limit for sending SMS messages**: Keep at **30** (if not using SMS)
+   - **Rate limit for sign ups**: Keep at **30** (reasonable default)
+   - **Rate limit for token refreshes**: Keep at **150** or higher
+   - **Other limits**: Keep default values
+3. Click **Save changes**
+
+**Why this matters:**
+- Default email limit is only **2 emails per hour**
+- This causes "email rate limit exceeded" errors
+- With 10-20, you can handle normal development/testing
+- Production sites may need higher limits
+
 ## Part 2: Backend Email Service (Purchase Confirmations)
 
 ### Configure Environment Variables
@@ -136,14 +154,20 @@ else:
    - Verify SMTP port (587 for TLS)
    - Ensure SMTP_ENABLED=true
 
-3. **Emails going to spam**
+3. **"Email rate limit exceeded"** (Supabase Auth)
+   - Check Supabase Dashboard → Authentication → Rate Limits
+   - Increase "Rate limit for sending emails" from default 2 to 10-20
+   - Wait 1 hour for rate limit to reset
+   - Use different email addresses for testing
+
+4. **Emails going to spam**
    - Add SPF records to your domain
    - Use a professional email address
    - Avoid spam trigger words
 
-4. **Rate limiting**
-   - Gmail limits: 500 emails/day for regular accounts
-   - Consider Gmail Workspace for higher limits
+5. **Rate limiting**
+   - Supabase: Configurable in dashboard (default 2/hour, increase to 10-20)
+   - Gmail SMTP: 100 emails/day via SMTP, 500/day via web
    - Backend has built-in rate limiting (1 email/minute per recipient)
 
 ## Alternative Email Services
