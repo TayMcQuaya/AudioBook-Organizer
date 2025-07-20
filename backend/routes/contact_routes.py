@@ -28,8 +28,8 @@ def submit_contact_form():
         
         if not rate_limit_result['allowed']:
             return jsonify({
-                'error': 'Rate limit exceeded',
-                'message': 'Too many contact form submissions. Please try again later.'
+                'error': 'Please wait',
+                'message': 'We\'re experiencing high demand. Please wait a few minutes before sending another message.'
             }), 429
         
         # Record the attempt
@@ -49,34 +49,34 @@ def submit_contact_form():
         
         if missing_fields:
             return jsonify({
-                'error': 'Missing required fields',
-                'message': f'Missing: {", ".join(missing_fields)}'
+                'error': 'Information needed',
+                'message': f'Please fill in all required fields: {", ".join(missing_fields)}'
             }), 400
         
         # Validate email format
         if not validate_email(data['email']):
             return jsonify({
-                'error': 'Invalid email',
-                'message': 'Please provide a valid email address'
+                'error': 'Email format',
+                'message': 'Please check your email address and try again'
             }), 400
         
         # Validate field lengths
         if len(data['name']) > 100:
             return jsonify({
-                'error': 'Invalid input',
-                'message': 'Name is too long (max 100 characters)'
+                'error': 'Name too long',
+                'message': 'Please use a shorter name (under 100 characters)'
             }), 400
         
         if len(data['subject']) > 200:
             return jsonify({
-                'error': 'Invalid input',
-                'message': 'Subject is too long (max 200 characters)'
+                'error': 'Subject too long',
+                'message': 'Please use a shorter subject line (under 200 characters)'
             }), 400
             
         if len(data['message']) > 2000:
             return jsonify({
-                'error': 'Invalid input',
-                'message': 'Message is too long (max 2000 characters)'
+                'error': 'Message too long',
+                'message': 'Please shorten your message to under 2000 characters'
             }), 400
         
         # Check for spam patterns (basic check)
@@ -85,8 +85,8 @@ def submit_contact_form():
         if any(keyword in message_lower for keyword in spam_keywords):
             logger.warning(f"Potential spam contact form submission from {request.remote_addr}")
             return jsonify({
-                'error': 'Message rejected',
-                'message': 'Your message appears to contain spam content'
+                'error': 'Message not sent',
+                'message': 'Your message couldn\'t be processed. Please rephrase and try again, or email us directly at support@audiobookorganizer.com'
             }), 400
         
         # Get email service
@@ -95,8 +95,8 @@ def submit_contact_form():
         if not email_service.is_configured():
             logger.error("Email service not configured for contact form")
             return jsonify({
-                'error': 'Service unavailable',
-                'message': 'Contact form is temporarily unavailable. Please try again later.'
+                'error': 'Service temporarily busy',
+                'message': 'Our messaging system is currently busy. Please try again in a few moments or email us directly at support@audiobookorganizer.com'
             }), 503
         
         # Send notification email to admin
@@ -126,15 +126,15 @@ def submit_contact_form():
         else:
             logger.error(f"Failed to send contact form notification: {notification_result.get('error')}")
             return jsonify({
-                'error': 'Submission failed',
-                'message': 'Failed to send your message. Please try again later.'
+                'error': 'Temporary issue',
+                'message': 'We\'re having a temporary issue processing messages. Please try again in a moment or reach us at support@audiobookorganizer.com'
             }), 500
     
     except Exception as e:
         logger.error(f"Contact form submission error: {e}")
         return jsonify({
-            'error': 'Internal error',
-            'message': 'An unexpected error occurred. Please try again later.'
+            'error': 'Service busy',
+            'message': 'Our servers are currently busy. Please wait a moment and try again, or contact us at support@audiobookorganizer.com'
         }), 500
 
 @contact_bp.route('/api/contact/test', methods=['GET'])

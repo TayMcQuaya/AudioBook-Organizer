@@ -58,7 +58,9 @@ async function handleFormSubmit(event) {
         
     } catch (error) {
         console.error('Form submission error:', error);
-        showFormMessage('Sorry, there was an error sending your message. Please try again later.', 'error');
+        // Use the friendly error message from backend if available
+        const errorMessage = error.message || 'Our servers are currently busy. Please wait a moment and try again.';
+        showFormMessage(errorMessage, 'error');
     } finally {
         // Reset button state
         submitButton.disabled = false;
@@ -100,6 +102,28 @@ function showFormMessage(message, type) {
     }, 5000);
 }
 
+// Update character count
+function updateCharacterCount() {
+    const messageTextarea = document.getElementById('message');
+    const charCount = document.getElementById('charCount');
+    const counter = document.querySelector('.character-counter');
+    
+    if (!messageTextarea || !charCount || !counter) return;
+    
+    const currentLength = messageTextarea.value.length;
+    const maxLength = 2000;
+    
+    charCount.textContent = currentLength;
+    
+    // Update counter color based on length
+    counter.classList.remove('warning', 'danger');
+    if (currentLength > maxLength * 0.9) {
+        counter.classList.add('danger');
+    } else if (currentLength > maxLength * 0.8) {
+        counter.classList.add('warning');
+    }
+}
+
 // 1. INIT FUNCTION
 function init() {
     console.log('🚀 Initializing Contact page');
@@ -115,6 +139,14 @@ function init() {
     const contactForm = document.getElementById('contactForm');
     if (contactForm) {
         contactForm.addEventListener('submit', handleFormSubmit);
+    }
+    
+    // Add character counter listener
+    const messageTextarea = document.getElementById('message');
+    if (messageTextarea) {
+        messageTextarea.addEventListener('input', updateCharacterCount);
+        // Initialize counter on page load
+        updateCharacterCount();
     }
     
     // Initialize theme if available
@@ -143,6 +175,8 @@ async function handleUrlParameters() {
                 const messageTextarea = document.getElementById('message');
                 if (messageTextarea && !messageTextarea.value) {
                     messageTextarea.value = 'I am interested in enterprise/custom pricing for AudioBook Organizer. Please provide information about bulk credit packages and volume discounts.';
+                    // Update character count after pre-filling
+                    updateCharacterCount();
                 }
             }
         }
@@ -203,6 +237,12 @@ function cleanup() {
     const contactForm = document.getElementById('contactForm');
     if (contactForm) {
         contactForm.removeEventListener('submit', handleFormSubmit);
+    }
+    
+    // Remove character counter listener
+    const messageTextarea = document.getElementById('message');
+    if (messageTextarea) {
+        messageTextarea.removeEventListener('input', updateCharacterCount);
     }
 }
 

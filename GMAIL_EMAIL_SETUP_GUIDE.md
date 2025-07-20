@@ -90,11 +90,26 @@ Gmail requires an "App Password" for SMTP authentication:
 
 ### Via Backend Service (Transactional Emails):
 - **Purchase Confirmations** - After successful Stripe payments
-  - Starter Pack ($4.99)
-  - Creator Pack ($19.99)
-  - Professional Pack ($49.99)
-- **Contact Form Notifications** - When users submit contact form
-- **Account Deletion Confirmations** - When users delete their account
+  - Starter Pack ($4.99) - Uses `starter_purchase.html`
+  - Creator Pack ($19.99) - Uses `creator_purchase.html`
+  - Professional Pack ($49.99) - Uses `professional_purchase.html`
+- **Contact Form Emails**:
+  - **Admin Notification** - Full message sent to CONTACT_EMAIL
+  - **User Auto-Response** - Uses `auto_respond.html` with gradient header
+- **Account Deletion Confirmations** - Uses `account_deletion.html`
+
+All transactional emails use professionally designed templates with gradient headers matching the website design.
+
+### Email Templates Location
+- All email templates are stored in `/email_templates_supabase/`
+- Templates include:
+  - `auto_respond.html` - Contact form auto-response with gradient header
+  - `starter_purchase.html` - Starter Pack purchase confirmation
+  - `creator_purchase.html` - Creator Pack purchase confirmation
+  - `professional_purchase.html` - Professional Pack purchase confirmation
+  - `account_deletion.html` - Account deletion confirmation
+- Each template includes Stripe receipt notice where applicable
+- Templates use placeholder variables like `{{name}}`, `{{email}}`, etc.
 
 ## Testing Your Setup
 
@@ -122,7 +137,28 @@ else:
 
 ## Production Deployment Notes
 
-### For Production:
+### Minimal Production Requirements:
+To enable emails in production, you only need:
+
+1. **For Auth Emails (Signup/Password Reset)**:
+   - Configure SMTP in Supabase Dashboard OR use Supabase default
+   - Set appropriate rate limits in Supabase Dashboard
+
+2. **For Transactional Emails (Purchases, Contact Form)**:
+   - Set these environment variables on your server:
+     ```bash
+     SMTP_ENABLED=true
+     SMTP_SERVER=smtp.gmail.com
+     SMTP_PORT=587
+     SMTP_USERNAME=your-email@gmail.com
+     SMTP_PASSWORD=your-app-password
+     SMTP_FROM_EMAIL=your-email@gmail.com
+     CONTACT_EMAIL=your-email@gmail.com
+     ```
+
+That's it! No need for Stripe.exe or other tools in production.
+
+### Environment Variables Setup:
 1. **DO NOT** commit `.env` files with credentials
 2. Set environment variables in your hosting platform:
    - Vercel: Project Settings → Environment Variables
@@ -130,8 +166,8 @@ else:
    - AWS: Parameter Store or Secrets Manager
 
 3. **Email Templates Location**:
-   - Auth templates: Upload to Supabase Dashboard
-   - Purchase templates: `/email_templates_supabase/` directory
+   - Auth templates: Configured in Supabase Dashboard
+   - Transactional templates: `/email_templates_supabase/` directory (included in deployment)
 
 ### Security Best Practices:
 - Use a dedicated Gmail account for the service
@@ -139,6 +175,25 @@ else:
 - Regularly rotate app passwords
 - Monitor for unusual activity
 - Set up SPF/DKIM records if using custom domain
+
+### Rate Limit Recommendations:
+
+**Contact Form Rate Limits** (in backend):
+- Currently set to **5 submissions per hour per IP**
+- This prevents spam while allowing legitimate users
+- Can be adjusted in `contact_routes.py` if needed
+- Backend also has 1 email/minute per recipient limit
+
+**Recommended Rate Limits by Usage**:
+- **Development/Testing**: 10-20 emails/hour
+- **Small Business (< 100 users)**: 20-50 emails/hour
+- **Medium Business (100-1000 users)**: 50-100 emails/hour
+- **Large Application**: Consider email service provider
+
+**Gmail SMTP Limits**:
+- Free Gmail: 500 emails/day via web, 100/day via SMTP
+- Google Workspace: 2,000 emails/day
+- Contact form with 5/hour limit = max 120 contact submissions/day
 
 ## Troubleshooting
 

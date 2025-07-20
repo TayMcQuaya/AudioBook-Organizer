@@ -67,7 +67,10 @@
 
                             <div class="form-group">
                                 <label for="message">Message</label>
-                                <textarea id="message" name="message" rows="6" required class="form-textarea"></textarea>
+                                <textarea id="message" name="message" rows="6" required class="form-textarea" maxlength="2000"></textarea>
+                                <div class="character-counter">
+                                    <span id="charCount">0</span> / 2000
+                                </div>
                             </div>
 
                             <div class="form-actions">
