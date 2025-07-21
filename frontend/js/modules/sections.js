@@ -7,6 +7,96 @@ import { consumeTestCredits } from './appUI.js';
 import { showWarning, showError, showSuccess } from './notifications.js';
 import { apiFetch } from './api.js';
 
+// Toast notification function for non-intrusive messages
+function showToastNotification(message, duration = 3000) {
+    // Remove any existing toast
+    const existingToast = document.querySelector('.toast-notification');
+    if (existingToast) {
+        existingToast.remove();
+    }
+    
+    // Create toast element
+    const toast = document.createElement('div');
+    toast.className = 'toast-notification';
+    toast.innerHTML = `
+        <div class="toast-icon">✅</div>
+        <div class="toast-message">${message}</div>
+    `;
+    
+    // Add styles if not already added
+    if (!document.getElementById('toast-notification-styles')) {
+        const style = document.createElement('style');
+        style.id = 'toast-notification-styles';
+        style.textContent = `
+            .toast-notification {
+                position: fixed;
+                bottom: 30px;
+                right: 30px;
+                background: var(--bg-primary, white);
+                color: var(--text-primary, #333);
+                padding: 16px 24px;
+                border-radius: 8px;
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                font-size: 14px;
+                z-index: 5000;
+                opacity: 0;
+                transform: translateY(20px);
+                transition: all 0.3s ease;
+                border: 1px solid var(--border-color, #e0e0e0);
+                max-width: 300px;
+            }
+            
+            .toast-notification.show {
+                opacity: 1;
+                transform: translateY(0);
+            }
+            
+            .toast-notification.hide {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            
+            .toast-icon {
+                font-size: 18px;
+                flex-shrink: 0;
+            }
+            
+            .toast-message {
+                line-height: 1.4;
+            }
+            
+            @media (max-width: 768px) {
+                .toast-notification {
+                    bottom: 20px;
+                    right: 20px;
+                    left: 20px;
+                    max-width: none;
+                }
+            }
+        `;
+        document.head.appendChild(style);
+    }
+    
+    // Add to page
+    document.body.appendChild(toast);
+    
+    // Show with animation
+    setTimeout(() => {
+        toast.classList.add('show');
+    }, 10);
+    
+    // Auto-hide after duration
+    setTimeout(() => {
+        toast.classList.add('hide');
+        setTimeout(() => {
+            toast.remove();
+        }, 300);
+    }, duration);
+}
+
 // Section Management - preserving exact logic from original
 export async function createSection() {
     // Consume credits for section creation
@@ -581,7 +671,9 @@ export async function attachAudio(chapterId, sectionId, input) {
         // 🔄 NEW: Remove upload feedback and update UI
         hideUploadProgress(uploadFeedback);
         updateChaptersList();
-        showSuccess('Audio attached successfully!');
+        // showSuccess('Audio attached successfully!');
+        // Show non-intrusive toast notification instead
+        showToastNotification('Audio attached successfully!');
 
     } catch (error) {
         console.error('Audio upload failed:', error);
