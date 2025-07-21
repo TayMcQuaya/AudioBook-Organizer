@@ -168,6 +168,7 @@ That's it! No need for Stripe.exe or other tools in production.
 3. **Email Templates Location**:
    - Auth templates: Configured in Supabase Dashboard
    - Transactional templates: `/email_templates_supabase/` directory (included in deployment)
+   - **IMPORTANT for Docker**: Must add `COPY email_templates_supabase/ ./email_templates_supabase/` to Dockerfile
 
 ### Security Best Practices:
 - Use a dedicated Gmail account for the service
@@ -194,6 +195,44 @@ That's it! No need for Stripe.exe or other tools in production.
 - Free Gmail: 500 emails/day via web, 100/day via SMTP
 - Google Workspace: 2,000 emails/day
 - Contact form with 5/hour limit = max 120 contact submissions/day
+
+## Docker Deployment - Email Templates
+
+### IMPORTANT: Include Templates in Docker Image
+If using Docker, you MUST copy the email templates directory in your Dockerfile:
+
+```dockerfile
+# Copy email templates (add this after copying backend/frontend)
+COPY email_templates_supabase/ ./email_templates_supabase/
+```
+
+Without this line, your production emails will fall back to plain text versions.
+
+### Email Template Fallback System
+The backend has a smart fallback system for email templates:
+
+1. **Primary**: Tries to load the beautiful HTML template from `/email_templates_supabase/`
+2. **Fallback**: If template loading fails, sends a plain text email with basic formatting
+
+Example fallback in `email_service.py`:
+```python
+except Exception as e:
+    logger.error(f"📧 Failed to load auto-response template: {e}")
+    # Fallback to simple version
+    return self.send_email(user_email, 
+                         "Thank you for contacting AudioBook Organizer",
+                         f"Dear {user_name}, Thank you for contacting us!...",
+                         None)
+```
+
+### Symptoms of Missing Templates in Production:
+- Emails arrive but lack gradient headers and styling
+- Plain text formatting instead of HTML
+- Missing logo and visual design elements
+- Basic message content only
+- Log errors about missing template files
+
+### Fix: Ensure the Dockerfile includes the COPY command above and rebuild your container.
 
 ## Troubleshooting
 

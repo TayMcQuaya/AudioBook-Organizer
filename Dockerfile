@@ -23,6 +23,9 @@ COPY app.py .
 # Copy frontend files for unified deployment
 COPY frontend/ ./frontend/
 
+# Copy email templates
+COPY email_templates_supabase/ ./email_templates_supabase/
+
 # Create necessary directories
 RUN mkdir -p uploads exports
 
