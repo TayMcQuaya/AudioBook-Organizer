@@ -94,9 +94,10 @@ html {
     right: 0;
     background: rgba(255, 255, 255, 0.95);
     backdrop-filter: blur(10px);
-    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+    border-bottom: 1px solid rgba(255, 255, 255, 1);
     z-index: 1000;
     transition: all var(--animation-duration) var(--animation-ease);
+    padding-bottom: 2px;
 }
 
 .nav-container {
@@ -1107,6 +1108,21 @@ html {
 .demo-text {
     color: var(--text-secondary);
     line-height: 1.5;
+}
+
+/* Hide mobile-specific elements on desktop */
+@media screen and (min-width: 769px) {
+    .bottom-nav {
+        display: none !important;
+    }
+    
+    .footer-links-simple {
+        display: none !important;
+    }
+    
+    .pricing-scroll-hint {
+        display: none !important;
+    }
 }
 
 /* Pricing Section */

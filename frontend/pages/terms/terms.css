@@ -4,12 +4,16 @@
     min-height: 100vh;
     background: var(--bg-primary);
     color: var(--text-primary);
+    display: flex;
+    flex-direction: column;
 }
 
 /* Reuse the same styles from privacy.css for consistency */
 .legal-content {
     padding: 80px 0;
     min-height: calc(100vh - 160px);
+    flex: 1;
+    background: var(--bg-primary);
 }
 
 .legal-title {

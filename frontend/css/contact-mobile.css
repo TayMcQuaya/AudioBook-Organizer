@@ -1,0 +1,48 @@
+/* =====================================================
+   AudioBook Organizer - Mobile Contact Page Styles
+   Simple vertical layout fix
+   ===================================================== */
+
+@media screen and (max-width: 768px) {
+    /* Ensure form elements are visible and stacked vertically */
+    .contact-form {
+        display: block !important;
+    }
+    
+    .form-row {
+        display: block !important;
+        margin-bottom: 20px !important;
+    }
+    
+    .form-group {
+        display: block !important;
+        width: 100% !important;
+        margin-bottom: 20px !important;
+    }
+    
+    /* Make sure all inputs are visible */
+    .form-input,
+    .form-select,
+    .form-textarea {
+        display: block !important;
+        width: 100% !important;
+        font-size: 16px !important; /* Prevents zoom on iOS */
+    }
+    
+    /* Most importantly - ensure submit button is visible */
+    .submit-button {
+        display: block !important;
+        width: 100% !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+    }
+    
+    /* Stack name and email vertically instead of side by side */
+    .form-row {
+        flex-direction: column !important;
+    }
+    
+    .form-row .form-group {
+        width: 100% !important;
+    }
+}

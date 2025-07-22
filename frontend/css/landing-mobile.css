@@ -532,7 +532,7 @@
     
     /* Add video player mockup */
     .demo-video {
-        background: #000000;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         border-radius: 12px;
         aspect-ratio: 16/9;
         position: relative;
@@ -994,7 +994,7 @@
 @supports (padding-top: env(safe-area-inset-top)) {
     .landing-nav {
         padding-top: env(safe-area-inset-top);
-        height: calc(60px + env(safe-area-inset-top));
+        height: calc(70px + env(safe-area-inset-top));
     }
     
     .mobile-menu {
