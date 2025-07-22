@@ -3,7 +3,10 @@ import json
 import zipfile
 import time
 import shutil
+import logging
 from pydub import AudioSegment
+
+logger = logging.getLogger(__name__)
 
 class ExportService:
     """Service for handling export operations"""
@@ -11,6 +14,18 @@ class ExportService:
     def __init__(self, upload_folder, export_folder):
         self.upload_folder = upload_folder
         self.export_folder = export_folder
+        self.storage_service = None
+        self.use_supabase_storage = os.environ.get('STORAGE_BACKEND', 'local') == 'supabase'
+        
+        if self.use_supabase_storage:
+            try:
+                from ..services.supabase_storage_service import get_storage_service
+                self.storage_service = get_storage_service()
+                logger.info("🗌️ ExportService using Supabase Storage backend")
+            except Exception as e:
+                logger.error(f"Failed to initialize Supabase Storage: {e}")
+                logger.info("📁 Falling back to local storage")
+                self.use_supabase_storage = False
     
     def export_audiobook(self, data):
         """
@@ -48,6 +63,9 @@ class ExportService:
         # Create ZIP archive if requested - exact logic preserved
         if export_options['createZip']:
             self._create_zip_archive(export_path, export_options)
+        
+        # Clean up temporary files from Supabase downloads
+        self._cleanup_temp_files(export_path)
 
         return {
             'success': True,
@@ -85,12 +103,28 @@ class ExportService:
             for section_idx, section in enumerate(chapter.get('sections', [])):
                 audio_path = section.get('audioPath', '')
                 if audio_path:
-                    # Convert URL path to filesystem path - exact logic preserved
-                    filename = os.path.basename(audio_path)
-                    fs_audio_path = os.path.join(self.upload_folder, filename)
+                    # Handle Supabase Storage or local files
+                    storage_backend = section.get('storageBackend', 'local')
                     
-                    if os.path.exists(fs_audio_path):
-                        processed_audio_files.append(fs_audio_path)
+                    if storage_backend == 'supabase' and self.storage_service:
+                        # Download from Supabase Storage
+                        success, file_data, error = self.storage_service.download_audio_file(audio_path)
+                        if success and file_data:
+                            # Save to temporary file for processing
+                            temp_filename = f"temp_{os.path.basename(audio_path)}"
+                            temp_path = os.path.join(export_path, temp_filename)
+                            with open(temp_path, 'wb') as f:
+                                f.write(file_data)
+                            processed_audio_files.append(temp_path)
+                        else:
+                            logger.error(f"Failed to download from Supabase: {error}")
+                    else:
+                        # Local storage - original logic
+                        filename = os.path.basename(audio_path)
+                        fs_audio_path = os.path.join(self.upload_folder, filename)
+                        
+                        if os.path.exists(fs_audio_path):
+                            processed_audio_files.append(fs_audio_path)
                         
                         # Convert and export individual files if requested - MODIFIED
                         if export_options['exportAudio']:
@@ -176,4 +210,20 @@ class ExportService:
         }
         book_content_path = os.path.join(export_path, 'book_content.json')
         with open(book_content_path, 'w') as f:
-            json.dump(book_content_data, f, indent=2) 
+            json.dump(book_content_data, f, indent=2)
+    
+    def _cleanup_temp_files(self, export_path):
+        """Clean up temporary files created during export"""
+        try:
+            # Remove temporary files downloaded from Supabase
+            for root, _, files in os.walk(export_path):
+                for file in files:
+                    if file.startswith('temp_'):
+                        temp_path = os.path.join(root, file)
+                        try:
+                            os.remove(temp_path)
+                            logger.debug(f"Cleaned up temporary file: {temp_path}")
+                        except Exception as e:
+                            logger.warning(f"Failed to clean up {temp_path}: {e}")
+        except Exception as e:
+            logger.warning(f"Error during cleanup: {e}") 

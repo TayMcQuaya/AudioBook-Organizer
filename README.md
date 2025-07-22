@@ -121,6 +121,12 @@ PORT=3000
 UPLOAD_FOLDER=uploads
 EXPORT_FOLDER=exports
 MAX_UPLOAD_SIZE=100mb
+
+# Supabase Storage Configuration (Optional)
+STORAGE_BACKEND=local  # Change to 'supabase' to enable cloud storage
+SUPABASE_URL=your-supabase-project-url
+SUPABASE_ANON_KEY=your-supabase-anon-key
+SUPABASE_SERVICE_KEY=your-supabase-service-key
 ```
 
 ### Audio Processing Options
@@ -136,6 +142,47 @@ module.exports = {
   }
 }
 ```
+
+### 🌥️ Supabase Storage Setup (Recommended for Production)
+
+To prevent audio file loss during Docker container restarts, you can use Supabase Storage:
+
+1. **Create a Supabase Project**
+   - Go to [supabase.com](https://supabase.com)
+   - Create a new project
+   - Note your project URL and keys
+
+2. **Run Database Migrations**
+   ```bash
+   # Apply storage tracking schema
+   psql $DATABASE_URL < sql/09_add_storage_tracking.sql
+   psql $DATABASE_URL < sql/10_supabase_storage_policies.sql
+   ```
+
+3. **Configure Environment Variables**
+   ```env
+   STORAGE_BACKEND=supabase
+   SUPABASE_URL=https://your-project.supabase.co
+   SUPABASE_ANON_KEY=your-anon-key
+   SUPABASE_SERVICE_KEY=your-service-key
+   ```
+
+4. **Storage Limits**
+   - 50MB per file
+   - 500MB total for free users
+   - 5GB total for paid users
+
+5. **Migrate Existing Files (Optional)**
+   ```bash
+   python backend/utils/migrate_audio_to_supabase.py --dry-run
+   # Remove --dry-run to actually migrate files
+   ```
+
+**Benefits:**
+- Audio files persist across deployments
+- Automatic signed URLs for secure access
+- Built-in storage quota management
+- CDN delivery for better performance
 
 ## 🤝 Contributing
 

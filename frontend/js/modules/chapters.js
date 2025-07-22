@@ -6,6 +6,7 @@ import { updateChaptersList } from './ui.js';
 import { showConfirm } from './notifications.js';
 import { removeHighlightFromText } from './sections.js';
 import { consumeTestCredits } from './appUI.js';
+import { apiFetch } from './api.js';
 
 // Chapter Management - preserving exact logic from original
 export async function createNewChapter() {
@@ -89,24 +90,44 @@ function removeChapterHighlights(chapterId) {
     });
 }
 
-export function playChapter(chapterId) {
+export async function playChapter(chapterId) {
     const chapter = findChapter(chapterId);
     if (!chapter || !chapter.sections.length) return;
     
     let currentIndex = 0;
-    const audioElements = chapter.sections
+    
+    // Helper to get audio URL
+    const getAudioUrl = async (section) => {
+        if (section.storageBackend === 'supabase') {
+            try {
+                const response = await apiFetch(`/audio/url?path=${encodeURIComponent(section.audioPath)}`);
+                if (response.ok) {
+                    const data = await response.json();
+                    return data.url;
+                }
+            } catch (error) {
+                console.error('Failed to get signed URL:', error);
+            }
+        }
+        return section.audioPath;
+    };
+    
+    const audioElementPromises = chapter.sections
         .filter(s => s.audioPath)
-        .map(s => {
-            const audio = new Audio(s.audioPath);
-            audio.addEventListener('ended', () => {
+        .map(async (s) => {
+            const audioUrl = await getAudioUrl(s);
+            const audio = new Audio(audioUrl);
+            audio.addEventListener('ended', async () => {
                 currentIndex++;
-                if (currentIndex < chapter.sections.length) {
-                    audio.src = chapter.sections[currentIndex].audioPath;
+                if (currentIndex < chapter.sections.length && chapter.sections[currentIndex].audioPath) {
+                    audio.src = await getAudioUrl(chapter.sections[currentIndex]);
                     audio.play();
                 }
             });
             return audio;
         });
+    
+    const audioElements = await Promise.all(audioElementPromises);
     
     if (audioElements.length) {
         audioElements[0].play();
@@ -139,18 +160,8 @@ export class ChapterAudioPlayer {
         if (!chapter) return;
         
         // Create audio elements for each section
-        this.audioElements = chapter.sections
-            .filter(s => s.audioPath)
-            .map(s => {
-                const audio = new Audio(s.audioPath);
-                audio.addEventListener('ended', () => this.playNextSection());
-                audio.addEventListener('timeupdate', () => this.updateProgress());
-                audio.addEventListener('loadedmetadata', () => {
-                    this.totalDuration += audio.duration;
-                    this.updateDurationDisplay();
-                });
-                return audio;
-            });
+        this.audioElements = [];
+        this.initializeAudioElements();
             
         // Initialize UI elements
         this.playerElement = document.getElementById(`chapter-player-${this.chapterId}`);
@@ -159,6 +170,45 @@ export class ChapterAudioPlayer {
         this.currentTimeDisplay = document.getElementById(`chapter-current-time-${this.chapterId}`);
         this.durationDisplay = document.getElementById(`chapter-duration-${this.chapterId}`);
         this.sectionsContainer = document.getElementById(`chapter-sections-${this.chapterId}`);
+    }
+    
+    async initializeAudioElements() {
+        const chapter = findChapter(this.chapterId);
+        if (!chapter) return;
+        
+        const audioPromises = chapter.sections
+            .filter(s => s.audioPath)
+            .map(async (s) => {
+                const audioUrl = await this.getAudioUrl(s);
+                const audio = new Audio(audioUrl);
+                audio.addEventListener('ended', () => this.playNextSection());
+                audio.addEventListener('timeupdate', () => this.updateProgress());
+                audio.addEventListener('loadedmetadata', () => {
+                    this.totalDuration += audio.duration;
+                    this.updateDurationDisplay();
+                });
+                return audio;
+            });
+        
+        this.audioElements = await Promise.all(audioPromises);
+    }
+    
+    async getAudioUrl(section) {
+        // If using Supabase Storage, fetch signed URL
+        if (section.storageBackend === 'supabase') {
+            try {
+                const response = await apiFetch(`/audio/url?path=${encodeURIComponent(section.audioPath)}`);
+                if (response.ok) {
+                    const data = await response.json();
+                    return data.url;
+                }
+            } catch (error) {
+                console.error('Failed to get signed URL:', error);
+            }
+        }
+        
+        // Fall back to direct path (local storage)
+        return section.audioPath;
     }
     
     togglePlayback() {
@@ -311,6 +361,37 @@ export class ChapterAudioPlayer {
     clearSectionHighlight() {
         const sections = this.sectionsContainer.children;
         Array.from(sections).forEach(section => section.classList.remove('active'));
+    }
+    
+    async updatePlaylist() {
+        const chapter = findChapter(this.chapterId);
+        if (!chapter) return;
+        
+        // Store current playback state
+        const wasPlaying = this.isPlaying;
+        const currentTime = this.currentAudio?.currentTime || 0;
+        const currentIndex = this.currentSectionIndex;
+        
+        // Stop current playback
+        this.stop();
+        
+        // Rebuild audio elements
+        this.audioElements = [];
+        this.totalDuration = 0;
+        
+        // Reinitialize audio elements
+        await this.initializeAudioElements();
+        
+        // Restore playback state if needed
+        if (wasPlaying && this.audioElements.length > currentIndex) {
+            this.currentSectionIndex = currentIndex;
+            this.currentAudio = this.audioElements[currentIndex];
+            this.currentAudio.currentTime = currentTime;
+            this.play();
+        }
+        
+        // Update UI
+        updateChaptersList();
     }
 }
 

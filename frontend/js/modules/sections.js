@@ -619,6 +619,15 @@ export async function attachAudio(chapterId, sectionId, input) {
     formData.append('audio', file);
     formData.append('chapterId', chapterId);
     formData.append('sectionId', sectionId);
+    
+    // Add project ID for Supabase Storage
+    // Generate a project ID if not exists (using timestamp + random for uniqueness)
+    let projectId = window.audioBookProjectId;
+    if (!projectId) {
+        projectId = `project_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        window.audioBookProjectId = projectId;
+    }
+    formData.append('project_id', projectId);
 
     try {
         // Update progress message for processing stage
@@ -658,6 +667,11 @@ export async function attachAudio(chapterId, sectionId, input) {
             if (section) {
                 section.audioPath = data.path;
                 section.status = 'processed';
+                // Store storage backend info if using Supabase
+                if (data.storage_backend) {
+                    section.storageBackend = data.storage_backend;
+                    section.uploadId = data.upload_id;
+                }
                 // Clear any missing audio status since we have a new valid file
                 section.audioStatus = null;
                 section.originalAudioPath = null;
