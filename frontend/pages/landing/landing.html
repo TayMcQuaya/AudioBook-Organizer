@@ -19,12 +19,14 @@
     <link rel="preload" href="/css/components.css" as="style">
     <link rel="preload" href="/css/themes.css" as="style">
     <link rel="preload" href="/css/landing.css" as="style">
+    <link rel="preload" href="/css/landing-mobile.css" as="style">
     
     <!-- CSS Files -->
     <link rel="stylesheet" href="/css/main.css">
     <link rel="stylesheet" href="/css/components.css">
     <link rel="stylesheet" href="/css/themes.css">
     <link rel="stylesheet" href="/css/landing.css">
+    <link rel="stylesheet" href="/css/landing-mobile.css">
     
     <!-- Preload critical fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -43,6 +45,27 @@
         @keyframes fadeIn {
             from { opacity: 0; }
             to { opacity: 1; }
+        }
+        
+        /* Critical mobile overrides inline to ensure they apply */
+        @media screen and (max-width: 768px) {
+            .hero-visual,
+            .hero-app-preview,
+            .app-window,
+            .features-carousel,
+            .scroll-indicators,
+            .nav-links {
+                display: none !important;
+            }
+            
+            .features-grid {
+                display: grid !important;
+                grid-template-columns: repeat(2, 1fr) !important;
+            }
+            
+            .bottom-nav {
+                display: flex !important;
+            }
         }
     </style>
 </head>
@@ -63,22 +86,25 @@
                 <a href="/auth" class="btn btn-primary">Sign In</a>
             </div>
             <div class="nav-mobile">
-                <button class="mobile-menu-btn" onclick="toggleMobileMenu()">
+                <button class="mobile-menu-btn" id="mobileMenuBtn" aria-label="Toggle mobile menu" aria-expanded="false">
                     <span></span>
                     <span></span>
                     <span></span>
                 </button>
             </div>
         </div>
-        <div class="mobile-menu" id="mobileMenu">
-            <a href="#home" class="mobile-link">Home</a>
-            <a href="#features" class="mobile-link">Features</a>
-            <a href="#how-it-works" class="mobile-link">How It Works</a>
-            <a href="#demo" class="mobile-link">Demo</a>
-            <a href="#pricing" class="mobile-link">Pricing</a>
+        <div class="mobile-menu" id="mobileMenu" role="navigation" aria-label="Mobile navigation">
+            <a href="#home" class="mobile-link" onclick="closeMobileMenu()">Home</a>
+            <a href="#features" class="mobile-link" onclick="closeMobileMenu()">Features</a>
+            <a href="#how-it-works" class="mobile-link" onclick="closeMobileMenu()">How It Works</a>
+            <a href="#demo" class="mobile-link" onclick="closeMobileMenu()">Demo</a>
+            <a href="#pricing" class="mobile-link" onclick="closeMobileMenu()">Pricing</a>
             <a href="/auth" class="btn btn-primary mobile-auth-btn">Sign In</a>
         </div>
     </nav>
+    
+    <!-- Mobile Menu Backdrop -->
+    <div class="mobile-menu-backdrop" id="mobileMenuBackdrop"></div>
 
     <!-- Hero Section -->
     <section id="home" class="hero">
@@ -109,20 +135,6 @@
                         <span class="btn-icon">🎥</span>
                         Learn More
                     </button>
-                </div>
-                <div class="hero-social-proof">
-                    <div class="social-proof-item">
-                        <span class="proof-number">10K+</span>
-                        <span class="proof-text">Texts Converted</span>
-                    </div>
-                    <div class="social-proof-item">
-                        <span class="proof-number">5K+</span>
-                        <span class="proof-text">Happy Organizers</span>
-                    </div>
-                    <div class="social-proof-item">
-                        <span class="proof-number">50+</span>
-                        <span class="proof-text">Hours of Audio</span>
-                    </div>
                 </div>
             </div>
             <div class="hero-visual">
@@ -276,6 +288,14 @@
                             <span class="highlight-item">✓ Conflict Resolution</span>
                         </div>
                     </div>
+                </div>
+                <!-- Mobile scroll indicators -->
+                <div class="scroll-indicators" id="scrollIndicators">
+                    <span class="scroll-dot active" data-index="0"></span>
+                    <span class="scroll-dot" data-index="1"></span>
+                    <span class="scroll-dot" data-index="2"></span>
+                    <span class="scroll-dot" data-index="3"></span>
+                    <span class="scroll-dot" data-index="4"></span>
                 </div>
             </div>
         </div>
@@ -550,13 +570,38 @@
                     </div>
                 </div>
             </div>
-
+            <!-- Mobile pricing scroll hint -->
+            <div class="pricing-scroll-hint">
+                Swipe to see more packages
+            </div>
         </div>
     </section>
+
+    <!-- Bottom Navigation Bar (Mobile Only) -->
+    <nav class="bottom-nav" id="bottomNav">
+        <a href="#features" class="bottom-nav-item">
+            <span class="bottom-nav-icon">✨</span>
+            <span>Features</span>
+        </a>
+        <a href="#pricing" class="bottom-nav-item">
+            <span class="bottom-nav-icon">💎</span>
+            <span>Pricing</span>
+        </a>
+        <a href="/auth?mode=signup" class="bottom-nav-item active">
+            <span class="bottom-nav-icon">🚀</span>
+            <span>Get Started</span>
+        </a>
+    </nav>
 
     <!-- Footer -->
     <footer class="footer">
         <div class="container">
+            <!-- Simple footer links for mobile -->
+            <div class="footer-links-simple">
+                <a href="/privacy">Privacy</a>
+                <a href="/terms">Terms</a>
+                <a href="/contact">Contact</a>
+            </div>
             <div class="footer-content">
                 <div class="footer-section">
                     <div class="footer-brand">
@@ -611,19 +656,32 @@
     <script type="module" src="/js/modules/landingUI.js"></script>
     <script type="module" src="/pages/landing/landing.js"></script>
     
-    <!-- Add script to prevent FOUC -->
+    <!-- Add script to prevent FOUC and ensure mobile styles -->
     <script>
         // Add loaded class once all content is ready
         document.addEventListener('DOMContentLoaded', function() {
             document.body.classList.add('loaded');
+            
+            // Force mobile styles on mobile devices
+            if (window.innerWidth <= 768) {
+                document.body.classList.add('is-mobile');
+                
+                // Ensure bottom nav is visible
+                const bottomNav = document.getElementById('bottomNav');
+                if (bottomNav) {
+                    bottomNav.style.display = 'flex';
+                }
+                
+                // Hide desktop elements
+                const desktopElements = document.querySelectorAll('.hero-visual, .app-window, .features-carousel, .nav-links');
+                desktopElements.forEach(el => {
+                    el.style.display = 'none';
+                });
+            }
         });
         
         // Fallback in case DOMContentLoaded already fired
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', function() {
-                document.body.classList.add('loaded');
-            });
-        } else {
+        if (document.readyState !== 'loading') {
             document.body.classList.add('loaded');
         }
     </script>

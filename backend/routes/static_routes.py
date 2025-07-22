@@ -77,12 +77,24 @@ def create_static_routes(app):
     @app.route('/css/<path:filename>')
     def serve_css(filename):
         """Serve CSS files from frontend/css"""
-        return send_from_directory('../frontend/css', filename)
+        response = send_from_directory('../frontend/css', filename)
+        # Prevent caching in development
+        if app.config.get('DEBUG', True):
+            response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+            response.headers['Pragma'] = 'no-cache'
+            response.headers['Expires'] = '0'
+        return response
 
     @app.route('/js/<path:filename>')
     def serve_js(filename):
         """Serve JavaScript files from frontend/js"""
-        return send_from_directory('../frontend/js', filename)
+        response = send_from_directory('../frontend/js', filename)
+        # Prevent caching in development
+        if app.config.get('DEBUG', True):
+            response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+            response.headers['Pragma'] = 'no-cache'
+            response.headers['Expires'] = '0'
+        return response
 
     @app.route('/pages/<path:filename>')
     def serve_pages(filename):

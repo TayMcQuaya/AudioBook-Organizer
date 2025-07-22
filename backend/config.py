@@ -22,7 +22,7 @@ class Config:
     STATIC_URL_PATH = ''
     
     # Server settings
-    HOST = os.environ.get('FLASK_HOST', 'localhost')
+    HOST = os.environ.get('FLASK_HOST', '0.0.0.0')
     PORT = int(os.environ.get('FLASK_PORT', 3000))
     
     # Temporary production password (for testing phase)

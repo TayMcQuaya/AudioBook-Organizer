@@ -28,6 +28,7 @@ function init() {
     setupScrollEffects();
     setupAppWindowTilt();
     setupBrandNavigation();
+    setupMobileFeatures();
     
     // Fetch and update pricing dynamically
     fetchAndUpdatePricing();
@@ -404,7 +405,23 @@ function handleOutsideClick(event) {
 
 // Navigation and Interaction Functions
 function toggleMobileMenu() {
-    mobileMenu.classList.toggle('show');
+    const mobileMenu = document.getElementById('mobileMenu');
+    const menuBtn = document.getElementById('mobileMenuBtn');
+    const backdrop = document.getElementById('mobileMenuBackdrop');
+    
+    if (mobileMenu) {
+        const isOpen = mobileMenu.classList.contains('show');
+        mobileMenu.classList.toggle('show');
+        
+        if (menuBtn) {
+            menuBtn.classList.toggle('active');
+            menuBtn.setAttribute('aria-expanded', !isOpen);
+        }
+        
+        if (backdrop) {
+            backdrop.classList.toggle('show');
+        }
+    }
 }
 
 function scrollToDemo() {
@@ -826,8 +843,150 @@ function navigateToContact(reason = 'enterprise') {
     }
 }
 
+/**
+ * Setup mobile-specific features (carousel, gestures, etc.)
+ */
+function setupMobileFeatures() {
+    // Only setup mobile features on mobile devices
+    if (window.innerWidth > 768) return;
+    
+    setupMobileMenuButton();
+    setupBottomNavigation();
+    setupPricingSwipe();
+    
+    // Add class to body for bottom nav padding
+    document.body.classList.add('has-bottom-nav');
+}
+
+/**
+ * Setup bottom navigation for mobile
+ */
+function setupBottomNavigation() {
+    const bottomNav = document.getElementById('bottomNav');
+    if (!bottomNav) return;
+    
+    // Update active state on scroll
+    const sections = ['features', 'pricing'];
+    const navItems = bottomNav.querySelectorAll('.bottom-nav-item');
+    
+    // Handle clicks with smooth scroll
+    navItems.forEach(item => {
+        item.addEventListener('click', (e) => {
+            const href = item.getAttribute('href');
+            if (href && href.startsWith('#')) {
+                e.preventDefault();
+                const target = document.querySelector(href);
+                if (target) {
+                    // Account for fixed headers
+                    const offset = 70;
+                    const targetPosition = target.offsetTop - offset;
+                    window.scrollTo({
+                        top: targetPosition,
+                        behavior: 'smooth'
+                    });
+                }
+            }
+        });
+    });
+    
+    // Update active state on scroll
+    window.addEventListener('scroll', () => {
+        const scrollPos = window.scrollY + window.innerHeight / 2;
+        
+        sections.forEach((sectionId, index) => {
+            const section = document.getElementById(sectionId);
+            if (section) {
+                const sectionTop = section.offsetTop;
+                const sectionBottom = sectionTop + section.offsetHeight;
+                
+                if (scrollPos >= sectionTop && scrollPos <= sectionBottom) {
+                    navItems.forEach(item => item.classList.remove('active'));
+                    navItems[index].classList.add('active');
+                }
+            }
+        });
+    });
+}
+
+/**
+ * Setup pricing swipe functionality
+ */
+function setupPricingSwipe() {
+    const pricingGrid = document.querySelector('.pricing-grid');
+    if (!pricingGrid) return;
+    
+    // Add visual feedback for swipeable content
+    let isScrolling = false;
+    pricingGrid.addEventListener('scroll', () => {
+        if (!isScrolling) {
+            isScrolling = true;
+            pricingGrid.classList.add('is-scrolling');
+        }
+        
+        clearTimeout(pricingGrid.scrollTimeout);
+        pricingGrid.scrollTimeout = setTimeout(() => {
+            isScrolling = false;
+            pricingGrid.classList.remove('is-scrolling');
+        }, 150);
+    });
+}
+
+/**
+ * Setup mobile menu button animation
+ */
+function setupMobileMenuButton() {
+    const menuBtn = document.getElementById('mobileMenuBtn');
+    const mobileMenu = document.getElementById('mobileMenu');
+    const backdrop = document.getElementById('mobileMenuBackdrop');
+    
+    if (!menuBtn || !mobileMenu) return;
+    
+    menuBtn.addEventListener('click', () => {
+        const isOpen = mobileMenu.classList.contains('show');
+        menuBtn.setAttribute('aria-expanded', !isOpen);
+        menuBtn.classList.toggle('active', !isOpen);
+        mobileMenu.classList.toggle('show', !isOpen);
+        
+        // Toggle backdrop
+        if (backdrop) {
+            backdrop.classList.toggle('show', !isOpen);
+        }
+    });
+    
+    // Close menu when clicking backdrop
+    if (backdrop) {
+        backdrop.addEventListener('click', () => {
+            closeMobileMenu();
+        });
+    }
+}
+
+
+/**
+ * Close mobile menu (for use in onclick handlers)
+ */
+function closeMobileMenu() {
+    const mobileMenu = document.getElementById('mobileMenu');
+    const menuBtn = document.getElementById('mobileMenuBtn');
+    const backdrop = document.getElementById('mobileMenuBackdrop');
+    
+    if (mobileMenu) {
+        mobileMenu.classList.remove('show');
+    }
+    
+    if (menuBtn) {
+        menuBtn.classList.remove('active');
+        menuBtn.setAttribute('aria-expanded', 'false');
+    }
+    
+    if (backdrop) {
+        backdrop.classList.remove('show');
+    }
+}
+
 // Make functions globally available for HTML onclick handlers
 window.toggleMobileMenu = toggleMobileMenu;
+window.closeMobileMenu = closeMobileMenu;
 window.scrollToDemo = scrollToDemo;
 window.playDemo = playDemo;
 window.contactSales = contactSales;

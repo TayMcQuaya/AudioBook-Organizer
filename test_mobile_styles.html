@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mobile Styles Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background: #f0f0f0;
+        }
+        .info-box {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .status {
+            font-weight: bold;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        .warning { background: #fff3cd; color: #856404; }
+    </style>
+</head>
+<body>
+    <h1>Mobile Styles Diagnostic</h1>
+    
+    <div class="info-box">
+        <h2>Device Information</h2>
+        <p><strong>User Agent:</strong> <span id="userAgent"></span></p>
+        <p><strong>Screen Width:</strong> <span id="screenWidth"></span>px</p>
+        <p><strong>Window Width:</strong> <span id="windowWidth"></span>px</p>
+        <p><strong>Device Pixel Ratio:</strong> <span id="pixelRatio"></span></p>
+        <p><strong>Is Mobile (CSS):</strong> <span id="isMobileCSS"></span></p>
+    </div>
+    
+    <div class="info-box">
+        <h2>CSS Media Query Tests</h2>
+        <div id="mediaQueries"></div>
+    </div>
+    
+    <div class="info-box">
+        <h2>Element Visibility Tests</h2>
+        <div id="elementTests"></div>
+    </div>
+    
+    <div class="info-box">
+        <h2>Recommendations</h2>
+        <div id="recommendations"></div>
+    </div>
+    
+    <script>
+        // Device info
+        document.getElementById('userAgent').textContent = navigator.userAgent;
+        document.getElementById('screenWidth').textContent = screen.width;
+        document.getElementById('windowWidth').textContent = window.innerWidth;
+        document.getElementById('pixelRatio').textContent = window.devicePixelRatio || 1;
+        
+        // Check if mobile CSS would apply
+        const isMobile = window.matchMedia('(max-width: 768px)').matches;
+        document.getElementById('isMobileCSS').innerHTML = isMobile ? 
+            '<span class="status success">YES</span>' : 
+            '<span class="status error">NO</span>';
+        
+        // Test various media queries
+        const mediaTests = [
+            { query: '(max-width: 768px)', label: 'Standard Mobile' },
+            { query: '(max-device-width: 768px)', label: 'Device Width' },
+            { query: 'screen and (max-width: 768px)', label: 'Screen + Width' },
+            { query: '(orientation: portrait)', label: 'Portrait Mode' },
+            { query: '(hover: none)', label: 'No Hover (Touch)' },
+            { query: '(pointer: coarse)', label: 'Coarse Pointer (Touch)' }
+        ];
+        
+        const mediaResults = mediaTests.map(test => {
+            const matches = window.matchMedia(test.query).matches;
+            return `<p><strong>${test.label}:</strong> ${test.query} = <span class="status ${matches ? 'success' : 'error'}">${matches ? 'MATCHES' : 'NO MATCH'}</span></p>`;
+        }).join('');
+        
+        document.getElementById('mediaQueries').innerHTML = mediaResults;
+        
+        // Test if elements would be visible
+        const elementTests = `
+            <p><strong>Your viewport:</strong> ${window.innerWidth} x ${window.innerHeight}</p>
+            <p><strong>Should show mobile UI:</strong> ${window.innerWidth <= 768 ? '<span class="status success">YES</span>' : '<span class="status error">NO</span>'}</p>
+        `;
+        
+        document.getElementById('elementTests').innerHTML = elementTests;
+        
+        // Recommendations
+        let recommendations = [];
+        
+        if (window.innerWidth > 768) {
+            recommendations.push('<p class="status warning">Your viewport is wider than 768px. The mobile styles won\'t apply.</p>');
+            recommendations.push('<p>To test mobile view on desktop:</p>');
+            recommendations.push('<ul><li>Open Chrome DevTools (F12)</li><li>Click the device toggle (Ctrl+Shift+M)</li><li>Select a mobile device preset</li></ul>');
+        }
+        
+        if (window.devicePixelRatio > 1) {
+            recommendations.push('<p class="status success">High DPI display detected. Mobile styles should render crisply.</p>');
+        }
+        
+        // Check if on actual mobile
+        const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        if (isMobileDevice) {
+            recommendations.push('<p class="status success">Mobile device detected! Styles should apply correctly.</p>');
+        }
+        
+        document.getElementById('recommendations').innerHTML = recommendations.join('') || '<p class="status success">Everything looks good for mobile testing!</p>';
+        
+        // Add refresh with cache bypass tip
+        document.getElementById('recommendations').innerHTML += '<hr><p><strong>Force refresh tip:</strong> Use Ctrl+Shift+R (Windows) or Cmd+Shift+R (Mac) to bypass cache.</p>';
+    </script>
+</body>
+</html>
