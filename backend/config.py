@@ -48,6 +48,9 @@ class Config:
     DEFAULT_CREDITS = int(os.environ.get('DEFAULT_CREDITS', 100))
     MAX_CREDITS_PER_USER = int(os.environ.get('MAX_CREDITS_PER_USER', 10000))
     
+    # Contact email configuration
+    CONTACT_FROM_EMAIL = os.environ.get('CONTACT_FROM_EMAIL', 'help@audiobookorganizer.com')
+    
     # Payment configuration (for future Stripe/PayPal integration)
     STRIPE_PUBLISHABLE_KEY = os.environ.get('STRIPE_PUBLISHABLE_KEY')
     STRIPE_SECRET_KEY = os.environ.get('STRIPE_SECRET_KEY')

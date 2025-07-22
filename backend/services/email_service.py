@@ -59,6 +59,24 @@ class EmailService:
         """Update rate limit tracking"""
         self._last_sent[recipient] = time.time()
     
+    def _replace_template_variables(self, template_content: str) -> str:
+        """
+        Replace template variables with actual values from environment variables
+        
+        Args:
+            template_content: The template content to process
+            
+        Returns:
+            Template content with variables replaced
+        """
+        from ..config import Config
+        
+        # Replace email addresses
+        template_content = template_content.replace('help@audiobookorganizer.com', Config.CONTACT_FROM_EMAIL)
+        template_content = template_content.replace('support@audiobookorganizer.com', Config.CONTACT_FROM_EMAIL)
+        
+        return template_content
+    
     def send_email(self, to_email: str, subject: str, body: str, html_body: Optional[str] = None) -> Dict[str, Any]:
         """
         Send an email using Gmail SMTP
@@ -200,6 +218,9 @@ Sent from AudioBook Organizer Contact Form
             with open(template_path, 'r', encoding='utf-8') as f:
                 html_template = f.read()
             
+            # Replace template variables with environment variables first
+            html_template = self._replace_template_variables(html_template)
+            
             # Replace template variables
             timestamp = datetime.utcnow().strftime('%B %d, %Y at %I:%M %p UTC')
             
@@ -260,8 +281,13 @@ This is an automated confirmation message.
             with open(template_path, 'r', encoding='utf-8') as f:
                 html_template = f.read()
             
-            # The template doesn't have placeholders for name/email, so we'll use it as is
-            # It's already professionally designed
+            # Replace template variables with actual values
+            html_template = self._replace_template_variables(html_template)
+            
+            # Get contact email for text body
+            from ..config import Config
+            contact_email = Config.CONTACT_FROM_EMAIL
+            
             subject = "Account Deletion Confirmation - AudioBook Organizer"
             
             body = f"""
@@ -282,7 +308,7 @@ What happens next:
 - Any active subscriptions have been cancelled
 - This action cannot be undone
 
-If you deleted your account by mistake or have any questions, please contact our support team immediately at help@audiobookorganizer.com.
+If you deleted your account by mistake or have any questions, please contact our support team immediately at {contact_email}.
 
 Thank you for using AudioBook Organizer.
 
@@ -309,6 +335,9 @@ Thank you for using AudioBook Organizer.
         try:
             with open(template_path, 'r', encoding='utf-8') as f:
                 html_template = f.read()
+            
+            # Replace template variables with environment variables first
+            html_template = self._replace_template_variables(html_template)
             
             # Replace template variables
             html_body = html_template.replace('{{customer_name}}', user_name)
@@ -359,6 +388,9 @@ The AudioBook Organizer Team
             with open(template_path, 'r', encoding='utf-8') as f:
                 html_template = f.read()
             
+            # Replace template variables with environment variables first
+            html_template = self._replace_template_variables(html_template)
+            
             # Replace template variables
             html_body = html_template.replace('{{customer_name}}', user_name)
             html_body = html_body.replace('{{customer_email}}', user_email)
@@ -407,6 +439,9 @@ The AudioBook Organizer Team
         try:
             with open(template_path, 'r', encoding='utf-8') as f:
                 html_template = f.read()
+            
+            # Replace template variables with environment variables first
+            html_template = self._replace_template_variables(html_template)
             
             # Replace template variables
             html_body = html_template.replace('{{customer_name}}', user_name)
