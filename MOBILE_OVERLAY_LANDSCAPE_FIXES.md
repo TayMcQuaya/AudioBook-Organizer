@@ -2,6 +2,9 @@
 
 ## Date: 2025-07-23
 
+## Updates
+- **2025-07-23 (Latest)**: Added Privacy Page mobile fixes for header spacing and footer visibility
+
 ## Overview
 This session focused on fixing mobile-specific issues for the AudioBook Organizer app, particularly around the mobile overlay display on the app page and landscape mode handling for both app and landing pages.
 
@@ -240,6 +243,91 @@ function updateViewportForOrientation() {
 }
 ```
 
+### 7. Privacy Page Mobile Layout Fixes
+**Problems**: 
+- Title was touching/overlapping the navigation header on mobile
+- Footer was not entirely visible when scrolling to the bottom
+
+**Solution**: Fixed spacing and layout issues for mobile devices.
+
+**Changes to `/frontend/pages/privacy/privacy.html`**:
+1. Added landing-mobile.css for proper mobile navigation styling:
+```html
+<!-- Mobile CSS for better mobile navigation -->
+<link rel="stylesheet" href="/css/landing-mobile.css">
+```
+
+2. Added inline CSS for immediate mobile fixes:
+```html
+<style>
+    @media screen and (max-width: 768px) {
+        /* Ensure html and body allow proper scrolling */
+        html {
+            height: 100%;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+        
+        body.privacy-body {
+            min-height: 100%;
+            height: auto;
+            overflow-y: visible;
+        }
+        
+        /* Ensure navigation doesn't overlap content */
+        .landing-nav {
+            height: 70px;
+        }
+        
+        /* Add safe area padding for devices with notches */
+        @supports (padding-top: env(safe-area-inset-top)) {
+            .landing-nav {
+                padding-top: env(safe-area-inset-top);
+                height: calc(70px + env(safe-area-inset-top));
+            }
+        }
+    }
+</style>
+```
+
+**Changes to `/frontend/pages/privacy/privacy.css`**:
+```css
+@media (max-width: 768px) {
+    /* Ensure proper body layout on mobile */
+    .privacy-body {
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        position: relative;
+        padding-bottom: env(safe-area-inset-bottom, 0);
+    }
+    
+    .legal-content {
+        /* Increased top padding to account for 70px navigation + safe space */
+        padding: 90px 0 40px;
+        /* Account for notch on devices like iPhone */
+        padding-top: calc(90px + env(safe-area-inset-top, 0));
+        flex: 1;
+        min-height: calc(100vh - 200px);
+    }
+    
+    /* Ensure footer is always visible at bottom */
+    .footer {
+        position: relative;
+        margin-top: auto;
+        padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0));
+        margin-bottom: 0;
+    }
+}
+```
+
+**Key Fixes**:
+- Increased top padding from 60px to 90px to account for 70px navigation height
+- Added safe area insets for devices with notches (iPhone X+)
+- Fixed footer visibility with proper flexbox layout and padding
+- Ensured smooth scrolling with `-webkit-overflow-scrolling: touch`
+- Improved container padding for better mobile readability
+
 ## Key Technical Patterns
 
 ### 1. Mobile Detection
@@ -281,6 +369,8 @@ if (window.router) {
 2. `/frontend/js/modules/router.js` - CSS loading fixes for mobile navigation
 3. `/frontend/pages/auth/auth.js` - Mobile redirect after authentication
 4. `/frontend/pages/landing/landing.html` - Landscape rotation message and zoom prevention
+5. `/frontend/pages/privacy/privacy.html` - Added mobile CSS and inline fixes for header/footer
+6. `/frontend/pages/privacy/privacy.css` - Enhanced mobile responsive styles for proper spacing
 
 ## Testing Scenarios
 1. **Portrait to Landscape**: Rotate device to see overlay message
@@ -289,6 +379,10 @@ if (window.router) {
 4. **Dark Theme**: Switch themes and verify mobile overlay colors remain correct
 5. **Zoom Prevention**: Try pinch-to-zoom in landscape mode with overlay showing
 6. **Full Screen Coverage**: Verify landscape overlay covers entire viewport with no gaps or scrollable areas
+7. **Privacy Page Mobile**: 
+   - Verify title has proper spacing from navigation header (no overlap)
+   - Scroll to bottom and confirm footer is fully visible
+   - Test on devices with notches (iPhone X+) for safe area padding
 
 ## Known Limitations
 - Landing page is designed for portrait mode only on mobile

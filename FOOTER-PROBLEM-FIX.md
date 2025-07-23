@@ -1,7 +1,9 @@
 # Footer Implementation: Privacy Policy, Terms of Use & Contact Pages
 
 ## Overview
-This document provides the **EXACT** implementation details for the footer as it appears on the current branch for Privacy Policy, Terms of Use, and Contact pages.
+This document provides the **EXACT** implementation details for the footer as it appears on the current branch for Privacy Policy, Terms of Use, and Contact pages, including mobile scrolling fixes and landscape orientation handling.
+
+**Last Updated**: July 2025 - Added mobile scrolling fixes and landscape rotation message
 
 ---
 
@@ -70,6 +72,117 @@ This document provides the **EXACT** implementation details for the footer as it
 ### ✅ **Structure**: All three footers are IDENTICAL
 
 ---
+
+## Mobile Portrait Scrolling Fix (July 2025)
+
+### Problem
+On mobile devices in portrait mode, the privacy policy and terms pages would stop scrolling just before reaching the bottom, requiring an extra small scroll to reach the footer.
+
+### Root Cause
+- Conflicting height declarations (`height: 100%` and `min-height: 100vh` on the same element)
+- JavaScript scroll hack (`scrollTo(0,1)` then `scrollTo(0,0)`) interfering with proper height calculation
+- HTML element height constraints preventing natural document flow
+
+### Solution Applied
+
+#### 1. Privacy Policy Page
+**Updated Files**: `privacy.html`, `privacy.css`, `main.js`
+
+**CSS Changes**:
+```css
+/* Removed conflicting height: 100% */
+.privacy-body {
+    min-height: 100vh;
+    /* height: 100%; <- REMOVED */
+}
+
+/* Mobile-specific fixes */
+@media (max-width: 768px) {
+    html {
+        height: auto;
+        min-height: 100%;
+    }
+    
+    .privacy-body {
+        min-height: 100vh;
+        height: auto;
+        overflow: visible;
+        padding-bottom: env(safe-area-inset-bottom, 0);
+    }
+}
+```
+
+**JavaScript Changes**:
+```javascript
+// Replaced scroll hack with proper layout recalculation
+requestAnimationFrame(() => {
+    document.body.style.minHeight = '100vh';
+    window.scrollTo(0, 0);
+    document.body.offsetHeight; // Force repaint
+});
+```
+
+#### 2. Terms of Use Page
+**Updated Files**: `terms.html`, `terms.css`, `main.js`
+
+- Applied identical fixes as privacy page
+- Additionally increased top padding from 60px to 100px to prevent title touching header:
+```css
+.legal-content {
+    padding: 100px 0 40px; /* Increased from 60px */
+    padding-top: calc(100px + env(safe-area-inset-top, 0px));
+}
+```
+
+## Mobile Landscape Rotation Message (July 2025)
+
+### Implementation
+Added a full-screen overlay that appears when users rotate their mobile device to landscape mode, matching the landing page design.
+
+### Features
+- Purple gradient background (`linear-gradient(135deg, #667eea 0%, #764ba2 100%)`)
+- Animated phone icon that rotates 90 degrees
+- Clear message: "Please Rotate Your Device"
+- Blocks all page content in landscape mode
+- Smooth slide-in animation
+
+### Code Added to All Three Pages
+```html
+<!-- Mobile Landscape Rotation Message -->
+<div class="mobile-landscape-overlay" id="mobileLandscapeOverlay">
+    <style>
+        /* Inline styles for immediate rendering */
+        @media only screen and (max-width: 768px) and (orientation: landscape),
+               only screen and (max-device-width: 768px) and (orientation: landscape),
+               only screen and (max-height: 500px) and (orientation: landscape) {
+            .mobile-landscape-overlay {
+                display: flex !important;
+                position: fixed;
+                top: 0 !important;
+                left: 0 !important;
+                right: 0 !important;
+                bottom: 0 !important;
+                width: 100% !important;
+                height: 100% !important;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                z-index: 999999;
+                /* ... additional styles ... */
+            }
+        }
+    </style>
+    <div class="landscape-message-card">
+        <div class="rotate-icon">
+            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <!-- Phone icon with rotation arrow -->
+            </svg>
+        </div>
+        <h2 class="landscape-title">Please Rotate Your Device</h2>
+        <p class="landscape-message">
+            For the best experience, please use portrait mode to view our website.
+        </p>
+    </div>
+</div>
+```
 
 ## Current Implementation (As Fixed)
 
@@ -397,4 +510,11 @@ All three pages now have consistent footer implementation with:
 - **Theme support** for dark mode
 - **Mobile responsiveness** preserved
 
-The implementation is complete with all visual issues resolved while maintaining the simple, professional appearance across all pages.
+### Mobile Enhancements (July 2025)
+- **Fixed scrolling issue** on portrait mode where footer required extra scroll
+- **Added landscape rotation message** matching landing page design
+- **Improved spacing** on Terms page to prevent title overlap
+- **Proper safe area handling** for devices with notches
+- **Smooth animations** and professional mobile UX
+
+The implementation is complete with all visual issues resolved while maintaining the simple, professional appearance across all pages on both desktop and mobile devices.

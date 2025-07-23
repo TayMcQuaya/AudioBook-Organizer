@@ -16,8 +16,171 @@
     <link rel="stylesheet" href="/css/components.css">
     <link rel="stylesheet" href="/css/themes.css">
     <link rel="stylesheet" href="/pages/terms/terms.css">
+    <!-- Mobile CSS for better mobile navigation -->
+    <link rel="stylesheet" href="/css/landing-mobile.css">
+    <!-- Mobile-specific fixes for immediate rendering -->
+    <style>
+        @media screen and (max-width: 768px) {
+            /* Fix initial height calculation issues */
+            html {
+                /* Remove height constraint to allow natural scrolling */
+                height: auto;
+                min-height: 100%;
+                overflow-y: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+            
+            body.terms-body {
+                /* Let content determine height naturally */
+                min-height: 100vh;
+                height: auto;
+                overflow-y: visible;
+                /* Ensure proper bottom spacing for mobile browsers */
+                padding-bottom: env(safe-area-inset-bottom, 0);
+            }
+            
+            /* Ensure navigation doesn't overlap content */
+            .landing-nav {
+                height: 70px;
+            }
+            
+            /* Add safe area padding for devices with notches */
+            @supports (padding-top: env(safe-area-inset-top)) {
+                .landing-nav {
+                    padding-top: env(safe-area-inset-top);
+                    height: calc(70px + env(safe-area-inset-top));
+                }
+            }
+            
+        }
+    </style>
 </head>
 <body class="terms-body">
+    <!-- Mobile Landscape Rotation Message -->
+    <div class="mobile-landscape-overlay" id="mobileLandscapeOverlay">
+        <style>
+            /* Inline styles for immediate rendering */
+            /* Hide by default */
+            .mobile-landscape-overlay {
+                display: none !important;
+            }
+            
+            /* Show only on mobile landscape */
+            @media only screen and (max-width: 768px) and (orientation: landscape),
+                   only screen and (max-device-width: 768px) and (orientation: landscape),
+                   only screen and (max-height: 500px) and (orientation: landscape) {
+                /* Ensure body and html don't interfere with full-screen overlay */
+                html, body {
+                    margin: 0 !important;
+                    padding: 0 !important;
+                    overflow: hidden !important;
+                    height: 100% !important;
+                    width: 100% !important;
+                }
+                
+                body {
+                    position: fixed !important;
+                }
+                .mobile-landscape-overlay {
+                    display: flex !important;
+                    position: fixed;
+                    top: 0 !important;
+                    left: 0 !important;
+                    right: 0 !important;
+                    bottom: 0 !important;
+                    width: 100% !important;
+                    height: 100% !important;
+                    min-width: 100vw !important;
+                    min-height: 100vh !important;
+                    max-width: 100vw !important;
+                    max-height: 100vh !important;
+                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                    z-index: 999999;
+                    align-items: center;
+                    justify-content: center;
+                    padding: 20px;
+                    margin: 0 !important;
+                    overflow: hidden;
+                    touch-action: none;
+                    box-sizing: border-box;
+                }
+                
+                .landscape-message-card {
+                    background: rgba(255, 255, 255, 0.95);
+                    backdrop-filter: blur(20px);
+                    -webkit-backdrop-filter: blur(20px);
+                    border-radius: 24px;
+                    padding: 30px 25px;
+                    max-width: 400px;
+                    max-height: 90vh;
+                    text-align: center;
+                    box-shadow: 
+                        0 20px 40px rgba(102, 126, 234, 0.15),
+                        0 0 80px rgba(102, 126, 234, 0.1);
+                    animation: slideIn 0.4s ease-out;
+                }
+                
+                .rotate-icon {
+                    width: 60px;
+                    height: 60px;
+                    margin: 0 auto 16px;
+                    animation: rotatePhone 2s ease-in-out infinite;
+                }
+                
+                .rotate-icon svg {
+                    width: 100%;
+                    height: 100%;
+                }
+                
+                .landscape-title {
+                    font-size: 20px;
+                    font-weight: 700;
+                    color: #2d3748;
+                    margin-bottom: 10px;
+                }
+                
+                .landscape-message {
+                    font-size: 15px;
+                    color: #4a5568;
+                    line-height: 1.5;
+                }
+                
+                @keyframes slideIn {
+                    from {
+                        opacity: 0;
+                        transform: scale(0.9);
+                    }
+                    to {
+                        opacity: 1;
+                        transform: scale(1);
+                    }
+                }
+                
+                @keyframes rotatePhone {
+                    0%, 100% {
+                        transform: rotate(0deg);
+                    }
+                    50% {
+                        transform: rotate(90deg);
+                    }
+                }
+            }
+        </style>
+        <div class="landscape-message-card">
+            <div class="rotate-icon">
+                <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <rect x="5" y="4" width="14" height="16" rx="2" stroke="#667eea" stroke-width="2"/>
+                    <circle cx="12" cy="17" r="1" fill="#667eea"/>
+                    <path d="M9 7h6" stroke="#667eea" stroke-width="2" stroke-linecap="round"/>
+                    <path d="M12 10v4m0 0l2-2m-2 2l-2-2" stroke="#764ba2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+            </div>
+            <h2 class="landscape-title">Please Rotate Your Device</h2>
+            <p class="landscape-message">
+                For the best experience, please use portrait mode to view our website.
+            </p>
+        </div>
+    </div>
     <!-- Navigation -->
         <nav class="landing-nav">
             <div class="nav-container">

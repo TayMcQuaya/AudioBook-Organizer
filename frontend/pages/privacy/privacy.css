@@ -6,7 +6,7 @@ html {
 
 .privacy-body {
     min-height: 100vh;
-    height: 100%;
+    /* Remove conflicting height: 100% */
     background: white;
     color: var(--text-primary);
     display: flex;
@@ -170,12 +170,41 @@ html {
 
 /* Responsive */
 @media (max-width: 768px) {
+    /* Fix scrolling issue on mobile */
+    html {
+        /* Allow natural document flow */
+        height: auto;
+        min-height: 100%;
+    }
+    
+    /* Ensure proper body layout on mobile */
+    .privacy-body {
+        min-height: 100vh;
+        height: auto;
+        display: flex;
+        flex-direction: column;
+        position: relative;
+        /* Use fallback value for safe area inset */
+        padding-bottom: env(safe-area-inset-bottom, 0px);
+        /* Ensure no overflow restrictions */
+        overflow: visible;
+    }
+    
     .legal-content {
-        padding: 60px 0;
+        /* Match navigation height exactly (70px) + small buffer */
+        padding: 80px 0 40px;
+        /* Account for notch on devices like iPhone with fallback */
+        padding-top: calc(80px + env(safe-area-inset-top, 0px));
+        flex: 1 0 auto;
+        /* Remove fixed min-height calculation that might be wrong initially */
+        min-height: auto;
+        /* Ensure content can expand naturally */
+        height: auto;
     }
     
     .legal-title {
         font-size: 2rem;
+        margin-top: 0; /* Ensure no extra margin pushing content up */
     }
     
     .legal-section {
@@ -185,5 +214,19 @@ html {
     
     .legal-section h2 {
         font-size: 1.3rem;
+    }
+    
+    /* Ensure footer is always visible at bottom */
+    .footer {
+        position: relative;
+        margin-top: auto;
+        padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0));
+        /* Ensure footer is not cut off */
+        margin-bottom: 0;
+    }
+    
+    /* Fix container padding for better mobile view */
+    .container {
+        padding: 0 1rem; /* Slightly more padding than 0.5rem for better readability */
     }
 }
