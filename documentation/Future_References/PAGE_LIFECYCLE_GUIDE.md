@@ -912,3 +912,58 @@ if (!pageCSS) {
 - Contact page provides structured form for user communication
 - All pages maintain consistent theming and responsive design
 
+### ✅ **Static Page Navigation Fix (January 2025)**
+**Issue Resolved**: Privacy, Terms, and Contact pages failed to load properly when navigating from landing page footer links on desktop, while working correctly on mobile.
+
+**Root Cause**: 
+- Desktop and mobile footer links used different navigation approaches
+- Desktop footer links had `data-action="navigate"` and `data-route` attributes for SPA navigation
+- Mobile footer links used simple `href` attributes triggering full page reloads
+- Static pages (privacy, terms, contact) were designed for full page loads, not SPA navigation
+
+**CSS Implementation**:
+```css
+/* Desktop - hides simple footer links */
+@media (min-width: 769px) {
+    .footer-links-simple {
+        display: none !important;
+    }
+}
+
+/* Mobile - shows simple footer links */
+@media (max-width: 768px) {
+    .footer-links-simple {
+        display: flex;
+        justify-content: center;
+        gap: 24px;
+    }
+}
+```
+
+**Files Changed**: 
+- `frontend/pages/landing/landing.html` - Removed SPA navigation attributes from desktop footer links
+
+**Solution Applied**:
+```html
+<!-- BEFORE: Desktop footer links with SPA navigation -->
+<a href="/privacy" data-action="navigate" data-route="/privacy" class="footer-link">Privacy Policy</a>
+<a href="/terms" data-action="navigate" data-route="/terms" class="footer-link">Terms of Service</a>
+<a href="/contact" data-action="navigate" data-route="/contact" class="footer-link">Contact Support</a>
+
+<!-- AFTER: Desktop footer links with standard navigation -->
+<a href="/privacy" class="footer-link">Privacy Policy</a>
+<a href="/terms" class="footer-link">Terms of Service</a>
+<a href="/contact" class="footer-link">Contact Support</a>
+```
+
+**Key Takeaway**: 
+Not all pages need SPA navigation. Static content pages (legal, contact, etc.) can work better with traditional full page loads to ensure all resources (CSS, JS) are properly loaded. When deciding between SPA and traditional navigation:
+- Use SPA navigation for app-like pages requiring state preservation
+- Use traditional navigation for static content pages with minimal interactivity
+
+**Prevention for Future Static Pages**:
+- Consider whether the page truly benefits from SPA navigation
+- If the page is mostly static content, use simple `href` links
+- Test both mobile and desktop navigation paths
+- Ensure CSS and JS dependencies load correctly for both navigation methods
+
