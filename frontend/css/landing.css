@@ -1112,15 +1112,18 @@ html {
 
 /* Hide mobile-specific elements on desktop */
 @media screen and (min-width: 769px) {
-    .bottom-nav {
+    .landing-body .bottom-nav,
+    body .bottom-nav {
         display: none !important;
     }
     
-    .footer-links-simple {
+    .landing-body .footer-links-simple,
+    body .footer-links-simple {
         display: none !important;
     }
     
-    .pricing-scroll-hint {
+    .landing-body .pricing-scroll-hint,
+    body .pricing-scroll-hint {
         display: none !important;
     }
 }

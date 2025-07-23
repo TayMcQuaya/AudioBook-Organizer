@@ -807,7 +807,55 @@ class Router {
                 landingCSS.rel = 'stylesheet';
                 landingCSS.href = '/css/landing.css';
                 document.head.appendChild(landingCSS);
+            } else {
+                // Move to end to ensure proper cascade
+                document.head.appendChild(landingCSS);
             }
+            
+            // IMPORTANT: Also load mobile CSS for landing page - MUST be loaded AFTER landing.css
+            let landingMobileCSS = document.querySelector('link[href="/css/landing-mobile.css"]');
+            
+            // On mobile (including landscape), always force reload the CSS with cache busting
+            const isMobile = window.matchMedia('(max-width: 768px)').matches || 
+                           window.matchMedia('(max-device-width: 768px)').matches ||
+                           window.matchMedia('(max-height: 500px) and (orientation: landscape)').matches;
+                           
+            if (isMobile) {
+                if (landingMobileCSS) {
+                    landingMobileCSS.remove();
+                }
+                landingMobileCSS = document.createElement('link');
+                landingMobileCSS.rel = 'stylesheet';
+                landingMobileCSS.href = `/css/landing-mobile.css?v=${Date.now()}`;
+                document.head.appendChild(landingMobileCSS);
+                console.log('📱 Force reloaded mobile CSS with cache bust (including landscape)');
+            } else if (!landingMobileCSS) {
+                // Desktop - normal loading
+                landingMobileCSS = document.createElement('link');
+                landingMobileCSS.rel = 'stylesheet';
+                landingMobileCSS.href = '/css/landing-mobile.css';
+                document.head.appendChild(landingMobileCSS);
+            } else {
+                // Move to end to ensure it overrides landing.css
+                document.head.appendChild(landingMobileCSS);
+            }
+            
+            // Remove app-specific CSS that might interfere
+            const appSpecificCSS = [
+                '/css/table-of-contents.css',
+                '/css/formatting.css',
+                '/css/profile-modal.css',
+                '/css/skeleton.css',
+                '/css/auth-skeleton.css'
+            ];
+            
+            appSpecificCSS.forEach(cssPath => {
+                const link = document.querySelector(`link[href="${cssPath}"]`);
+                if (link) {
+                    link.remove();
+                    console.log(`🧹 Removed app CSS: ${cssPath}`);
+                }
+            });
 
             // Load landing page HTML
             const response = await fetch('/pages/landing/landing.html');
@@ -819,18 +867,51 @@ class Router {
             const doc = parser.parseFromString(html, 'text/html');
             appContainer.innerHTML = doc.body.innerHTML;
 
+            // Reset body classes completely
             document.body.className = 'landing-body app-ready';
+            document.body.removeAttribute('data-theme'); // Remove any theme attributes
+            document.body.style = ''; // Clear any inline styles
+            
+            // Force recalculation of styles on mobile (including landscape)
+            const isMobileView = window.matchMedia('(max-width: 768px)').matches || 
+                               window.matchMedia('(max-device-width: 768px)').matches ||
+                               window.matchMedia('(max-height: 500px) and (orientation: landscape)').matches;
+                               
+            if (isMobileView) {
+                // Ensure viewport meta tag is correct
+                let viewport = document.querySelector('meta[name="viewport"]');
+                if (!viewport) {
+                    viewport = document.createElement('meta');
+                    viewport.name = 'viewport';
+                    document.head.appendChild(viewport);
+                }
+                viewport.content = 'width=device-width, initial-scale=1.0';
+                
+                // Force reflow to apply mobile styles
+                document.body.offsetHeight;
+                
+                // Small delay to ensure CSS is fully applied
+                setTimeout(() => {
+                    appContainer.style.opacity = '1';
+                }, 100);
+                
+                console.log('📱 Forced style recalculation for mobile');
+            } else {
+                // Desktop - immediate show
+                appContainer.style.opacity = '1';
+            }
 
+            // Clear any existing notifications before loading landing page
+            const existingNotifications = document.querySelectorAll('.notification-container');
+            existingNotifications.forEach(notification => notification.remove());
+            
             // Load landing page JavaScript
             const { initLandingPage, cleanupLandingPage } = await import('/pages/landing/landing.js');
             initLandingPage();
             window.cleanupLandingPage = cleanupLandingPage; // Make cleanup available to the router
 
-            // Scroll to top and make container visible
+            // Scroll to top (opacity already handled above based on device)
             window.scrollTo(0, 0);
-            setTimeout(() => {
-                appContainer.style.opacity = '1';
-            }, 100);
 
         } catch (error) {
             console.error('Error loading landing page:', error);
@@ -1138,6 +1219,16 @@ class Router {
         try {
             console.log('📱 Loading main application...');
             
+            // Check if mobile device
+            const isMobile = window.matchMedia('(max-width: 768px)').matches || 
+                            window.matchMedia('(max-device-width: 768px)').matches;
+            
+            if (isMobile) {
+                console.log('📱 Mobile device detected in router - loading app page without initialization');
+                // For mobile, just load the HTML which contains the overlay
+                // No JS initialization will happen
+            }
+            
             // **REVERTED: Keep router-based approach but eliminate CSS flash**
             // This maintains all existing navigation patterns while fixing the CSS issue
             
@@ -1269,6 +1360,14 @@ class Router {
                 // Parse the HTML and extract only the body content
                 const parser = new DOMParser();
                 const doc = parser.parseFromString(appHtml, 'text/html');
+                
+                // If mobile, remove all script tags to prevent initialization
+                if (isMobile) {
+                    const scripts = doc.querySelectorAll('script');
+                    scripts.forEach(script => script.remove());
+                    console.log(`📱 Removed ${scripts.length} script tags for mobile`);
+                }
+                
                 const bodyContent = doc.body.innerHTML;
                 
                 // **IMPROVED: Inject content with CSS already loaded and ensure proper styling**
@@ -1355,7 +1454,9 @@ class Router {
                     }
                     
                     // Initialize/refresh essential features that might have been cleaned up
-                    await this.refreshEssentialFeatures();
+                    if (!isMobile) {
+                        await this.refreshEssentialFeatures();
+                    }
                     
                     console.log('📱 App reused successfully - skipping full initialization');
                     return;
@@ -1402,17 +1503,22 @@ class Router {
                         console.log('🧪 Testing mode: Auth status check complete, proceeding with app init');
                     }
                     
-                    console.log('🔧 Starting dynamic import of main.js...');
-                    
-                    // Use the robust module loader
-                    const { moduleLoader } = await import('./moduleLoader.js');
-                    const appModule = await moduleLoader.loadMainApp();
-                    
-                    console.log(`✅ App module loaded via ${appModule.loadMethod}`);
-                    
-                    // Initialize the app
-                    await appModule.initialize();
-                    window.cleanupApp = appModule.cleanup;
+                    // Only load main.js on desktop
+                    if (!isMobile) {
+                        console.log('🔧 Starting dynamic import of main.js...');
+                        
+                        // Use the robust module loader
+                        const { moduleLoader } = await import('./moduleLoader.js');
+                        const appModule = await moduleLoader.loadMainApp();
+                        
+                        console.log(`✅ App module loaded via ${appModule.loadMethod}`);
+                        
+                        // Initialize the app
+                        await appModule.initialize();
+                        window.cleanupApp = appModule.cleanup;
+                    } else {
+                        console.log('📱 Skipping main.js import on mobile');
+                    }
                     window.isAppInitialized = true;
                     console.log('✅ App initialization complete');
                 } catch (error) {

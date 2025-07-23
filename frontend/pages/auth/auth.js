@@ -77,12 +77,26 @@ export async function initAuthPage(auth) {
                         // Google OAuth session established
                         showSuccess('Google sign-in successful! Redirecting...');
                         
-                        // Navigate to app after successful OAuth
+                        // Check if mobile device
+                        const isMobile = window.matchMedia('(max-width: 768px)').matches || 
+                                        window.matchMedia('(max-device-width: 768px)').matches;
+                        
+                        // Navigate to appropriate page after successful OAuth
                         setTimeout(() => {
-                            if (window.router) {
-                                window.router.navigate('/app');
+                            if (isMobile) {
+                                // Mobile users go to landing page
+                                if (window.router) {
+                                    window.router.navigate('/');
+                                } else {
+                                    window.location.href = '/';
+                                }
                             } else {
-                                window.location.href = '/app';
+                                // Desktop users go to app
+                                if (window.router) {
+                                    window.router.navigate('/app');
+                                } else {
+                                    window.location.href = '/app';
+                                }
                             }
                         }, 1000);
                         return;
@@ -551,11 +565,25 @@ async function handleSignupSubmit(e) {
                 }));
                 
                 // Keep loading state while navigating
-                // Navigate to app
-                if (window.router) {
-                    window.router.navigate('/app');
+                // Check if mobile device
+                const isMobile = window.matchMedia('(max-width: 768px)').matches || 
+                                window.matchMedia('(max-device-width: 768px)').matches;
+                
+                // Navigate to appropriate page
+                if (isMobile) {
+                    // Mobile users go to landing page
+                    if (window.router) {
+                        window.router.navigate('/');
+                    } else {
+                        window.location.href = '/';
+                    }
                 } else {
-                    window.location.href = '/app';
+                    // Desktop users go to app
+                    if (window.router) {
+                        window.router.navigate('/app');
+                    } else {
+                        window.location.href = '/app';
+                    }
                 }
                 return; // Exit without clearing loading state
             } else {

@@ -28,6 +28,431 @@
     <script src="https://js.stripe.com/v3/" onload="window.stripeJsLoaded = true;" onerror="window.stripeJsLoadError = true;"></script>
 </head>
 <body class="app-body">
+    <!-- Mobile-Only Overlay - Shows immediately on mobile devices -->
+    <div class="mobile-overlay" id="mobileOverlay">
+        <style>
+            /* Inline styles for immediate rendering - Mobile only */
+            /* Default: show overlay */
+            .mobile-overlay {
+                display: flex !important;
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: 
+                    linear-gradient(135deg, #667eea 0%, #764ba2 100%),
+                    radial-gradient(circle at 20% 80%, #667eea 0%, transparent 50%),
+                    radial-gradient(circle at 80% 20%, #764ba2 0%, transparent 50%),
+                    radial-gradient(circle at 40% 40%, #8b5cf6 0%, transparent 50%);
+                background-blend-mode: normal, multiply, multiply, multiply;
+                z-index: 999999;
+                align-items: center;
+                justify-content: center;
+                padding: 20px;
+                animation: fadeIn 0.3s ease-out;
+                overflow: hidden;
+            }
+            
+            /* Hide on desktop/tablet only */
+            @media (min-width: 769px) and (min-height: 501px) {
+                .mobile-overlay {
+                    display: none !important;
+                }
+            }
+            
+            /* Additional mobile-specific styles */
+            @media only screen and (max-width: 768px),
+                   only screen and (max-device-width: 768px),
+                   only screen and (-webkit-min-device-pixel-ratio: 2) and (max-device-width: 768px),
+                   only screen and (min-resolution: 192dpi) and (max-device-width: 768px) {
+                
+                /* Animated background patterns */
+                .mobile-overlay::before,
+                .mobile-overlay::after {
+                    content: '';
+                    position: absolute;
+                    width: 300%;
+                    height: 300%;
+                    background: radial-gradient(circle at center, rgba(255,255,255,0.1) 0%, transparent 50%);
+                    animation: floatPattern 20s linear infinite;
+                }
+                
+                .mobile-overlay::after {
+                    animation-delay: -10s;
+                    animation-direction: reverse;
+                }
+                
+                /* Additional decorative elements */
+                .mobile-overlay-decoration {
+                    position: absolute;
+                    width: 100%;
+                    height: 100%;
+                    overflow: hidden;
+                    pointer-events: none;
+                    z-index: 0;
+                }
+                
+                
+                .decoration-circle {
+                    position: absolute;
+                    border-radius: 50%;
+                    background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.15), transparent);
+                    animation: floatCircle 15s ease-in-out infinite;
+                }
+                
+                .decoration-circle:nth-child(1) {
+                    width: 200px;
+                    height: 200px;
+                    top: -100px;
+                    left: -100px;
+                    animation-delay: 0s;
+                }
+                
+                .decoration-circle:nth-child(2) {
+                    width: 150px;
+                    height: 150px;
+                    bottom: -75px;
+                    right: -75px;
+                    animation-delay: 5s;
+                }
+                
+                .decoration-circle:nth-child(3) {
+                    width: 100px;
+                    height: 100px;
+                    top: 50%;
+                    left: -50px;
+                    animation-delay: 10s;
+                }
+                
+                
+                .mobile-overlay-card {
+                    background: rgba(255, 255, 255, 0.95);
+                    backdrop-filter: blur(20px);
+                    -webkit-backdrop-filter: blur(20px);
+                    border-radius: 24px;
+                    padding: 40px 30px;
+                    max-width: 400px;
+                    width: 100%;
+                    text-align: center;
+                    box-shadow: 
+                        0 20px 40px rgba(102, 126, 234, 0.15),
+                        0 0 80px rgba(102, 126, 234, 0.1),
+                        inset 0 0 0 1px rgba(255, 255, 255, 0.2);
+                    border: 1px solid rgba(255, 255, 255, 0.3);
+                    animation: slideUp 0.4s ease-out 0.2s both;
+                    position: relative;
+                    z-index: 10;
+                }
+                
+                /* Content wrapper for portrait mode */
+                .mobile-overlay-content {
+                    display: block;
+                }
+                
+                .mobile-overlay-icon {
+                    width: 80px;
+                    height: 80px;
+                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                    border-radius: 20px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-size: 48px;
+                    margin: 0 auto 24px;
+                    animation: iconPulse 2s ease-in-out infinite;
+                    box-shadow: 
+                        0 8px 24px rgba(102, 126, 234, 0.3),
+                        inset 0 1px 0 rgba(255, 255, 255, 0.3);
+                    position: relative;
+                    overflow: hidden;
+                    transform-style: preserve-3d;
+                }
+                
+                .mobile-overlay-icon::before {
+                    content: '';
+                    position: absolute;
+                    top: -2px;
+                    left: -2px;
+                    right: -2px;
+                    bottom: -2px;
+                    background: linear-gradient(45deg, #667eea, #764ba2, #667eea);
+                    border-radius: 20px;
+                    opacity: 0;
+                    z-index: -1;
+                    animation: iconGlow 2s ease-in-out infinite;
+                }
+                
+                .mobile-overlay-icon::after {
+                    content: '';
+                    position: absolute;
+                    top: 5px;
+                    left: 5px;
+                    right: 5px;
+                    bottom: 5px;
+                    background: linear-gradient(135deg, rgba(255,255,255,0.2) 0%, transparent 60%);
+                    border-radius: 16px;
+                    pointer-events: none;
+                }
+                
+                /* Fix dark theme color overrides with higher specificity */
+                .mobile-overlay .mobile-overlay-card .mobile-overlay-title,
+                [data-theme="dark"] .mobile-overlay .mobile-overlay-card .mobile-overlay-title {
+                    font-size: 24px;
+                    font-weight: 700;
+                    color: #2d3748 !important;
+                    margin-bottom: 16px;
+                    line-height: 1.2;
+                }
+                
+                .mobile-overlay .mobile-overlay-card .mobile-overlay-message,
+                [data-theme="dark"] .mobile-overlay .mobile-overlay-card .mobile-overlay-message {
+                    font-size: 16px;
+                    color: #4a5568 !important;
+                    line-height: 1.6;
+                    margin-bottom: 12px;
+                }
+                
+                .mobile-overlay .mobile-overlay-card .mobile-overlay-submessage,
+                [data-theme="dark"] .mobile-overlay .mobile-overlay-card .mobile-overlay-submessage {
+                    font-size: 14px;
+                    color: #718096 !important;
+                    margin-bottom: 32px;
+                    line-height: 1.5;
+                }
+                
+                .mobile-overlay-buttons {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 12px;
+                }
+                
+                .mobile-overlay-btn {
+                    padding: 14px 24px;
+                    border-radius: 12px;
+                    font-size: 16px;
+                    font-weight: 600;
+                    text-decoration: none;
+                    display: inline-block;
+                    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                    cursor: pointer;
+                    border: none;
+                    width: 100%;
+                    position: relative;
+                    overflow: hidden;
+                }
+                
+                .mobile-overlay-btn-primary {
+                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                    color: white !important;
+                    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+                }
+                
+                .mobile-overlay-btn-primary::before {
+                    content: '';
+                    position: absolute;
+                    top: 0;
+                    left: -100%;
+                    width: 100%;
+                    height: 100%;
+                    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+                    transition: left 0.5s;
+                }
+                
+                .mobile-overlay-btn-primary:hover {
+                    transform: translateY(-2px);
+                    box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+                }
+                
+                .mobile-overlay-btn-primary:hover::before {
+                    left: 100%;
+                }
+                
+                
+                @keyframes fadeIn {
+                    from { opacity: 0; }
+                    to { opacity: 1; }
+                }
+                
+                @keyframes slideUp {
+                    from {
+                        opacity: 0;
+                        transform: translateY(30px);
+                    }
+                    to {
+                        opacity: 1;
+                        transform: translateY(0);
+                    }
+                }
+                
+                @keyframes iconPulse {
+                    0%, 100% { 
+                        transform: scale(1) rotate(0deg);
+                    }
+                    25% {
+                        transform: scale(1.05) rotate(1deg);
+                    }
+                    75% {
+                        transform: scale(0.95) rotate(-1deg);
+                    }
+                }
+                
+                @keyframes iconGlow {
+                    0%, 100% {
+                        opacity: 0;
+                    }
+                    50% {
+                        opacity: 0.3;
+                    }
+                }
+                
+                @keyframes floatPattern {
+                    0% {
+                        transform: translate(-50%, -50%) rotate(0deg);
+                    }
+                    100% {
+                        transform: translate(-50%, -50%) rotate(360deg);
+                    }
+                }
+                
+                @keyframes floatCircle {
+                    0%, 100% {
+                        transform: translate(0, 0) scale(1);
+                    }
+                    33% {
+                        transform: translate(30px, -30px) scale(1.1);
+                    }
+                    66% {
+                        transform: translate(-20px, 20px) scale(0.9);
+                    }
+                }
+                
+            }
+            
+            /* Landscape mode adjustments */
+            @media only screen and (max-width: 768px) and (orientation: landscape),
+                   only screen and (max-device-width: 768px) and (orientation: landscape),
+                   only screen and (max-height: 500px) and (orientation: landscape) {
+                .mobile-overlay,
+                [data-theme="dark"] .mobile-overlay,
+                body[data-theme="dark"] .mobile-overlay,
+                .app-body[data-theme="dark"] .mobile-overlay {
+                    display: flex !important;
+                    padding: 10px !important;
+                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                    align-items: center;
+                    justify-content: center;
+                }
+                
+                .mobile-overlay-card {
+                    max-width: 500px;
+                    width: 90%;
+                    padding: 20px 30px 15px;
+                    max-height: 90vh;
+                    background: rgba(255, 255, 255, 0.95);
+                    backdrop-filter: blur(20px);
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    justify-content: center;
+                    text-align: center;
+                    margin: auto;
+                    margin-left: 10%;
+                    position: relative;
+                }
+                
+                .mobile-overlay-icon {
+                    width: 60px;
+                    height: 60px;
+                    font-size: 36px;
+                    margin: 0 auto 16px;
+                }
+                
+                .mobile-overlay-content {
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    justify-content: center;
+                    text-align: center;
+                    width: 100%;
+                }
+                
+                .mobile-overlay-title {
+                    font-size: 20px !important;
+                    margin-bottom: 12px;
+                    text-align: center;
+                }
+                
+                .mobile-overlay-message {
+                    font-size: 14px !important;
+                    margin-bottom: 8px;
+                    text-align: center;
+                }
+                
+                .mobile-overlay-submessage {
+                    font-size: 13px !important;
+                    margin-bottom: 15px;
+                    text-align: center;
+                }
+                
+                .mobile-overlay-buttons {
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                    width: 100%;
+                }
+                
+                .mobile-overlay-btn {
+                    padding: 12px 20px;
+                    font-size: 14px;
+                }
+                
+                /* Adjust decoration for landscape */
+                .decoration-circle:nth-child(1) {
+                    width: 150px;
+                    height: 150px;
+                    top: -75px;
+                    left: -75px;
+                }
+                
+                .decoration-circle:nth-child(2) {
+                    width: 120px;
+                    height: 120px;
+                    bottom: -60px;
+                    right: -60px;
+                }
+                
+                .decoration-circle:nth-child(3) {
+                    width: 80px;
+                    height: 80px;
+                    top: 40%;
+                    left: -40px;
+                }
+            }
+        </style>
+        <!-- Background decorative elements -->
+        <div class="mobile-overlay-decoration">
+            <div class="decoration-circle"></div>
+            <div class="decoration-circle"></div>
+            <div class="decoration-circle"></div>
+        </div>
+        <div class="mobile-overlay-card">
+            <div class="mobile-overlay-icon">💻</div>
+            <div class="mobile-overlay-content">
+                <h2 class="mobile-overlay-title">Desktop Experience Required</h2>
+                <p class="mobile-overlay-message">
+                    AudioBook Organizer is designed exclusively for desktop and tablet devices.
+                </p>
+                <p class="mobile-overlay-submessage">
+                    Please visit us on your computer for the full editing experience with text selection, audio management, and chapter organization.
+                </p>
+                <div class="mobile-overlay-buttons">
+                    <a href="/" class="mobile-overlay-btn mobile-overlay-btn-primary" onclick="event.preventDefault(); if(window.router) { window.router.navigate('/'); } else { window.location.href = '/'; }">Return to Homepage</a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
     <!-- App Navigation Header -->
     <nav class="app-nav">
         <div class="nav-container">
@@ -252,19 +677,29 @@
 
     <!-- App Page Initialization Script -->
     <script type="module">
-        // Enable secure logging with verbose filtering first
-        import { enableSecureLogging } from '/js/utils/logger.js';
-        enableSecureLogging();
+        // Check if mobile device first - before ANY imports
+        const isMobile = window.matchMedia('(max-width: 768px)').matches || 
+                        window.matchMedia('(max-device-width: 768px)').matches;
         
-        // Initialize app page when loaded directly (refresh)
-        async function initializeAppPage() {
-            // Prevent double initialization
-            if (window._appPageInitialized) {
-                return;
-            }
-            window._appPageInitialized = true;
+        if (isMobile) {
+            console.log('📱 Mobile device detected - skipping app initialization entirely');
+            // Exit early for mobile devices - no imports, no initialization
+        } else {
+            // Desktop only - proceed with imports and initialization
+            (async () => {
+                // Enable secure logging with verbose filtering first
+                const { enableSecureLogging } = await import('/js/utils/logger.js');
+                enableSecureLogging();
             
-            console.log('🚀 Initializing app page...');
+            // Initialize app page when loaded directly (refresh)
+            async function initializeAppPage() {
+                // Prevent double initialization
+                if (window._appPageInitialized) {
+                    return;
+                }
+                window._appPageInitialized = true;
+                
+                console.log('🚀 Initializing app page...');
             
             try {
                 // Initialize router first
@@ -294,7 +729,8 @@
                 
                 // Initialize app modules (this handles everything)
                 console.log('🔧 Initializing app modules...');
-                const { initApp } = await import('/js/modules/appInitialization.js');
+                const appInitModule = await import('/js/modules/appInitialization.js');
+                const { initApp } = appInitModule;
                 await initApp();
                 
                 // No need for additional initialization - initApp handles:
@@ -389,12 +825,14 @@
         }
         
         
-        // Run initialization when DOM is ready
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', initializeAppPage);
-        } else {
-            initializeAppPage();
-        }
+                // Run initialization when DOM is ready
+                if (document.readyState === 'loading') {
+                    document.addEventListener('DOMContentLoaded', initializeAppPage);
+                } else {
+                    initializeAppPage();
+                }
+            })(); // End of async function
+        } // End of desktop-only block
     </script>
 </body>
 </html> 
