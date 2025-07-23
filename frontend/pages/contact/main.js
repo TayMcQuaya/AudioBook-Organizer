@@ -154,9 +154,37 @@ function init() {
         window.themeManager.init();
     }
     
+    // Fix mobile scrolling issue on initial load
+    if (window.innerWidth <= 768) {
+        // Instead of scroll hack, ensure proper height calculation
+        requestAnimationFrame(() => {
+            // Force layout recalculation
+            document.body.style.minHeight = '100vh';
+            
+            // Ensure footer is visible by scrolling to top
+            window.scrollTo(0, 0);
+            
+            // Force a repaint to ensure proper rendering
+            document.body.offsetHeight;
+        });
+        
+        // Handle orientation changes
+        orientationHandler = () => {
+            setTimeout(() => {
+                // Recalculate on orientation change
+                document.body.style.minHeight = '100vh';
+                document.body.offsetHeight;
+            }, 100);
+        };
+        window.addEventListener('orientationchange', orientationHandler);
+    }
+    
     // Handle URL parameters
     handleUrlParameters();
 }
+
+// Store orientation handler reference
+let orientationHandler = null;
 
 // Handle URL parameters to pre-fill form
 async function handleUrlParameters() {
@@ -243,6 +271,12 @@ function cleanup() {
     const messageTextarea = document.getElementById('message');
     if (messageTextarea) {
         messageTextarea.removeEventListener('input', updateCharacterCount);
+    }
+    
+    // Remove orientation handler if it exists
+    if (orientationHandler && window.innerWidth <= 768) {
+        window.removeEventListener('orientationchange', orientationHandler);
+        orientationHandler = null;
     }
 }
 

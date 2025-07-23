@@ -1,5 +1,23 @@
 /* Contact Page Styles */
 
+html {
+    height: 100%;
+}
+
+/* Navigation - match landing page style */
+.landing-nav {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid rgba(255, 255, 255, 1);
+    z-index: 1000;
+    transition: all 0.3s ease;
+    padding-bottom: 2px;
+}
+
 /* Container */
 .container {
     max-width: 1200px;
@@ -31,8 +49,8 @@
 }
 
 .contact-body {
-    height: 100vh;
-    overflow: hidden;
+    min-height: 100vh;
+    /* Remove fixed height and overflow hidden to allow natural scrolling */
     background: var(--bg-primary);
     color: var(--text-primary);
     display: flex;
@@ -40,10 +58,11 @@
 }
 
 .contact-content {
-    padding: 70px 0 0 0;
+    padding: 80px 0 40px;
     flex: 1;
     display: flex;
     flex-direction: column;
+    background: white;
 }
 
 .contact-title {
@@ -256,7 +275,7 @@
 .legal-actions {
     text-align: center;
     margin-top: 1.5rem;
-    display: none; /* Remove redundant back button */
+    display: none; /* Hidden by default on desktop */
 }
 
 /* Make last info card stretch to match form height */
@@ -294,16 +313,120 @@
 }
 
 @media (max-width: 768px) {
+    /* Fix scrolling issue on mobile */
+    html {
+        /* Allow natural document flow */
+        height: auto;
+        min-height: 100%;
+    }
+    
+    /* Ensure proper body layout on mobile */
+    .contact-body {
+        min-height: 100vh;
+        height: auto;
+        display: flex;
+        flex-direction: column;
+        position: relative;
+        /* Use fallback value for safe area inset */
+        padding-bottom: env(safe-area-inset-bottom, 0px);
+        /* Ensure scrolling is allowed */
+        overflow: visible;
+    }
+    
     .contact-content {
-        padding: 60px 0;
+        /* Increase top padding to prevent title touching header */
+        padding: 100px 20px 40px;
+        /* Account for notch on devices like iPhone with fallback */
+        padding-top: calc(100px + env(safe-area-inset-top, 0px));
+        flex: 1 0 auto;
+        /* Remove fixed min-height calculation that might be wrong initially */
+        min-height: auto;
+        /* Ensure content can expand naturally */
+        height: auto;
     }
     
     .contact-title {
-        font-size: 2rem;
+        font-size: 1.8rem;
+        margin-top: 0; /* Ensure no extra margin pushing content up */
+    }
+    
+    .contact-subtitle {
+        font-size: 0.85rem;
+        padding: 0 10px;
+        margin-bottom: 2rem;
+    }
+    
+    /* Ensure grid stacks vertically on mobile */
+    .contact-grid {
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+        padding: 0;
+        margin-bottom: 2rem;
     }
     
     .contact-form-section,
     .info-card {
-        padding: 1.5rem;
+        padding: 1.25rem;
+        margin: 0;
+    }
+    
+    /* Ensure info section is visible on mobile */
+    .contact-info-section {
+        display: flex !important;
+        flex-direction: column;
+        gap: 1rem;
+        height: auto;
+    }
+    
+    /* Remove flex stretching on mobile */
+    .info-card:last-child {
+        flex: none;
+    }
+    
+    /* Ensure footer is always visible at bottom */
+    .footer {
+        position: relative;
+        margin-top: auto;
+        padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0));
+        /* Ensure footer is not cut off */
+        margin-bottom: 0;
+    }
+    
+    /* Fix container padding for better mobile view */
+    .container {
+        padding: 0 1rem; /* Slightly more padding than 0.5rem for better readability */
+    }
+    
+    /* Ensure form elements are properly sized */
+    .form-input,
+    .form-select,
+    .form-textarea {
+        font-size: 16px; /* Prevents zoom on iOS */
+    }
+    
+    /* Make textarea slightly smaller on mobile */
+    .form-textarea {
+        height: 100px;
+    }
+    
+    /* Show back to home button on mobile portrait only */
+    .legal-actions {
+        display: block !important;
+        margin: 2rem 0;
+        padding: 0 20px;
+    }
+    
+    .legal-actions .btn-secondary {
+        width: 100%;
+        max-width: 300px;
+        margin: 0 auto;
+        display: block;
+    }
+}
+
+/* Hide back button on mobile landscape */
+@media (max-width: 768px) and (orientation: landscape) {
+    .legal-actions {
+        display: none !important;
     }
 }

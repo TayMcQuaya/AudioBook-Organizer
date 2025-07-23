@@ -134,6 +134,69 @@ requestAnimationFrame(() => {
 }
 ```
 
+## Contact Page Fixes (July 2025)
+
+### Desktop Issues Fixed
+1. **White gap below footer**: 
+   - Changed from `height: 100vh` to `min-height: 100vh` on `.contact-body`
+   - Removed `overflow: hidden` to allow natural content flow
+   - Added white background to `.contact-content`
+   - Added proper navigation styling to match other pages
+
+### Mobile Issues Fixed
+1. **Enabled scrolling**: 
+   - Removed fixed height constraints and overflow hidden
+   - Added proper height calculations in CSS and inline styles
+   
+2. **Made info boxes visible**:
+   - Info cards now display on mobile, stacked vertically below the form
+   - Added responsive grid that switches to single column on mobile
+   
+3. **Added "Back to Home" button**:
+   - Shows only on mobile portrait mode
+   - Positioned between common questions and footer
+   - Hidden on desktop and landscape orientation
+
+### Code Changes
+
+#### contact.css Updates:
+```css
+.contact-body {
+    min-height: 100vh;
+    /* Removed: height: 100vh; overflow: hidden; */
+}
+
+.contact-content {
+    padding: 80px 0 40px;
+    background: white;
+}
+
+/* Mobile specific */
+@media (max-width: 768px) {
+    .contact-body {
+        height: auto;
+        overflow: visible;
+    }
+    
+    .contact-content {
+        padding: 100px 20px 40px;
+    }
+    
+    /* Show back button on mobile portrait */
+    .legal-actions {
+        display: block !important;
+        margin: 2rem 0;
+    }
+}
+
+/* Hide back button on landscape */
+@media (max-width: 768px) and (orientation: landscape) {
+    .legal-actions {
+        display: none !important;
+    }
+}
+```
+
 ## Mobile Landscape Rotation Message (July 2025)
 
 ### Implementation
@@ -467,12 +530,21 @@ html[data-theme="dark"] {
 - **Problem**: Header missing subtle lower edge like landing page
 - **Solution**: Added landing navigation styles with white border and padding
 
-### 3. **Contact Page Layout**
-- **Problem**: Footer pushed out of viewport by expandable textarea
-- **Solution**: 
-  - Fixed height layout (`100vh`, no scroll)
-  - Non-resizable textarea (120px fixed height)
-  - Everything fits perfectly in viewport
+### 3. **Contact Page Layout (Updated July 2025)**
+- **Desktop Problem**: White gap below footer
+- **Desktop Solution**: 
+  - Changed to `min-height: 100vh` (removed fixed height)
+  - Removed `overflow: hidden` to allow natural flow
+  - Added white background to content area
+  - Added navigation styling to match other pages
+
+- **Mobile Problems**: No scrolling, missing info boxes
+- **Mobile Solutions**: 
+  - Enabled scrolling by removing height/overflow constraints
+  - Made info boxes visible with vertical stacking
+  - Added "Back to Home" button (portrait only)
+  - Increased top padding to 100px
+  - Fixed textarea to 100px height on mobile
 
 ---
 
@@ -511,10 +583,19 @@ All three pages now have consistent footer implementation with:
 - **Mobile responsiveness** preserved
 
 ### Mobile Enhancements (July 2025)
-- **Fixed scrolling issue** on portrait mode where footer required extra scroll
-- **Added landscape rotation message** matching landing page design
+- **Fixed scrolling issue** on portrait mode where footer required extra scroll (Privacy & Terms pages)
+- **Added landscape rotation message** matching landing page design (all 3 pages)
 - **Improved spacing** on Terms page to prevent title overlap
+- **Contact page mobile fixes**:
+  - Enabled scrolling and made info boxes visible
+  - Added "Back to Home" button for consistency
+  - Fixed desktop footer gap issue
 - **Proper safe area handling** for devices with notches
 - **Smooth animations** and professional mobile UX
 
-The implementation is complete with all visual issues resolved while maintaining the simple, professional appearance across all pages on both desktop and mobile devices.
+The implementation is complete with all visual issues resolved across Privacy Policy, Terms of Use, and Contact pages. All pages now have:
+- Consistent footer appearance without gaps
+- Proper mobile scrolling without the extra scroll bug
+- Landscape rotation message on mobile devices
+- Responsive layouts that work on all screen sizes
+- "Back to Home" button on mobile portrait (Contact page now included)

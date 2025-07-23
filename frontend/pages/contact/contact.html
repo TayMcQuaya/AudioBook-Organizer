@@ -19,6 +19,42 @@
     <!-- Mobile CSS for better mobile navigation -->
     <link rel="stylesheet" href="/css/landing-mobile.css">
     <link rel="stylesheet" href="/css/contact-mobile.css">
+    <!-- Mobile-specific fixes for immediate rendering -->
+    <style>
+        @media screen and (max-width: 768px) {
+            /* Fix initial height calculation issues */
+            html {
+                /* Remove height constraint to allow natural scrolling */
+                height: auto;
+                min-height: 100%;
+                overflow-y: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+            
+            body.contact-body {
+                /* Let content determine height naturally */
+                min-height: 100vh;
+                height: auto;
+                overflow-y: visible;
+                /* Ensure proper bottom spacing for mobile browsers */
+                padding-bottom: env(safe-area-inset-bottom, 0);
+            }
+            
+            /* Ensure navigation doesn't overlap content */
+            .landing-nav {
+                height: 70px;
+            }
+            
+            /* Add safe area padding for devices with notches */
+            @supports (padding-top: env(safe-area-inset-top)) {
+                .landing-nav {
+                    padding-top: env(safe-area-inset-top);
+                    height: calc(70px + env(safe-area-inset-top));
+                }
+            }
+            
+        }
+    </style>
 </head>
 <body class="contact-body">
     <!-- Mobile Landscape Rotation Message -->
