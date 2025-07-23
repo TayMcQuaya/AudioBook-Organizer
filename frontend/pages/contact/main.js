@@ -9,12 +9,8 @@ function handleNavigationClick(event) {
     event.preventDefault();
     const route = target.dataset.route;
     
-    if (window.router) {
-        window.router.navigate(route);
-    } else {
-        // Fallback to direct navigation if router not available
-        window.location.href = route;
-    }
+    // Always use direct navigation for consistency
+    window.location.href = route;
 }
 
 // Handle form submission
@@ -96,6 +92,11 @@ function showFormMessage(message, type) {
     formMessage.className = `form-message ${type}`;
     formMessage.style.display = 'block';
     
+    // Scroll the message into view smoothly
+    setTimeout(() => {
+        formMessage.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }, 100);
+    
     // Auto-hide after 5 seconds
     setTimeout(() => {
         formMessage.style.display = 'none';
@@ -127,6 +128,11 @@ function updateCharacterCount() {
 // 1. INIT FUNCTION
 function init() {
     console.log('🚀 Initializing Contact page');
+    
+    // Add loaded class to prevent FOUC
+    requestAnimationFrame(() => {
+        document.body.classList.add('loaded');
+    });
     
     // Check authentication state from multiple sources
     const isAuth = checkMultipleAuthSources();

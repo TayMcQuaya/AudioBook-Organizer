@@ -21,6 +21,16 @@
     <link rel="stylesheet" href="/css/contact-mobile.css">
     <!-- Mobile-specific fixes for immediate rendering -->
     <style>
+        /* Prevent FOUC (Flash of Unstyled Content) */
+        .contact-body {
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        
+        .contact-body.loaded {
+            opacity: 1;
+        }
+        
         @media screen and (max-width: 768px) {
             /* Fix initial height calculation issues */
             html {
@@ -263,19 +273,22 @@
                         <div class="info-card">
                             <h3>Common Questions</h3>
                             <ul class="faq-list">
-                                <li><strong>How do I reset my password?</strong><br>
-                                    Use the "Forgot Password" link on the sign-in page.</li>
-                                <li><strong>Can I get a refund for unused credits?</strong><br>
-                                    Credits are non-refundable, but contact us for special circumstances.</li>
-                                <li><strong>What file formats are supported?</strong><br>
-                                    We support TXT and DOCX for text, and MP3, WAV, M4A, OGG for audio.</li>
+                                <li><strong>How do I reset my password?</strong> Use the "Forgot Password" link on the sign-in page.</li>
+                                <li><strong>Can I get a refund for unused credits?</strong> Credits are non-refundable, but contact us for special circumstances.</li>
+                                <li><strong>What file formats are supported?</strong> We support TXT and DOCX for text, and MP3, WAV, M4A, OGG for audio.</li>
                             </ul>
+                        </div>
+                        
+                        <!-- Back to Home button in info section on desktop -->
+                        <div class="legal-actions desktop-only">
+                            <a href="/" data-action="navigate" data-route="/" class="btn btn-secondary">Back to Home</a>
                         </div>
 
                     </div>
                 </div>
                 
-                <div class="legal-actions">
+                <!-- Back to Home button below grid on mobile -->
+                <div class="legal-actions mobile-only">
                     <a href="/" data-action="navigate" data-route="/" class="btn btn-secondary">Back to Home</a>
                 </div>
             </div>

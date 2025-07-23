@@ -37,7 +37,7 @@ html {
 
 .footer-bottom {
     border-top: 1px solid rgba(255, 255, 255, 0.1);
-    padding-top: 1.5rem;
+    padding-top: 1rem;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -50,20 +50,20 @@ html {
 
 .contact-body {
     min-height: 100vh;
-    /* Remove fixed height and overflow hidden to allow natural scrolling */
-    background: var(--bg-primary);
+    background: white;
     color: var(--text-primary);
     display: flex;
     flex-direction: column;
+    margin: 0;
+    padding: 0;
 }
 
 .contact-content {
-    padding: 80px 0 40px;
-    flex: 1;
-    display: flex;
-    flex-direction: column;
+    padding: 80px 0;
     background: white;
+    flex: 1;
 }
+
 
 .contact-title {
     font-size: 1.9rem;
@@ -84,11 +84,10 @@ html {
 
 .contact-grid {
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 1.5rem;
-    max-width: 1200px;
-    margin: 0 auto 1rem auto;
-    align-items: stretch;
+    grid-template-columns: 1.2fr 1fr;
+    gap: 3rem;
+    max-width: 1100px;
+    margin: 0 auto 2rem auto;
     width: 100%;
 }
 
@@ -177,6 +176,7 @@ html {
     border-radius: 8px;
     margin-top: 1rem;
     text-align: center;
+    scroll-margin-top: 20px;
 }
 
 .form-message.success {
@@ -195,7 +195,7 @@ html {
 .contact-info-section {
     display: flex;
     flex-direction: column;
-    gap: 1rem;
+    gap: 1.5rem;
     height: 100%;
 }
 
@@ -243,8 +243,8 @@ html {
 
 .faq-list strong {
     color: var(--text-primary);
-    display: block;
-    margin-bottom: 0.25rem;
+    display: inline;
+    margin-bottom: 0;
 }
 
 .setup-list {
@@ -275,19 +275,40 @@ html {
 .legal-actions {
     text-align: center;
     margin-top: 1.5rem;
-    display: none; /* Hidden by default on desktop */
 }
 
-/* Make last info card stretch to match form height */
-.info-card:last-child {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
+/* Show/hide buttons based on screen size */
+.desktop-only {
+    display: block;
 }
 
-.info-card:last-child .faq-list {
-    flex: 1;
+.mobile-only {
+    display: none;
 }
+
+@media (max-width: 968px) {
+    .desktop-only {
+        display: none;
+    }
+    
+    .mobile-only {
+        display: block;
+    }
+}
+
+/* Make last info card stretch to align with form bottom */
+@media (min-width: 969px) {
+    .info-card:last-child {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .info-card:last-child .faq-list {
+        flex: 1;
+    }
+}
+
 
 /* Footer remains standard from landing.css */
 
@@ -304,7 +325,7 @@ html {
     border-color: #4a5568;
 }
 
-/* Responsive */
+/* Responsive - Stack on tablets */
 @media (max-width: 968px) {
     .contact-grid {
         grid-template-columns: 1fr;
@@ -330,7 +351,7 @@ html {
         /* Use fallback value for safe area inset */
         padding-bottom: env(safe-area-inset-bottom, 0px);
         /* Ensure scrolling is allowed */
-        overflow: visible;
+        overflow: visible !important;
     }
     
     .contact-content {
@@ -343,6 +364,8 @@ html {
         min-height: auto;
         /* Ensure content can expand naturally */
         height: auto;
+        /* Remove overflow on mobile */
+        overflow-y: visible;
     }
     
     .contact-title {
@@ -409,14 +432,14 @@ html {
         height: 100px;
     }
     
-    /* Show back to home button on mobile portrait only */
-    .legal-actions {
+    /* Ensure mobile button shows properly */
+    .mobile-only {
         display: block !important;
         margin: 2rem 0;
         padding: 0 20px;
     }
     
-    .legal-actions .btn-secondary {
+    .mobile-only .btn-secondary {
         width: 100%;
         max-width: 300px;
         margin: 0 auto;
