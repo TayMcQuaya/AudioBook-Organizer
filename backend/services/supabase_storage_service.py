@@ -181,6 +181,7 @@ class SupabaseStorageService:
                 'filename': filename,
                 'file_size_mb': file_size_mb,
                 'file_type': 'audio/wav',
+                'file_path': storage_path,  # Add file_path for backward compatibility
                 'storage_bucket': self.BUCKET_NAME,
                 'storage_path': storage_path,
                 'chapter_id': chapter_id,

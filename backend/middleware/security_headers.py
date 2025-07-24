@@ -19,6 +19,7 @@ def add_security_headers(response):
         "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
         "font-src 'self' https://fonts.gstatic.com data:; "
         "img-src 'self' data: https:; "
+        "media-src 'self' https://*.supabase.co; "  # Allow Supabase audio URLs
         f"connect-src 'self' https://api.stripe.com https://*.supabase.co {app_domain} https://www.google.com; "
         "frame-src https://js.stripe.com https://www.google.com; "
         "object-src 'none'; "
