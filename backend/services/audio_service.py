@@ -190,13 +190,26 @@ class AudioService:
             
             # Local storage (original behavior)
             safe_path = create_url_safe_path(filename)
+            file_size_mb = os.path.getsize(filepath) / (1024 * 1024)
+            
+            # Update storage usage for local storage too
+            if hasattr(self, 'storage_service') and self.storage_service:
+                try:
+                    # Update user's storage usage
+                    self.supabase.rpc('update_user_storage', {
+                        'p_user_id': user_id,
+                        'p_size_mb': file_size_mb,
+                        'p_operation': 'add'
+                    }).execute()
+                except Exception as e:
+                    logger.warning(f"Failed to update storage usage for local file: {e}")
             
             return {
                 'success': True,
                 'filename': filename,
                 'path': safe_path,
                 'storage_backend': 'local',
-                'file_size_mb': os.path.getsize(filepath) / (1024 * 1024)
+                'file_size_mb': round(file_size_mb, 2)
             }
             
         except Exception as e:

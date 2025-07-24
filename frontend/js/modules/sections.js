@@ -585,6 +585,29 @@ export function navigateToSection(sectionId) {
     }, 1000);
 }
 
+/**
+ * Get signed URL for Supabase Storage audio files
+ * @param {string} audioPath - The storage path of the audio file
+ * @returns {Promise<string>} - The signed URL or original path
+ */
+export async function getSignedAudioUrl(audioPath) {
+    try {
+        // Only fetch signed URL if it's a Supabase path
+        if (!audioPath.startsWith('http') && !audioPath.startsWith('/uploads/')) {
+            const response = await apiFetch(`/api/audio/url?path=${encodeURIComponent(audioPath)}`);
+            
+            if (response.url) {
+                return response.url;
+            }
+        }
+    } catch (error) {
+        console.error('Failed to get signed URL:', error);
+    }
+    
+    // Return original path as fallback
+    return audioPath;
+}
+
 // Audio attachment functions - preserving exact logic from original
 export async function attachAudio(chapterId, sectionId, input) {
     const file = input.files[0];
