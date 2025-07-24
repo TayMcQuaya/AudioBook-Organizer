@@ -78,17 +78,17 @@ export function updateChaptersList() {
                                         <span class="warning-text">Audio file not accessible</span>
                                                                                  <div class="missing-audio-actions">
                                              <input type="file" accept="audio/*" onchange="attachAudio(${chapter.id}, ${section.id}, this)" title="Re-upload audio file" id="missing-audio-input-${section.id}">
-                                             <button onclick="clearMissingAudio(${chapter.id}, ${section.id})" title="Remove missing audio reference">Clear</button>
+                                             <button onclick="event.preventDefault(); clearMissingAudio(${chapter.id}, ${section.id})" title="Remove missing audio reference">Clear</button>
                                          </div>
                                     </div>
                                 ` : `
                                     <audio controls src="${section.audioPath}" data-section-id="${section.id}" data-storage-backend="${section.storageBackend || 'local'}"></audio>
-                                    <button onclick="removeAudio(${chapter.id}, ${section.id})">Remove Audio</button>
+                                    <button onclick="event.preventDefault(); removeAudio(${chapter.id}, ${section.id})">Remove Audio</button>
                                 `}
                             ` : `
                                 <input type="file" accept="audio/*" onchange="attachAudio(${chapter.id}, ${section.id}, this)">
                             `}
-                            <button onclick="deleteSection(${chapter.id}, ${section.id})">Delete Section</button>
+                            <button onclick="event.preventDefault(); deleteSection(${chapter.id}, ${section.id})">Delete Section</button>
                         </div>
                     </div>
                 `).join('')}

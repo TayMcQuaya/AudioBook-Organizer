@@ -389,3 +389,116 @@ def create_upload_routes(app, upload_folder):
                 'success': False,
                 'error': str(e)
             }), 500
+    
+    @app.route('/api/audio/delete', methods=['POST', 'OPTIONS'])
+    def delete_audio():
+        """
+        Delete audio file from Supabase Storage and database
+        """
+        # Handle CORS preflight
+        if request.method == 'OPTIONS':
+            response = current_app.make_default_options_response()
+            headers = response.headers
+            headers['Access-Control-Allow-Origin'] = request.headers.get('Origin', '*')
+            headers['Access-Control-Allow-Methods'] = 'POST, OPTIONS'
+            headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, X-Requested-With, X-CSRF-Token, X-Temp-Auth'
+            headers['Access-Control-Allow-Credentials'] = 'true'
+            return response
+        
+        # Check authentication
+        if current_app.config.get('TESTING_MODE'):
+            if not session.get('temp_authenticated'):
+                return jsonify({
+                    'error': 'Authentication required',
+                    'message': 'Please authenticate first'
+                }), 401
+        else:
+            from flask import g
+            from ..middleware.auth_middleware import extract_token_from_header
+            from ..services.supabase_service import get_supabase_service
+            
+            token = extract_token_from_header()
+            if not token:
+                return jsonify({
+                    'error': 'Authentication required',
+                    'message': 'Authorization header required'
+                }), 401
+            
+            supabase_service = get_supabase_service()
+            user = supabase_service.get_user_from_token(token)
+            if not user:
+                return jsonify({
+                    'error': 'Invalid token',
+                    'message': 'Token is invalid or expired'
+                }), 401
+            
+            g.user_id = user['id']
+        
+        try:
+            data = request.get_json()
+            if not data:
+                return jsonify({
+                    'error': 'Invalid request',
+                    'message': 'Request body must be JSON'
+                }), 400
+            
+            audio_path = data.get('audioPath')
+            storage_backend = data.get('storageBackend', 'local')
+            upload_id = data.get('uploadId')
+            
+            if not audio_path:
+                return jsonify({
+                    'error': 'Missing parameter',
+                    'message': 'Audio path is required'
+                }), 400
+            
+            app.logger.info(f"Deleting audio - path: {audio_path}, backend: {storage_backend}, uploadId: {upload_id}")
+            
+            # Only process Supabase Storage deletions
+            if storage_backend == 'supabase':
+                from ..services.supabase_storage_service import get_storage_service
+                storage_service = get_storage_service()
+                
+                # Delete from storage bucket
+                success, error = storage_service.delete_audio_file(audio_path)
+                if not success:
+                    app.logger.warning(f"Failed to delete from storage: {error}")
+                    # Continue anyway to clean up database
+                
+                # Delete database record (will trigger storage usage update)
+                if upload_id:
+                    try:
+                        # Get user ID for the deletion
+                        user_id = g.user_id if not current_app.config.get('TESTING_MODE') else 'test-user'
+                        
+                        # Delete the file upload record
+                        supabase = storage_service.supabase
+                        result = supabase.table('file_uploads')\
+                            .delete()\
+                            .eq('id', upload_id)\
+                            .eq('user_id', user_id)\
+                            .execute()
+                        
+                        app.logger.info(f"✅ Deleted file upload record: {upload_id}")
+                    except Exception as db_error:
+                        app.logger.error(f"Failed to delete database record: {db_error}")
+                        # Continue anyway
+                
+                return jsonify({
+                    'success': True,
+                    'message': 'Audio file deleted successfully'
+                })
+            else:
+                # Local storage - just return success since we don't actually delete local files
+                app.logger.info("Local storage file - no deletion needed")
+                return jsonify({
+                    'success': True,
+                    'message': 'Local file reference cleared'
+                })
+            
+        except Exception as e:
+            app.logger.error(f'Error deleting audio: {str(e)}')
+            return jsonify({
+                'success': False,
+                'error': str(e)
+            }), 500

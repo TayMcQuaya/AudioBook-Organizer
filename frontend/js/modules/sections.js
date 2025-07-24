@@ -465,16 +465,44 @@ export function updateSectionName(sectionId, newName) {
     }
 }
 
-export function deleteSection(chapterId, sectionId) {
+export async function deleteSection(chapterId, sectionId) {
     const chapter = findChapter(chapterId);
-    if (chapter) {
-        // Remove the highlighted text from the DOM first
-        removeHighlightFromText(sectionId);
-        
-        // Remove the section from the chapter data
-        chapter.sections = chapter.sections.filter(s => s.id !== sectionId);
-        updateChaptersList();
+    if (!chapter) return;
+    
+    // Find the section to check if it has audio
+    const section = chapter.sections.find(s => s.id === sectionId);
+    
+    // If section has Supabase audio, delete it first
+    if (section && section.storageBackend === 'supabase' && section.audioPath) {
+        try {
+            const response = await apiFetch('/audio/delete', {
+                method: 'POST',
+                body: JSON.stringify({
+                    audioPath: section.audioPath,
+                    storageBackend: section.storageBackend,
+                    uploadId: section.uploadId
+                })
+            });
+            
+            if (!response.ok) {
+                const error = await response.json();
+                console.error('Failed to delete audio during section deletion:', error);
+                // Continue with section deletion anyway
+            } else {
+                console.log('✅ Audio file deleted before section deletion');
+            }
+        } catch (error) {
+            console.error('Error deleting audio during section deletion:', error);
+            // Continue with section deletion
+        }
     }
+    
+    // Remove the highlighted text from the DOM first
+    removeHighlightFromText(sectionId);
+    
+    // Remove the section from the chapter data
+    chapter.sections = chapter.sections.filter(s => s.id !== sectionId);
+    updateChaptersList();
 }
 
 /**
@@ -723,51 +751,107 @@ export async function attachAudio(chapterId, sectionId, input) {
     }
 }
 
-export function removeAudio(chapterId, sectionId) {
+export async function removeAudio(chapterId, sectionId) {
     const chapter = findChapter(chapterId);
     const section = chapter?.sections.find(s => s.id === sectionId);
-    if (section) {
-        section.audioPath = null;
-        section.status = 'pending';
-        
-        // Stop and reset chapter player if it exists
-        const player = chapterPlayers.get(chapterId);
-        if (player) {
-            player.stop();
-            chapterPlayers.delete(chapterId);
+    if (!section) return;
+    
+    // If using Supabase Storage, delete the file first
+    if (section.storageBackend === 'supabase' && section.audioPath) {
+        try {
+            const response = await apiFetch('/audio/delete', {
+                method: 'POST',
+                body: JSON.stringify({
+                    audioPath: section.audioPath,
+                    storageBackend: section.storageBackend,
+                    uploadId: section.uploadId
+                })
+            });
+            
+            if (!response.ok) {
+                const error = await response.json();
+                console.error('Failed to delete audio from storage:', error);
+                // Show warning but continue with removal
+                showWarning('Audio file could not be deleted from storage, but reference will be removed.');
+            } else {
+                console.log('✅ Audio file deleted from Supabase Storage');
+            }
+        } catch (error) {
+            console.error('Error calling delete endpoint:', error);
+            // Continue with removal even if delete fails
         }
-        
-        updateChaptersList();
     }
+    
+    // Clear section audio data
+    section.audioPath = null;
+    section.storageBackend = null;
+    section.uploadId = null;
+    section.status = 'pending';
+    
+    // Stop and reset chapter player if it exists
+    const player = chapterPlayers.get(chapterId);
+    if (player) {
+        player.stop();
+        chapterPlayers.delete(chapterId);
+    }
+    
+    updateChaptersList();
 }
 
 /**
  * Clear missing audio reference from a section
  * This removes the audioPath and audioStatus properties when audio is confirmed missing
  */
-export function clearMissingAudio(chapterId, sectionId) {
+export async function clearMissingAudio(chapterId, sectionId) {
     const chapter = findChapter(chapterId);
     const section = chapter?.sections.find(s => s.id === sectionId);
-    if (section) {
-        // Clear all audio-related properties
-        section.audioPath = null;
-        section.audioStatus = null;
-        section.originalAudioPath = null;
-        section.status = 'pending';
-        
-        // Stop and reset chapter player if it exists
-        const player = chapterPlayers.get(chapterId);
-        if (player) {
-            player.stop();
-            chapterPlayers.delete(chapterId);
+    if (!section) return;
+    
+    // Even if the file is missing, try to delete the database record
+    if (section.storageBackend === 'supabase' && (section.audioPath || section.uploadId)) {
+        try {
+            const response = await apiFetch('/audio/delete', {
+                method: 'POST',
+                body: JSON.stringify({
+                    audioPath: section.audioPath || section.originalAudioPath,
+                    storageBackend: section.storageBackend,
+                    uploadId: section.uploadId
+                })
+            });
+            
+            if (!response.ok) {
+                const error = await response.json();
+                console.error('Failed to delete missing audio record:', error);
+                // Continue anyway
+            } else {
+                console.log('✅ Missing audio record deleted from database');
+            }
+        } catch (error) {
+            console.error('Error calling delete endpoint for missing audio:', error);
+            // Continue with clearing
         }
-        
-        updateChaptersList();
-        showSuccess('Missing audio reference cleared. You can now upload a new audio file.');
-        
-        // **SECURITY FIX: Removed section name to prevent user content exposure**
-        console.log('✅ Cleared missing audio reference for section');
     }
+    
+    // Clear all audio-related properties
+    section.audioPath = null;
+    section.audioStatus = null;
+    section.originalAudioPath = null;
+    section.storageBackend = null;
+    section.uploadId = null;
+    section.status = 'pending';
+    
+    // Stop and reset chapter player if it exists
+    const player = chapterPlayers.get(chapterId);
+    if (player) {
+        player.stop();
+        chapterPlayers.delete(chapterId);
+    }
+    
+    updateChaptersList();
+    showSuccess('Missing audio reference cleared. You can now upload a new audio file.');
+    
+    // **SECURITY FIX: Removed section name to prevent user content exposure**
+    console.log('✅ Cleared missing audio reference for section');
 }
 
 // Drag and Drop functionality - preserving exact logic from original

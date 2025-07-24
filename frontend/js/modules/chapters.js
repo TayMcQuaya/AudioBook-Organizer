@@ -62,7 +62,34 @@ export function toggleChapter(chapterId) {
 export function deleteChapter(chapterId) {
     showConfirm(
         'Are you sure you want to delete this chapter and all its sections?',
-        () => {
+        async () => {
+            const chapter = findChapter(chapterId);
+            if (!chapter) return;
+            
+            // Delete all Supabase audio files in this chapter
+            const audioDeletePromises = chapter.sections
+                .filter(section => section.storageBackend === 'supabase' && section.audioPath)
+                .map(section => {
+                    return apiFetch('/audio/delete', {
+                        method: 'POST',
+                        body: JSON.stringify({
+                            audioPath: section.audioPath,
+                            storageBackend: section.storageBackend,
+                            uploadId: section.uploadId
+                        })
+                    }).catch(error => {
+                        console.error(`Failed to delete audio for section ${section.id}:`, error);
+                        return null; // Don't fail the whole operation
+                    });
+                });
+            
+            // Delete all audio files in parallel
+            if (audioDeletePromises.length > 0) {
+                console.log(`Deleting ${audioDeletePromises.length} audio files from chapter...`);
+                await Promise.allSettled(audioDeletePromises);
+                console.log('✅ Chapter audio deletion complete');
+            }
+            
             // Remove all highlights for this chapter's sections first
             removeChapterHighlights(chapterId);
             
