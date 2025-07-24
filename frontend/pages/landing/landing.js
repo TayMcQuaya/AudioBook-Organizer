@@ -312,44 +312,18 @@ function updateLandingPageForAuthenticatedUser(user) {
         console.warn('⚠️ appUI not available, cannot create user navigation');
     }
     
-    // Convert all primary action buttons to "Open App" (or "Contact Us" on mobile for hero button)
+    // Convert all primary action buttons to "Open App"
     const getStartedButtons = document.querySelectorAll('a[href="/auth?mode=signup"], .btn-primary.get-started');
     getStartedButtons.forEach(btn => {
-        // Check if this is the hero button (has btn-large class)
-        if (btn.classList.contains('btn-large')) {
-            const isMobile = window.innerWidth <= 768;
-            
-            btn.removeAttribute('href');
-            
-            if (isMobile) {
-                // Mobile: Change to Contact Us
-                btn.innerHTML = '<span class="btn-icon">📧</span>Contact Us';
-                btn.style.cursor = 'pointer';
-                btn.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    window.location.href = '/contact';
-                });
-            } else {
-                // Desktop: Keep as Open App
-                btn.innerHTML = '<span class="btn-icon">🚀</span>Open App';
-                btn.style.cursor = 'pointer';
-                btn.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    navigateToApp();
-                });
-            }
-            btn.style.display = 'inline-flex';
-        } else {
-            // Other buttons: always Open App
-            btn.removeAttribute('href');
-            btn.innerHTML = '<span class="btn-icon">🚀</span>Open App';
-            btn.style.cursor = 'pointer';
-            btn.addEventListener('click', (e) => {
-                e.preventDefault();
-                navigateToApp();
-            });
-            btn.style.display = 'inline-flex';
-        }
+        // All buttons (including hero) become "Open App" for authenticated users
+        btn.removeAttribute('href');
+        btn.innerHTML = '<span class="btn-icon">🚀</span>Open App';
+        btn.style.cursor = 'pointer';
+        btn.addEventListener('click', (e) => {
+            e.preventDefault();
+            navigateToApp();
+        });
+        btn.style.display = 'inline-flex';
     });
     
     // Hide ALL demo/try buttons when authenticated
@@ -368,14 +342,35 @@ function updateLandingPageForAuthenticatedUser(user) {
     
     // Update mobile bottom navigation button
     const bottomNavButton = document.querySelector('.bottom-nav-item.active');
-    if (bottomNavButton && bottomNavButton.href && bottomNavButton.href.includes('/auth?mode=signup')) {
-        bottomNavButton.removeAttribute('href');
-        bottomNavButton.innerHTML = '<span class="bottom-nav-icon">🚀</span><span>Open App</span>';
-        bottomNavButton.style.cursor = 'pointer';
-        bottomNavButton.onclick = (e) => {
-            e.preventDefault();
-            navigateToApp();
-        };
+    if (bottomNavButton) {
+        const isMobile = window.innerWidth <= 768;
+        
+        // Check if it's the Get Started button (either by href or by text content)
+        const isGetStartedButton = (bottomNavButton.href && bottomNavButton.href.includes('/auth?mode=signup')) || 
+                                   bottomNavButton.innerHTML.includes('Get Started') ||
+                                   bottomNavButton.innerHTML.includes('Open App');
+        
+        if (isGetStartedButton) {
+            bottomNavButton.removeAttribute('href');
+            
+            if (isMobile) {
+                // Mobile: Change to Contact Us
+                bottomNavButton.innerHTML = '<span class="bottom-nav-icon">📧</span><span>Contact Us</span>';
+                bottomNavButton.style.cursor = 'pointer';
+                bottomNavButton.onclick = (e) => {
+                    e.preventDefault();
+                    window.location.href = '/contact';
+                };
+            } else {
+                // Desktop (shouldn't show bottom nav, but just in case)
+                bottomNavButton.innerHTML = '<span class="bottom-nav-icon">🚀</span><span>Open App</span>';
+                bottomNavButton.style.cursor = 'pointer';
+                bottomNavButton.onclick = (e) => {
+                    e.preventDefault();
+                    navigateToApp();
+                };
+            }
+        }
     }
 }
 
@@ -444,7 +439,7 @@ function updateLandingPageForUnauthenticatedUser() {
     
     // Restore mobile bottom navigation button
     const bottomNavButton = document.querySelector('.bottom-nav-item.active');
-    if (bottomNavButton && (bottomNavButton.innerHTML.includes('Open App') || !bottomNavButton.href)) {
+    if (bottomNavButton && (bottomNavButton.innerHTML.includes('Open App') || bottomNavButton.innerHTML.includes('Contact Us') || !bottomNavButton.href)) {
         // Restore the original link
         const newLink = document.createElement('a');
         newLink.href = '/auth?mode=signup';

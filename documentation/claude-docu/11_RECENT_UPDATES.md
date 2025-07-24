@@ -44,25 +44,32 @@ if (currentPath === '/') {
     console.log(`🚫 Preventing navigation from legal page: ${currentPath}`);
 }
 
-// Mobile button adaptation
-if (btn.classList.contains('btn-large')) {
+// Mobile bottom nav button adaptation (updated after user feedback)
+const bottomNavButton = document.querySelector('.bottom-nav-item.active');
+if (bottomNavButton) {
     const isMobile = window.innerWidth <= 768;
     if (isMobile) {
-        btn.innerHTML = '<span class="btn-icon">📧</span>Contact Us';
-        btn.addEventListener('click', (e) => {
+        bottomNavButton.innerHTML = '<span class="bottom-nav-icon">📧</span><span>Contact Us</span>';
+        bottomNavButton.onclick = (e) => {
             e.preventDefault();
             window.location.href = '/contact';
-        });
+        };
     }
 }
 ```
 
 **Files Modified**:
 - `/frontend/js/modules/auth.js` - Redirect prevention logic
-- `/frontend/pages/landing/landing.js` - Mobile UI adaptations
+- `/frontend/pages/landing/landing.js` - Mobile UI adaptations (hero button reverted, bottom nav button changed)
 - `/frontend/js/modules/sessionManager.js` - Mobile menu backdrop fix
 - `/frontend/css/landing-mobile.css` - Mobile sign out button styling
 - Legal pages HTML files - Back to Home button fixes
+
+**Update (Button Swap)**:
+Based on user feedback, the mobile UI adaptation was refined:
+- **Hero button**: Reverted to always show "Open App" for all authenticated users
+- **Bottom nav button**: Now shows "Contact Us" for authenticated mobile users (since mobile users can't use the app)
+- This provides better UX by offering mobile users a direct way to contact support instead of an unusable app button
 
 ## July 14, 2025 Session (Part 2)
 
