@@ -596,8 +596,11 @@ export async function getSignedAudioUrl(audioPath) {
         if (!audioPath.startsWith('http') && !audioPath.startsWith('/uploads/')) {
             const response = await apiFetch(`/api/audio/url?path=${encodeURIComponent(audioPath)}`);
             
-            if (response.url) {
-                return response.url;
+            if (response.ok) {
+                const data = await response.json();
+                if (data.url) {
+                    return data.url;
+                }
             }
         }
     } catch (error) {

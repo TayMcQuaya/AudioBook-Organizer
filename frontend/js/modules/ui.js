@@ -120,9 +120,14 @@ async function initializeAudioUrls() {
         try {
             // Import sections module to access getSignedAudioUrl
             const { getSignedAudioUrl } = await import('./sections.js');
-            const signedUrl = await getSignedAudioUrl(currentSrc);
             
-            if (signedUrl !== currentSrc) {
+            // Extract the path from the src (remove domain if present)
+            const url = new URL(currentSrc, window.location.origin);
+            const audioPath = url.pathname.startsWith('/') ? url.pathname.substring(1) : url.pathname;
+            
+            const signedUrl = await getSignedAudioUrl(audioPath);
+            
+            if (signedUrl !== audioPath) {
                 audio.src = signedUrl;
             }
         } catch (error) {
