@@ -508,19 +508,18 @@ class AuthModule {
                     } else {
                         window.location.href = '/app';
                     }
-                } else if ((isPageRefresh && currentPath === '/') || (currentPath === '/' && window.location.hash)) {
-                    // **CRITICAL FIX: Don't navigate away from landing page during refresh OR when user specifically navigated to landing page with hash**
-                    if (window.location.hash) {
-                        // **SECURITY FIX: Removed URL exposure to prevent privacy leak**
-            console.log('🚫 Preventing navigation from landing page - user specifically navigated here');
-                        // User chose landing page with hash
-                    } else {
-                        // Preventing navigation - user chose landing page
-                    }
+                } else if (currentPath === '/') {
+                    // **CRITICAL FIX: Don't navigate away from landing page - user intentionally navigated here**
+                    console.log('🚫 Preventing navigation from landing page - respecting user choice');
+                    console.log('✅ User chose to view landing page while authenticated');
                 } else if (currentPath.startsWith('/payment/')) {
                     // **CRITICAL FIX: Don't navigate away from any payment pages**
                     console.log(`🚫 Preventing navigation from payment page: ${currentPath}`);
                     console.log('✅ User should see their payment result page, respecting their choice');
+                } else if (currentPath === '/privacy' || currentPath === '/terms' || currentPath === '/contact') {
+                    // **CRITICAL FIX: Don't navigate away from legal pages**
+                    console.log(`🚫 Preventing navigation from legal page: ${currentPath}`);
+                    console.log('✅ User should stay on the legal page they navigated to');
                 } else {
                     // **FIX: Only navigate if not already on the target page**
                     if (currentPath !== returnUrl) {
@@ -552,16 +551,13 @@ class AuthModule {
                     // Users should stay on whatever page they refreshed (landing, app, etc.)
                     // This prevents unwanted redirects during page refresh
                     if (currentPath === '/') {
-                        if (window.location.hash) {
-                            // **SECURITY FIX: Removed URL hash logging to prevent privacy exposure**
-                    console.log('✅ Staying on landing page with hash during session restore');
-                        } else {
-                            console.log('✅ Staying on landing page during session restore');
-                        }
+                        console.log('✅ Staying on landing page during session restore');
                     } else if (currentPath === '/app') {
                         console.log('✅ Staying on app page during session restore');
                     } else if (currentPath.startsWith('/payment/')) {
                         console.log(`✅ Staying on payment page (${currentPath}) during session restore`);
+                    } else if (currentPath === '/privacy' || currentPath === '/terms' || currentPath === '/contact') {
+                        console.log(`✅ Staying on legal page (${currentPath}) during session restore`);
                     } else {
                         console.log(`✅ Staying on ${currentPath} during session restore`);
                     }

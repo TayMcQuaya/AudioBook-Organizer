@@ -967,3 +967,71 @@ Not all pages need SPA navigation. Static content pages (legal, contact, etc.) c
 - Test both mobile and desktop navigation paths
 - Ensure CSS and JS dependencies load correctly for both navigation methods
 
+### ✅ **Legal Pages Navigation Auto-Redirect Fix (July 2025)**
+**Issue Resolved**: Authenticated users navigating to legal pages (privacy, terms, contact) from landing page footer links or using "Back to Home" buttons were automatically redirected to the app page.
+
+**Root Cause**: 
+- Auth module's `handleAuthSuccess()` method didn't include legal pages or landing page in its redirect prevention logic
+- The redirect prevention only worked for page refresh or landing page with hash navigation
+- When authenticated users navigated to "/" (landing page) from legal pages, they were redirected to "/app"
+
+**Files Changed**: 
+- `frontend/js/modules/auth.js` - Extended redirect prevention logic in `handleAuthSuccess()`
+
+**Solution Applied**:
+```javascript
+// **BEFORE:** Landing page redirect prevention only for refresh or hash navigation
+} else if ((isPageRefresh && currentPath === '/') || (currentPath === '/' && window.location.hash)) {
+    // **CRITICAL FIX: Don't navigate away from landing page during refresh OR when user specifically navigated to landing page with hash**
+    if (window.location.hash) {
+        console.log('🚫 Preventing navigation from landing page - user specifically navigated here');
+    } else {
+        // Preventing navigation - user chose landing page
+    }
+
+// **AFTER:** Simplified to always respect landing page navigation
+} else if (currentPath === '/') {
+    // **CRITICAL FIX: Don't navigate away from landing page - user intentionally navigated here**
+    console.log('🚫 Preventing navigation from landing page - respecting user choice');
+    console.log('✅ User chose to view landing page while authenticated');
+
+// Added legal pages to redirect prevention
+} else if (currentPath === '/privacy' || currentPath === '/terms' || currentPath === '/contact') {
+    // **CRITICAL FIX: Don't navigate away from legal pages**
+    console.log(`🚫 Preventing navigation from legal page: ${currentPath}`);
+    console.log('✅ User should stay on the legal page they navigated to');
+
+// Also updated INITIAL_SESSION handling:
+// **BEFORE:** Complex conditional for landing page
+if (currentPath === '/') {
+    if (window.location.hash) {
+        console.log('✅ Staying on landing page with hash during session restore');
+    } else {
+        console.log('✅ Staying on landing page during session restore');
+    }
+
+// **AFTER:** Simplified landing page handling
+if (currentPath === '/') {
+    console.log('✅ Staying on landing page during session restore');
+
+// Added legal pages to session restore handling
+} else if (currentPath === '/privacy' || currentPath === '/terms' || currentPath === '/contact') {
+    console.log(`✅ Staying on legal page (${currentPath}) during session restore`);
+```
+
+**Behavior Changes**:
+- **Before**: Authenticated users navigating to landing page or legal pages → automatic redirect to app page
+- **After**: Authenticated users can freely navigate between landing page, legal pages, and app page
+- **Preserved**: Google OAuth flows, normal login navigation, app page functionality
+
+**How This Solves the Problem**:
+1. **Landing Page Navigation**: Any navigation to "/" by authenticated users is now respected, not just refresh/hash scenarios
+2. **Legal Pages Navigation**: Added explicit checks for privacy, terms, and contact pages to prevent redirects
+3. **"Back to Home" Button**: Works correctly because landing page navigation is no longer restricted
+4. **Consistent Behavior**: Both "Home" header links and "Back to Home" buttons work identically
+
+**Prevention for Future Pages**:
+- Any new public pages should be added to the redirect prevention logic in auth.js
+- Consider creating a whitelist of public pages that authenticated users can access
+- Test navigation flows for authenticated users on all public pages
+
