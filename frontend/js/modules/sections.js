@@ -594,7 +594,7 @@ export async function getSignedAudioUrl(audioPath) {
     try {
         // Only fetch signed URL if it's a Supabase path
         if (!audioPath.startsWith('http') && !audioPath.startsWith('/uploads/')) {
-            const response = await apiFetch(`/api/audio/url?path=${encodeURIComponent(audioPath)}`);
+            const response = await apiFetch(`/audio/url?path=${encodeURIComponent(audioPath)}`);
             
             if (response.ok) {
                 const data = await response.json();

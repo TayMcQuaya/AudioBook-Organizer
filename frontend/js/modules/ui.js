@@ -109,6 +109,8 @@ export function updateChaptersList() {
 async function initializeAudioUrls() {
     const audioElements = document.querySelectorAll('audio[data-storage-backend="supabase"]');
     
+    console.log(`Initializing ${audioElements.length} Supabase audio URLs...`);
+    
     for (const audio of audioElements) {
         const currentSrc = audio.src;
         
@@ -125,13 +127,18 @@ async function initializeAudioUrls() {
             const url = new URL(currentSrc, window.location.origin);
             const audioPath = url.pathname.startsWith('/') ? url.pathname.substring(1) : url.pathname;
             
+            console.log(`Fetching signed URL for: ${audioPath}`);
             const signedUrl = await getSignedAudioUrl(audioPath);
             
             if (signedUrl !== audioPath) {
                 audio.src = signedUrl;
+                console.log(`Updated audio URL for path: ${audioPath}`);
+            } else {
+                console.warn(`Failed to get signed URL for: ${audioPath}, using original path`);
             }
         } catch (error) {
-            console.error('Failed to initialize audio URL:', error);
+            console.error(`Failed to initialize audio URL for ${audio.src}:`, error);
+            // Continue with next audio element instead of stopping
         }
     }
 }
