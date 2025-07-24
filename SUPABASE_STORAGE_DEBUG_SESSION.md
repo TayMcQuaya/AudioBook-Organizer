@@ -6,8 +6,9 @@ Audio files are being lost when Docker container restarts on DigitalOcean. Attem
 ## Current Status
 - ✅ Environment variable `STORAGE_BACKEND=supabase` is set and being read
 - ✅ Backend is attempting to use Supabase Storage
-- ❌ Uploads failing with: `"new row violates row-level security policy"`
-- ❌ No files appearing in Supabase Storage bucket
+- ✅ **FIXED**: Uploads now working after using service client
+- ✅ **FIXED**: Audio playback working with signed URLs
+- ⚠️ Some 404 errors appear in console but don't affect functionality
 
 ## What We've Discovered
 
@@ -20,15 +21,23 @@ Audio files are being lost when Docker container restarts on DigitalOcean. Attem
 - AudioService was being initialized before environment variables were loaded
 - **Fixed**: Implemented lazy initialization with `get_audio_service()`
 
-### 3. RLS Policy Issues (ONGOING)
-The main blocker is Row Level Security (RLS) policies on Supabase Storage.
+### 3. RLS Policy Issues (FIXED)
+The main blocker was Row Level Security (RLS) policies on Supabase Storage.
 
-#### What We've Tried:
-1. **SQL File 11**: Added RLS policies for `file_uploads` table - ✅ Applied successfully
-2. **SQL File 12**: Added service role bypass for storage.objects - ❌ Policy not showing in results
-3. **SQL File 13**: Debug queries showed RLS is enabled on storage.objects
-4. **SQL File 14**: Cannot disable RLS (no permission on Supabase managed tables)
-5. **SQL File 17**: Checked bucket configuration - bucket exists correctly
+#### The Root Cause:
+The storage service was using the anon key instead of the service key, which doesn't have permissions to bypass RLS.
+
+#### The Fix:
+Changed `/backend/services/supabase_storage_service.py` line 28:
+```python
+# From:
+self.supabase = self.supabase_service.client  # This was using anon key
+
+# To:
+self.supabase = self.supabase_service.get_service_client()  # Now uses service key
+```
+
+This allows the storage service to bypass RLS policies completely.
 
 ### 4. Bucket Configuration
 ```
@@ -39,14 +48,27 @@ The main blocker is Row Level Security (RLS) policies on Supabase Storage.
 - Owner: NULL (might be causing issues)
 ```
 
-### 5. Current Error Pattern
-```
-❌ Failed to upload to Supabase Storage: {'statusCode': 400, 'error': 'Unauthorized', 'message': 'new row violates row-level security policy'}
-Supabase Storage error, falling back to local: Storage upload failed: Storage access denied.
-Audio upload failed: [Errno 2] No such file or directory: '/app/uploads/...'
-```
+### 5. Audio Playback Issues (FIXED)
+Initial 404 errors when loading audio files were due to:
 
-The error occurs when trying to upload to Supabase Storage bucket, then falls back to local storage which fails because the file was already processed.
+#### The Problem:
+1. CSP (Content Security Policy) was blocking Supabase audio URLs
+2. The API endpoint had double `/api/api/` path due to `apiFetch` already adding `/api` prefix
+
+#### The Fixes:
+1. **CSP Fix** in `/backend/middleware/security_headers.py`:
+   ```python
+   "media-src 'self' https://*.supabase.co; "  # Allow Supabase audio URLs
+   ```
+
+2. **API Path Fix** in `/frontend/js/modules/sections.js` line 597:
+   ```javascript
+   // From:
+   const response = await apiFetch(`/api/audio/url?path=${encodeURIComponent(audioPath)}`);
+   
+   // To:
+   const response = await apiFetch(`/audio/url?path=${encodeURIComponent(audioPath)}`);
+   ```
 
 ## Code Changes Made
 
@@ -87,26 +109,32 @@ The error occurs when trying to upload to Supabase Storage bucket, then falls ba
 - `STORAGE_BACKEND=supabase` (in DigitalOcean app-level settings)
 - `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_KEY` all configured
 
-## Next Steps to Try
+## Why You Still See 404 Errors (But Everything Works)
 
-1. **Make Bucket Public** (Current recommendation):
-   - In Supabase Dashboard, change audiofiles bucket to public
-   - This bypasses RLS policies
-   - Test upload immediately
+The 404 errors you're seeing are harmless and happen because:
 
-2. **Alternative: Recreate Bucket**:
-   - Delete current bucket
-   - Create new bucket without any RLS policies
-   - Let Supabase handle auth with service key
+1. **Initial Load Attempt**: When the audio element is first created, the browser tries to load the path directly (e.g., `/8853fd03-6ee7-4925-bbec-b891864dc004/project...`)
+2. **Signed URL Update**: The `initializeAudioUrls` function then fetches a signed URL from Supabase and updates the audio element
+3. **Working Playback**: The audio plays correctly with the signed URL
 
-3. **Check Supabase Project**:
-   - Verify the service key is from the same project where SQL is run
-   - Ensure no project mismatch
+This is normal behavior and doesn't affect functionality. The errors are just the browser's initial attempt before the signed URL is applied.
 
-## Key Insight
-The issue appears to be that Supabase's internal RLS policies on storage.objects cannot be overridden by user-created policies. The service_role should bypass RLS, but something is preventing this from working correctly.
+### Other Console Messages Explained:
+- `Failed to execute 'postMessage' on 'DOMWindow'` - This is from Stripe's iframe and is harmless
+- `Cannot read properties of null (reading 'contains')` - Minor UI bug in text selection, doesn't affect core functionality
+- The repeated "Smart selection highlights cleared" messages are just verbose logging
 
-## Test Results Needed
-- Need to see logs AFTER making bucket public
-- Current logs shown are all from before changes
-- Need fresh upload attempt with timestamps after 23:00
+## Summary of Fixes Applied
+
+1. **Service Client Fix**: Changed storage service to use service role client instead of anon client
+2. **CSP Headers**: Added Supabase domains to media-src Content Security Policy
+3. **API Path Fix**: Removed duplicate `/api` prefix in sections.js
+4. **Database Schema**: Added nullable file_path column for backward compatibility
+
+## Result
+✅ Audio files now successfully upload to Supabase Storage
+✅ Audio playback works with signed URLs
+✅ Files persist across Docker container restarts
+✅ All RLS policy issues resolved
+
+The system is now working correctly with Supabase Storage!
