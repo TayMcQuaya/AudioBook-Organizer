@@ -130,8 +130,8 @@ WITH (security_invoker = true) AS
 SELECT 
     COUNT(DISTINCT (storage.foldername(name))[1]) as total_users,
     COUNT(*) as total_files,
-    SUM(metadata->>'size')::BIGINT / 1024 / 1024 as total_size_mb,
-    AVG(metadata->>'size')::BIGINT / 1024 / 1024 as avg_file_size_mb,
+    SUM((metadata->>'size')::BIGINT) / 1024 / 1024 as total_size_mb,
+    AVG((metadata->>'size')::BIGINT) / 1024 / 1024 as avg_file_size_mb,
     MAX(created_at) as last_upload,
     MIN(created_at) as first_upload
 FROM storage.objects
