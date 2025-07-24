@@ -25,11 +25,11 @@ class SupabaseStorageService:
     def __init__(self):
         """Initialize storage service with Supabase client"""
         self.supabase_service = get_supabase_service()
-        self.supabase = self.supabase_service.client
+        self.supabase = self.supabase_service.get_service_client()  # Use service client to bypass RLS
         self.storage_enabled = os.environ.get('STORAGE_BACKEND', 'local') == 'supabase'
         
         if self.storage_enabled:
-            logger.info("🗄️ Supabase Storage service initialized")
+            logger.info("🗄️ Supabase Storage service initialized with service role")
         else:
             logger.info("📁 Using local storage (Supabase Storage disabled)")
     
