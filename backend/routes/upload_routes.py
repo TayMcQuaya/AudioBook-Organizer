@@ -9,7 +9,15 @@ def create_upload_routes(app, upload_folder):
     Create file upload routes.
     Preserves the exact logic from original server.py but adapted for modular architecture
     """
-    audio_service = AudioService(upload_folder)
+    # Create audio service with lazy initialization to ensure env vars are loaded
+    audio_service = None
+    
+    def get_audio_service():
+        nonlocal audio_service
+        if audio_service is None:
+            audio_service = AudioService(upload_folder)
+            app.logger.info(f"Initialized AudioService with STORAGE_BACKEND={os.environ.get('STORAGE_BACKEND', 'not set')}")
+        return audio_service
     
     @app.route('/api/upload', methods=['POST', 'OPTIONS'])
     def upload_audio():
@@ -123,14 +131,14 @@ def create_upload_routes(app, upload_folder):
                     from flask import g
                     user_id = g.user_id
                 
-                result = audio_service.upload_audio_file_with_storage(
+                result = get_audio_service().upload_audio_file_with_storage(
                     file, user_id, project_id, 
                     int(chapter_id), int(section_id)
                 )
             else:
                 # Use original method for backward compatibility
                 app.logger.info("Using local storage for upload")
-                result = audio_service.upload_audio_file(file)
+                result = get_audio_service().upload_audio_file(file)
             
             app.logger.debug('File processed successfully')
             
@@ -362,7 +370,7 @@ def create_upload_routes(app, upload_folder):
                 }), 400
             
             # Get signed URL
-            signed_url = audio_service.get_audio_url(audio_path)
+            signed_url = get_audio_service().get_audio_url(audio_path)
             
             return jsonify({
                 'success': True,
