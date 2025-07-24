@@ -21,7 +21,10 @@
   4. fix_security_definer_views.sql - View security fixes
   5. rls_issue_fix.sql - RLS policy fixes
   6. delete_user_account.sql - Account deletion support
-  7. fix_oauth_trigger.sql 
+  7. fix_oauth_trigger.sql - OAuth trigger fixes
+  8. credits_after_verification.sql - Email verification credits
+  9. add_storage_tracking.sql - Storage quota tracking for Supabase Storage
+  10. create_storage_bucket_policies.sql - RLS policies for audio file storage (run AFTER creating bucket) 
 
   4. Configure Production Database
 

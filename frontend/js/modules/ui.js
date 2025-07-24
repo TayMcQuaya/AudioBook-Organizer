@@ -82,7 +82,7 @@ export function updateChaptersList() {
                                          </div>
                                     </div>
                                 ` : `
-                                    <audio controls src="${section.audioPath}"></audio>
+                                    <audio controls src="${section.audioPath}" data-section-id="${section.id}" data-storage-backend="${section.storageBackend || 'local'}"></audio>
                                     <button onclick="removeAudio(${chapter.id}, ${section.id})">Remove Audio</button>
                                 `}
                             ` : `
@@ -97,6 +97,38 @@ export function updateChaptersList() {
     `).join('');
 
     initializeDragAndDrop();
+    
+    // Initialize audio URLs for Supabase Storage
+    initializeAudioUrls();
+}
+
+/**
+ * Initialize audio URLs for Supabase Storage
+ * Updates audio elements with signed URLs when using Supabase Storage
+ */
+async function initializeAudioUrls() {
+    const audioElements = document.querySelectorAll('audio[data-storage-backend="supabase"]');
+    
+    for (const audio of audioElements) {
+        const currentSrc = audio.src;
+        
+        // Skip if already has a signed URL
+        if (currentSrc.includes('token=') || currentSrc.startsWith('blob:')) {
+            continue;
+        }
+        
+        try {
+            // Import sections module to access getSignedAudioUrl
+            const { getSignedAudioUrl } = await import('./sections.js');
+            const signedUrl = await getSignedAudioUrl(currentSrc);
+            
+            if (signedUrl !== currentSrc) {
+                audio.src = signedUrl;
+            }
+        } catch (error) {
+            console.error('Failed to initialize audio URL:', error);
+        }
+    }
 }
 
 export function updateSelectionColor() {

@@ -879,9 +879,28 @@ async function validateAndRestoreAudioFiles(projectData) {
         
         console.log(`🔍 Found ${sectionsWithAudio.length} audio files to validate`);
         
+        // Helper to get audio URL
+        const getAudioUrl = async (section) => {
+            if (section.storageBackend === 'supabase') {
+                try {
+                    const response = await apiFetch(`/audio/url?path=${encodeURIComponent(section.audioPath)}`);
+                    if (response.ok) {
+                        const data = await response.json();
+                        return data.url;
+                    }
+                } catch (error) {
+                    console.error('Failed to get signed URL:', error);
+                }
+            }
+            return section.audioPath;
+        };
+        
         // Validate each audio file by attempting to load it
         const validationPromises = sectionsWithAudio.map(async (item) => {
             try {
+                // Get the appropriate URL
+                const audioUrl = await getAudioUrl(item.section);
+                
                 // Create a test audio element to validate the file exists and is accessible
                 const testAudio = new Audio();
                 
@@ -909,7 +928,7 @@ async function validateAndRestoreAudioFiles(projectData) {
                     };
                     
                     // Start loading the audio file
-                    testAudio.src = item.audioPath;
+                    testAudio.src = audioUrl;
                     testAudio.load();
                 });
                 

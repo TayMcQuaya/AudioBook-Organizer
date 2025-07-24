@@ -102,9 +102,36 @@ def create_upload_routes(app, upload_folder):
             if file.filename == '':
                 app.logger.error('Empty filename')
                 return jsonify({'success': False, 'error': 'No selected file'}), 400
-
-            # Use audio service to handle upload - preserves exact logic
-            result = audio_service.upload_audio_file(file)
+            
+            # Get additional parameters for Supabase Storage
+            project_id = request.form.get('project_id')
+            chapter_id = request.form.get('chapter_id')
+            section_id = request.form.get('section_id')
+            
+            # Check if we should use Supabase Storage
+            use_supabase = os.environ.get('STORAGE_BACKEND', 'local') == 'supabase'
+            
+            if use_supabase and project_id and chapter_id and section_id:
+                # Use new storage-aware method
+                app.logger.info(f"Using Supabase Storage for upload: project={project_id}, chapter={chapter_id}, section={section_id}")
+                
+                # Get user ID based on mode
+                if current_app.config.get('TESTING_MODE'):
+                    # In testing mode, use a fixed user ID for simplicity
+                    user_id = 'test-user-' + str(session.get('session_id', 'default'))
+                else:
+                    from flask import g
+                    user_id = g.user_id
+                
+                result = audio_service.upload_audio_file_with_storage(
+                    file, user_id, project_id, 
+                    int(chapter_id), int(section_id)
+                )
+            else:
+                # Use original method for backward compatibility
+                app.logger.info("Using local storage for upload")
+                result = audio_service.upload_audio_file(file)
+            
             app.logger.debug('File processed successfully')
             
             # Consume credits after successful upload (normal mode only)
@@ -292,4 +319,60 @@ def create_upload_routes(app, upload_folder):
             return jsonify({
                 'success': False,
                 'error': str(e)
-            }), 500 
+            }), 500
+    
+    @app.route('/api/audio/url', methods=['GET'])
+    def get_audio_url():
+        """
+        Get signed URL for audio file playback (Supabase Storage)
+        """
+        # Check authentication
+        if current_app.config.get('TESTING_MODE'):
+            if not session.get('temp_authenticated'):
+                return jsonify({
+                    'error': 'Authentication required',
+                    'message': 'Please authenticate first'
+                }), 401
+        else:
+            from flask import g
+            from ..middleware.auth_middleware import extract_token_from_header
+            from ..services.supabase_service import get_supabase_service
+            
+            token = extract_token_from_header()
+            if not token:
+                return jsonify({
+                    'error': 'Authentication required',
+                    'message': 'Authorization header required'
+                }), 401
+            
+            supabase_service = get_supabase_service()
+            user = supabase_service.get_user_from_token(token)
+            if not user:
+                return jsonify({
+                    'error': 'Invalid token',
+                    'message': 'Token is invalid or expired'
+                }), 401
+        
+        try:
+            audio_path = request.args.get('path')
+            if not audio_path:
+                return jsonify({
+                    'error': 'Missing parameter',
+                    'message': 'Audio path is required'
+                }), 400
+            
+            # Get signed URL
+            signed_url = audio_service.get_audio_url(audio_path)
+            
+            return jsonify({
+                'success': True,
+                'url': signed_url,
+                'expires_in': 3600  # 1 hour
+            })
+            
+        except Exception as e:
+            app.logger.error(f'Error getting audio URL: {str(e)}')
+            return jsonify({
+                'success': False,
+                'error': str(e)
+            }), 500
