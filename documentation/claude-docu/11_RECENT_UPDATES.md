@@ -1,5 +1,69 @@
 # Recent Updates - AudioBook Organizer
 
+## July 24, 2025 Session
+
+### Authentication Navigation and Mobile UI Fixes
+**Problem**: Multiple navigation and UI issues for authenticated users:
+1. Authenticated users navigating to legal pages from footer links were redirected to app page
+2. "Back to Home" buttons on legal pages redirected to app page instead of landing page
+3. Mobile UI needed specific adaptations for authenticated users
+4. Mobile menu backdrop stayed visible after logout
+5. Buttons didn't properly revert when logging out
+
+**Solution**:
+1. **Authentication Redirect Fix** (`/frontend/js/modules/auth.js`):
+   - Added redirect prevention for landing page and legal pages in `handleAuthSuccess()`
+   - Simplified landing page check to always respect user navigation choice
+   - Added explicit checks for `/privacy`, `/terms`, and `/contact` paths
+
+2. **"Back to Home" Button Fix** (legal pages):
+   - Changed from `navigateToContact('general')` to direct `window.location.href`
+   - Removed query parameter that was causing redirect issues
+
+3. **Mobile UI Adaptations** (`/frontend/pages/landing/landing.js`):
+   - Added mobile detection (≤768px) in `updateLandingPageForAuthenticatedUser()`
+   - Replace hero "Open App" button with "Contact Us" for authenticated mobile users
+   - Added window resize handler to update button when crossing mobile/desktop boundary
+   - Fixed button restoration in `updateLandingPageForUnauthenticatedUser()`
+
+4. **Mobile Menu Backdrop Fix** (`/frontend/js/modules/sessionManager.js`):
+   - Added `closeMobileMenu()` call in `handleSignOut()` method
+   - Ensures backdrop is properly hidden when user logs out
+
+5. **Mobile Sign Out Button Styling** (`/frontend/css/landing-mobile.css`):
+   - Styled with red background (#dc3545) and white text
+   - Positioned exactly like sign in button (20px margins, same height)
+   - Added hover and active states for better user feedback
+
+**Technical Details**:
+```javascript
+// Auth redirect prevention
+if (currentPath === '/') {
+    console.log('🚫 Preventing navigation from landing page - respecting user choice');
+} else if (currentPath === '/privacy' || currentPath === '/terms' || currentPath === '/contact') {
+    console.log(`🚫 Preventing navigation from legal page: ${currentPath}`);
+}
+
+// Mobile button adaptation
+if (btn.classList.contains('btn-large')) {
+    const isMobile = window.innerWidth <= 768;
+    if (isMobile) {
+        btn.innerHTML = '<span class="btn-icon">📧</span>Contact Us';
+        btn.addEventListener('click', (e) => {
+            e.preventDefault();
+            window.location.href = '/contact';
+        });
+    }
+}
+```
+
+**Files Modified**:
+- `/frontend/js/modules/auth.js` - Redirect prevention logic
+- `/frontend/pages/landing/landing.js` - Mobile UI adaptations
+- `/frontend/js/modules/sessionManager.js` - Mobile menu backdrop fix
+- `/frontend/css/landing-mobile.css` - Mobile sign out button styling
+- Legal pages HTML files - Back to Home button fixes
+
 ## July 14, 2025 Session (Part 2)
 
 ### Session Invalidation Fix Implementation (Complete)

@@ -419,6 +419,13 @@ class SessionManager {
         const wasAuthenticated = this.isAuthenticated;
         this.setUnauthenticated();
         
+        // Close mobile menu if open (fixes backdrop issue)
+        if (typeof closeMobileMenu === 'function') {
+            closeMobileMenu();
+        } else if (window.closeMobileMenu) {
+            window.closeMobileMenu();
+        }
+        
         if (window.authModule?.signOut) {
             await window.authModule.signOut();
         }

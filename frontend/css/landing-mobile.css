@@ -201,6 +201,51 @@
         box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
     }
     
+    /* Mobile sign out button styling - positioned exactly like sign in button */
+    .mobile-menu .mobile-user-nav {
+        display: flex;
+        flex-direction: column;
+        gap: 0;
+    }
+    
+    .mobile-menu .mobile-user-nav .mobile-link {
+        margin: 0;
+    }
+    
+    .mobile-menu .mobile-link.logout-btn {
+        margin: 20px !important;
+        padding: 14px 24px;
+        height: 48px;
+        font-size: 16px;
+        font-weight: 600;
+        background: #dc3545;
+        color: white !important;
+        border: none;
+        border-radius: 12px;
+        width: calc(100% - 40px);
+        box-shadow: 0 4px 12px rgba(220, 53, 69, 0.3);
+        display: block;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        text-align: center;
+        border-bottom: none;
+        position: relative;
+        bottom: auto;
+        margin-top: auto !important;
+    }
+    
+    .mobile-menu .mobile-link.logout-btn:hover {
+        background: #c82333;
+        box-shadow: 0 6px 16px rgba(220, 53, 69, 0.4);
+    }
+    
+    .mobile-menu .mobile-link.logout-btn:active {
+        background: #bd2130;
+        transform: translateY(1px);
+        box-shadow: 0 2px 8px rgba(220, 53, 69, 0.3);
+        padding-left: 24px; /* Override the default mobile-link active padding */
+    }
+    
     /* ===== HERO SECTION - Fixed and Centered ===== */
     .hero {
         padding: 40px 20px 60px;

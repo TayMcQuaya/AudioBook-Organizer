@@ -15,6 +15,21 @@ const mobileMenu = document.getElementById('mobileMenu');
 const authStateChangeListener = (event) => handleAuthStateChange(event.detail);
 const outsideClickListener = (event) => handleOutsideClick(event);
 
+// Resize handler to update buttons on window size change
+let previousWidth = window.innerWidth;
+const resizeHandler = () => {
+    const currentWidth = window.innerWidth;
+    const wasMobile = previousWidth <= 768;
+    const isMobile = currentWidth <= 768;
+    
+    // Only update if we crossed the mobile/desktop boundary
+    if (wasMobile !== isMobile) {
+        previousWidth = currentWidth;
+        // Re-check authentication state to update buttons
+        checkAuthenticationState();
+    }
+};
+
 // Initialize landing page functionality
 function init() {
     console.log('🚀 Landing page initialized');
@@ -52,6 +67,9 @@ function init() {
     
     // Add navigation handler for footer links
     document.addEventListener('click', handleNavigationClick);
+    
+    // Add window resize handler for responsive button updates
+    window.addEventListener('resize', resizeHandler);
     
     // Handle hash navigation on page load
     handleHashNavigation();
@@ -194,6 +212,7 @@ function cleanup() {
     window.removeEventListener('auth-state-changed', authStateChangeListener);
     document.removeEventListener('click', outsideClickListener);
     document.removeEventListener('click', handleNavigationClick);
+    window.removeEventListener('resize', resizeHandler);
 }
 
 // The router is now responsible for calling init
@@ -293,19 +312,44 @@ function updateLandingPageForAuthenticatedUser(user) {
         console.warn('⚠️ appUI not available, cannot create user navigation');
     }
     
-    // Convert all primary action buttons to "Open App"
+    // Convert all primary action buttons to "Open App" (or "Contact Us" on mobile for hero button)
     const getStartedButtons = document.querySelectorAll('a[href="/auth?mode=signup"], .btn-primary.get-started');
     getStartedButtons.forEach(btn => {
-        // Remove href to prevent direct navigation and use click handler instead
-        btn.removeAttribute('href');
-        btn.innerHTML = '<span class="btn-icon">🚀</span>Open App';
-        btn.style.cursor = 'pointer';
-        btn.addEventListener('click', (e) => {
-            e.preventDefault();
-            navigateToApp();
-        });
-        // Ensure it doesn't get hidden by other rules
-        btn.style.display = 'inline-flex'; 
+        // Check if this is the hero button (has btn-large class)
+        if (btn.classList.contains('btn-large')) {
+            const isMobile = window.innerWidth <= 768;
+            
+            btn.removeAttribute('href');
+            
+            if (isMobile) {
+                // Mobile: Change to Contact Us
+                btn.innerHTML = '<span class="btn-icon">📧</span>Contact Us';
+                btn.style.cursor = 'pointer';
+                btn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    window.location.href = '/contact';
+                });
+            } else {
+                // Desktop: Keep as Open App
+                btn.innerHTML = '<span class="btn-icon">🚀</span>Open App';
+                btn.style.cursor = 'pointer';
+                btn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    navigateToApp();
+                });
+            }
+            btn.style.display = 'inline-flex';
+        } else {
+            // Other buttons: always Open App
+            btn.removeAttribute('href');
+            btn.innerHTML = '<span class="btn-icon">🚀</span>Open App';
+            btn.style.cursor = 'pointer';
+            btn.addEventListener('click', (e) => {
+                e.preventDefault();
+                navigateToApp();
+            });
+            btn.style.display = 'inline-flex';
+        }
     });
     
     // Hide ALL demo/try buttons when authenticated
@@ -321,6 +365,18 @@ function updateLandingPageForAuthenticatedUser(user) {
             btn.style.display = 'none';
         }
     });
+    
+    // Update mobile bottom navigation button
+    const bottomNavButton = document.querySelector('.bottom-nav-item.active');
+    if (bottomNavButton && bottomNavButton.href && bottomNavButton.href.includes('/auth?mode=signup')) {
+        bottomNavButton.removeAttribute('href');
+        bottomNavButton.innerHTML = '<span class="bottom-nav-icon">🚀</span><span>Open App</span>';
+        bottomNavButton.style.cursor = 'pointer';
+        bottomNavButton.onclick = (e) => {
+            e.preventDefault();
+            navigateToApp();
+        };
+    }
 }
 
 /**
@@ -360,7 +416,7 @@ function updateLandingPageForUnauthenticatedUser() {
     
     // Also check for any buttons that had href removed and were using click handlers
     const openAppButtons = Array.from(document.querySelectorAll('.btn-primary')).filter(btn => 
-        btn.innerHTML.includes('Open App')
+        btn.innerHTML.includes('Open App') || btn.innerHTML.includes('Contact Us')
     );
     openAppButtons.forEach(btn => {
         // Create a new anchor element to replace the button
@@ -373,13 +429,11 @@ function updateLandingPageForUnauthenticatedUser() {
     });
     
     // Show try demo buttons again and ensure correct text/action
-    const tryDemoButtons = document.querySelectorAll('.btn-secondary.btn-large');
+    const tryDemoButtons = document.querySelectorAll('.btn-secondary.btn-large, [onclick*="tryAppDemo"]');
     tryDemoButtons.forEach(btn => {
-        if (btn.innerHTML.includes('Demo')) {
-            btn.style.display = 'inline-flex';
-            btn.innerHTML = '<span class="btn-icon">📚</span>Try Demo Now';
-            btn.setAttribute('onclick', 'tryAppDemo()');
-        }
+        btn.style.display = 'inline-flex';
+        btn.innerHTML = '<span class="btn-icon">📚</span>Try Demo Now';
+        btn.setAttribute('onclick', 'tryAppDemo()');
     });
     
     // Show auth signup links again
@@ -387,6 +441,17 @@ function updateLandingPageForUnauthenticatedUser() {
     signInButtons.forEach(btn => {
         btn.style.display = 'inline-flex';
     });
+    
+    // Restore mobile bottom navigation button
+    const bottomNavButton = document.querySelector('.bottom-nav-item.active');
+    if (bottomNavButton && (bottomNavButton.innerHTML.includes('Open App') || !bottomNavButton.href)) {
+        // Restore the original link
+        const newLink = document.createElement('a');
+        newLink.href = '/auth?mode=signup';
+        newLink.className = 'bottom-nav-item active';
+        newLink.innerHTML = '<span class="bottom-nav-icon">🚀</span><span>Get Started</span>';
+        bottomNavButton.parentNode.replaceChild(newLink, bottomNavButton);
+    }
 }
 
 /**
@@ -479,6 +544,7 @@ async function navigateToApp() {
         }
     }
 }
+
 
 async function tryAppDemo() {
     try {
