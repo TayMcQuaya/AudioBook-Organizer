@@ -112,12 +112,17 @@ def create_upload_routes(app, upload_folder):
                 return jsonify({'success': False, 'error': 'No selected file'}), 400
             
             # Get additional parameters for Supabase Storage
+            # Frontend sends camelCase, so we need to match that
             project_id = request.form.get('project_id')
-            chapter_id = request.form.get('chapter_id')
-            section_id = request.form.get('section_id')
+            chapter_id = request.form.get('chapterId')  # Changed from 'chapter_id'
+            section_id = request.form.get('sectionId')  # Changed from 'section_id'
             
             # Check if we should use Supabase Storage
             use_supabase = os.environ.get('STORAGE_BACKEND', 'local') == 'supabase'
+            
+            # Debug logging
+            app.logger.info(f"Upload parameters - project_id: {project_id}, chapter_id: {chapter_id}, section_id: {section_id}")
+            app.logger.info(f"Storage backend check - use_supabase: {use_supabase}, STORAGE_BACKEND: {os.environ.get('STORAGE_BACKEND', 'not set')}")
             
             if use_supabase and project_id and chapter_id and section_id:
                 # Use new storage-aware method
