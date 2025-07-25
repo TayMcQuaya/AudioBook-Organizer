@@ -215,6 +215,42 @@ The contact form requires backend implementation:
 3. Implement contact form backend endpoint
 4. Consider adding email notification for contact form submissions
 
+## 10. Authentication Navigation Fix - July 24, 2025
+
+### Problem
+When logged-in users clicked on legal page links (Privacy Policy, Terms of Service, Contact) from the footer, they were being redirected to the app page instead of the requested legal pages. This was due to the authentication success handler automatically redirecting authenticated users to the app.
+
+### Solution Implemented
+Modified the authentication redirect logic in `/frontend/js/modules/auth.js` to prevent automatic redirects when users are:
+1. On the landing page (respecting user choice)
+2. Navigating to legal pages (/privacy, /terms, /contact)
+
+#### Code Changes
+```javascript
+// In handleAuthSuccess() function
+if (currentPath === '/') {
+    console.log('🚫 Preventing navigation from landing page - respecting user choice');
+} else if (currentPath === '/privacy' || currentPath === '/terms' || currentPath === '/contact') {
+    console.log(`🚫 Preventing navigation from legal page: ${currentPath}`);
+} else if (!currentPath.includes('/app')) {
+    console.log('🎯 Auth success - navigating to app');
+    window.location.href = '/app';
+}
+```
+
+### Additional Fixes
+1. **"Back to Home" Button**: Changed from `navigateToContact('general')` to direct `window.location.href` to prevent redirect issues
+2. **Mobile UI Adaptations**: Added mobile-specific button handling for authenticated users
+3. **Mobile Menu Backdrop**: Fixed backdrop staying visible after logout
+
+### Files Modified
+- `/frontend/js/modules/auth.js` - Added redirect prevention logic
+- Legal page HTML files - Fixed "Back to Home" buttons
+- `/frontend/pages/landing/landing.js` - Mobile UI adaptations
+- `/frontend/js/modules/sessionManager.js` - Mobile menu backdrop fix
+
+This ensures authenticated users can freely navigate between the landing page and legal pages without being forced to the app page.
+
 ## 📋 **Content Accuracy Audit - July 12, 2025**
 
 ### **Comprehensive Review Completed**
