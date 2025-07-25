@@ -323,3 +323,116 @@ The current storage architecture is **much more efficient than initially thought
 4. **Well-architected** - The scattered folders are cosmetic, not functional issues
 
 The system is working exactly as it should! 🎉
+
+## Audio Loss Prevention System
+
+### The Challenge
+When users upload a new text file without saving their current project, any audio files associated with the current project become orphaned in storage. While the audio files remain in Supabase Storage, the references to them are lost.
+
+### Initial Solution Attempt
+The first implementation tracked `lastProjectSaveTime` and compared it with `lastAudioAddedTime`. However, this approach had a critical flaw:
+
+```javascript
+// Problem: Auto-save interferes with detection
+autoSaveInterval = setInterval(() => {
+    saveToDatabase();  // Updates lastProjectSaveTime
+}, 30000);  // Every 30 seconds
+
+// Also triggers on any change after 2 seconds
+triggerAutoSave() -> saveToDatabase() -> updates lastProjectSaveTime
+```
+
+Since the project auto-saves to the database every 30 seconds and after changes, the warning would rarely trigger.
+
+### Improved Solution
+The system now differentiates between:
+1. **Auto-saves to database** - Preserves work automatically
+2. **Manual JSON exports** - User's explicit action to save complete project
+
+#### Implementation Details
+
+**1. Track Manual Exports Separately**
+```javascript
+// In storage.js - saveProgress()
+localStorage.setItem('lastManualExportTime', new Date().toISOString());
+```
+
+**2. Check for Unxported Audio**
+```javascript
+// In bookUpload.js - hasUnsavedAudio()
+function hasUnsavedAudio() {
+    // Check if any section has audio
+    const hasAudio = chapters.some(chapter => 
+        chapter.sections?.some(section => 
+            section.audioPath || section.storageBackend
+        )
+    );
+    
+    if (!hasAudio) return false;
+    
+    // Check if user has ever manually exported
+    const lastManualExportTime = localStorage.getItem('lastManualExportTime');
+    if (!lastManualExportTime) return true;
+    
+    // Check if audio was added after last export
+    const lastAudioAddedTime = localStorage.getItem('lastAudioAddedTime');
+    if (lastAudioAddedTime && new Date(lastAudioAddedTime) > new Date(lastManualExportTime)) {
+        return true;
+    }
+    
+    return false;
+}
+```
+
+**3. Clear Warning Message**
+```javascript
+showConfirm(
+    'You have audio files that haven\'t been exported to JSON. ' +
+    'Uploading a new text will clear all current work including audio. ' +
+    'To save your audio references, use "Save Progress" to export your ' +
+    'project as JSON before continuing. Do you want to continue without exporting?',
+    // ... callbacks
+    'Continue Without Export',
+    'Cancel & Export First'
+);
+```
+
+### How It Works
+
+1. **Auto-save continues normally**
+   - Every 30 seconds
+   - 2 seconds after changes
+   - Ensures work isn't lost
+
+2. **Warning appears only when**:
+   - User has audio files in current project
+   - AND hasn't exported to JSON since adding audio
+   - Auto-saves don't affect this check
+
+3. **User guidance**:
+   - Clear message about JSON export
+   - Specific instruction to use "Save Progress"
+   - Meaningful button labels
+
+4. **Fresh start on new upload**:
+   ```javascript
+   // Clear timestamps when uploading new text
+   localStorage.removeItem('lastManualExportTime');
+   localStorage.removeItem('lastAudioAddedTime');
+   ```
+
+### Benefits
+
+1. **No false positives** - Auto-save doesn't trigger unnecessary warnings
+2. **Clear user action** - Distinguishes between automatic and manual saves
+3. **Better UX** - Users understand exactly what to do
+4. **Preserves audio** - Encourages JSON export before losing references
+
+### Edge Cases Handled
+
+1. **Never exported** - Warns if audio exists but no JSON export ever made
+2. **Audio after export** - Warns if new audio added since last export
+3. **No audio** - No warning if project has no audio files
+4. **New project** - Clears tracking for fresh start
+
+This solution elegantly balances automatic work preservation with user awareness of manual export needs.
