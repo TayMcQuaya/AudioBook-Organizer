@@ -730,6 +730,11 @@ export async function attachAudio(chapterId, sectionId, input) {
                 // Clear any missing audio status since we have a new valid file
                 section.audioStatus = null;
                 section.originalAudioPath = null;
+                
+                // Track when audio was added for unsaved detection
+                localStorage.setItem('lastAudioAddedTime', new Date().toISOString());
+                localStorage.setItem('lastProjectModifiedTime', new Date().toISOString());
+                
                 // Update player in state
                 if (chapterPlayers[chapter.id]) {
                     chapterPlayers[chapter.id].updatePlaylist();

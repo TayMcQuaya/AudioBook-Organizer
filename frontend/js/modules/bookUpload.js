@@ -1,6 +1,6 @@
 // AudioBook Organizer - Book Upload Module
 
-import { setBookText, clearChapters } from './state.js';
+import { setBookText, clearChapters, chapters } from './state.js';
 import { updateChaptersList, updateSelectionColor } from './ui.js';
 import { initializeSmartSelect } from './smartSelect.js';
 import { showError } from './notifications.js';
@@ -488,6 +488,43 @@ function handleUploadError(error) {
     console.error('File upload error:', error);
 }
 
+// Check if there are unsaved audio files
+function hasUnsavedAudio() {
+    if (!chapters || chapters.length === 0) return false;
+    
+    // Check if any section has audio
+    const hasAudio = chapters.some(chapter => 
+        chapter.sections && chapter.sections.some(section => 
+            section.audioPath || section.storageBackend
+        )
+    );
+    
+    if (!hasAudio) return false;
+    
+    // Check if project has been saved recently
+    // Get last save timestamp from localStorage or session
+    const lastSaveTime = localStorage.getItem('lastProjectSaveTime');
+    const lastModifiedTime = localStorage.getItem('lastProjectModifiedTime');
+    
+    // If never saved, it's definitely unsaved
+    if (!lastSaveTime) return true;
+    
+    // If modified after last save, it's unsaved
+    if (lastModifiedTime && new Date(lastModifiedTime) > new Date(lastSaveTime)) {
+        return true;
+    }
+    
+    // Also check if audio was added after last save
+    // This requires tracking when audio was added
+    const lastAudioAddedTime = localStorage.getItem('lastAudioAddedTime');
+    if (lastAudioAddedTime && new Date(lastAudioAddedTime) > new Date(lastSaveTime)) {
+        return true;
+    }
+    
+    // Project has been saved after all modifications
+    return false;
+}
+
 // Main book upload function
 export async function uploadBook() {
     const fileInput = document.getElementById('bookFile');
@@ -503,6 +540,34 @@ export async function uploadBook() {
         showError(validationErrors[0]);
         return;
     }
+    
+    // Check for unsaved audio before proceeding
+    if (hasUnsavedAudio()) {
+        const { showConfirm } = await import('./notifications.js');
+        showConfirm(
+            'You have audio files that haven\'t been saved. Uploading a new text will clear all current work including audio. Do you want to continue?',
+            async () => {
+                // User confirmed, proceed with upload
+                await processFileUpload(file);
+            },
+            () => {
+                // User cancelled, reset file input
+                fileInput.value = '';
+            },
+            'Continue Upload',
+            'Cancel'
+        );
+        return;
+    }
+    
+    // No audio or user confirmed, proceed directly
+    await processFileUpload(file);
+}
+
+// Extract the actual file processing logic
+async function processFileUpload(file) {
+    const fileInput = document.getElementById('bookFile');
+    const bookContent = document.getElementById('bookContent');
     
     // Clear current content and show loading
     if (bookContent) {

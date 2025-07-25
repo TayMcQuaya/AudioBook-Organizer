@@ -60,6 +60,9 @@ export function saveProgress() {
     const url = createObjectURL(blob);
     createDownloadLink(url, `audiobook_progress_${new Date().toISOString().split('T')[0]}.json`);
     revokeObjectURL(url);
+    
+    // Track that project has been saved (exported as JSON)
+    localStorage.setItem('lastProjectSaveTime', new Date().toISOString());
 }
 
 export async function loadProgress(input) {
@@ -600,6 +603,9 @@ export async function saveToDatabase() {
         if (response.ok) {
             const result = await response.json();
             console.log('✅ Project auto-saved to database');
+            
+            // Track save time for unsaved audio detection
+            localStorage.setItem('lastProjectSaveTime', new Date().toISOString());
             
             // Dispatch custom event for UI updates (optional)
             window.dispatchEvent(new CustomEvent('project-auto-saved', {
