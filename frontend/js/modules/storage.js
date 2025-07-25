@@ -61,7 +61,9 @@ export function saveProgress() {
     createDownloadLink(url, `audiobook_progress_${new Date().toISOString().split('T')[0]}.json`);
     revokeObjectURL(url);
     
-    // Track that project has been saved (exported as JSON)
+    // Track that project has been manually exported as JSON
+    localStorage.setItem('lastManualExportTime', new Date().toISOString());
+    // Also update lastProjectSaveTime for backward compatibility
     localStorage.setItem('lastProjectSaveTime', new Date().toISOString());
 }
 

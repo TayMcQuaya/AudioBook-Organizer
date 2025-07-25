@@ -80,6 +80,10 @@ async function handleUploadSuccess(text, formattingData = null, metadata = null)
         bookContent.textContent = text;
     }
     
+    // Clear manual export timestamp for new project
+    localStorage.removeItem('lastManualExportTime');
+    localStorage.removeItem('lastAudioAddedTime');
+    
     // Set file type based on metadata or formatting data presence
     const fileName = metadata?.filename || '';
     const fileType = fileName.toLowerCase().endsWith('.docx') || (formattingData && formattingData.ranges && formattingData.ranges.length > 0) ? 'docx' : 'txt';
@@ -488,7 +492,7 @@ function handleUploadError(error) {
     console.error('File upload error:', error);
 }
 
-// Check if there are unsaved audio files
+// Check if there are unsaved audio files (not exported as JSON)
 function hasUnsavedAudio() {
     if (!chapters || chapters.length === 0) return false;
     
@@ -501,27 +505,21 @@ function hasUnsavedAudio() {
     
     if (!hasAudio) return false;
     
-    // Check if project has been saved recently
-    // Get last save timestamp from localStorage or session
-    const lastSaveTime = localStorage.getItem('lastProjectSaveTime');
-    const lastModifiedTime = localStorage.getItem('lastProjectModifiedTime');
-    
-    // If never saved, it's definitely unsaved
-    if (!lastSaveTime) return true;
-    
-    // If modified after last save, it's unsaved
-    if (lastModifiedTime && new Date(lastModifiedTime) > new Date(lastSaveTime)) {
+    // Check if user has ever manually exported this project as JSON
+    const lastManualExportTime = localStorage.getItem('lastManualExportTime');
+    if (!lastManualExportTime) {
+        // User has audio but never exported to JSON - warn them
         return true;
     }
     
-    // Also check if audio was added after last save
-    // This requires tracking when audio was added
+    // Check if audio was added after last manual export
     const lastAudioAddedTime = localStorage.getItem('lastAudioAddedTime');
-    if (lastAudioAddedTime && new Date(lastAudioAddedTime) > new Date(lastSaveTime)) {
+    if (lastAudioAddedTime && new Date(lastAudioAddedTime) > new Date(lastManualExportTime)) {
+        // Audio was added since last JSON export
         return true;
     }
     
-    // Project has been saved after all modifications
+    // Audio exists and has been exported to JSON
     return false;
 }
 
@@ -545,7 +543,7 @@ export async function uploadBook() {
     if (hasUnsavedAudio()) {
         const { showConfirm } = await import('./notifications.js');
         showConfirm(
-            'You have audio files that haven\'t been saved. Uploading a new text will clear all current work including audio. Do you want to continue?',
+            'You have audio files that haven\'t been exported to JSON. Uploading a new text will clear all current work including audio. To save your audio references, use "Save Progress" to export your project as JSON before continuing. Do you want to continue without exporting?',
             async () => {
                 // User confirmed, proceed with upload
                 await processFileUpload(file);
@@ -554,8 +552,8 @@ export async function uploadBook() {
                 // User cancelled, reset file input
                 fileInput.value = '';
             },
-            'Continue Upload',
-            'Cancel'
+            'Continue Without Export',
+            'Cancel & Export First'
         );
         return;
     }
