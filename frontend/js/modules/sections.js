@@ -694,7 +694,8 @@ export async function attachAudio(chapterId, sectionId, input) {
 
         if (!response.ok) {
             const errorData = await response.json().catch(() => ({ message: 'An unknown error occurred' }));
-            throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+            console.error('Upload failed with response:', response.status, errorData);
+            throw new Error(errorData.message || errorData.error || `HTTP error! status: ${response.status}`);
         }
 
         // Update progress for processing stage (MP3 conversion, etc.)

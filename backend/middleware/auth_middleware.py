@@ -119,10 +119,11 @@ def require_auth(f: Callable) -> Callable:
                     'message': 'The provided token is invalid or expired'
                 }), 401
             
-            # Store user in request context
+            # Store user and token in request context
             g.current_user = user
             g.user_id = user['id']
             g.user_email = user['email']
+            g.auth_token = token  # Store token for downstream use
             
             logger.info(f"✅ User authenticated: {user['email']} ({user['id']})")
             
@@ -165,10 +166,11 @@ def optional_auth(f: Callable) -> Callable:
                     user = supabase_service.get_user_from_token(token)
                     
                     if user:
-                        # Store user in request context
+                        # Store user and token in request context
                         g.current_user = user
                         g.user_id = user['id']
                         g.user_email = user['email']
+                        g.auth_token = token  # Store token for downstream use
                         logger.info(f"✅ Optional auth - User authenticated: {user['email']}")
             
             # Continue regardless of authentication status
@@ -205,8 +207,9 @@ def require_credits(min_credits: int = 1):
                 supabase_service = get_supabase_service()
                 
                 # Check user's credit balance
-                # CRITICAL FIX: Always get fresh credits for pre-action checks
-                current_credits = supabase_service.get_user_credits(user_id, use_cache=False)
+                # CRITICAL FIX: Always get fresh credits for pre-action checks AND pass auth token
+                auth_token = getattr(g, 'auth_token', None)
+                current_credits = supabase_service.get_user_credits(user_id, use_cache=False, auth_token=auth_token)
                 
                 if current_credits < min_credits:
                     return jsonify({

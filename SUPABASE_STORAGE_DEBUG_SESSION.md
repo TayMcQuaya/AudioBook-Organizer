@@ -138,3 +138,45 @@ This is normal behavior and doesn't affect functionality. The errors are just th
 ✅ All RLS policy issues resolved
 
 The system is now working correctly with Supabase Storage!
+
+## Additional Fix: 402 Payment Required Errors
+
+### Problem
+User reported inconsistent 402 "Payment Required" errors during audio uploads despite having 20,000+ credits. The errors were intermittent and didn't actually prevent uploads.
+
+### Root Cause
+The `get_user_credits()` function in `supabase_service.py` accepts an `auth_token` parameter to authenticate with Supabase's RLS policies. However, the upload routes weren't passing this token, causing the RLS policy to block the query and return 0 credits.
+
+### The Fix
+Updated `/backend/routes/upload_routes.py` to pass the auth token when checking credits:
+
+```python
+# Audio upload endpoint (line 76):
+current_credits = supabase_service.get_user_credits(user['id'], use_cache=False, auth_token=token)
+
+# Text upload endpoint (line 237):
+current_credits = supabase_service.get_user_credits(user['id'], use_cache=False, auth_token=token)
+```
+
+This ensures the credit query can properly authenticate and bypass RLS policies to return the actual credit balance.
+
+### Why It Was Intermittent
+- Sometimes cached values were used (when `use_cache=True`)
+- The upload would still work because credit consumption happens after upload
+- The 402 error was returned but the frontend continued with the upload anyway
+
+### Complete Fix Applied
+Updated all endpoints that check credits to pass the auth token:
+- **Audio Upload**: `/backend/routes/upload_routes.py` line 76
+- **Text Upload**: `/backend/routes/upload_routes.py` line 237
+- **DOCX Upload**: `/backend/routes/docx_routes.py` line 86
+- **Export Route**: `/backend/routes/export_routes.py` line 82
+- **Auth Middleware**: Updated decorators to store and use auth token
+- **Auth Routes**: Updated status and verify endpoints
+
+## Complete Summary
+✅ Audio files persist across Docker restarts (Supabase Storage)
+✅ Audio playback works with signed URLs
+✅ RLS policies properly configured with service role
+✅ Credit checks now work reliably with auth token
+✅ No more false 402 errors for users with credits

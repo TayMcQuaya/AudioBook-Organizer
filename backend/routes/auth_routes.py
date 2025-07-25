@@ -68,8 +68,9 @@ def create_auth_routes() -> Blueprint:
                 supabase_service = get_supabase_service()
                 
                 # Get user profile and credits
-                profile = supabase_service.get_user_profile(user['id'])
-                credits = supabase_service.get_user_credits(user['id'])
+                auth_token = getattr(g, 'auth_token', None)
+                profile = supabase_service.get_user_profile(user['id'], auth_token=auth_token)
+                credits = supabase_service.get_user_credits(user['id'], auth_token=auth_token)
                 
                 return jsonify({
                     'authenticated': True,
@@ -140,8 +141,8 @@ def create_auth_routes() -> Blueprint:
                 }), 401
             
             # Get user profile and credits
-            profile = supabase_service.get_user_profile(user['id'])
-            credits = supabase_service.get_user_credits(user['id'])
+            profile = supabase_service.get_user_profile(user['id'], auth_token=token)
+            credits = supabase_service.get_user_credits(user['id'], auth_token=token)
             
             return jsonify({
                 'success': True,
