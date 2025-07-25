@@ -756,8 +756,11 @@ export async function removeAudio(chapterId, sectionId) {
     const section = chapter?.sections.find(s => s.id === sectionId);
     if (!section) return;
     
+    // Capture storage backend before clearing
+    const wasSupabase = section.storageBackend === 'supabase';
+    
     // If using Supabase Storage, delete the file first
-    if (section.storageBackend === 'supabase' && section.audioPath) {
+    if (wasSupabase && section.audioPath) {
         try {
             const response = await apiFetch('/audio/delete', {
                 method: 'POST',
@@ -796,6 +799,16 @@ export async function removeAudio(chapterId, sectionId) {
     }
     
     updateChaptersList();
+    
+    // Force credit refresh after deletion to ensure accurate credit display
+    if (wasSupabase) {
+        console.log('💎 Forcing credit refresh after audio deletion...');
+        window._creditRefreshNeeded = true;
+        setTimeout(async () => {
+            const { updateUserCredits } = await import('./appUI.js');
+            updateUserCredits();
+        }, 500); // Small delay to ensure database trigger has completed
+    }
 }
 
 /**
@@ -807,8 +820,11 @@ export async function clearMissingAudio(chapterId, sectionId) {
     const section = chapter?.sections.find(s => s.id === sectionId);
     if (!section) return;
     
+    // Capture storage backend before clearing
+    const wasSupabase = section.storageBackend === 'supabase';
+    
     // Even if the file is missing, try to delete the database record
-    if (section.storageBackend === 'supabase' && (section.audioPath || section.uploadId)) {
+    if (wasSupabase && (section.audioPath || section.uploadId)) {
         try {
             const response = await apiFetch('/audio/delete', {
                 method: 'POST',
@@ -852,6 +868,16 @@ export async function clearMissingAudio(chapterId, sectionId) {
     
     // **SECURITY FIX: Removed section name to prevent user content exposure**
     console.log('✅ Cleared missing audio reference for section');
+    
+    // Force credit refresh after deletion to ensure accurate credit display
+    if (wasSupabase) {
+        console.log('💎 Forcing credit refresh after missing audio cleanup...');
+        window._creditRefreshNeeded = true;
+        setTimeout(async () => {
+            const { updateUserCredits } = await import('./appUI.js');
+            updateUserCredits();
+        }, 500); // Small delay to ensure database trigger has completed
+    }
 }
 
 // Drag and Drop functionality - preserving exact logic from original
