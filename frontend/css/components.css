@@ -192,11 +192,27 @@
 
 .audio-controls {
     display: flex;
-    align-items: center;
-    gap: var(--spacing-sm);
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
     margin-top: var(--spacing-sm);
     padding-top: var(--spacing-sm);
     border-top: 1px solid var(--border-color);
+}
+
+.audio-controls-row {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    width: 100%;
+}
+
+.audio-upload-info {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    opacity: 0.85;
+    margin-left: 2px;
 }
 
 /* Missing Audio Warning Styles */
@@ -350,6 +366,12 @@
 /* File Upload Styles */
 .file-upload {
     display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.file-upload-controls {
+    display: flex;
     align-items: center;
     gap: var(--spacing-sm);
 }
@@ -362,6 +384,14 @@
     background: var(--bg-primary);
     color: var(--text-primary);
     transition: background 0.3s ease, border-color 0.3s ease, color 0.3s ease;
+}
+
+.file-upload-info {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    opacity: 0.85;
+    margin-left: 2px;
 }
 
 /* Button Styles */

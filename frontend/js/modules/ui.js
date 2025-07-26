@@ -82,13 +82,21 @@ export function updateChaptersList() {
                                          </div>
                                     </div>
                                 ` : `
-                                    <audio controls src="${section.audioPath}" data-section-id="${section.id}" data-storage-backend="${section.storageBackend || 'local'}"></audio>
-                                    <button onclick="event.preventDefault(); removeAudio(${chapter.id}, ${section.id})">Remove Audio</button>
+                                    <div class="audio-controls-row">
+                                        <audio controls src="${section.audioPath}" data-section-id="${section.id}" data-storage-backend="${section.storageBackend || 'local'}"></audio>
+                                        <button onclick="event.preventDefault(); removeAudio(${chapter.id}, ${section.id})">Remove Audio</button>
+                                        <button onclick="event.preventDefault(); deleteSection(${chapter.id}, ${section.id})">Delete Section</button>
+                                    </div>
                                 `}
                             ` : `
-                                <input type="file" accept="audio/*" onchange="attachAudio(${chapter.id}, ${section.id}, this)">
+                                <div class="audio-controls-row">
+                                    <input type="file" accept="audio/*" onchange="attachAudio(${chapter.id}, ${section.id}, this)">
+                                    <button onclick="event.preventDefault(); deleteSection(${chapter.id}, ${section.id})">Delete Section</button>
+                                </div>
+                                <div class="audio-upload-info">
+                                    Accepted: MP3, WAV • Max size: 50MB
+                                </div>
                             `}
-                            <button onclick="event.preventDefault(); deleteSection(${chapter.id}, ${section.id})">Delete Section</button>
                         </div>
                     </div>
                 `).join('')}

@@ -485,8 +485,13 @@
                 </div>
                 <div class="header-controls">
                     <div class="file-upload">
-                        <input type="file" id="bookFile" accept=".txt,.docx">
-                        <button onclick="uploadBook()">Upload Book</button>
+                        <div class="file-upload-controls">
+                            <input type="file" id="bookFile" accept=".txt,.docx">
+                            <button onclick="uploadBook()">Upload Book</button>
+                        </div>
+                        <div class="file-upload-info">
+                            Accepted: .TXT, .DOCX • Max size: 10MB
+                        </div>
                     </div>
                     <!-- Smart Select Button -->
                     <div class="smart-select-controls">
